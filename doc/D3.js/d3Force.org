@@ -1,0 +1,652 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+
+#+TITLE: D3.js V4 forceSimulation のノード動的更新(追加・削除)
+
+* D3.js とは
+
+D3.js は Data-Driven Documents ということらしいですが、
+これだと良く分からんのでもう少し分かり易く言うと
+*要素の座標を指定されたレイアウトで計算し、計算結果を DOM に反映させるアクセッサを提供する* ライブラリです。
+実際の描画には何(svg や canvas など)を使うかはユーザ側で選択できます。
+
+ちなみに svg は、 XML ベースのベクタ系画像フォーマットです。
+
+D3.js の公式 HP (https://d3js.org/)は、
+オープンソースライブラリの中でもかなりの充実ぶりで多くのサンプルもあり、
+自分の実現したいことがサンプルと同じであればデータを変えるだけで実現できます。
+サンプルに無くても、ドキュメントを読めば大抵のことは実現可能でしょう。
+
+とはいえ充実しているからこそ、それを読むのも大変な訳で。
+
+そんな訳で多くの方は web で解説ページを検索することになると思います。
+少なくとも私は検索しました。
+
+私が実現したかった内容は、
+タイトル通り 「D3.js V4 forceSimulation のノード動的更新(追加・削除)」 です。
+
+ちなみに今回作ったサンプルはこんな感じです。
+
+https://ifritjp.github.io/doc/D3.js/force.update.html
+
+これを実現するために、
+上記ワードで検索していくつかの解説ページの情報を総合して
+ようやく実現することができました。
+この記事ではそれらの情報をまとめて javascript, svg 素人でも
+分かるように解説していきます。
+
+ちなみにこの記事を書いたのは、
+lctags でインタラクティブなコールグラフを実現するのに
+D3.js の習得が必要だったためです。
+
+* 読者対象
+
+この記事の読者対象は、 JavaScript のごく簡単なコードを書いた経験がある方です。
+レベルは問いません。 DOM と JavaScript の概念さえ分かっていれば十分です。
+もちろん JavaScript マスターも D3.js の基礎を知りたい方であれば対象となりますが、
+その場合は記事の多くを読み飛すことになるでしょう。
+
+ちなみに D3.js の経験は不要です。
+
+なお、自分の JavaScript レベルは、
+基本的な Syntax は知っているが、滅多に使わないので忘れてしまうため、
+都度検索しながら使えるレベルです。
+多分 Qiita ユーザの中では、かなり下層の方でしょう。
+
+そんな素人レベルが解説するので、素人が疑問に思うポイントを解説できると思います。
+
+* 参考ページ
+
+まず今回のことを実現にする上で参考にした情報を挙げておきます。
+
+- https://d3js.org/
+  - 公式 HP
+  - 詳細を知りたい方は、こちらを見ましょう。
+- http://bl.ocks.org/tgk/6068367
+  - D3.js V3 でノードを動的更新するサンプルコード
+  - この記事では、このサンプルコードを元に V4 対応したものを解説しています。
+- https://qiita.com/junkoda/items/2d12ecdd3b4b5c99d994
+  - forceSimulation 設定パラメータの解説
+
+* サンプル
+
+上記で説明している通り、この記事では次のサンプルを解説してきます。
+
+https://ifritjp.github.io/doc/D3.js/force.update.html
+
+このサンプルは次の動作を行ないます。
+
+- クリックで forceSimulation のノードを追加
+- ノードにはラベル "hoge" を付加
+- 別のノードの近くをクリックすると、そのノードとリンクを持ったノードを追加する
+- 追加したノードをクリックすると、そのノードとリンクを削除する  
+- ノードはドラッグで移動可能
+- 新しく追加したノードは赤く表示し、別のノードが追加すると黒く表示する。
+
+実際に動かせば分かると思います。
+
+サンプルの全ソースは、ブラウザのソース表示機能で確認してください。
+
+* 解説
+
+以降で解説します。
+
+** svg の基礎
+
+前述した通り D3.js は、要素の座標を指定されたレイアウトで計算するもので、
+実際の描画はユーザ側で制御する必要があります。
+
+多くのグラフィック系ライブラリでは、描画に必要な情報を抽象化し、
+実際にどのように描画が行なわれているかをユーザに意識させません。
+一方 D3.js ではユーザが svg や canvas 等の制御を意識する必要があります。
+
+つまりは、ユーザは svg や canvas の知識を持っていなければなりません。
+
+svg の規格はそこそこ大きく、全てを理解するのはハードルが高いです。
+しかし、よほどリッチな graph の実現が目的でない限り、
+代表的なものだけをおさえておけば問題ないでしょう。
+
+今回のサンプルで利用する svg の element は、次の通りです。
+
+- g
+  - svg 内の element をグループ化する
+- circle
+  - 円を表現する
+- text
+  - Text を表現する
+- line
+  - 線を表現する
+    
+ちなみに、今回のサンプルの svg 構成は次のようになります。
+
+#+BEGIN_SRC txt
+svg
+  +-- カーソル用 circle
+  +-- g
+    +--- ノードの circle1
+    +--- ノードのラベル text1
+    +--- ノード間のリンク line1
+    +--- ノードの circle2
+    +--- ノードのラベル text2
+    +--- ノード間のリンク line2
+    +--- ...
+#+END_SRC
+
+今回のサンプルでは g を使用していますが、
+g 生成せずに直接 circle, text 等を生成しても問題ありません。
+今回の例では、この g はほとんど意味を持ちません。
+ただ g を入れておくことで、全体の移動等の効果を入れ易いです。
+
+** svg element の設定
+
+HTML 上で svg element は <svg> 〜 </svg> で表現されます。
+
+サンプルでは、この svg element を body 直下に生成しています。
+
+#+BEGIN_SRC javascript
+var width = window.innerWidth;
+var height = window.innerHeight;
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width).attr("height", height)
+    .on("mousemove", mousemove )
+    .on("click", function() { addNode( d3.mouse(this) ); } );
+#+END_SRC
+
+コードを見れば直感的に分かるとは思いますが、
+上記は次の処理を行なっています。
+
+- d3.select() メソッドで body DOM を取得
+- body DOM に svg element を追加
+- svg element に width, height 属性を設定
+- svg element の mousemove, click イベントにそれぞれハンドラを設定
+  
+D3.js は、このように関数の戻り値を使って Chain するスタイルです。
+このスタイルは良く見かけるので、それほど違和感はないと思います。
+
+/個人的には、あまり好きではないですが。。/
+
+** link の矢印定義
+
+ここは D3.js とは直接関係ないですが、
+サンプルに載せているので簡単に説明すると、
+ノードを接続するリンクの矢印部分の定義をしています。
+   
+#+BEGIN_SRC javascript
+// 矢印の定義
+var defs = svg.append("defs");
+var marker = defs.append("marker")
+    .attr( "id", "arrow" )
+    .attr( "markerUnits", "userSpaceOnUse" )
+    .attr( "markerWidth", "12" )
+    .attr( "markerHeight", "12" )
+    .attr( "viewBox", "0 0 10 10" )
+    .attr( "refX", "17" )
+    .attr( "refY", "6" )
+    .attr( "orient", "auto" );
+marker.append("path")
+    .attr("d", "M2,2 L10,6 L2,10 L6,6 L2,2")
+    .style( "fill", "red" );
+#+END_SRC
+
+** g element の追加
+
+上述している通り g element は svg の element をグループ化するものです。
+HTML の div のようなものと考えれば良いと思います。
+
+これを svg の直下に生成します。
+
+#+BEGIN_SRC javascript
+var g = svg.append("g");
+#+END_SRC
+
+** カーソル用 circle の追加
+
+カーソルに追従する円を描画する circle を追加します。
+
+#+BEGIN_SRC javascript
+var cursor = svg.append("circle")
+    .attr("r", 30)
+    .attr( "display", "none")
+    .style( "stroke", "red" )
+    .style( "pointer-events", "none" )
+    .style( "fill", "none" );
+#+END_SRC
+
+主な設定内容は以下の通りです。
+
+- 円の半径: 30
+- 色: 赤
+  
+attr で設定している属性値は、svg で規定されている設定値です。
+
+style で設定している値は、 CSS で規定されている設定値です。
+
+** svg の要素にバインドするデータを用意する
+
+今回のサンプルでは、 svg の要素としてノード、ラベル、リンクの 3 つあります。
+
+それらの要素の情報を管理するデータとして、
+nodes, links 配列を用意しています。
+
+#+BEGIN_SRC txt
+// バインドするデータ
+var nodes = [];
+var links = [];
+#+END_SRC
+
+なんでラベルのデータがないの？と疑問を持つ方もいるかと思いますが、
+今回のサンプルではラベルをノードのメンバとして持たせるように設計しているため、
+ラベル単独の配列は用意していません。
+
+D3.js のルールとしては、
+DOM ごとにデータを分ける必要はありません。
+DOM ごとの数と、バインドするデータの配列長が同じであれば、
+バインドするデータは共有しても OK です。
+ただし、 D3.js にバインドする際に決め打ちでメンバーが必要になることがあるため、
+メンバー名には注意が必要です。
+例えば forceSimulation のノードには、
+以下のメンバが D3.js によって自動的に割りあてられます。
+
+- index
+- x
+- y
+- vx
+- vy
+  
+また、 forceSimulation のリンクには、
+以下のメンバを設定する必要があります。
+
+- target
+- source  
+- index
+  
+target, source はリンクが接続するノードを示す必要があります。
+
+** svg の要素を準備する
+
+次のコードは、
+ノード、ラベル、リンクの 3 つの要素を操作するための準備をしています。
+
+#+BEGIN_SRC javascript
+// SVG の画像要素
+var node = g.selectAll(".node");
+var link = g.selectAll(".link");
+var label = g.selectAll(".label");
+#+END_SRC
+
+selectAll() は、指定名称の element にアクセスする /selection/ を返します。
+/selection/ は、 D3.js で定義されているオブジェクトです。
+
+selectAll() は、 /selection/ を返すのであって element の生成は行ないません。
+
+なお、この時点では指定した名前にマッチする element は存在しないため、
+なんの element も管理しない空の /selection/ が返されます。
+
+** forceSimulation の生成
+
+forceSimulation のオブジェクトを生成します。   
+   
+#+BEGIN_SRC javascript
+var simulation = d3.forceSimulation( nodes )
+    .on("tick", ticked );
+#+END_SRC
+
+ここで、 forceSimulation で使用するノード nodes を指定します。
+forceSimulation は、この nodes 情報を利用して座標計算を行ないます。
+
+tick イベントは、 forceSimulation での座標計算ごとに発生するイベントです。
+このイベントで、計算された座標を基に DOM の位置情報に反映することで、
+画像の要素がリアルタイムに動きます。
+
+なお、 forceSimulation で座標計算可能な要素はノードとリンクの 2 つで、
+ノードは円形である必要があります(svg の circle という意味ではない)。
+ノードが円形でなければならない理由は、
+forceSimulation の座標計算でノードが円形であることを想定しているからであり、
+これは forceSimulation の仕様です。
+
+なお、これは forceSimulation の座標計算が円形を想定しているということであって、
+実際のノードの形は四角でもなんでも構いません。
+ただその場合、ノードの collision 計算が不正確になるため、
+意図しない結果になります。
+
+非公式の拡張では、ノードの形状として楕円等に対応したものもあるようです。
+
+** ドラッグ制御情報
+
+#+BEGIN_SRC javascript
+var drag = d3.drag()
+    .on("start", dragstarted)
+    .on("drag", dragged)
+    .on("end", dragended);
+#+END_SRC
+
+d3 でマウスドラッグを制御するには d3.drag() オブジェクトを使用します。
+このオブジェクトのイベントとして、 start/drag/end のハンドラを設定します。
+
+このオブジェクトを、ドラッグさせたい element の call に登録することで、
+マウスドラッグ制御を行ないます。
+
+** バインド元にノード情報を追加
+
+以下の処理で所定の座標にノードを追加します。
+   
+#+BEGIN_SRC javascript
+function addNode( point ) {
+    var node = { x: point[0], y: point[1],
+		 name: "hoge", size: 10 };
+
+    // add links to any nearby nodes
+    nodes.forEach(function(target) {
+        var x = target.x - node.x,
+            y = target.y - node.y;
+        if (Math.sqrt(x * x + y * y) < 40) {
+            links.push({source: node, target: target});
+        }
+    });
+    
+    nodes.push(node);
+
+    update( nodes );
+}
+#+END_SRC
+
+この処理で重要なのは、
+新しいノード情報を生成し nodes に push し、
+その nodes を update() で処理することで svg の element に反映される、ということです。
+
+あくまで nodes はバインド元の情報であって、
+この情報を変更しただけでは svg には反映されず、
+update( nodes ) を実行することで svg に反映されます。
+
+** ノードの動的更新 (del/add)
+
+このセクションがこの記事の一番重要なポイントです。
+
+D3.js を使った動的更新 (del/add) には必須なので詳しく説明します。
+   
+#+BEGIN_SRC javascript
+function update(nodes) {
+
+    // transition
+    var t = d3.transition().duration(750);    
+
+    // node の更新  ======>
+
+    // 新しく nodes をバインド
+    node = node.data(nodes);
+    // バインドした情報に存在しない DOM を削除
+    node.exit().transition( t ).attr( "r", 1e-4 ).remove();
+
+    // 削除後の node に対する操作
+    node.transition( t )	
+	.style( "fill", "black" );
+
+    // 新しくバインドした nodes を元に DOM を生成
+    node = node.enter().append("circle")
+        .style("fill", "red")
+        .attr("r", function(d){ return d.size })
+        .call( drag ) // ドラッグ対象とする
+	.on("click", function( d ) {
+	    d3.event.stopPropagation();
+	    deleteNode( d );
+	} ) // 追加分の DOM を生成する
+        .merge(node); // 前の DOM とマージする
+    
+    // label の更新 ======>
+    label = label.data( nodes );
+    label.exit().remove();
+    
+    label = label.enter().append("text")
+        .attr("class", "label")
+        .attr( "fill", "black" )
+        .attr("dx", 18)
+        .attr("dy", ".35em")
+        .text( function(d) { return d.name } )
+        .merge(label);
+
+
+    // link の更新 ======>
+    link = link.data( links );
+    link.exit().remove();
+    
+    link = link.enter().append("line")
+        .style( "stroke", "black" )
+        .attr( "stroke-width", 2 )
+	.attr( "marker-end", "url(#arrow)" )
+        .merge(link);
+
+    // forceSimulation 開始
+    simulation.nodes( nodes )
+	.force("charge", d3.forceManyBody().strength(-200))
+	.force("forceX", d3.forceX().strength(.1))
+	.force("forceY", d3.forceY().strength(.1))
+	.force("center", d3.forceCenter( width/2, height/2 ))
+	.force("link", d3.forceLink( links ).distance( 100 ).strength(1.5).iterations(2) )
+	.alphaTarget(1);
+}
+#+END_SRC
+
+ここでは、ノードの追加削除の処理方法から説明していきます。
+
+*** 基本パターン
+
+D3.js の動的更新は次のパターンで行ないます。
+
+- /selection/.data()
+  - D3.js の /selection/ に配列をバインド
+- バインドしたデータに存在しなかった古い情報を取り出し、 DOM を削除
+  - /selection/.exit().remove()
+- 新しく追加された情報を取り出し、所定の DOM の element を生成
+  - /selection/.enter().append()
+- 新しく生成した element と、元の element をマージ
+  - /selection/.merge()
+
+以降で各処理について説明します。
+
+*** バインド
+
+#+BEGIN_SRC javascript
+    // 新しく nodes をバインド
+    node = node.data(nodes);
+#+END_SRC
+
+まず、ノードの情報を管理する nodes を、
+ノードの element を管理する /selection/ にバインドします。
+
+*** 存在しない DOM を削除
+
+.exit() で削除されたデータを管理する /selection/ を取得し、
+それを remove() することで DOM から element が削除されます。
+
+#+BEGIN_SRC javascript
+    // バインドした情報に存在しない DOM を削除
+    node.exit().transition( t ).attr( "r", 1e-4 ).remove();
+#+END_SRC
+
+なお、上記の ~transition( t ).attr( "r", 1e-4 )~ は、
+削除した element に対して、
+半径 "r" を小さくする変化を付けて消すことを指示しています。
+
+*** 新しく DOM を追加 & /selection/ をマージ
+
+.enter() で追加されたデータを管理する /selection/ を取得し、
+それに append() することで DOM に element を追加します。
+そして、 merge() によって以前の /selection/ とマージすることで、
+既存の element と追加分の element を管理する /selection/ を得ます。
+
+#+BEGIN_SRC javascript
+    // 新しくバインドした nodes を元に DOM を生成
+    node = node.enter().append("circle")
+        .style("fill", "red")
+        .attr("r", function(d){ return d.size })
+        .call( drag ) // ドラッグ対象とする
+	.on("click", function( d ) {
+	    d3.event.stopPropagation();
+	    deleteNode( d );
+	} ) // 追加分の DOM を生成する
+        .merge(node); // 前の DOM とマージする
+#+END_SRC
+
+サンプルではノードの click イベントとして、 deleteNode() を設定しています。
+また、他の element に click イベントが通知されないように
+d3.event.stopPropagation() を実行しています。
+
+*** 詳しく解説
+    
+/selection/.data( /array/ ) の戻り値は、新しい /selection/ です。
+
+この新しい /selection/ は、
+いままでバインドしていた配列要素 old と、
+新しくバインドされた配列要素 new の情報から、次の情報を管理します。
+
+- 削除された要素 (.exit)
+  - old に存在し new にない要素
+- 新たに追加された要素 (.enter)
+  - old になく、new に存在する要素
+- 残った要素
+  - old と new どちらにも存在する要素
+
+公式の [[https://github.com/d3/d3-selection/blob/master/README.md#selection_exit][サンプル]] で具体例を説明すると、
+
+ある /selection/ が ~[4, 8, 15, 16, 23, 42]~ をバインドしていた時、
+新しく ~[1, 2, 4, 8, 16, 32]~ をバインド (.data) すると、
+生成された /selection/ の .exit, .enter は次を返します。
+
+- .exit
+  - ~[15, 23, 42]~ を管理する /selection/
+- .enter
+  - ~[ [1, 2, 32]~ を管理する /selection/
+
+なお、この /selection/ が管理している DOM の element は、
+既存の element であり、まだ削除も追加もされていません。
+.exit().remove() することで、実際に DOM の element が削除され、
+.enter().append() することで、 DOM の element が追加されます。
+
+注意すべきなのは、 .merge() しないと 最終的な svg の element を管理する
+/selection/ が得られないということです。
+
+add/delete がこのようなステップに分かれているのは
+ちょっと手間が多いようにも思えます。
+しかしこのステップによって、
+削除される情報、残る情報、追加される情報を /selection/ で管理してくれるので、
+ユーザ側でそれらを管理する必要がなく、
+さらに、削除される情報、残る情報、追加される情報に対して
+異なる制御を簡単に行なうことが出来ます。
+このサンプルでも、削除されるノードの半径を小さくするエフェクトを加えていますが、
+その制御は簡単に記述出来ています。
+
+** 座標計算結果を svg に反映
+
+forceSimulation による座標計算ごとに、
+事前に登録した tickedハンドラがコールされます。
+
+forceSimulation は、 ノードとリンクの座標を計算します。
+この計算結果は nodes, links の各データに反映されています。
+
+この計算結果を element に反映します。
+
+#+BEGIN_SRC javascript
+function ticked() {
+    link.attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+
+    node.attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+
+    label.attr("x", function(d) { return d.x; })
+        .attr("y", function(d) { return d.y; });
+}
+#+END_SRC
+
+** ノードを削除
+
+次の処理でノードを削除します。
+   
+#+BEGIN_SRC javascript
+function deleteNode( node )
+{
+    // node を削除する
+
+    // node.index は forceSimulation によって追加される
+    nodes.splice( node.index, 1 );
+
+    // node に繋がっている link を削除
+    links = links.filter(function(l) {
+	return l.source.index != node.index && l.target.index != node.index;
+    });
+
+    // graph を更新
+    update( nodes );
+}
+#+END_SRC
+
+** カーソルに追従する円
+
+次の処理でカーソルに追従する円を描画します。   
+
+#+BEGIN_SRC javascript
+function mousemove() {
+    cursor.attr( "display", "block");
+    cursor.attr("transform", "translate(" + d3.mouse(this) + ")");
+}
+#+END_SRC
+
+ここで cursor の属性に transform を設定しています。
+これはアフィン変換等を行なうもので、
+translate は element の 座標(x,y) を offset させます。
+
+** ノードのドラッグ処理
+
+次の処理でノードのドラッグ処理を行ないます。
+
+#+BEGIN_SRC javascript
+function dragstarted(d) {
+    cursor.attr( "display", "none");
+    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+}
+
+function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+}
+
+function dragended(d) {
+    if (!d3.event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+}
+#+END_SRC
+
+ここで重要なのは次の 2 点です。
+- dragstarted() の simulation.alphaTarget(0.3).restart()
+- dragended() の simulation.alphaTarget(0)
+
+ノードをドラッグすると、
+ドラッグしたノードの位置に応じて他のノードも動きます。
+このノードを動かすのが dragstarted() の
+simulation.alphaTarget(0.3).restart() です。
+
+forceSimulation の座標計算は、ある時間内に行ないます。
+その時間を α と呼ばれるパラメータで管理します。
+座標計算ごとにαは減算され、α が alphaMin よりも小さくなると、
+座標計算は停止します。
+このαの計算に alphaTarget が使われており、
+alphaTarget を alphaMin 以上に設定されている間は座標計算が止まらなくなります。
+つまり、ドラック中は座標計算が止まらずにノードが動き続けることになります。
+
+そして dragended() の simulation.alphaTarget(0) によって、
+所定時間の座標計算後にα値が alphaMin よりも小さくなり、ノードが止まります。
+
+* おわりに
+
+この記事では、
+D3.js V4 forceSimulation のノード動的更新(追加・削除)方法について説明しました。
+
+javascript, svg 素人でも理解できるように説明したつもりですが、
+疑問点や認識間違いなどあればコメント欄への記載をお願いします。
