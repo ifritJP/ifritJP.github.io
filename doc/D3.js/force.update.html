@@ -40,6 +40,9 @@ var cursor = svg.append("circle")
     .style( "pointer-events", "none" )
     .style( "fill", "none" );
 
+// バインドデータの ID
+var idSeed = 0;
+
 // バインドするデータ
 var nodes = [];
 var links = [];
@@ -62,9 +65,9 @@ var drag = d3.drag()
 // 初期状態として 1 つノードを追加
 addNode( [ 100, 100 ] );
 
-
 function addNode( point ) {
-    var node = { x: point[0], y: point[1],
+    var node = { id: idSeed++,
+		 x: point[0], y: point[1],
 		 name: "hoge", size: 10 };
 
     // add links to any nearby nodes
@@ -72,7 +75,7 @@ function addNode( point ) {
         var x = target.x - node.x,
             y = target.y - node.y;
         if (Math.sqrt(x * x + y * y) < 40) {
-            links.push({source: node, target: target});
+            links.push({ id: idSeed++, source: node, target: target});
         }
     });
     
@@ -90,7 +93,8 @@ function update(nodes) {
     // node の更新  ======>
 
     // 新しく nodes をバインド
-    node = node.data(nodes);
+    node = node.data(nodes, function( d ) { return d.id; } );
+
     // バインドした情報に存在しない DOM を削除
     node.exit().transition( t ).attr( "r", 1e-4 ).remove();
 
@@ -110,7 +114,7 @@ function update(nodes) {
         .merge(node); // 前の DOM とマージする
     
     // label の更新 ======>
-    label = label.data( nodes );
+    label = label.data(nodes, function( d ) { return d.id; } );
     label.exit().remove();
     
     label = label.enter().append("text")
@@ -123,7 +127,7 @@ function update(nodes) {
 
 
     // link の更新 ======>
-    link = link.data( links );
+    link = link.data( links, function( d ) { return d.id; } );
     link.exit().remove();
     
     link = link.enter().append("line")
