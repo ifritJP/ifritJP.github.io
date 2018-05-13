@@ -23,7 +23,6 @@ function lctags_funcCallGraph_tree( nsId, name ) {
             ;
         },
         nodeClick: function( obj, node ) {
-            d3.event.stopPropagation();
             var nsId = node.nsId;
             var nodeId = node.id;
 
@@ -46,8 +45,15 @@ function lctags_funcCallGraph_tree( nsId, name ) {
             obj.setNodeType( nodeId, info.type );
             obj.addChild( nodeId, list );
         },
+        pathClick: function( obj, path ) {
+            d3.event.stopPropagation();
+            alert( "This function displays clicked " + obj.expandMode + " position at your emacs.\n" +
+                   "But this function does not operate with this sample." );
+        },
         nodeContext: function( obj, node ) {
             d3.event.stopPropagation();
+            alert( "This function displays clicked function position at your emacs.\n" +
+                   "But this function does not operate with this sample." );
         }
     };
         
