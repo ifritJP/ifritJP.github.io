@@ -1,0 +1,307 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+#+TITLE: RaspberryPi3 で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法解説
+
+RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
+Web に載っていますが、幾つかハマったポイントがあったので、
+そのポイントを解説していきます。
+
+設定内容は、apt でパッケージを入れてペアリングするだけですが、
+ペアリングして音声が再生出来るようになるまでに、
+いくつかハマるポイントがあります。
+
+なお、基本的には次の URL に記載されている設定手順を参考にしますが、
+多くの手順は不要です。
+
+https://www.raspberrypi.org/forums/viewtopic.php?t=68779
+
+
+* OS イメージ
+
+https://www.raspberrypi.org/downloads/raspbian/
+
+RaspberryPi の OS イメージは、
+必ず *Raspbian Stretch with desktop* を使用してください。
+ちなみに今回使用したのは現時点で最新 2018-04-18 4.14 を使用しました。
+
+当初は Raspbian Stretch lite を使っていて、
+これが原因で A2DP を認識出来ない問題が発生していました。
+これについては後述します。
+
+Raspbian のバージョンによっては lite でも問題ないかもしれませんが、
+ここでは *Raspbian Stretch with desktop* を使用します。
+
+* sshd 有効化
+
+これは必須ではないですが ssh で作業した方が、なにかと便利なので設定しておきます。
+
+OS イメージを書き込んだドライブ直下に、ファイル名 ssh で空ファイルを作成します。
+
+Raspbian から作業する場合は、次のコマンドと等価です。
+
+#+BEGIN_SRC txt
+$ sudo touch /boot/ssh
+#+END_SRC
+
+
+Raspbian から作業するには、
+RaspberryPi に キーボードとディスプレイを接続する必要があるので、
+OS イメージ書き込み時にファイルを作成しておいた方が良いでしょう。
+
+
+これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。
+
+* apt パッケージ更新
+
+まずは apt パッケージを更新します。
+
+#+BEGIN_SRC txt
+$ sudo apt-get update
+$ sudo apt-get upgrade
+#+END_SRC
+
+これはお決まりのパターンなんで、特に理由がない限りやっておきます。
+
+* bluetooth 関連のパッケージ追加
+
+#+BEGIN_SRC txt
+$ sudo apt-get install bluez pulseaudio-module-bluetooth python-gobject python-gobject-2
+#+END_SRC
+
+このバージョンの OS イメージでは、
+bluez はインストール済みですが念のため指定しておきます。
+
+* Bluetooth の設定
+
+次のコマンドを実行します。
+
+#+BEGIN_SRC txt
+pi@raspberrypi:~$ sudo bluetoothctl
+[NEW] Controller XX:XX:XX:XX:XX:XX raspberrypi [default]
+#+END_SRC
+
+ここで show を入力し、 Bluetooth の情報を確認します。
+
+#+BEGIN_SRC txt
+show
+Controller XX:XX:XX:XX:XX:XX
+	Name: raspberrypi
+	Alias: raspberrypi
+	Class: 0x6c0000
+	Powered: yes
+	Discoverable: no
+	Pairable: yes
+	UUID: Headset AG                (00001112-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Generic Attribute Profile (00001801-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: A/V Remote Control        (0000110e-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Generic Access Profile    (00001800-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: PnP Information           (00001200-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: A/V Remote Control Target (0000110c-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Audio Sink                (0000110b-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Audio Source              (0000110a-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Handsfree                 (0000111e-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Handsfree Audio Gateway   (0000111f-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Headset                   (00001108-0000-1000-8000-XXXXXXXXXXXX)
+	Discovering: no
+#+END_SRC	
+
+上記出力で、UUID: Audio Sink が含まれていることを確認してください。
+これがないと A2DP で接続出来ません。
+
+最初に Raspbian の lite を使うと A2DP を認識しなかったと書きましたが、
+lite だとこの出力が次のようになっていました。
+
+#+BEGIN_SRC txt
+Controller XX:XX:XX:XX:XX:XX
+	Name: raspberrypi
+	Alias: raspberrypi
+	Class: 0x000000
+	Powered: yes
+	Discoverable: no
+	Pairable: yes
+	UUID: Generic Attribute Profile (00001801-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: A/V Remote Control        (0000110e-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: PnP Information           (00001200-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: Generic Access Profile    (00001800-0000-1000-8000-XXXXXXXXXXXX)
+	UUID: A/V Remote Control Target (0000110c-0000-1000-8000-XXXXXXXXXXXX)
+	Discovering: no
+#+END_SRC
+
+この症状を改善する方法を検索しましたが、
+Raspbian の with desktop を使う以外の方法を見つけられませんでした。
+
+** ペアリング方法
+
+Bluetooth を使用したことがあれば分かると思いますが、
+ペアリングは次のステップで行ないます。
+
+- Bluetooth service 側のデバイスをペアリング登録状態にする
+- Bluetooth client 側のデバイスで検索し、ペアリングする
+- ペアリングを認証する
+  
+以降では、ペアリングの登録と認証手順に分けて説明します。
+  
+*** ペアリング登録
+
+ペアリングを行なうには、service 側をペアリング登録状態にします。
+具体的には show コマンドで表示される次の状態を変更する必要があります。
+
+#+BEGIN_SRC txt
+	Powered: yes
+	Discoverable: no
+	Pairable: yes
+#+END_SRC
+	
+それぞれの状態を設定するには、次のコマンドを使用します。
+
+#+BEGIN_SRC txt
+  power <on/off>             Set controller power
+  pairable <on/off>          Set controller pairable mode
+  discoverable <on/off>      Set controller discoverable mode
+#+END_SRC  
+
+現状 discoverable だけ no になっているので、
+今回は discoverable on だけ実行します。
+
+#+BEGIN_SRC txt
+[bluetooth]# discoverable on
+#+END_SRC
+
+念のため再度 show を実行し、次のようになっていることを確認します。
+
+#+BEGIN_SRC txt
+	Powered: yes
+	Discoverable: yes
+	Pairable: yes
+#+END_SRC
+	
+この状態で、 client 側で検索し、ペアリングします。
+
+ペアリングすると、 discoverable が自動で off になりますが、
+念のため show コマンドで discoverable の状態を確認します。
+
+discoverable が on の状態だと新規にペアリングを登録可能なので、
+そのままだとセキュリティ上問題になります。
+必ず discoverable が off になっていることを確認してください。
+
+** ペアリングの認証
+
+ペアリングすると、次のように出力されます。
+
+#+BEGIN_SRC txt
+[CHG] Device XX:XX:XX:XX:XX:XX Connected: yes
+[CHG] Device XX:XX:XX:XX:XX:XX Connected: no
+#+END_SRC
+
+出力を見ると Connected が yes になった後に直ぐに no になっていることが分かります。
+
+これは、ペアリングが認証されていないため、
+接続を持続できずに切断していることを示します。
+
+そこで、次のコマンドでペアリングを認証します。
+
+#+BEGIN_SRC txt
+[bluetooth]# trust XX:XX:XX:XX:XX:XX
+#+END_SRC
+
+これでペアリングが認証され次のように表示されます。
+
+#+BEGIN_SRC txt
+[CHG] Device XX:XX:XX:XX:XX:XX Trusted: yes
+Changing XX:XX:XX:XX:XX:XX trust succeeded
+#+END_SRC
+
+この状態で再度 client 側から接続すると、接続が維持されます。
+
+以上でペアリング完了です。
+
+この状態になれば、リブート後も自動でペアリングされます。
+
+* audio source の確認
+
+ペアリング完了した状態で、次のコマンドを実行してください。
+
+$ pactl list sources short
+
+これで次のような出力がされます。
+
+#+BEGIN_SRC txt
+0	lsa_output.platform-soc_audio.analog-stereo.monitor	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED
+#+END_SRC
+
+これは、 Audio のソース一覧を出力するコマンドです。
+A2DP で接続すると、このリストに次のような情報が出力されると、
+ Web の解説ページには記載されていましたが、私の環境では表示されませんでした。
+
+#+BEGIN_SRC txt
+6	bluez_source.XX_XX_XX_XX_XX_XX.a2dp_source	module-bluez5-device.c	s16le 2ch 44100Hz	RUNNING
+#+END_SRC
+
+ここでは慌てず騒がず、
+client 側の Audio 出力設定を Bluetooth に切り替えて音楽を再生してから、
+再度上記コマンドを実行してください。
+
+どうでしょうか？ 出力されましたか？ まだ、出力されない？
+その人は、 client が A2DP ではなく Headset で再生されていると思われます。
+client 側の設定で出力を A2DP に変更してください。
+
+それでも駄目な場合、次のコマンドを実行してください。
+
+#+BEGIN_SRC txt
+$ sudo service bluetooth restart
+#+END_SRC
+
+これで出力される場合、 rc.local に次の処理を追加します。
+
+#+BEGIN_SRC txt
+sleep 10
+service bluetooth restart
+#+END_SRC
+
+対処療法でしかないですが、 自分の環境ではこれで正常に再生されるようになりました。
+
+Web には対応方法として、
+/etc/bluetooth/audio.conf の設定や、
+loadmodule のタイミング変更などが紹介されていましたが、
+私の環境では効果がありませんでした。
+
+* pulseaudio 出力先変更
+
+pulseaudio の出力先は、次のコマンドで確認できます。
+
+#+BEGIN_SRC txt
+$ pactl list sinks short
+0	alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	RUNNING
+1	alsa_output.platform-soc_audio.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED
+#+END_SRC
+
+デフォルトの出力先を変更する場合は、
+/etc/pulse/default.pa に出力先名を設定します。
+
+#+BEGIN_SRC txt
+set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
+#+END_SRC
+
+これでリブートすれば出力先が切り替わります。
+
+
+* WiFi を無効化
+
+Bluetooth は WiFi と干渉します。
+RaspberryPi3 の WiFi を有効にしていると、干渉ノイズが入ります。
+
+干渉ノイズが気になる場合は、WiFi を無効化します。
+
+WiFi 無効化は /boot/config.txt に次の設定を追加します。
+
+# WiFi off
+dtoverlay=pi3-disable-wifi
+
+
+* 参考
+
+- https://www.raspberrypi.org/forums/viewtopic.php?t=68779
+- https://qiita.com/yyano/items/802da53ad8a4a00d00e1  
