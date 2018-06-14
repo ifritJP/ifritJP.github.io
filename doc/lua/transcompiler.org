@@ -2,6 +2,9 @@
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <style type="text/css"> <!-- pre.src { color: #ffffff; background-color: #101010; } --> </style>
+
 
 #+TITLE: Lua のトランスコンパイラを考える
 
@@ -113,24 +116,23 @@ Lua は軽量で、かつ実行パフォーマンスも高い言語である。
 
 - int
   - 符号付き整数
-- int?
+- int_
   - nil を代入可能な int
 - real
   - 浮動少数点実数
-- real?
+- real_
   - nil を代入可能な real
 - string
   - 文字列 (Lua の文字列そのもの)
 - Array
-  - 配列( インデックスは 1 から )
+  - 配列( インデックスは 1 から。 Lua のシーケンスそのもの。 )
 - Map
-  - キーと値の関連付け
+  - キーと値の関連付け (Lua のテーブルそのもの。 )
 - func  
   - 関数
 - stem
   - 上記のいずれか何でもあり
   - Lua の変数そのもの
-
 
 *** 型変換
 
@@ -161,18 +163,16 @@ val@int
   - 実数から整数に変換
   - math.ceil() を呼ぶのと等価。
     
-なお、 int 型のデータは演算によって int の    
-    
 **** stem 型との型変換
 
 任意の型は stem 型と相互変換が可能。
 
 - 任意の型から stem 型に変換
-  - @type で明示せずに暗黙的に変換可能。
+  - @stem で明示せずに暗黙的に変換可能。
 - stem 型から任意の型に変換
   - @type で明示が必要。
-  - このとき、変換した元の値が何の型だったかは判断しない。
-  - 型が不一致した時の動作は未定義
+  - このとき、変換元の値が何の型だったかは判断しない。
+  - 変換元の値の型と変換先の型が不一致した時の動作は未定義
 
 ** コメント
 
@@ -182,17 +182,45 @@ Lua と同じ書式をサポートする。
 
 数値表現は Lua と同じものを採用する。
 
+*** 演算
+
+数値の演算は Lua と同じものを採用する。
+
+int と int の演算結果は int になる。
+real ど real の演算結果は real になる。
+int と real の演算結果は real になる。
+
+ただし、 int と int の演算結果が int の範囲外になった場合、
+Lua の場合は real になるが、C の場合は int になる。
+Lua の演算結果を int に強制する場合は @int すること。
+
+stem 型のデータは、そのままでは演算できないので、
+@int や @real で型変換後に演算する。
+
+
+#+BEGIN_SRC txt
+defun add1( val: stem ) : int {
+  return val@int + 1;
+}
+#+END_SRC
+
+
+
 ** 文字列
 
 文字列表現は Lua と同じものを採用する。
 
-Python と同じ format 書式を採用する。
+また、Python と同じ format 書式を採用する。
 
 #+BEGIN_SRC txt
 "10 + %s = %d" %["1", 11] -- "10 + 1 = 11"
 #+END_SRC
 
 ただし、複数の引数は [] で指定する。
+
+*** 文字列連結
+
+文字列連結は Lua と同じ .. とする。    
 
 ** 変数宣言
 
@@ -256,6 +284,8 @@ let val : Map<int,string>;
 
 Lua と同じ制御文(if,while,for,repeat)をサポートする。
 
+Lua と同様に、continue はない。
+
 *** if
 
 #+BEGIN_SRC txt
@@ -284,8 +314,6 @@ repeat {
 while, repeat は Lua と同じ構文とする。
 ただし、ブロックは {} で宣言する。このブロックは必須である。
 C のようにブロックを宣言せずに 1 文だけ書くことはできない。
-
-Lua と同様 continue もない。
 
 *** for
 
@@ -345,7 +373,7 @@ end
 
 可変長引数は Lua の ... を利用する。
 
-なお、 ... の値は stem 型として扱う。
+なお、 ... の各値は stem 型として扱う。
 
 #+BEGIN_SRC txt
 defun hoge( ... ) : stem
@@ -371,7 +399,7 @@ end
   - ただし、コンストラクタは例外。
 
 #+BEGIN_SRC txt
-declass hoge : super {
+declass Hoge : super {
   pri let val : int { pub, pri };
   pub __init( arglist ) {
     super( arglist );
@@ -490,3 +518,23 @@ hoge.func();
 whitelist として、公開するメソッド名を列挙できる。
 whitelist を指定しない場合は、全ての mut メソッドを公開する。
 アクセス制御は、元のメソッドと同じ。
+
+advertise で公開する wrapper メソッドと同名のメソッドが既にある場合は、
+既存のメソッドを優先する。
+
+
+*** メソッド 呼び出し
+
+メソッド呼び出しは、次のように行なう。
+
+#+BEGIN_SRC cpp
+Hoge hoge;
+hoge.func();
+Hoge.sub();
+#+END_SRC
+
+クラスメソッドは、 *クラス.メソッド()* 。
+メソッドは、 *インスタンス.メソッド()* 。
+
+Lua のような : と . の使い分けではなく、どちらも . を利用する。
+
