@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Lua のトランスコンパイラを考える (LuneScript)</title>
-<!-- 2018-06-18 月 22:46 -->
+<!-- 2018-06-20 水 00:04 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="ifritJP" />
@@ -190,10 +190,11 @@ for the JavaScript code in this tag.
 </li>
 <li><a href="#sec-5-8">5.8. 関数宣言</a>
 <ul>
-<li><a href="#sec-5-8-1">5.8.1. 可変長引数</a></li>
-<li><a href="#sec-5-8-2">5.8.2. form</a></li>
-<li><a href="#sec-5-8-3">5.8.3. クロージャ</a></li>
-<li><a href="#sec-5-8-4">5.8.4. 関数コール</a></li>
+<li><a href="#sec-5-8-1">5.8.1. デフォルト値</a></li>
+<li><a href="#sec-5-8-2">5.8.2. 可変長引数</a></li>
+<li><a href="#sec-5-8-3">5.8.3. form</a></li>
+<li><a href="#sec-5-8-4">5.8.4. クロージャ</a></li>
+<li><a href="#sec-5-8-5">5.8.5. 関数コール</a></li>
 </ul>
 </li>
 <li><a href="#sec-5-9">5.9. クラス宣言</a>
@@ -668,7 +669,22 @@ Lua と同じ書式をサポートする。
 <p>
 数値表現は Lua と同じものを採用する。
 </p>
+
+<p>
+追加で ASCII の文字コード表現を可能とする。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-txt">let val : int = ?a;  -- 0x61
+</pre>
 </div>
+
+<p>
+上記のように <code>?</code> に続く文字を ACSII コードに展開する。
+</p>
+</div>
+
 
 <div id="outline-container-sec-5-4-1" class="outline-4">
 <h4 id="sec-5-4-1"><span class="section-number-4">5.4.1</span> 演算</h4>
@@ -791,9 +807,14 @@ LuneScript は値の生存期間を所有権とライフタイムで管理する
 所有権とライフタイムは Rust を参考にする。
 </p>
 
-<p>
-syntax は Rust に準ずる。
-</p>
+<div class="org-src-container">
+
+<pre class="src src-txt">let owner: int;
+let mut borrow: int;
+let &amp; ref: int;
+</pre>
+</div>
+
 
 <p>
 次の値は、所有権は移動せずにコピーされる。
@@ -803,8 +824,6 @@ syntax は Rust に準ずる。
 <li>数値型
 </li>
 <li>func
-</li>
-<li>stem  
 </li>
 </ul>
 
@@ -819,10 +838,11 @@ syntax は Rust に準ずる。
 </li>
 <li>Map
 </li>
+<li>stem  
+</li>
 </ul>
 </div>
 </div>
-
 
 <div id="outline-container-sec-5-6-2" class="outline-4">
 <h4 id="sec-5-6-2"><span class="section-number-4">5.6.2</span> 代入</h4>
@@ -916,7 +936,7 @@ Map 型のデータは、次のように指定する。
 
 <div class="org-src-container">
 
-<pre class="src src-txt">{  "a" = 1, "b" = 2, "c" = 3, "d" = 4, "e" = 5 } -- Map&lt;str,int&gt;
+<pre class="src src-txt">{  "a": 1, "b": 2, "c": 3, "d": 4, "e": 5 } -- Map&lt;str,int&gt;
 </pre>
 </div>
 </div>
@@ -1095,8 +1115,26 @@ end
 </div>
 
 <div id="outline-container-sec-5-8-1" class="outline-4">
-<h4 id="sec-5-8-1"><span class="section-number-4">5.8.1</span> 可変長引数</h4>
+<h4 id="sec-5-8-1"><span class="section-number-4">5.8.1</span> デフォルト値</h4>
 <div class="outline-text-4" id="text-5-8-1">
+<p>
+実引数が省略された場合のデフォルト値を指定できる。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-txt">fn func( val1: int, val2: int = 1 ) : int
+  return val1 + val2;
+end
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-sec-5-8-2" class="outline-4">
+<h4 id="sec-5-8-2"><span class="section-number-4">5.8.2</span> 可変長引数</h4>
+<div class="outline-text-4" id="text-5-8-2">
 <p>
 可変長引数は Lua の &#x2026; を利用する。
 </p>
@@ -1125,9 +1163,9 @@ end
 </div>
 </div>
 
-<div id="outline-container-sec-5-8-2" class="outline-4">
-<h4 id="sec-5-8-2"><span class="section-number-4">5.8.2</span> form</h4>
-<div class="outline-text-4" id="text-5-8-2">
+<div id="outline-container-sec-5-8-3" class="outline-4">
+<h4 id="sec-5-8-3"><span class="section-number-4">5.8.3</span> form</h4>
+<div class="outline-text-4" id="text-5-8-3">
 <p>
 form によって、関数の型を定義する。
 </p>
@@ -1167,9 +1205,9 @@ form によって、関数の型を定義する。
 </div>
 </div>
 
-<div id="outline-container-sec-5-8-3" class="outline-4">
-<h4 id="sec-5-8-3"><span class="section-number-4">5.8.3</span> クロージャ</h4>
-<div class="outline-text-4" id="text-5-8-3">
+<div id="outline-container-sec-5-8-4" class="outline-4">
+<h4 id="sec-5-8-4"><span class="section-number-4">5.8.4</span> クロージャ</h4>
+<div class="outline-text-4" id="text-5-8-4">
 <p>
 クロージャの動作は Lua と同じ。
 </p>
@@ -1181,9 +1219,9 @@ form によって、関数の型を定義する。
 </div>
 
 
-<div id="outline-container-sec-5-8-4" class="outline-4">
-<h4 id="sec-5-8-4"><span class="section-number-4">5.8.4</span> 関数コール</h4>
-<div class="outline-text-4" id="text-5-8-4">
+<div id="outline-container-sec-5-8-5" class="outline-4">
+<h4 id="sec-5-8-5"><span class="section-number-4">5.8.5</span> 関数コール</h4>
+<div class="outline-text-4" id="text-5-8-5">
 <p>
 関数コールは Lua と同じ。
 </p>
@@ -1229,7 +1267,7 @@ form によって、関数の型を定義する。
 
 <div class="org-src-container">
 
-<pre class="src src-txt">class pub Hoge : super {
+<pre class="src src-txt">class pub Hoge : superClass {
   pri let val : int { pub, pri };
   pub __init( arglist ) {
     super( arglist );
@@ -1591,7 +1629,7 @@ wrap 内の Syntax は、class と同じ。
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2018-06-18 月 22:46</p>
+<p class="date">Created: 2018-06-20 水 00:04</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode N/A-fixup)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

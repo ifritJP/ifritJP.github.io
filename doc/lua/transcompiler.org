@@ -214,6 +214,15 @@ Lua と同じ書式をサポートする。
 
 数値表現は Lua と同じものを採用する。
 
+追加で ASCII の文字コード表現を可能とする。
+
+#+BEGIN_SRC txt
+let val : int = ?a;  -- 0x61
+#+END_SRC
+
+上記のように ~?~ に続く文字を ACSII コードに展開する。
+
+
 *** 演算
 
 数値の演算は Lua と同じものを採用する。
@@ -284,20 +293,24 @@ let の後に global を指定すると、VM 内でグローバルな変数と�
 LuneScript は値の生存期間を所有権とライフタイムで管理する。
 所有権とライフタイムは Rust を参考にする。
 
-syntax は Rust に準ずる。
+#+BEGIN_SRC txt
+let owner: int;
+let mut borrow: int;
+let & ref: int;
+#+END_SRC
+
 
 次の値は、所有権は移動せずにコピーされる。
 
 - 数値型
 - func
-- stem  
   
 次の値は、所有権の移動となる。
 
 - str
 - Array
 - Map
-
+- stem  
 
 *** 代入
 
@@ -352,7 +365,7 @@ Map 型のデータアクセスは Lua と同じ。
 Map 型のデータは、次のように指定する。
 
 #+BEGIN_SRC txt
-{  "a" = 1, "b" = 2, "c" = 3, "d" = 4, "e" = 5 } -- Map<str,int>
+{  "a": 1, "b": 2, "c": 3, "d": 4, "e": 5 } -- Map<str,int>
 #+END_SRC
 
 ** 制御文
@@ -459,6 +472,17 @@ end
 
 ただし、table.unpack() は利用可能。
 
+*** デフォルト値
+
+実引数が省略された場合のデフォルト値を指定できる。
+
+#+BEGIN_SRC txt
+fn func( val1: int, val2: int = 1 ) : int
+  return val1 + val2;
+end
+#+END_SRC
+
+
 *** 可変長引数
 
 可変長引数は Lua の ... を利用する。
@@ -531,7 +555,7 @@ fn sub( func: &add ): int {
   - ただし、コンストラクタは例外。
 
 #+BEGIN_SRC txt
-class pub Hoge : super {
+class pub Hoge : superClass {
   pri let val : int { pub, pri };
   pub __init( arglist ) {
     super( arglist );
