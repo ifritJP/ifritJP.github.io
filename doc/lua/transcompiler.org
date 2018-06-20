@@ -296,7 +296,8 @@ let val: int;
 ただし、最上位のスコープに定義することで、
 そのモジュール内でグローバルなデータとなる。
 
-let の後に global を指定すると、VM 内でグローバルな変数となる。
+最上位のスコープに定義する変数の let の後に global を指定すると、
+VM 内でグローバルな変数となる。
 ただし登録されるのは、この宣言を含むモジュールを import したタイミングとなる。
 
 
@@ -492,6 +493,7 @@ name は省略可能。
 ただし公開可能な関数は、最上位のスコープで定義した関数でなければならない。
 例えば if や while 等のブロック内で定義した関数は、公開できない。
 
+最上位のスコープに定義する関数において、
 pub の代わりに global を指定すると、VM 内でグローバルとなる。
 ただし登録されるのは、この宣言を含むモジュールを import したタイミングとなる。
 
@@ -597,7 +599,7 @@ fn sub( func: &add ): int {
 
 #+BEGIN_SRC txt
 class pub Hoge : superClass {
-  pri let val : int { pub, pri };
+  let pri val : int { pub, pri };
   pub __init( arglist ) {
     super( arglist );
   }
@@ -608,7 +610,7 @@ class pub Hoge : superClass {
   pub static sub( arglist ) : retTypeList {
   }
 
-  pri let data : Other;
+  let pri data : Other;
   advertise data prefix { whitelist };
 }
 #+END_SRC
@@ -632,7 +634,7 @@ static を付けることで、クラスメソッド、クラスメンバとな�
 宣言箇所にはアクセス権限(pub/pro/pri)を指定する。
 
 #+BEGIN_SRC txt
-  pri let val : int { pub, pri };
+  let pri val : int { pub, pri };
 #+END_SRC
 
 例えば上記の場合、
@@ -811,3 +813,105 @@ wrap 内の Syntax は、class と同じ。
 あくまでも型を宣言するだけである。
 
 なお変換後の Lua では、 wrap によるパフォーマンス低下はない。
+
+* EBNF
+
+LuneScript の Syntax の EBNF を示す。
+  
+#+BEGIN_SRC txt
+
+chunk ::= block
+
+block ::= {stat} [retstat]
+
+stat ::=  ';' |
+	 'let' ['pub' | 'global'] varlist '=' explist ';'|
+	 classdef |
+	 functioncall ';'|
+	 'break' ';'|
+	 '{' block '}' |
+	 'while' exp '{' block '}'|
+	 'repeat' '{' block '}' exp ';'|
+	 'if' exp '{' block {elseif exp '{' block '}' } [else '{' block] '}' |
+	 'for' Name '=' exp ',' exp [',' exp] '{' block '}' |
+	 'each' namelist 'in' explist '{' block '}' |
+	 functiondef
+
+classdef ::= 'class' ['pub'] Name [ ':' Name ] '{' classfieldlist '}'
+
+classfieldlist ::= { memberdef } { methoddef } { advertisedef }
+
+memberdef ::= 'let' ['static'] ['pub' | 'global'] var [ '{' accessor }' ] ';'
+
+accessor ::= accessorctrl | accessorctrl ',' accessorctrl
+
+accessorctrl ::= 'pub' | 'pri'
+
+methoddef ::= ['static'] accessctrl Name funcbody
+
+accessctrl ::= 'pub' | 'pri' | 'pro'
+
+advertisedef ::= 'advertise' Name Name [ '{' [whitelist] '}' ] ';'
+
+whitelist ::= Name { ',' Name }
+
+retstat ::= 'return' [explist] ';'
+
+varlist ::= var {',' var}
+
+var ::=  Name [':' Type]
+
+namelist ::= Name {',' Name}
+
+explist ::= exp {',' exp}
+
+exp ::=  literal | '...' | functiondef |
+
+	 prefixexp | tableconstructor | listconstructor | arrayconstructor | exp binop exp | unop exp
+
+literal ::= 'nil' | 'false' | 'true' | Numeral | LiteralString | enumVal
+
+prefixexp ::= var | functioncall | '(' exp ')'
+
+functioncall ::=  prefixexp args | prefixexp ':' Name args
+
+args ::=  '(' [explist] ')' | tableconstructor | listconstructor |
+          arrayconstructor | LiteralString
+
+functiondef ::= fn ['pub' | 'global'] funcbody
+
+funcbody ::= '(' [parlist] ')' [':' typelist ] '{' block '}'
+
+parlist ::= namelist [',' '...'] | '...'
+
+typelist ::= Type {',' Type}
+
+Type ::= ['&'] ['mut'] typeName ['[]' | '[@]']
+
+typeName ::= userTypeName | builtInTypeName
+
+builtInTypeName ::= 'int' | 'int_' | 'real' | 'real_' | 'enum' |
+                    'str' | mapType | 'func' | 'stem'
+
+mapType ::= 'Map' '<' type ',' type '>'
+
+tableconstructor ::= '{' [fieldlist] '}'
+
+arrayconstructor ::= '[@' [fieldlist | literal ':' Numeral ] ']'
+
+listconstructor ::= '[' [fieldlist] ']'
+
+fieldlist ::= field {fieldsep field} [fieldsep]
+
+field ::= '[' exp ']' ':' exp | Name ':' exp | exp
+
+fieldsep ::= ',' | ';'
+
+binop ::=  '+' | '-' | '*' | '/' | '//' | '^' | '%' |
+	 '&' | '~' | '|' | '>>' | '<<' | '..' |
+	 '<' | '<=' | '>' | '>=' | '==' | '~=' |
+	 'and' | 'or' | '@'
+
+unop ::= '-' | not | '#' | '~' | '?' | '*'
+
+#+END_SRC

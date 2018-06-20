@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Lua のトランスコンパイラを考える (LuneScript)</title>
-<!-- 2018-06-20 水 00:56 -->
+<!-- 2018-06-20 水 19:53 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="ifritJP" />
@@ -218,6 +218,7 @@ for the JavaScript code in this tag.
 </li>
 </ul>
 </li>
+<li><a href="#sec-6">6. EBNF</a></li>
 </ul>
 </div>
 </div>
@@ -823,7 +824,8 @@ let に続けて変数名を指定する。
 </p>
 
 <p>
-let の後に global を指定すると、VM 内でグローバルな変数となる。
+最上位のスコープに定義する変数の let の後に global を指定すると、
+VM 内でグローバルな変数となる。
 ただし登録されるのは、この宣言を含むモジュールを import したタイミングとなる。
 </p>
 </div>
@@ -1159,6 +1161,7 @@ name は省略可能。
 </p>
 
 <p>
+最上位のスコープに定義する関数において、
 pub の代わりに global を指定すると、VM 内でグローバルとなる。
 ただし登録されるのは、この宣言を含むモジュールを import したタイミングとなる。
 </p>
@@ -1348,7 +1351,7 @@ form によって、関数の型を定義する。
 <div class="org-src-container">
 
 <pre class="src src-txt">class pub Hoge : superClass {
-  pri let val : int { pub, pri };
+  let pri val : int { pub, pri };
   pub __init( arglist ) {
     super( arglist );
   }
@@ -1359,7 +1362,7 @@ form によって、関数の型を定義する。
   pub static sub( arglist ) : retTypeList {
   }
 
-  pri let data : Other;
+  let pri data : Other;
   advertise data prefix { whitelist };
 }
 </pre>
@@ -1399,7 +1402,7 @@ static を付けることで、クラスメソッド、クラスメンバとな�
 
 <div class="org-src-container">
 
-<pre class="src src-txt">pri let val : int { pub, pri };
+<pre class="src src-txt">let pri val : int { pub, pri };
 </pre>
 </div>
 
@@ -1706,10 +1709,117 @@ wrap 内の Syntax は、class と同じ。
 </div>
 </div>
 </div>
+
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6"><span class="section-number-2">6</span> EBNF</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+LuneScript の Syntax の EBNF を示す。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-txt">chunk ::= block
+
+block ::= {stat} [retstat]
+
+stat ::=  ';' |
+	 'let' ['pub' | 'global'] varlist '=' explist ';'|
+	 classdef |
+	 functioncall ';'|
+	 'break' ';'|
+	 '{' block '}' |
+	 'while' exp '{' block '}'|
+	 'repeat' '{' block '}' exp ';'|
+	 'if' exp '{' block {elseif exp '{' block '}' } [else '{' block] '}' |
+	 'for' Name '=' exp ',' exp [',' exp] '{' block '}' |
+	 'each' namelist 'in' explist '{' block '}' |
+	 functiondef
+
+classdef ::= 'class' ['pub'] Name [ ':' Name ] '{' classfieldlist '}'
+
+classfieldlist ::= { memberdef } { methoddef } { advertisedef }
+
+memberdef ::= 'let' ['static'] ['pub' | 'global'] var [ '{' accessor }' ] ';'
+
+accessor ::= accessorctrl | accessorctrl ',' accessorctrl
+
+accessorctrl ::= 'pub' | 'pri'
+
+methoddef ::= ['static'] accessctrl Name funcbody
+
+accessctrl ::= 'pub' | 'pri' | 'pro'
+
+advertisedef ::= 'advertise' Name Name [ '{' [whitelist] '}' ] ';'
+
+whitelist ::= Name { ',' Name }
+
+retstat ::= 'return' [explist] ';'
+
+varlist ::= var {',' var}
+
+var ::=  Name [':' Type]
+
+namelist ::= Name {',' Name}
+
+explist ::= exp {',' exp}
+
+exp ::=  literal | '...' | functiondef |
+
+	 prefixexp | tableconstructor | listconstructor | arrayconstructor | exp binop exp | unop exp
+
+literal ::= 'nil' | 'false' | 'true' | Numeral | LiteralString | enumVal
+
+prefixexp ::= var | functioncall | '(' exp ')'
+
+functioncall ::=  prefixexp args | prefixexp ':' Name args
+
+args ::=  '(' [explist] ')' | tableconstructor | listconstructor |
+	  arrayconstructor | LiteralString
+
+functiondef ::= fn ['pub' | 'global'] funcbody
+
+funcbody ::= '(' [parlist] ')' [':' typelist ] '{' block '}'
+
+parlist ::= namelist [',' '...'] | '...'
+
+typelist ::= Type {',' Type}
+
+Type ::= ['&amp;'] ['mut'] typeName ['[]' | '[@]']
+
+typeName ::= userTypeName | builtInTypeName
+
+builtInTypeName ::= 'int' | 'int_' | 'real' | 'real_' | 'enum' |
+		    'str' | mapType | 'func' | 'stem'
+
+mapType ::= 'Map' '&lt;' type ',' type '&gt;'
+
+tableconstructor ::= '{' [fieldlist] '}'
+
+arrayconstructor ::= '[@' [fieldlist | literal ':' Numeral ] ']'
+
+listconstructor ::= '[' [fieldlist] ']'
+
+fieldlist ::= field {fieldsep field} [fieldsep]
+
+field ::= '[' exp ']' ':' exp | Name ':' exp | exp
+
+fieldsep ::= ',' | ';'
+
+binop ::=  '+' | '-' | '*' | '/' | '//' | '^' | '%' |
+	 '&amp;' | '~' | '|' | '&gt;&gt;' | '&lt;&lt;' | '..' |
+	 '&lt;' | '&lt;=' | '&gt;' | '&gt;=' | '==' | '~=' |
+	 'and' | 'or' | '@'
+
+unop ::= '-' | not | '#' | '~' | '?' | '*'
+</pre>
+</div>
+</div>
+</div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2018-06-20 水 00:56</p>
+<p class="date">Created: 2018-06-20 水 19:53</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode N/A-fixup)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
