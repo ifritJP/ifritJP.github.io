@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Lua のトランスコンパイラを考える (LuneScript)</title>
-<!-- 2018-06-20 水 19:53 -->
+<!-- 2018-06-21 木 23:10 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="ifritJP" />
@@ -161,7 +161,7 @@ for the JavaScript code in this tag.
 </li>
 <li><a href="#sec-5-2">5.2. コメント</a></li>
 <li><a href="#sec-5-3">5.3. 演算子</a></li>
-<li><a href="#sec-5-4">5.4. 数値</a>
+<li><a href="#sec-5-4">5.4. 数値リテラル</a>
 <ul>
 <li><a href="#sec-5-4-1">5.4.1. 演算</a></li>
 </ul>
@@ -206,7 +206,8 @@ for the JavaScript code in this tag.
 <li><a href="#sec-5-10-3">5.10.3. コンストラクタ</a></li>
 <li><a href="#sec-5-10-4">5.10.4. デストラクタ</a></li>
 <li><a href="#sec-5-10-5">5.10.5. advertise</a></li>
-<li><a href="#sec-5-10-6">5.10.6. メソッド 呼び出し</a></li>
+<li><a href="#sec-5-10-6">5.10.6. trust</a></li>
+<li><a href="#sec-5-10-7">5.10.7. メソッド 呼び出し</a></li>
 </ul>
 </li>
 <li><a href="#sec-5-11">5.11. モジュール</a>
@@ -686,11 +687,18 @@ Lua と同じ書式をサポートする。
 
 
 <div id="outline-container-sec-5-4" class="outline-3">
-<h3 id="sec-5-4"><span class="section-number-3">5.4</span> 数値</h3>
+<h3 id="sec-5-4"><span class="section-number-3">5.4</span> 数値リテラル</h3>
 <div class="outline-text-3" id="text-5-4">
 <p>
-数値表現は Lua と同じものを採用する。
+数値リテラルは C89 ライクなものを採用する。
 </p>
+
+<ul class="org-ul">
+<li>整数は 10 進数と 16 進数表現をサポート
+</li>
+<li>実数は 10 進数と e による指数表現。
+</li>
+</ul>
 
 <p>
 追加で ASCII の文字コード表現を可能とする。
@@ -706,7 +714,6 @@ Lua と同じ書式をサポートする。
 上記のように <code>?</code> に続く文字を ACSII コードに展開する。
 </p>
 </div>
-
 
 <div id="outline-container-sec-5-4-1" class="outline-4">
 <h4 id="sec-5-4-1"><span class="section-number-4">5.4.1</span> 演算</h4>
@@ -1179,12 +1186,12 @@ pub の代わりに global を指定すると、VM 内でグローバルとな�
 
 <div class="org-src-container">
 
-<pre class="src src-txt">fn plus( val1: int, val2: int ) : int
+<pre class="src src-txt">fn plus( val1: int, val2: int ) : int {
   return val1 + val2;
-end
-fn plus1( val1: int, val2: int ) : int, int
+}
+fn plus1( val1: int, val2: int ) : int, int {
   return val1 + 1, val2 + 1;
-end
+}
 </pre>
 </div>
 
@@ -1206,9 +1213,9 @@ end
 
 <div class="org-src-container">
 
-<pre class="src src-txt">fn func( val1: int, val2: int = 1 ) : int
+<pre class="src src-txt">fn func( val1: int, val2: int = 1 ) : int {
   return val1 + val2;
-end
+}
 </pre>
 </div>
 </div>
@@ -1228,10 +1235,10 @@ end
 
 <div class="org-src-container">
 
-<pre class="src src-txt">fn hoge( ... ) : stem
+<pre class="src src-txt">fn hoge( ... ) : stem {
   let val: stem = ...;
   return val;
-end
+}
 </pre>
 </div>
 
@@ -1364,6 +1371,8 @@ form によって、関数の型を定義する。
 
   let pri data : Other;
   advertise data prefix { whitelist };
+
+  trust ClassB { list };
 }
 </pre>
 </div>
@@ -1562,10 +1571,37 @@ advertise で公開する wrapper メソッドと同名のメソッドが既に�
 </div>
 </div>
 
-
 <div id="outline-container-sec-5-10-6" class="outline-4">
-<h4 id="sec-5-10-6"><span class="section-number-4">5.10.6</span> メソッド 呼び出し</h4>
+<h4 id="sec-5-10-6"><span class="section-number-4">5.10.6</span> trust</h4>
 <div class="outline-text-4" id="text-5-10-6">
+<p>
+pub 以外のメンバ、メソッドは外部モジュールからはアクセスできない。
+</p>
+
+<p>
+特定クラスに対してこの制限を解除するのが trust である。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-txt">trust ClassB { list };
+</pre>
+</div>
+
+<p>
+truct に指定したクラスからは、pri, pro の情報にアクセスできる。
+</p>
+
+<p>
+公開する pri, pro を制限する場合、list に公開するシンボル名を指定する。
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-sec-5-10-7" class="outline-4">
+<h4 id="sec-5-10-7"><span class="section-number-4">5.10.7</span> メソッド 呼び出し</h4>
+<div class="outline-text-4" id="text-5-10-7">
 <p>
 メソッド呼び出しは、次のように行なう。
 </p>
@@ -1724,6 +1760,7 @@ LuneScript の Syntax の EBNF を示す。
 block ::= {stat} [retstat]
 
 stat ::=  ';' |
+	 exp ';' | 
 	 'let' ['pub' | 'global'] varlist '=' explist ';'|
 	 classdef |
 	 functioncall ';'|
@@ -1738,7 +1775,7 @@ stat ::=  ';' |
 
 classdef ::= 'class' ['pub'] Name [ ':' Name ] '{' classfieldlist '}'
 
-classfieldlist ::= { memberdef } { methoddef } { advertisedef }
+classfieldlist ::= { memberdef } { methoddef } { advertisedef } { trust }
 
 memberdef ::= 'let' ['static'] ['pub' | 'global'] var [ '{' accessor }' ] ';'
 
@@ -1753,6 +1790,8 @@ accessctrl ::= 'pub' | 'pri' | 'pro'
 advertisedef ::= 'advertise' Name Name [ '{' [whitelist] '}' ] ';'
 
 whitelist ::= Name { ',' Name }
+
+trust ::= 'trust' Name [ '{' [whitelist] '}' ] ';'
 
 retstat ::= 'return' [explist] ';'
 
@@ -1781,7 +1820,11 @@ functiondef ::= fn ['pub' | 'global'] funcbody
 
 funcbody ::= '(' [parlist] ')' [':' typelist ] '{' block '}'
 
-parlist ::= namelist [',' '...'] | '...'
+parlist ::= [ arglist ] [',' '...'] | '...'
+
+arglist ::= arg { ',' arg }
+
+arg ::= Name : Type
 
 typelist ::= Type {',' Type}
 
@@ -1796,15 +1839,13 @@ mapType ::= 'Map' '&lt;' type ',' type '&gt;'
 
 tableconstructor ::= '{' [fieldlist] '}'
 
-arrayconstructor ::= '[@' [fieldlist | literal ':' Numeral ] ']'
+arrayconstructor ::= '[@' [explist | literal ':' Numeral ] [ ',' ] ']'
 
-listconstructor ::= '[' [fieldlist] ']'
+listconstructor ::= '[' [ explist ] [ ',' ] ']'
 
-fieldlist ::= field {fieldsep field} [fieldsep]
+fieldlist ::= field {',' field} [,]
 
 field ::= '[' exp ']' ':' exp | Name ':' exp | exp
-
-fieldsep ::= ',' | ';'
 
 binop ::=  '+' | '-' | '*' | '/' | '//' | '^' | '%' |
 	 '&amp;' | '~' | '|' | '&gt;&gt;' | '&lt;&lt;' | '..' |
@@ -1819,7 +1860,7 @@ unop ::= '-' | not | '#' | '~' | '?' | '*'
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2018-06-20 水 19:53</p>
+<p class="date">Created: 2018-06-21 木 23:10</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode N/A-fixup)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

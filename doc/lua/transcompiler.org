@@ -218,9 +218,12 @@ Lua と同じ書式をサポートする。
 ただし、 Lua のメソッド呼び出しで利用する : は使用しない。
 
 
-** 数値
+** 数値リテラル
 
-数値表現は Lua と同じものを採用する。
+数値リテラルは C89 ライクなものを採用する。
+
+- 整数は 10 進数と 16 進数表現をサポート
+- 実数は 10 進数と e による指数表現。
 
 追加で ASCII の文字コード表現を可能とする。
 
@@ -229,7 +232,6 @@ let val : int = ?a;  -- 0x61
 #+END_SRC
 
 上記のように ~?~ に続く文字を ACSII コードに展開する。
-
 
 *** 演算
 
@@ -503,12 +505,12 @@ pub の代わりに global を指定すると、VM 内でグローバルとな�
 - 演算子オーバーロードをサポートしない
 
 #+BEGIN_SRC txt
-fn plus( val1: int, val2: int ) : int
+fn plus( val1: int, val2: int ) : int {
   return val1 + val2;
-end
-fn plus1( val1: int, val2: int ) : int, int
+}
+fn plus1( val1: int, val2: int ) : int, int {
   return val1 + 1, val2 + 1;
-end
+}
 #+END_SRC
 
 可変長の値を返す関数は宣言できない。
@@ -520,9 +522,9 @@ end
 実引数が省略された場合のデフォルト値を指定できる。
 
 #+BEGIN_SRC txt
-fn func( val1: int, val2: int = 1 ) : int
+fn func( val1: int, val2: int = 1 ) : int {
   return val1 + val2;
-end
+}
 #+END_SRC
 
 
@@ -533,10 +535,10 @@ end
 なお、 ... の各値は stem 型として扱う。
 
 #+BEGIN_SRC txt
-fn hoge( ... ) : stem
+fn hoge( ... ) : stem {
   let val: stem = ...;
   return val;
-end
+}
 #+END_SRC
 
 例えば、上記関数は引数に与えらえた第一引数を return するが、
@@ -612,6 +614,8 @@ class pub Hoge : superClass {
 
   let pri data : Other;
   advertise data prefix { whitelist };
+
+  trust ClassB { list };
 }
 #+END_SRC
 
@@ -731,6 +735,20 @@ advertise で自動で展開した wrapper メソッドのアクセス制御は�
 advertise で公開する wrapper メソッドと同名のメソッドが既にある場合は、
 既存のメソッドを優先する。
 
+*** trust
+
+pub 以外のメンバ、メソッドは外部モジュールからはアクセスできない。
+
+特定クラスに対してこの制限を解除するのが trust である。
+    
+#+BEGIN_SRC txt
+trust ClassB { list };
+#+END_SRC
+
+truct に指定したクラスからは、pri, pro の情報にアクセスできる。
+
+公開する pri, pro を制限する場合、list に公開するシンボル名を指定する。
+
 
 *** メソッド 呼び出し
 
@@ -825,6 +843,7 @@ chunk ::= block
 block ::= {stat} [retstat]
 
 stat ::=  ';' |
+         exp ';' | 
 	 'let' ['pub' | 'global'] varlist '=' explist ';'|
 	 classdef |
 	 functioncall ';'|
@@ -839,7 +858,7 @@ stat ::=  ';' |
 
 classdef ::= 'class' ['pub'] Name [ ':' Name ] '{' classfieldlist '}'
 
-classfieldlist ::= { memberdef } { methoddef } { advertisedef }
+classfieldlist ::= { memberdef } { methoddef } { advertisedef } { trust }
 
 memberdef ::= 'let' ['static'] ['pub' | 'global'] var [ '{' accessor }' ] ';'
 
@@ -854,6 +873,8 @@ accessctrl ::= 'pub' | 'pri' | 'pro'
 advertisedef ::= 'advertise' Name Name [ '{' [whitelist] '}' ] ';'
 
 whitelist ::= Name { ',' Name }
+
+trust ::= 'trust' Name [ '{' [whitelist] '}' ] ';'
 
 retstat ::= 'return' [explist] ';'
 
@@ -882,7 +903,11 @@ functiondef ::= fn ['pub' | 'global'] funcbody
 
 funcbody ::= '(' [parlist] ')' [':' typelist ] '{' block '}'
 
-parlist ::= namelist [',' '...'] | '...'
+parlist ::= [ arglist ] [',' '...'] | '...'
+
+arglist ::= arg { ',' arg }
+
+arg ::= Name : Type
 
 typelist ::= Type {',' Type}
 
@@ -897,15 +922,13 @@ mapType ::= 'Map' '<' type ',' type '>'
 
 tableconstructor ::= '{' [fieldlist] '}'
 
-arrayconstructor ::= '[@' [fieldlist | literal ':' Numeral ] ']'
+arrayconstructor ::= '[@' [explist | literal ':' Numeral ] [ ',' ] ']'
 
-listconstructor ::= '[' [fieldlist] ']'
+listconstructor ::= '[' [ explist ] [ ',' ] ']'
 
-fieldlist ::= field {fieldsep field} [fieldsep]
+fieldlist ::= field {',' field} [,]
 
 field ::= '[' exp ']' ':' exp | Name ':' exp | exp
-
-fieldsep ::= ',' | ';'
 
 binop ::=  '+' | '-' | '*' | '/' | '//' | '^' | '%' |
 	 '&' | '~' | '|' | '>>' | '<<' | '..' |
