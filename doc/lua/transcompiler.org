@@ -164,6 +164,18 @@ LuneScript の要件を挙げる
   - 上記のいずれか何でもあり
   - Lua の変数そのもの
 
+*** Array, List, Map の要素処理
+
+Array, List, Map は forEach を使用することで、
+全要素に対して処理する。
+
+#+BEGIN_SRC txt
+[ 1, 2, 3, 4 ].forEach( val, index ) {
+}
+{ "a":1, "b":2, "c"3 }.forEach( val, key ) {
+}
+#+END_SRC
+
 *** 型変換
 
 一部の型の値は、型を変換することが出来る。
@@ -210,7 +222,13 @@ pending
 
 ** コメント
 
-Lua と同じ書式をサポートする。
+一行コメント ''、 複数行コメント ''' を指定可能。
+
+#+BEGIN_SRC txt
+'' 行末までコメント
+''' ここから〜
+ここまでコメント'''
+#+END_SRC
 
 ** 演算子
 
@@ -257,11 +275,15 @@ fn add1( val: stem ) : int {
 
 ** 文字列
 
-文字列表現は Lua と同じものを採用する。
+文字列は " で囲む。
+複数行コメントは """ で囲む。
 
 また、Python と同じ format 書式を採用する。
 
 #+BEGIN_SRC txt
+"""
+ここから〜
+ここまで文字列"""
 "10 + %s = %d" %["1", 11] -- "10 + 1 = 11"
 #+END_SRC
 
@@ -846,14 +868,13 @@ stat ::=  ';' |
          exp ';' | 
 	 'let' ['pub' | 'global'] varlist '=' explist ';'|
 	 classdef |
-	 functioncall ';'|
 	 'break' ';'|
 	 '{' block '}' |
 	 'while' exp '{' block '}'|
 	 'repeat' '{' block '}' exp ';'|
 	 'if' exp '{' block {elseif exp '{' block '}' } [else '{' block] '}' |
 	 'for' Name '=' exp ',' exp [',' exp] '{' block '}' |
-	 'each' namelist 'in' explist '{' block '}' |
+	 'each' namelist 'in' functioncall '{' block '}' |
 	 functiondef
 
 classdef ::= 'class' ['pub'] Name [ ':' Name ] '{' classfieldlist '}'
@@ -886,9 +907,11 @@ namelist ::= Name {',' Name}
 
 explist ::= exp {',' exp}
 
-exp ::=  literal | '...' | functiondef |
+exp ::=  literal | '...' | functiondef | functioncall |
 
-	 prefixexp | tableconstructor | listconstructor | arrayconstructor | exp binop exp | unop exp
+	 prefixexp | tableconstructor | listconstructor |
+
+         arrayconstructor | exp binop exp | unop exp
 
 literal ::= 'nil' | 'false' | 'true' | Numeral | LiteralString | enumVal
 
