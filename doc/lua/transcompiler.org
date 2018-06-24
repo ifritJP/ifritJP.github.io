@@ -153,9 +153,9 @@ LuneScript の要件を挙げる
 - str
   - 文字列 (Lua の文字列そのもの)
 - Array
-  - 配列( インデックスは 1 から。 固定長の配列。 )
+  - 配列( インデックスは 1 から。 固定長。 )
 - List
-  - リスト( インデックスは 1 から。 可変長のリスト。 Lua のシーケンスそのもの。 )
+  - リスト( インデックスは 1 から。 可変長。 Lua のシーケンスそのもの。 )
 - Map
   - キーと値の関連付け (Lua のテーブルそのもの。 )
 - func  
@@ -164,31 +164,19 @@ LuneScript の要件を挙げる
   - 上記のいずれか何でもあり
   - Lua の変数そのもの
 
-*** Array, List, Map の要素処理
-
-Array, List, Map は forEach を使用することで、
-全要素に対して処理する。
-
-#+BEGIN_SRC txt
-[ 1, 2, 3, 4 ].forEach( val, index ) {
-}
-{ "a":1, "b":2, "c"3 }.forEach( val, key ) {
-}
-#+END_SRC
-
 *** 型変換
 
 一部の型の値は、型を変換することが出来る。
 
 変換する場合は次の書式を利用する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 val@type
 #+END_SRC
 
 これは val の値を type に変換することを宣言する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 val@int
 #+END_SRC
 
@@ -224,7 +212,7 @@ pending
 
 一行コメント ''、 複数行コメント ''' を指定可能。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 '' 行末までコメント
 ''' ここから〜
 ここまでコメント'''
@@ -245,8 +233,8 @@ pending
 
 追加で ASCII の文字コード表現を可能とする。
 
-#+BEGIN_SRC txt
-let val : int = ?a;  -- 0x61
+#+BEGIN_SRC lns
+let val : int = ?a;  '' 0x61
 #+END_SRC
 
 上記のように ~?~ に続く文字を ACSII コードに展開する。
@@ -267,7 +255,7 @@ Lua に変換後の演算結果を int に強制する場合は @int するこ�
 stem 型のデータは、そのままでは演算できないので、
 次のように @int や @real で型変換後に演算する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 fn add1( val: stem ) : int {
   return val@int + 1;
 }
@@ -278,13 +266,21 @@ fn add1( val: stem ) : int {
 文字列は " で囲む。
 複数行コメントは """ で囲む。
 
+文字列内の N 番目の文字にアクセスするには str[N] を使用する。
+ただし str[N] は読み込み専用で、文字の書き換えは出来ない。
+
+#+BEGIN_SRC lns
+let str : Str = "1234";
+str[ 2 ] '' ?2
+#+END_SRC
+
 また、Python と同じ format 書式を採用する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 """
 ここから〜
 ここまで文字列"""
-"10 + %s = %d" %["1", 11] -- "10 + 1 = 11"
+"10 + %s = %d" %["1", 11] '' "10 + 1 = 11"
 #+END_SRC
 
 ただし、複数の引数は [] で指定する。
@@ -299,8 +295,8 @@ pending
 
 ** 変数宣言
 
-#+BEGIN_SRC txt
-let name : type;
+#+BEGIN_SRC lns
+[pub|global] let name : type;
 #+END_SRC
 
 変数宣言は let で行なう。
@@ -310,7 +306,7 @@ let に続けて変数名を指定する。
 
 ただし、変数宣言と代入を同時に行なう場合は型宣言を省略できる。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let val: int;
 #+END_SRC
 
@@ -320,9 +316,14 @@ let val: int;
 ただし、最上位のスコープに定義することで、
 そのモジュール内でグローバルなデータとなる。
 
-最上位のスコープに定義する変数の let の後に global を指定すると、
-VM 内でグローバルな変数となる。
-ただし登録されるのは、この宣言を含むモジュールを import したタイミングとなる。
+最上位のスコープに定義する変数の let の前に pub を指定すると、
+外部のモジュールから参照可能な変数となる。
+
+また、pub の代わりに global を宣言すると、VM 内でグローバルな変数となる。
+ただしグローバルに登録されるのは、
+この宣言を含むモジュールを import したタイミングとなる。
+
+同名のグローバルシンボルが定義されている場合の動作は未定義とする。
 
 
 *** 所有権とライフタイム
@@ -330,7 +331,7 @@ VM 内でグローバルな変数となる。
 LuneScript は値の生存期間を所有権とライフタイムで管理する。
 所有権とライフタイムは Rust を参考にする。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let owner: int;
 let mut borrow: int;
 let & ref: int;
@@ -359,13 +360,13 @@ let & ref: int;
 
 *** 配列(Array)型の宣言
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let name : type[@];
 #+END_SRC
 
 配列型は、上記のように型の後に ~[@]~ で宣言する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let val: int[@];
 #+END_SRC
 
@@ -375,9 +376,9 @@ let val: int[@];
 
 配列型のデータは、次のよう書くことで生成できる。
 
-#+BEGIN_SRC txt
-[@ 1, 2, 3, 4, 5 ] -- int[@]
-[@ 0 : 5 ] -- [@ 0 0 0 0 0 ]
+#+BEGIN_SRC lns
+[@ 1, 2, 3, 4, 5 ] '' int[@]
+[@ 0 : 5 ] '' [@ 0 0 0 0 0 ]
 #+END_SRC
 
 ここで、 ~[@ 0 : 5 ]~ は、 値 0 を 5 個もつ配列を生成する。
@@ -386,13 +387,13 @@ let val: int[@];
 
 *** リスト(List)型の宣言
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let name : type[];
 #+END_SRC
 
 リスト型は、上記のように型の後に ~[]~ で宣言する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let val: int[];
 #+END_SRC
 
@@ -402,8 +403,8 @@ let val: int[];
 
 リスト型のデータは、次のよう書くことで生成できる。
 
-#+BEGIN_SRC txt
-[ 1, 2, 3, 4, 5 ] -- int[]
+#+BEGIN_SRC lns
+[ 1, 2, 3, 4, 5 ] '' int[]
 #+END_SRC
 
 配列型のデータアクセスは Lua と同じ。
@@ -412,13 +413,13 @@ let val: int[];
 
 *** Map 型の宣言
      
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let name : Map<keyType,valType>;
 #+END_SRC
 
 Map 型は、上記のように keyType と valType で宣言する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 let val : Map<int,str>;
 #+END_SRC
 
@@ -430,8 +431,8 @@ Map 型のデータアクセスは Lua と同じ。
 
 Map 型のデータは、次のように指定する。
 
-#+BEGIN_SRC txt
-{  "a": 1, "b": 2, "c": 3, "d": 4, "e": 5 } -- Map<str,int>
+#+BEGIN_SRC lns
+{  "a": 1, "b": 2, "c": 3, "d": 4, "e": 5 } '' Map<str,int>
 #+END_SRC
 
 ** 制御文
@@ -442,7 +443,7 @@ Lua と同様に、continue はない。
 
 *** if
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 if exp {
 }
 elseif exp {
@@ -457,7 +458,7 @@ C のようにブロックを宣言せずに 1 文だけ書くことはできな
 
 *** while, repeat
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 while exp {
 }
 
@@ -471,7 +472,7 @@ C のようにブロックを宣言せずに 1 文だけ書くことはできな
 
 *** for
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 for name = exp1, exp2, exp3 {
 }
 #+END_SRC
@@ -481,20 +482,39 @@ for は、イテレータを使用しないタイプの制御とする。
 
 ブロックは {} で宣言する。このブロックは必須である。
 C のようにブロックを宣言せずに 1 文だけ書くことはできない。
-    
 
-*** each
+*** foreach
 
-#+BEGIN_SRC txt
-each val in exp {
+#+BEGIN_SRC lns
+foreach val [, index ] in listObj {
+}
+foreach val [ , index ] in arrayObj {
+}
+foreach val [, key ] in mapObj {
+}
+#+END_SRC
+
+foreach は、 List, Array, Map のオブジェクトが保持する要素に対して処理を行なう。
+
+val には各オブジェクトが保持する要素が格納され、body が実行される。
+index には要素のインデックス、 key には要素を紐付けているキーが格納される。
+index, key は省略可能。
+
+*** apply
+
+#+BEGIN_SRC lns
+apply val {,val2 } of exp {
 }
 #+END_SRC
     
-each は、イテレータを使用するタイプの for とする。
+apply は、イテレータを使用するタイプの for とする。
 ブロックは {} で宣言する。このブロックは必須である。
 C のようにブロックを宣言せずに 1 文だけ書くことはできない。
 
-exp の仕様は Lua と同じ。
+val には、イテレータで列挙された値が格納される。
+イテレータが複数の値を列挙する場合, その値を格納する val2 , val3... を宣言する。
+
+exp の仕様は Lua の for と同じ。
 
 *** goto
 
@@ -502,8 +522,8 @@ goto はサポートしない
 
 ** 関数宣言
 
-#+BEGIN_SRC txt
-fn pub name( arglist ) : retTypeList {
+#+BEGIN_SRC lns
+[pub|global] fn name( arglist ) : retTypeList {
 }
 #+END_SRC
 
@@ -513,7 +533,7 @@ name は省略可能。
 戻り値の型は、retTypeList で宣言する。型宣言は 変数宣言の : 以降と同じ。
 関数は複数の値を返すことができる。  retTypeList は返す値の分の型を宣言する。
 
-関数を外部モジュールに公開する場合は、fn の後に pub を宣言する。
+関数を外部モジュールに公開する場合は、fn の前に pub を宣言する。
 ただし公開可能な関数は、最上位のスコープで定義した関数でなければならない。
 例えば if や while 等のブロック内で定義した関数は、公開できない。
 
@@ -521,12 +541,14 @@ name は省略可能。
 pub の代わりに global を指定すると、VM 内でグローバルとなる。
 ただし登録されるのは、この宣言を含むモジュールを import したタイミングとなる。
 
+同名のグローバルシンボルが定義されている場合の動作は未定義とする。
+
 
 関数宣言に関して、次の制限を持つ。
 - 関数オーバーロードをサポートしない
 - 演算子オーバーロードをサポートしない
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 fn plus( val1: int, val2: int ) : int {
   return val1 + val2;
 }
@@ -543,7 +565,7 @@ fn plus1( val1: int, val2: int ) : int, int {
 
 実引数が省略された場合のデフォルト値を指定できる。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 fn func( val1: int, val2: int = 1 ) : int {
   return val1 + val2;
 }
@@ -556,7 +578,7 @@ fn func( val1: int, val2: int = 1 ) : int {
 
 なお、 ... の各値は stem 型として扱う。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 fn hoge( ... ) : stem {
   let val: stem = ...;
   return val;
@@ -572,19 +594,19 @@ fn hoge( ... ) : stem {
 
 form によって、関数の型を定義する。
 
-#+BEGIN_SRC txt
-form pub name ( arglist ) : retTypeList;
+#+BEGIN_SRC lns
+[pub] form name ( arglist ) : retTypeList;
 #+END_SRC
 
 例えば、次の宣言は引数と戻り値に int を持つ関数の型を add として定義している。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 form add( val: int ) : int;
 #+END_SRC
 
 この form を利用することで、引数として与える関数型を指定することができる。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 fn sub( func: &add ): int {
   return func( 0 );
 }
@@ -592,12 +614,6 @@ fn sub( func: &add ): int {
 
 例えば上記の関数 sub は、引数に add 型の関数型を引数に持ち、
 その関数をコールしている。
-
-*** クロージャ
-
-クロージャの動作は Lua と同じ。
-
-ただし、所有権の概念が導入される。
 
 
 *** 関数コール
@@ -607,6 +623,48 @@ fn sub( func: &add ): int {
 ただし、可変長引数の場合を除いて、
 コールする関数の仮引数と実引数の数は等しくなければならない。
 
+*** クロージャ
+
+クロージャの動作は Lua と同じ。
+
+ただし、所有権の概念が導入される。
+
+**** ~@@~ 演算子
+
+~@@~ 演算子は、クロージャを簡易的に作成する。
+
+たとえば次の例は、
+func 関数の第 1 引数に 10 を与えたクロージャと、
+func 関数の第 1 引数に 10, 第 2 引数に 20 を与えたクロージャを作成する。
+
+#+BEGIN_SRC lns
+fn add( val1: int, val2 ): int {
+  return val1 + val2;
+}
+let add10 = add@@10;
+add10( 20 ); '' 10 + 20
+let add10_20 = add@@10,20;
+add10_20(); '' 10 + 20
+#+END_SRC
+
+**** ~@@?~ 演算子
+
+~@@~ 演算子は、適応する引数が対象関数の第一引数に固定だったが、
+~@@?~ 演算子は、適応する引数を指定できる。
+
+たとえば次の例は、
+func 関数の val2 に 10 を与えたクロージャと、
+func 関数の val1 に 10, val2 に 20 を与えたクロージャを作成する。
+
+#+BEGIN_SRC lns
+fn sub( val1: int, val2 ): int {
+  return val1 - val2;
+}
+let sub10 = sub@@?val2=10;
+sub10( 20 ); '' 20 - 10
+let sub10_20 = sub@@?val1=10,val2=20;
+sub10( ); '' 10 - 20
+#+END_SRC
 
 ** クラス宣言
    
@@ -621,17 +679,17 @@ fn sub( func: &add ): int {
 - 継承間で引数の異なる同名メソッドは定義できない。
   - ただし、コンストラクタは例外。
 
-#+BEGIN_SRC txt
-class pub Hoge : superClass {
+#+BEGIN_SRC lns
+pub class Hoge : superClass {
   let pri val : int { pub, pri };
   pub __init( arglist ) {
     super( arglist );
   }
   pub __free() {
   }
-  pub func( arglist ) mut : retTypeList {
+  pub fn func( arglist ) mut : retTypeList {
   }
-  pub static sub( arglist ) : retTypeList {
+  pub static fn sub( arglist ) : retTypeList {
   }
 
   let pri data : Other;
@@ -659,7 +717,7 @@ static を付けることで、クラスメソッド、クラスメンバとな�
 このアクセッサは getter, setter の順に宣言し、
 宣言箇所にはアクセス権限(pub/pro/pri)を指定する。
 
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
   let pri val : int { pub, pri };
 #+END_SRC
 
@@ -670,8 +728,8 @@ static を付けることで、クラスメソッド、クラスメンバとな�
 
 *** メソッド
 
-#+BEGIN_SRC txt
-pub func( arglist ) mut : retTypeList {
+#+BEGIN_SRC lns
+[pub|pro|pri] fn func( arglist ) mut : retTypeList {
 }
 #+END_SRC
 
@@ -763,7 +821,7 @@ pub 以外のメンバ、メソッドは外部モジュールからはアクセ�
 
 特定クラスに対してこの制限を解除するのが trust である。
     
-#+BEGIN_SRC txt
+#+BEGIN_SRC lns
 trust ClassB { list };
 #+END_SRC
 
@@ -805,7 +863,7 @@ Lua のように return などは不要。
 import はスクリプトの何処でも実行可能で、
 import を実行したスコープ内で有効。
 
-#+BEGIN_SRC py
+#+BEGIN_SRC lns
 import module1;
 import module1.ClassA as other;
 #+END_SRC
@@ -825,7 +883,7 @@ module1.ClassA を other としてアクセス可能となる。
 
 Lua の外部モジュールを利用する際に宣言する。
 
-#+BEGIN_SRC py
+#+BEGIN_SRC lns
 let mod: stem = require( 'module' );
 #+END_SRC
 
@@ -842,9 +900,9 @@ Lua の外部モジュールの型定義を行なう。
 wrap は Glue のようなもので、
 require するモジュールの各メンバ、メソッドの型を宣言することが出来る。
 
-#+BEGIN_SRC txt
-wrap pub wrapModule : module {
-  pub func( arglist ) mut : retTypeList;
+#+BEGIN_SRC lns
+[pub|pro|pri] wrap wrapModule : module {
+  pub fn func( arglist ) mut : retTypeList;
 }
 #+END_SRC
 
@@ -877,11 +935,11 @@ stat ::=  ';' |
 	 'each' namelist 'in' functioncall '{' block '}' |
 	 functiondef
 
-classdef ::= 'class' ['pub'] Name [ ':' Name ] '{' classfieldlist '}'
+classdef ::= ['pub'] 'class' Name [ ':' Name ] '{' classfieldlist '}'
 
 classfieldlist ::= { memberdef } { methoddef } { advertisedef } { trust }
 
-memberdef ::= 'let' ['static'] ['pub' | 'global'] var [ '{' accessor }' ] ';'
+memberdef ::= ['static'] ['pub' | 'global'] 'let' var [ '{' accessor }' ] ';'
 
 accessor ::= accessorctrl | accessorctrl ',' accessorctrl
 
@@ -922,7 +980,7 @@ functioncall ::=  prefixexp args | prefixexp ':' Name args
 args ::=  '(' [explist] ')' | tableconstructor | listconstructor |
           arrayconstructor | LiteralString
 
-functiondef ::= fn ['pub' | 'global'] funcbody
+functiondef ::= ['pub' | 'global'] fn funcbody
 
 funcbody ::= '(' [parlist] ')' [':' typelist ] '{' block '}'
 
