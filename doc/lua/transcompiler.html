@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Lua のトランスコンパイラを考える (LuneScript)</title>
-<!-- 2018-06-25 月 00:15 -->
+<!-- 2018-06-27 水 00:54 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="ifritJP" />
@@ -211,11 +211,16 @@ for the JavaScript code in this tag.
 <li><a href="#sec-5-10-7">5.10.7. メソッド 呼び出し</a></li>
 </ul>
 </li>
-<li><a href="#sec-5-11">5.11. モジュール</a>
+<li><a href="#sec-5-11">5.11. マクロ</a>
 <ul>
-<li><a href="#sec-5-11-1">5.11.1. import</a></li>
-<li><a href="#sec-5-11-2">5.11.2. require</a></li>
-<li><a href="#sec-5-11-3">5.11.3. wrap</a></li>
+<li><a href="#sec-5-11-1">5.11.1. マクロの意義</a></li>
+</ul>
+</li>
+<li><a href="#sec-5-12">5.12. モジュール</a>
+<ul>
+<li><a href="#sec-5-12-1">5.12.1. import</a></li>
+<li><a href="#sec-5-12-2">5.12.2. require</a></li>
+<li><a href="#sec-5-12-3">5.12.3. wrap</a></li>
 </ul>
 </li>
 </ul>
@@ -1749,9 +1754,172 @@ Lua のような : と . の使い分けではなく、どちらも . を利用�
 </div>
 </div>
 
+
 <div id="outline-container-sec-5-11" class="outline-3">
-<h3 id="sec-5-11"><span class="section-number-3">5.11</span> モジュール</h3>
+<h3 id="sec-5-11"><span class="section-number-3">5.11</span> マクロ</h3>
 <div class="outline-text-3" id="text-5-11">
+<p>
+マクロ定義を採用する。
+</p>
+
+<p>
+マクロは次のように定義する。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns">macro _name ( declarglist ) {
+  { declverlist }
+  <span style="color: #00f5ff;">'{'</span>
+     macrostatement
+  <span style="color: #00f5ff;">'}'</span>
+   { symbol ope val <span style="color: #00f5ff;">'{'</span> expandstatement <span style="color: #00f5ff;">'}'</span> }
+ }
+}
+</pre>
+</div>
+
+<p>
+マクロ定義は、予約語 macro で始める。
+続いてマクロ名 _name を指定する。マクロ名は _ で始まらなければならない。
+マクロ内の処理で、次の情報にアクセス出来る。
+</p>
+
+<ul class="org-ul">
+<li><span class="underline"><span class="underline">func</span></span>
+</li>
+<li><span class="underline"><span class="underline">FILE</span></span>
+</li>
+<li><span class="underline"><span class="underline">LINE</span></span>
+</li>
+<li>__arg__[ ]
+</li>
+</ul>
+
+<p>
+次の declarglist は、マクロに与える引数である。
+この引数に与える値は、リテラルでなければならない。
+ただし、リテラル以外にシンボルを与えることが出来る。
+</p>
+
+<p>
+declverlist は、マクロ内で利用する変数を宣言する。
+</p>
+
+<p>
+macrostatement は、 declarglist で与えられた値を declverlist に
+設定、変更するための処理を記載する。
+この処理内で利用可能な関数、制御文は制限される。
+</p>
+
+<p>
+次の condexp は、マクロ展開を行なうかどうかの条件判定を行なう式である。
+この式が真となる場合、続く expandstatement をそのまま展開する。
+この式はシンボル symbol と val の比較演算 ope によって表わす。
+この condexp と expandstatement 内で、
+declarglist と declverlist を利用することが出来る。
+</p>
+
+
+<p>
+次は、マクロ定義の例である。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns">macro _test( val: <span style="color: #00ced1;">int</span>, symbol: Symbol ) {
+  <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">work</span> = 1;
+  <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">funcSym</span> = symbol;  
+  {
+     work = work + val;
+     funcSym = <span style="color: #00f5ff;">"%sfunc"</span> (symbol);
+  }
+  <span style="color: #fa8072;">if</span> val == 1 {
+     funcSym( work );
+  }
+  <span style="color: #fa8072;">if</span> val == 2 {
+     funcSym( work + 2 );
+  }
+}
+
+_test( 1, sub ); <span style="color: #98fb98;">'' subfunc( 2 );</span>
+_test( 2, foo ); <span style="color: #98fb98;">'' foofunc( 3 + 2 );</span>
+</pre>
+</div>
+
+<p>
+上記は、マクロ _test を定義する。
+このマクロは 2 つの引数(int,Symbol)を持つ。
+declverlist として work と funcSym を定義する。
+macrostatement として、 work と funcSym を設定する。
+expandstatement として、 funcSym を関数呼び出しする。
+</p>
+
+<p>
+結果として、上記マクロは subfunc( 2 ) と foofunc( 3 + 2 ) に展開される。
+</p>
+
+<p>
+ここで重要なのは、あくまでマクロはコンパイル時にソースに展開されるのであって、
+スクリプト実行時にマクロは動作しない、ということである。
+</p>
+</div>
+
+<div id="outline-container-sec-5-11-1" class="outline-4">
+<h4 id="sec-5-11-1"><span class="section-number-4">5.11.1</span> マクロの意義</h4>
+<div class="outline-text-4" id="text-5-11-1">
+<p>
+上記の通り、マクロは通常の関数と比べて制限がある。
+またマクロで行なえる処理は、マクロでなく関数でも行なうことが可能である。
+</p>
+
+<p>
+では、マクロを使う意義は何か？
+</p>
+
+<p>
+それは、「マクロを使うことで静的に動作が確定する」ことである。
+</p>
+
+<p>
+同じ処理を関数で実現した場合、動的な処理となってしまう。
+一方、マクロで実現すれば、静的な処理となる。
+</p>
+
+<p>
+これの何が嬉しいのか？
+</p>
+
+<p>
+それは、静的型付け言語が動的型付け言語よりも優れている点と同じである。
+</p>
+
+<p>
+静的に決まる情報を静的に処理することで、静的に解析できる。
+</p>
+
+<p>
+例えば、オブジェクト指向の関数オーバーライドの大部分は、
+マクロを利用することで静的に解決することができる。
+動的な関数オーバーライドではなく、静的な関数呼び出しにすることで、
+ソースコードを追い易くなる。
+</p>
+
+<p>
+無闇にマクロを多用するは良くないが、
+安易に関数オーバーライドなどの動的処理にするのも理想ではない。
+</p>
+
+<p>
+動的処理とマクロは適宜使い訳が必要である。
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-5-12" class="outline-3">
+<h3 id="sec-5-12"><span class="section-number-3">5.12</span> モジュール</h3>
+<div class="outline-text-3" id="text-5-12">
 <p>
 LuneScript で作成したスクリプトファイルは、全てモジュールとなる。
 Lua のように return などは不要。
@@ -1763,9 +1931,9 @@ Lua のように return などは不要。
 </p>
 </div>
 
-<div id="outline-container-sec-5-11-1" class="outline-4">
-<h4 id="sec-5-11-1"><span class="section-number-4">5.11.1</span> import</h4>
-<div class="outline-text-4" id="text-5-11-1">
+<div id="outline-container-sec-5-12-1" class="outline-4">
+<h4 id="sec-5-12-1"><span class="section-number-4">5.12.1</span> import</h4>
+<div class="outline-text-4" id="text-5-12-1">
 <p>
 外部モジュールを利用する際に import 宣言する。
 </p>
@@ -1805,16 +1973,16 @@ module1.ClassA を other としてアクセス可能となる。
 </div>
 </div>
 
-<div id="outline-container-sec-5-11-2" class="outline-4">
-<h4 id="sec-5-11-2"><span class="section-number-4">5.11.2</span> require</h4>
-<div class="outline-text-4" id="text-5-11-2">
+<div id="outline-container-sec-5-12-2" class="outline-4">
+<h4 id="sec-5-12-2"><span class="section-number-4">5.12.2</span> require</h4>
+<div class="outline-text-4" id="text-5-12-2">
 <p>
 Lua の外部モジュールを利用する際に宣言する。
 </p>
 
 <div class="org-src-container">
 
-<pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">mod</span>: <span style="color: #00ced1;">stem</span> = <span style="color: #ff69b4;">require</span>( '<span style="color: #ff69b4;">module</span>' );
+<pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">mod</span>: <span style="color: #00ced1;">stem</span> = <span style="color: #ff69b4;">require</span>( <span style="color: #00f5ff;">'module'</span> );
 </pre>
 </div>
 
@@ -1824,9 +1992,9 @@ require の結果は stem 型となる。
 </div>
 </div>
 
-<div id="outline-container-sec-5-11-3" class="outline-4">
-<h4 id="sec-5-11-3"><span class="section-number-4">5.11.3</span> wrap</h4>
-<div class="outline-text-4" id="text-5-11-3">
+<div id="outline-container-sec-5-12-3" class="outline-4">
+<h4 id="sec-5-12-3"><span class="section-number-4">5.12.3</span> wrap</h4>
+<div class="outline-text-4" id="text-5-12-3">
 <p>
 Lua の外部モジュールの型定義を行なう。
 </p>
@@ -1979,7 +2147,7 @@ unop ::= '-' | not | '#' | '~' | '?' | '*'
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2018-06-25 月 00:15</p>
+<p class="date">Created: 2018-06-27 水 00:54</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode N/A-fixup)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
