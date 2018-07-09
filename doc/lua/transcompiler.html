@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Lua のトランスコンパイラを考える (LuneScript)</title>
-<!-- 2018-07-08 日 22:24 -->
+<!-- 2018-07-10 火 01:29 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="ifritJP" />
@@ -154,31 +154,34 @@ for the JavaScript code in this tag.
 <li><a href="#sec-4">4. LuneScript の開発方針</a></li>
 <li><a href="#sec-5">5. LuneScript syntax</a>
 <ul>
-<li><a href="#sec-5-1">5.1. 組込み型</a>
+<li><a href="#sec-5-1">5.1. 組込み型</a></li>
+<li><a href="#sec-5-2">5.2. 数値リテラル</a>
 <ul>
-<li><a href="#sec-5-1-1">5.1.1. 型変換</a></li>
+<li><a href="#sec-5-2-1">5.2.1. 演算</a></li>
 </ul>
 </li>
-<li><a href="#sec-5-2">5.2. コメント</a></li>
-<li><a href="#sec-5-3">5.3. 演算子</a></li>
-<li><a href="#sec-5-4">5.4. 数値リテラル</a>
+<li><a href="#sec-5-3">5.3. 文字列</a>
 <ul>
-<li><a href="#sec-5-4-1">5.4.1. 演算</a></li>
+<li><a href="#sec-5-3-1">5.3.1. 文字列連結</a></li>
 </ul>
 </li>
-<li><a href="#sec-5-5">5.5. 文字列</a>
+<li><a href="#sec-5-4">5.4. enum</a>
 <ul>
-<li><a href="#sec-5-5-1">5.5.1. 文字列連結</a></li>
+<li><a href="#sec-5-4-1">5.4.1. 型変換</a></li>
 </ul>
 </li>
-<li><a href="#sec-5-6">5.6. enum</a></li>
+<li><a href="#sec-5-5">5.5. コメント</a></li>
+<li><a href="#sec-5-6">5.6. 演算子</a></li>
 <li><a href="#sec-5-7">5.7. 変数宣言</a>
 <ul>
-<li><a href="#sec-5-7-1">5.7.1. 所有権とライフタイム</a></li>
-<li><a href="#sec-5-7-2">5.7.2. 代入</a></li>
-<li><a href="#sec-5-7-3">5.7.3. 配列(Array)型の宣言</a></li>
-<li><a href="#sec-5-7-4">5.7.4. リスト(List)型の宣言</a></li>
-<li><a href="#sec-5-7-5">5.7.5. Map 型の宣言</a></li>
+<li><a href="#sec-5-7-1">5.7.1. ! 型 (nilable)</a></li>
+<li><a href="#sec-5-7-2">5.7.2. unwrap</a></li>
+<li><a href="#sec-5-7-3">5.7.3. let!</a></li>
+<li><a href="#sec-5-7-4">5.7.4. 所有権とライフタイム</a></li>
+<li><a href="#sec-5-7-5">5.7.5. 代入</a></li>
+<li><a href="#sec-5-7-6">5.7.6. 配列(Array)型の宣言</a></li>
+<li><a href="#sec-5-7-7">5.7.7. リスト(List)型の宣言</a></li>
+<li><a href="#sec-5-7-8">5.7.8. Map 型の宣言</a></li>
 </ul>
 </li>
 <li><a href="#sec-5-8">5.8. 制御文</a>
@@ -203,13 +206,14 @@ for the JavaScript code in this tag.
 </li>
 <li><a href="#sec-5-10">5.10. クラス宣言</a>
 <ul>
-<li><a href="#sec-5-10-1">5.10.1. メンバ宣言</a></li>
-<li><a href="#sec-5-10-2">5.10.2. メソッド</a></li>
-<li><a href="#sec-5-10-3">5.10.3. コンストラクタ</a></li>
-<li><a href="#sec-5-10-4">5.10.4. デストラクタ</a></li>
-<li><a href="#sec-5-10-5">5.10.5. advertise</a></li>
-<li><a href="#sec-5-10-6">5.10.6. trust</a></li>
-<li><a href="#sec-5-10-7">5.10.7. メソッド 呼び出し</a></li>
+<li><a href="#sec-5-10-1">5.10.1. new</a></li>
+<li><a href="#sec-5-10-2">5.10.2. メンバ宣言</a></li>
+<li><a href="#sec-5-10-3">5.10.3. メソッド</a></li>
+<li><a href="#sec-5-10-4">5.10.4. コンストラクタ</a></li>
+<li><a href="#sec-5-10-5">5.10.5. デストラクタ</a></li>
+<li><a href="#sec-5-10-6">5.10.6. advertise</a></li>
+<li><a href="#sec-5-10-7">5.10.7. trust</a></li>
+<li><a href="#sec-5-10-8">5.10.8. メソッド 呼び出し</a></li>
 </ul>
 </li>
 <li><a href="#sec-5-11">5.11. マクロ</a>
@@ -516,25 +520,13 @@ LuneScript で作成する。
 </li>
 </ul>
 </li>
-<li>int_
-<ul class="org-ul">
-<li>nil を代入可能な int
-</li>
-</ul>
-</li>
 <li>real
 <ul class="org-ul">
 <li>浮動少数点実数
 </li>
 </ul>
 </li>
-<li>real_
-<ul class="org-ul">
-<li>nil を代入可能な real
-</li>
-</ul>
-</li>
-<li>enum 
+<li>enum
 <ul class="org-ul">
 <li>enum 型
 </li>
@@ -580,130 +572,11 @@ LuneScript で作成する。
 </li>
 </ul>
 </div>
-
-<div id="outline-container-sec-5-1-1" class="outline-4">
-<h4 id="sec-5-1-1"><span class="section-number-4">5.1.1</span> 型変換</h4>
-<div class="outline-text-4" id="text-5-1-1">
-<p>
-一部の型の値は、型を変換することが出来る。
-</p>
-
-<p>
-変換する場合は次の書式を利用する。
-</p>
-
-<div class="org-src-container">
-
-<pre class="src src-lns">val<span style="color: #fa8072;">@</span><span style="color: #ff69b4;">type</span>
-</pre>
-</div>
-
-<p>
-これは val の値を type に変換することを宣言する。
-</p>
-
-<div class="org-src-container">
-
-<pre class="src src-lns">val<span style="color: #fa8072;">@</span><span style="color: #00ced1;">int</span>
-</pre>
-</div>
-
-<p>
-例えば、上記は val の値を int に変換している。
-</p>
-</div>
-
-<ol class="org-ol"><li><a id="sec-5-1-1-1" name="sec-5-1-1-1"></a>数値型変換<br  /><div class="outline-text-5" id="text-5-1-1-1">
-<p>
-数値型の値は異なる型に変換することが出来る。
-変換には、丸めが発生する。
-</p>
-
-<ul class="org-ul">
-<li>int から real
-<ul class="org-ul">
-<li>整数から実数に変換
-</li>
-</ul>
-</li>
-<li>real から int  
-<ul class="org-ul">
-<li>実数から整数に変換
-</li>
-<li>math.ceil() を呼ぶのと等価。
-</li>
-</ul>
-</li>
-</ul>
-</div>
-</li>
-
-<li><a id="sec-5-1-1-2" name="sec-5-1-1-2"></a>enum 型変換<br  /><div class="outline-text-5" id="text-5-1-1-2">
-<p>
-pending     
-</p>
-</div>
-</li>
-
-<li><a id="sec-5-1-1-3" name="sec-5-1-1-3"></a>stem 型との型変換<br  /><div class="outline-text-5" id="text-5-1-1-3">
-<p>
-任意の型は stem 型と相互変換が可能。
-</p>
-
-<ul class="org-ul">
-<li>任意の型から stem 型に変換
-<ul class="org-ul">
-<li>@stem で明示せずに暗黙的に変換可能。
-</li>
-</ul>
-</li>
-<li>stem 型から任意の型に変換
-<ul class="org-ul">
-<li>@type で明示が必要。
-</li>
-<li>このとき、変換元の値が何の型だったかは判断しない。
-</li>
-<li>変換元の値の型と変換先の型が不一致した時の動作は未定義
-</li>
-</ul>
-</li>
-</ul>
-</div>
-</li></ol>
-</div>
 </div>
 
 <div id="outline-container-sec-5-2" class="outline-3">
-<h3 id="sec-5-2"><span class="section-number-3">5.2</span> コメント</h3>
+<h3 id="sec-5-2"><span class="section-number-3">5.2</span> 数値リテラル</h3>
 <div class="outline-text-3" id="text-5-2">
-<p>
-一行コメント ''、 複数行コメント ''' を指定可能。
-</p>
-
-<div class="org-src-container">
-
-<pre class="src src-lns"><span style="color: #98fb98;">'' &#34892;&#26411;&#12414;&#12391;&#12467;&#12513;&#12531;&#12488;</span>
-<span style="color: #98fb98;">''' &#12371;&#12371;&#12363;&#12425;&#12316;</span>
-<span style="color: #98fb98;">&#12371;&#12371;&#12414;&#12391;&#12467;&#12513;&#12531;&#12488;'''</span>
-</pre>
-</div>
-</div>
-</div>
-
-<div id="outline-container-sec-5-3" class="outline-3">
-<h3 id="sec-5-3"><span class="section-number-3">5.3</span> 演算子</h3>
-<div class="outline-text-3" id="text-5-3">
-<p>
-原則的に、演算子 は Lua と同じものを利用する。
-ただし、 Lua のメソッド呼び出しで利用する : は使用しない。
-</p>
-</div>
-</div>
-
-
-<div id="outline-container-sec-5-4" class="outline-3">
-<h3 id="sec-5-4"><span class="section-number-3">5.4</span> 数値リテラル</h3>
-<div class="outline-text-3" id="text-5-4">
 <p>
 数値リテラルは C89 ライクなものを採用する。
 </p>
@@ -730,9 +603,9 @@ pending
 </p>
 </div>
 
-<div id="outline-container-sec-5-4-1" class="outline-4">
-<h4 id="sec-5-4-1"><span class="section-number-4">5.4.1</span> 演算</h4>
-<div class="outline-text-4" id="text-5-4-1">
+<div id="outline-container-sec-5-2-1" class="outline-4">
+<h4 id="sec-5-2-1"><span class="section-number-4">5.2.1</span> 演算</h4>
+<div class="outline-text-4" id="text-5-2-1">
 <p>
 数値の演算は Lua と同じものを採用する。
 </p>
@@ -766,9 +639,9 @@ stem 型のデータは、そのままでは演算できないので、
 </div>
 </div>
 
-<div id="outline-container-sec-5-5" class="outline-3">
-<h3 id="sec-5-5"><span class="section-number-3">5.5</span> 文字列</h3>
-<div class="outline-text-3" id="text-5-5">
+<div id="outline-container-sec-5-3" class="outline-3">
+<h3 id="sec-5-3"><span class="section-number-3">5.3</span> 文字列</h3>
+<div class="outline-text-3" id="text-5-3">
 <p>
 文字列は " で囲む。
 複数行コメントは """ で囲む。
@@ -800,9 +673,9 @@ stem 型のデータは、そのままでは演算できないので、
 </div>
 </div>
 
-<div id="outline-container-sec-5-5-1" class="outline-4">
-<h4 id="sec-5-5-1"><span class="section-number-4">5.5.1</span> 文字列連結</h4>
-<div class="outline-text-4" id="text-5-5-1">
+<div id="outline-container-sec-5-3-1" class="outline-4">
+<h4 id="sec-5-3-1"><span class="section-number-4">5.3.1</span> 文字列連結</h4>
+<div class="outline-text-4" id="text-5-3-1">
 <p>
 文字列連結は Lua と同じ .. とする。
 </p>
@@ -810,14 +683,218 @@ stem 型のデータは、そのままでは演算できないので、
 </div>
 </div>
 
+<div id="outline-container-sec-5-4" class="outline-3">
+<h3 id="sec-5-4"><span class="section-number-3">5.4</span> enum</h3>
+<div class="outline-text-3" id="text-5-4">
+<p>
+int, string 型のプリミティブな値を、 enum 型として宣言できる。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns">enum VAL {
+  val1,     <span style="color: #98fb98;">'' 1</span>
+  val2,     <span style="color: #98fb98;">'' 2</span>
+  val4 = 4, <span style="color: #98fb98;">'' 4</span>
+  val5,     <span style="color: #98fb98;">'' 5</span>
+}
+
+enum VALS {
+  vals1 = <span style="color: #00f5ff;">"1"</span>,
+  vals1 = <span style="color: #00f5ff;">"2"</span>,
+  vals1 = <span style="color: #00f5ff;">"3"</span>,
+  vals1 = <span style="color: #00f5ff;">"4"</span>,
+}
+</pre>
+</div>
+
+<p>
+一つの enum 型のデータに int, string を混在させてはならない。
+設定する値を指定しない場合は int 型となり、値は 1 から順に振られる。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">val</span> = VAL.val1;
+<span style="color: #ff69b4;">print</span>( val ); -- 1
+<span style="color: #ff69b4;">print</span>( val.name ); -- <span style="color: #00f5ff;">"val1"</span>
+<span style="color: #ff69b4;">print</span>( val.disp ); -- <span style="color: #00f5ff;">"val1(1)"</span>
+</pre>
+</div>
+
+<ul class="org-ul">
+<li>enum 型で宣言した値にアクセスするには、 "型名.シンボル" でアクセスする。
+<ul class="org-ul">
+<li>上記の例で VAL.val1 にあたる。
+</li>
+<li>val の型は VAL となる。
+</li>
+</ul>
+</li>
+<li>enum 型の値をそのまま評価すると、値に設定された値が返る。
+<ul class="org-ul">
+<li>上記の例で val は 1 となる。
+</li>
+</ul>
+</li>
+<li>enum 型の値の name にアクセスすると、その値のシンボル名が返る。
+<ul class="org-ul">
+<li>上記の例で val.name は "val1" となる。
+</li>
+</ul>
+</li>
+<li>enum 型の値の disp にアクセスすると、その値のシンボル名+値の文字列が返る。
+<ul class="org-ul">
+<li>上記の例で val.disp は "val1(1)" となる。
+</li>
+</ul>
+</li>
+</ul>
+</div>
+
+
+<div id="outline-container-sec-5-4-1" class="outline-4">
+<h4 id="sec-5-4-1"><span class="section-number-4">5.4.1</span> 型変換</h4>
+<div class="outline-text-4" id="text-5-4-1">
+<p>
+一部の型の値は、型を変換することが出来る。
+</p>
+
+<p>
+変換する場合は次の書式を利用する。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns">val<span style="color: #fa8072;">@</span><span style="color: #ff69b4;">type</span>
+</pre>
+</div>
+
+<p>
+これは val の値を type に変換することを宣言する。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns">val<span style="color: #fa8072;">@</span><span style="color: #00ced1;">int</span>
+</pre>
+</div>
+
+<p>
+例えば、上記は val の値を int に変換している。
+</p>
+</div>
+
+<ol class="org-ol"><li><a id="sec-5-4-1-1" name="sec-5-4-1-1"></a>数値型変換<br  /><div class="outline-text-5" id="text-5-4-1-1">
+<p>
+数値型の値は異なる型に変換することが出来る。
+変換には、丸めが発生する。
+</p>
+
+<ul class="org-ul">
+<li>int から real
+<ul class="org-ul">
+<li>整数から実数に変換
+</li>
+</ul>
+</li>
+<li>real から int  
+<ul class="org-ul">
+<li>実数から整数に変換
+</li>
+<li>math.ceil() を呼ぶのと等価。
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</li>
+
+<li><a id="sec-5-4-1-2" name="sec-5-4-1-2"></a>enum 型変換<br  /><ol class="org-ol"><li><a id="sec-5-4-1-2-1" name="sec-5-4-1-2-1"></a>enum 型からの変換<br  /><div class="outline-text-6" id="text-5-4-1-2-1">
+<p>
+int 型のデータを保持する enum 型は、 暗黙的に int 型への変換が可能。
+str 型のデータを保持する enum 型は、 暗黙的に str 型への変換が可能。
+</p>
+</div>
+</li>
+
+<li><a id="sec-5-4-1-2-2" name="sec-5-4-1-2-2"></a>enum 型への変換<br  /><div class="outline-text-6" id="text-5-4-1-2-2">
+<p>
+int 型、あるいは str 型から enum 型へ変換するには、new を使用する。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns">enum VAL {
+  val1,     <span style="color: #98fb98;">'' 1</span>
+  val2,     <span style="color: #98fb98;">'' 2</span>
+  val4 = 4, <span style="color: #98fb98;">'' 4</span>
+  val5,     <span style="color: #98fb98;">'' 5</span>
+}
+<span style="color: #fa8072;">let</span> <span style="color: #adff2f;">val</span>: VAL! = <span style="color: #fa8072;">new</span> VAL( 1 );
+<span style="color: #ff69b4;">print</span>( val.name ); <span style="color: #98fb98;">'' "val1"</span>
+</pre>
+</div>
+</div>
+</li></ol>
+</li>
+
+<li><a id="sec-5-4-1-3" name="sec-5-4-1-3"></a>stem 型との型変換<br  /><div class="outline-text-5" id="text-5-4-1-3">
+<p>
+任意の型は stem 型と相互変換が可能。
+</p>
+
+<ul class="org-ul">
+<li>任意の型から stem 型に変換
+<ul class="org-ul">
+<li>@stem で明示せずに暗黙的に変換可能。
+</li>
+</ul>
+</li>
+<li>stem 型から任意の型に変換
+<ul class="org-ul">
+<li>@type で明示が必要。
+</li>
+<li>このとき、変換元の値が何の型だったかは判断しない。
+</li>
+<li>変換元の値の型と変換先の型が不一致した時の動作は未定義
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</li></ol>
+</div>
+</div>
+
+<div id="outline-container-sec-5-5" class="outline-3">
+<h3 id="sec-5-5"><span class="section-number-3">5.5</span> コメント</h3>
+<div class="outline-text-3" id="text-5-5">
+<p>
+一行コメント ''、 複数行コメント ''' を指定可能。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns"><span style="color: #98fb98;">'' &#34892;&#26411;&#12414;&#12391;&#12467;&#12513;&#12531;&#12488;</span>
+<span style="color: #98fb98;">''' &#12371;&#12371;&#12363;&#12425;&#12316;</span>
+<span style="color: #98fb98;">&#12371;&#12371;&#12414;&#12391;&#12467;&#12513;&#12531;&#12488;'''</span>
+</pre>
+</div>
+</div>
+</div>
+
 <div id="outline-container-sec-5-6" class="outline-3">
-<h3 id="sec-5-6"><span class="section-number-3">5.6</span> enum</h3>
+<h3 id="sec-5-6"><span class="section-number-3">5.6</span> 演算子</h3>
 <div class="outline-text-3" id="text-5-6">
 <p>
-pending   
+原則的に、演算子 は Lua と同じものを利用する。
+ただし、 Lua のメソッド呼び出しで利用する : は使用しない。
 </p>
 </div>
 </div>
+
+
 
 <div id="outline-container-sec-5-7" class="outline-3">
 <h3 id="sec-5-7"><span class="section-number-3">5.7</span> 変数宣言</h3>
@@ -871,12 +948,98 @@ let に続けて変数名を指定する。
 <p>
 同名のグローバルシンボルが定義されている場合の動作は未定義とする。
 </p>
+
+<p>
+スコープ内に、同名の変数を宣言することはできない。
+</p>
 </div>
 
-
 <div id="outline-container-sec-5-7-1" class="outline-4">
-<h4 id="sec-5-7-1"><span class="section-number-4">5.7.1</span> 所有権とライフタイム</h4>
+<h4 id="sec-5-7-1"><span class="section-number-4">5.7.1</span> ! 型 (nilable)</h4>
 <div class="outline-text-4" id="text-5-7-1">
+<p>
+変数の型の末尾に ! を付加することで、nil を設定可能な変数となる。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">val</span>: <span style="color: #00ced1;">int</span>!;
+val = 1;
+val = val + 1; <span style="color: #98fb98;">'' error</span>
+</pre>
+</div>
+
+<p>
+例えば上記は nil を設定可能な int 型となる。
+</p>
+
+<p>
+nilable 型の値は、そのままでは本来の型としては使用できない。
+上記の例では val は int として演算に使用できない。
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-7-2" class="outline-4">
+<h4 id="sec-5-7-2"><span class="section-number-4">5.7.2</span> unwrap</h4>
+<div class="outline-text-4" id="text-5-7-2">
+<p>
+nilable 型から本来の型にするには、 unwrap を使用する。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns">unwrap exp1 [ instead exp2 ]
+</pre>
+</div>
+
+<p>
+exp1 には、nilable の値を渡す。
+exp2 には、 exp1 が nil だった時に、代わりとなる値を渡す。
+exp2 の型は、 exp1 の nilable を外した型でなければならない。
+例えば exp1 が int! だった場合、 exp2 は int 型でなければならない。
+instead が省略されていて exp1 が nil だっあ場合は、プログラムをエラー終了する。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">val</span>: <span style="color: #00ced1;">int</span>!;
+<span style="color: #fa8072;">let</span> <span style="color: #adff2f;">val2</span>: <span style="color: #00ced1;">int</span> = unwrap val instead 0;
+<span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"%d"</span>, val );
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-5-7-3" class="outline-4">
+<h4 id="sec-5-7-3"><span class="section-number-4">5.7.3</span> let!</h4>
+<div class="outline-text-4" id="text-5-7-3">
+<p>
+let! は、変数宣言と unwrap を同時に行なう。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns"><span style="color: #fa8072;">let</span>! symbol [, symbol ]  = exp[, exp ] { };
+</pre>
+</div>
+
+<p>
+exp の値が nil の場合、{} のブロックを実行する。
+ブロックの処理で、この let を宣言したスコープから抜けるか、
+symbol に適切な値を設定しなければならない。
+</p>
+
+<p>
+<b>let! は、スコープ内に同名の変数を宣言出来る。</b>
+<b>ただし、もとの同名の変数の型は、 exp と同じ nilable 型でなければならない。</b>
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-5-7-4" class="outline-4">
+<h4 id="sec-5-7-4"><span class="section-number-4">5.7.4</span> 所有権とライフタイム</h4>
+<div class="outline-text-4" id="text-5-7-4">
 <p>
 LuneScript は値の生存期間を所有権とライフタイムで管理する。
 所有権とライフタイムは Rust を参考にする。
@@ -921,9 +1084,9 @@ LuneScript は値の生存期間を所有権とライフタイムで管理する
 </div>
 </div>
 
-<div id="outline-container-sec-5-7-2" class="outline-4">
-<h4 id="sec-5-7-2"><span class="section-number-4">5.7.2</span> 代入</h4>
-<div class="outline-text-4" id="text-5-7-2">
+<div id="outline-container-sec-5-7-5" class="outline-4">
+<h4 id="sec-5-7-5"><span class="section-number-4">5.7.5</span> 代入</h4>
+<div class="outline-text-4" id="text-5-7-5">
 <p>
 変数への代入は、 Lua と同じで右辺を評価後に代入を行なう。
 </p>
@@ -935,9 +1098,9 @@ LuneScript は値の生存期間を所有権とライフタイムで管理する
 </div>
 </div>
 
-<div id="outline-container-sec-5-7-3" class="outline-4">
-<h4 id="sec-5-7-3"><span class="section-number-4">5.7.3</span> 配列(Array)型の宣言</h4>
-<div class="outline-text-4" id="text-5-7-3">
+<div id="outline-container-sec-5-7-6" class="outline-4">
+<h4 id="sec-5-7-6"><span class="section-number-4">5.7.6</span> 配列(Array)型の宣言</h4>
+<div class="outline-text-4" id="text-5-7-6">
 <div class="org-src-container">
 
 <pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">name</span> : <span style="color: #ff69b4;">type</span>[<span style="color: #fa8072;">@</span>];
@@ -959,7 +1122,7 @@ LuneScript は値の生存期間を所有権とライフタイムで管理する
 </p>
 </div>
 
-<ol class="org-ol"><li><a id="sec-5-7-3-1" name="sec-5-7-3-1"></a>配列型(Array)のコンストラクタ<br  /><div class="outline-text-5" id="text-5-7-3-1">
+<ol class="org-ol"><li><a id="sec-5-7-6-1" name="sec-5-7-6-1"></a>配列型(Array)のコンストラクタ<br  /><div class="outline-text-5" id="text-5-7-6-1">
 <p>
 配列型のデータは、次のよう書くことで生成できる。
 </p>
@@ -982,9 +1145,9 @@ LuneScript は値の生存期間を所有権とライフタイムで管理する
 </li></ol>
 </div>
 
-<div id="outline-container-sec-5-7-4" class="outline-4">
-<h4 id="sec-5-7-4"><span class="section-number-4">5.7.4</span> リスト(List)型の宣言</h4>
-<div class="outline-text-4" id="text-5-7-4">
+<div id="outline-container-sec-5-7-7" class="outline-4">
+<h4 id="sec-5-7-7"><span class="section-number-4">5.7.7</span> リスト(List)型の宣言</h4>
+<div class="outline-text-4" id="text-5-7-7">
 <div class="org-src-container">
 
 <pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">name</span> : <span style="color: #ff69b4;">type</span>[];
@@ -1006,7 +1169,7 @@ LuneScript は値の生存期間を所有権とライフタイムで管理する
 </p>
 </div>
 
-<ol class="org-ol"><li><a id="sec-5-7-4-1" name="sec-5-7-4-1"></a>リスト(List)のコンストラクタ<br  /><div class="outline-text-5" id="text-5-7-4-1">
+<ol class="org-ol"><li><a id="sec-5-7-7-1" name="sec-5-7-7-1"></a>リスト(List)のコンストラクタ<br  /><div class="outline-text-5" id="text-5-7-7-1">
 <p>
 リスト型のデータは、次のよう書くことで生成できる。
 </p>
@@ -1026,9 +1189,9 @@ LuneScript は値の生存期間を所有権とライフタイムで管理する
 
 
 
-<div id="outline-container-sec-5-7-5" class="outline-4">
-<h4 id="sec-5-7-5"><span class="section-number-4">5.7.5</span> Map 型の宣言</h4>
-<div class="outline-text-4" id="text-5-7-5">
+<div id="outline-container-sec-5-7-8" class="outline-4">
+<h4 id="sec-5-7-8"><span class="section-number-4">5.7.8</span> Map 型の宣言</h4>
+<div class="outline-text-4" id="text-5-7-8">
 <div class="org-src-container">
 
 <pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">name</span> : Map&lt;keyType,valType&gt;;
@@ -1054,7 +1217,7 @@ Map 型のデータアクセスは Lua と同じ。
 </p>
 </div>
 
-<ol class="org-ol"><li><a id="sec-5-7-5-1" name="sec-5-7-5-1"></a>Map 型のコンストラクタ<br  /><div class="outline-text-5" id="text-5-7-5-1">
+<ol class="org-ol"><li><a id="sec-5-7-8-1" name="sec-5-7-8-1"></a>Map 型のコンストラクタ<br  /><div class="outline-text-5" id="text-5-7-8-1">
 <p>
 Map 型のデータは、次のように指定する。
 </p>
@@ -1539,8 +1702,27 @@ static を付けることで、クラスメソッド、クラスメンバとな�
 </div>
 
 <div id="outline-container-sec-5-10-1" class="outline-4">
-<h4 id="sec-5-10-1"><span class="section-number-4">5.10.1</span> メンバ宣言</h4>
+<h4 id="sec-5-10-1"><span class="section-number-4">5.10.1</span> new</h4>
 <div class="outline-text-4" id="text-5-10-1">
+<p>
+宣言したクラスのインスタンスを生成するには new を使用する。
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-lns"><span style="color: #fa8072;">let</span> <span style="color: #adff2f;">hoge</span> = <span style="color: #fa8072;">new</span> Hoge();
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+
+<div id="outline-container-sec-5-10-2" class="outline-4">
+<h4 id="sec-5-10-2"><span class="section-number-4">5.10.2</span> メンバ宣言</h4>
+<div class="outline-text-4" id="text-5-10-2">
 <p>
 メンバ宣言は、変数宣言と基本は同じだが以下の点で異なる。
 </p>
@@ -1569,9 +1751,9 @@ static を付けることで、クラスメソッド、クラスメンバとな�
 </div>
 </div>
 
-<div id="outline-container-sec-5-10-2" class="outline-4">
-<h4 id="sec-5-10-2"><span class="section-number-4">5.10.2</span> メソッド</h4>
-<div class="outline-text-4" id="text-5-10-2">
+<div id="outline-container-sec-5-10-3" class="outline-4">
+<h4 id="sec-5-10-3"><span class="section-number-4">5.10.3</span> メソッド</h4>
+<div class="outline-text-4" id="text-5-10-3">
 <div class="org-src-container">
 
 <pre class="src src-lns">[pub|pro|pri] <span style="color: #fa8072;">fn</span> <span style="color: #ffff00;">func</span>( arglist ) <span style="color: #fa8072;">mut</span> : retTypeList {
@@ -1599,9 +1781,9 @@ self を利用する。
 </div>
 </div>
 
-<div id="outline-container-sec-5-10-3" class="outline-4">
-<h4 id="sec-5-10-3"><span class="section-number-4">5.10.3</span> コンストラクタ</h4>
-<div class="outline-text-4" id="text-5-10-3">
+<div id="outline-container-sec-5-10-4" class="outline-4">
+<h4 id="sec-5-10-4"><span class="section-number-4">5.10.4</span> コンストラクタ</h4>
+<div class="outline-text-4" id="text-5-10-4">
 <p>
 コンストラクタは __init で宣言する。
 スーパークラスのコンストラクタをコールする場合は super() を使用する。
@@ -1615,9 +1797,9 @@ super() は、コンストラクタの先頭で呼び出す必要がある。
 </div>
 </div>
 
-<div id="outline-container-sec-5-10-4" class="outline-4">
-<h4 id="sec-5-10-4"><span class="section-number-4">5.10.4</span> デストラクタ</h4>
-<div class="outline-text-4" id="text-5-10-4">
+<div id="outline-container-sec-5-10-5" class="outline-4">
+<h4 id="sec-5-10-5"><span class="section-number-4">5.10.5</span> デストラクタ</h4>
+<div class="outline-text-4" id="text-5-10-5">
 <p>
 デストラクタは __free で宣言する。
 スーパークラスのデストラクタは、サブクラスのデストラクタ実行後に自動でコールされ、
@@ -1631,9 +1813,9 @@ Lua では、GC のタイミングで実行する。
 </div>
 </div>
 
-<div id="outline-container-sec-5-10-5" class="outline-4">
-<h4 id="sec-5-10-5"><span class="section-number-4">5.10.5</span> advertise</h4>
-<div class="outline-text-4" id="text-5-10-5">
+<div id="outline-container-sec-5-10-6" class="outline-4">
+<h4 id="sec-5-10-6"><span class="section-number-4">5.10.6</span> advertise</h4>
+<div class="outline-text-4" id="text-5-10-6">
 <p>
 これは、メンバのメソッドを透過的に呼び出せるようにする宣言である。
 </p>
@@ -1716,9 +1898,9 @@ advertise で公開する wrapper メソッドと同名のメソッドが既に�
 </div>
 </div>
 
-<div id="outline-container-sec-5-10-6" class="outline-4">
-<h4 id="sec-5-10-6"><span class="section-number-4">5.10.6</span> trust</h4>
-<div class="outline-text-4" id="text-5-10-6">
+<div id="outline-container-sec-5-10-7" class="outline-4">
+<h4 id="sec-5-10-7"><span class="section-number-4">5.10.7</span> trust</h4>
+<div class="outline-text-4" id="text-5-10-7">
 <p>
 pub 以外のメンバ、メソッドは外部モジュールからはアクセスできない。
 </p>
@@ -1744,9 +1926,9 @@ truct に指定したクラスからは、pri, pro の情報にアクセスで�
 </div>
 
 
-<div id="outline-container-sec-5-10-7" class="outline-4">
-<h4 id="sec-5-10-7"><span class="section-number-4">5.10.7</span> メソッド 呼び出し</h4>
-<div class="outline-text-4" id="text-5-10-7">
+<div id="outline-container-sec-5-10-8" class="outline-4">
+<h4 id="sec-5-10-8"><span class="section-number-4">5.10.8</span> メソッド 呼び出し</h4>
+<div class="outline-text-4" id="text-5-10-8">
 <p>
 メソッド呼び出しは、次のように行なう。
 </p>
@@ -2169,7 +2351,7 @@ unop ::= '-' | not | '#' | '~' | '?' | '*'
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2018-07-08 日 22:24</p>
+<p class="date">Created: 2018-07-10 火 01:29</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode N/A-fixup)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
