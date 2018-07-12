@@ -248,9 +248,9 @@ enum VALS {
 
 #+BEGIN_SRC lns
 let val = VAL.val1;
-print( val ); -- 1
-print( val.name ); -- "val1"
-print( val.disp ); -- "val1(1)"
+print( val ); '' 1
+print( val.name ); '' "val1"
+print( val.disp ); '' "val1(1)"
 #+END_SRC
 
 - enum 型で宣言した値にアクセスするには、 "型名.シンボル" でアクセスする。
@@ -801,14 +801,17 @@ sub10( ); '' 10 - 20
 #+BEGIN_SRC lns
 pub class Hoge : superClass {
   let pri val : int { pub, pri };
-  pub __init( arglist ) {
+  pub fn __init( arglist ) {
     super( arglist );
   }
-  pub __free() {
+  pub fn __free() {
   }
   pub fn func( arglist ) mut : retTypeList {
   }
   pub static fn sub( arglist ) : retTypeList {
+  }
+
+  pub override fn proc() : retTypeList {
   }
 
   let pri data : Other;
@@ -860,7 +863,7 @@ let hoge = new Hoge();
 *** メソッド
 
 #+BEGIN_SRC lns
-[pub|pro|pri] fn func( arglist ) mut : retTypeList {
+[pub|pro|pri] [override] fn func( arglist ) mut : retTypeList {
 }
 #+END_SRC
 
@@ -873,6 +876,9 @@ let hoge = new Hoge();
 
 クラスメソッドからクラスメンバにアクセスする場合も、
 self を利用する。
+
+override は、メソッドをオーバーライドする際に宣言する。
+
 
 *** コンストラクタ
 
@@ -979,6 +985,35 @@ hoge.func() はインスタンスメソッドである。
 
 Lua のような : と . の使い分けではなく、どちらも . を利用する。
 
+*** プロトタイプ宣言
+
+LuneScript は、スクリプトの上から順に解析する。
+
+スクリプトで参照するシンボルは、事前に定義されている必要がある。
+例えばクラス TEST 型の変数を宣言するには、事前にクラス TEST を定義する必要がある。
+
+また、交互に参照するクラスを定義するには、
+どちらかをプロトタイプ宣言する必要がある。
+
+次は、 ClassA, ClassB がそれぞれを参照する時の例である。
+
+#+BEGIN_SRC lns
+class Super {
+}
+pub proto class ClassB extend Super;
+class ClassA {
+  let val: ClassB;
+}
+pub class ClassB extend Super{
+  let val: ClassA;
+}
+#+END_SRC
+
+proto は上記のように宣言する。
+
+プロトタイプ宣言と実際の定義において、
+pub や extend など同じものを宣言しなければならない。
+
 
 ** マクロ
 
@@ -987,79 +1022,112 @@ Lua のような : と . の使い分けではなく、どちらも . を利用�
 マクロは次のように定義する。
 
 #+BEGIN_SRC lns
-macro _name ( declarglist ) {
-  { declverlist }
-  '{'
-     macrostatement
-  '}'
-   { symbol ope val '{' expandstatement '}' }
- }
+macro _name ( decl-arg-list ) {
+  macro-statement
+  { expand-statement }
 }
 #+END_SRC
 
 マクロ定義は、予約語 macro で始める。
 続いてマクロ名 _name を指定する。マクロ名は _ で始まらなければならない。
-マクロ内の処理で、次の情報にアクセス出来る。
 
-- __func__
-- __FILE__
-- __LINE__
-- __arg__[ ]
+decl-arg-list は、マクロで使用する引数を宣言する。
+マクロの引数は、プリミティブでなければならない。
 
-次の declarglist は、マクロに与える引数である。
-この引数に与える値は、リテラルでなければならない。
-ただし、リテラル以外にシンボルを与えることが出来る。
+macro-statement は、 expand-statement で使用する変数を設定する処理を書く。
+expand-statement で書いた内容が、マクロで展開される。
 
-declverlist は、マクロ内で利用する変数を宣言する。
-
-macrostatement は、 declarglist で与えられた値を declverlist に
-設定、変更するための処理を記載する。
-この処理内で利用可能な関数、制御文は制限される。
-
-次の condexp は、マクロ展開を行なうかどうかの条件判定を行なう式である。
-この式が真となる場合、続く expandstatement をそのまま展開する。
-この式はシンボル symbol と val の比較演算 ope によって表わす。
-この condexp と expandstatement 内で、
-declarglist と declverlist を利用することが出来る。
-
-
-次は、マクロ定義の例である。
+次は、マクロの簡単な例である。
 
 #+BEGIN_SRC lns
-macro _test( val: int, symbol: Symbol ) {
-  let work = 1;
-  let funcSym = symbol;  
-  {
-     work = work + val;
-     funcSym = "%sfunc" (symbol);
-  }
-  if val == 1 {
-     funcSym( work );
-  }
-  if val == 2 {
-     funcSym( work + 2 );
-  }
+macro _hello( word: str ) {
+  { print( "hello" .. str ); }
 }
-
-_test( 1, sub ); '' subfunc( 2 );
-_test( 2, foo ); '' foofunc( 3 + 2 );
+_hello( "world" ); '' print( "hello" .. "world" );
 #+END_SRC
 
-上記は、マクロ _test を定義する。
-このマクロは 2 つの引数(int,Symbol)を持つ。
-declverlist として work と funcSym を定義する。
-macrostatement として、 work と funcSym を設定する。
-expandstatement として、 funcSym を関数呼び出しする。
+この例では macro-statement は無く、 expand-statement だけがあり、
+expand-statement の print が展開されている。
 
-結果として、上記マクロは subfunc( 2 ) と foofunc( 3 + 2 ) に展開される。
 
-ここで重要なのは、あくまでマクロはコンパイル時にソースに展開されるのであって、
-スクリプト実行時にマクロは動作しない、ということである。
+マクロ内では、他の関数と同じように処理を書ける。
+ただし、 macro-statement 内では、標準関数の一部しか利用できない。
+
+C のような定数に名前を付けるためにマクロは利用できない。
+そのような使い方をしたい場合は enum を使用すること。
+
+*** ~`{ }~
+
+マクロ内では、次の特殊な syntax を利用できる。
+
+- ~`{ }~
+- ,,
+- ,,,
+
+macro-statement  内で ~`{}~ を使用すると、
+その中で書いたステートメントを、値として扱うことができる。
+
+,,, は、直後に続く *式* を評価して得られた *文字列をシンボルに変換* する演算子である。
+,, は、直後に続く *式* を評価する演算子である。
+
+例えば次のマクロでは、
+
+#+BEGIN_SRC lns
+macro _test( symbol: str, val: int ) {
+   {
+       let symbol: sym = ,,,"%sfunc" (str);
+       let list: stat[] = [];
+       for count = 1, val {
+          table.insert( list, `{ ,,,"func%d" ( count ) (); } );
+       }
+   }
+   {
+      if foo {
+        ,,sym( 1 );
+      }
+      else {
+        ,,list;
+      }
+   }
+}
+
+_test( "sub", 5 );
+#+END_SRC
+
+マクロ展開によって次のように展開される。
+
+#+BEGIN_SRC lns
+  if foo {
+    subfunc( 1 );
+  }
+  else {
+    func1();
+    func2();
+    func3();
+    func4();
+    func5();
+  }
+#+END_SRC
+
+ここで注目すべき点は、次の 2 点である。
+
+- symbol 型の変数 sym に、 "%sfunc" (str) で作成した文字列からシンボルを格納した後、
+  ,,sym でシンボルを展開している。
+- stat[] 型の変数 list に、 ~`{}~ で作成したステートメントを格納した後、
+  ,,list でステートメントを展開している。
+
+上記の通り、マクロ内では通常の型以外に次の型を利用できる。
+
+- シンボルを格納する symbol 型
+- ステートメントを格納する stat 型
+
+マクロはステートメントを定義する箇所であれば、どこでも呼び出せる。
+マクロ内でクラスや関数を定義することもできる。
 
 *** マクロの意義
 
 上記の通り、マクロは通常の関数と比べて制限がある。
-またマクロで行なえる処理は、マクロでなく関数でも行なうことが可能である。
+またマクロで行なえる処理は、関数等を組合せて実現できる。
 
 では、マクロを使う意義は何か？
 
