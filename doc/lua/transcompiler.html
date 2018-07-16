@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Lua のトランスコンパイラを考える (LuneScript)</title>
-<!-- 2018-07-13 金 00:27 -->
+<!-- 2018-07-17 火 00:51 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="ifritJP" />
@@ -219,7 +219,7 @@ for the JavaScript code in this tag.
 </li>
 <li><a href="#sec-5-11">5.11. マクロ</a>
 <ul>
-<li><a href="#sec-5-11-1">5.11.1. <code>`{ }</code></a></li>
+<li><a href="#sec-5-11-1">5.11.1. macro-statement で利用できる追加 syntax</a></li>
 <li><a href="#sec-5-11-2">5.11.2. マクロの意義</a></li>
 </ul>
 </li>
@@ -2019,7 +2019,8 @@ pub や extend など同じものを宣言しなければならない。
 <h3 id="sec-5-11"><span class="section-number-3">5.11</span> マクロ</h3>
 <div class="outline-text-3" id="text-5-11">
 <p>
-マクロ定義を採用する。
+簡易的なマクロを採用する。
+List などのような本来のマクロではなく、あくまでも簡易的な機能である。
 </p>
 
 <p>
@@ -2028,9 +2029,9 @@ pub や extend など同じものを宣言しなければならない。
 
 <div class="org-src-container">
 
-<pre class="src src-lns">macro _name ( decl-arg-list ) {
-  macro-statement
-  { expand-statement }
+<pre class="src src-lns"><span style="color: #fa8072;">macro</span> _name ( decl-arg-list ) {
+  { macro-statement }
+  expand-statement
 }
 </pre>
 </div>
@@ -2051,13 +2052,13 @@ expand-statement で書いた内容が、マクロで展開される。
 </p>
 
 <p>
-次は、マクロの簡単な例である。
+次は、単純なマクロの例である。
 </p>
 
 <div class="org-src-container">
 
-<pre class="src src-lns">macro _hello( word: <span style="color: #00ced1;">str</span> ) {
-  { <span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"hello"</span> .. <span style="color: #00ced1;">str</span> ); }
+<pre class="src src-lns"><span style="color: #fa8072;">macro</span> _hello( word: <span style="color: #00ced1;">str</span> ) {
+  <span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"hello"</span> .. <span style="color: #00ced1;">str</span> ); 
 }
 _hello( <span style="color: #00f5ff;">"world"</span> ); <span style="color: #98fb98;">'' print( "hello" .. "world" );</span>
 </pre>
@@ -2081,30 +2082,43 @@ C のような定数に名前を付けるためにマクロは利用できない
 </div>
 
 <div id="outline-container-sec-5-11-1" class="outline-4">
-<h4 id="sec-5-11-1"><span class="section-number-4">5.11.1</span> <code>`{ }</code></h4>
+<h4 id="sec-5-11-1"><span class="section-number-4">5.11.1</span> macro-statement で利用できる追加 syntax</h4>
 <div class="outline-text-4" id="text-5-11-1">
 <p>
-マクロ内では、次の特殊な syntax を利用できる。
+macro-statement 内では、次の特殊な syntax を追加で利用できる。
 </p>
 
 <ul class="org-ul">
-<li><code>`{ }</code>
+<li>,,,,
+</li>
+<li>,,,
 </li>
 <li>,,
 </li>
-<li>,,,
+<li><code>`{ }</code>
 </li>
 </ul>
 
 <p>
-macro-statement  内で <code>`{}</code> を使用すると、
-その中で書いたステートメントを、値として扱うことができる。
+,,,, は、直後に続く <b>シンボル</b> を <b>文字列に変換</b> する演算子である。
+,,, は、直後に続く <b>式</b> を評価して得られた <b>文字列をシンボルに変換</b> する演算子である。
 </p>
 
 <p>
-,,, は、直後に続く <b>式</b> を評価して得られた <b>文字列をシンボルに変換</b> する演算子である。
-,, は、直後に続く <b>式</b> を評価する演算子である。
+<code>`{}</code> は、~`{}~  内で書いたステートメントを、そのままの値とすることが出来る。
+macro-statement 内で <code>`{}</code> で書いたステートメントは、
+macro-expand で展開することができる。
+<code>`{}</code>  内では変数の参照や関数の実行を書いても、
+macro-statement 内では評価されない。
+macro-expand で展開時に評価される。
 </p>
+
+<p>
+,, は、直後に続く <b>式</b> を評価する演算子である。
+,,、 ,,,、 ,,,,、 は <code>`{}</code>  内で利用することで、
+macro-statement 内で式を評価することが出来る。
+</p>
+
 
 <p>
 例えば次のマクロでは、
@@ -2112,25 +2126,36 @@ macro-statement  内で <code>`{}</code> を使用すると、
 
 <div class="org-src-container">
 
-<pre class="src src-lns">macro _test( symbol: <span style="color: #00ced1;">str</span>, val: <span style="color: #00ced1;">int</span> ) {
-   {
-       <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">symbol</span>: sym = ,,,<span style="color: #00f5ff;">"%sfunc"</span> (<span style="color: #00ced1;">str</span>);
-       <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">list</span>: stat[] = [];
-       <span style="color: #fa8072;">for</span> <span style="color: #adff2f;">count</span> = 1, val {
-          table.insert( list, `{ ,,,<span style="color: #00f5ff;">"func%d"</span> ( count ) (); } );
-       }
-   }
-   {
-      <span style="color: #fa8072;">if</span> foo {
-        ,,sym( 1 );
-      }
-      <span style="color: #fa8072;">else</span> {
-        ,,list;
-      }
-   }
+<pre class="src src-lns"><span style="color: #fa8072;">macro</span> _test2( val:<span style="color: #00ced1;">int</span>, funcxx:<span style="color: #00ced1;">sym</span> ) {
+    {
+        <span style="color: #fa8072;">fn</span> <span style="color: #ffff00;">func</span>(val2:<span style="color: #00ced1;">int</span>):<span style="color: #00ced1;">str</span> {
+            <span style="color: #fa8072;">return</span> <span style="color: #00f5ff;">"mfunc%d"</span> (val2);
+        }
+        <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">message</span> = <span style="color: #00f5ff;">"hello %d %s"</span> ( val, ,,,,funcxx );
+        <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">stat</span> = `{ <span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"macro stat"</span> ); };
+        <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">stat2</span> = `{
+            <span style="color: #fa8072;">for</span> <span style="color: #adff2f;">index</span> = 1, 10 {
+                <span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"hoge %d"</span> ( index ) );
+            }
+        };
+        <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">stat3</span>:stat[] = [];
+        <span style="color: #fa8072;">for</span> <span style="color: #adff2f;">index</span> = 1, 4 {
+            table.insert( stat3, `{ <span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"foo %d"</span> ( ,,index ) ); } );
+        }
+        <span style="color: #fa8072;">let</span> <span style="color: #adff2f;">stat4</span> = ,,,func( 1 );
+    }
+    <span style="color: #ff69b4;">print</span>( message );
+    funcxx( <span style="color: #00f5ff;">"macro test2"</span> );
+    stat;
+    stat2;
+    stat3;
+    stat4( 10 );
+}
+<span style="color: #fa8072;">fn</span> <span style="color: #ffff00;">mfunc1</span>( val: <span style="color: #00ced1;">int</span> ) {
+    <span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"mfunc1"</span>, val );
 }
 
-_test( <span style="color: #00f5ff;">"sub"</span>, 5 );
+_test2( 1, <span style="color: #ff69b4;">print</span> );
 </pre>
 </div>
 
@@ -2140,38 +2165,45 @@ _test( <span style="color: #00f5ff;">"sub"</span>, 5 );
 
 <div class="org-src-container">
 
-<pre class="src src-lns"><span style="color: #fa8072;">if</span> foo {
-  subfunc( 1 );
-}
-<span style="color: #fa8072;">else</span> {
-  func1();
-  func2();
-  func3();
-  func4();
-  func5();
-}
+<pre class="src src-lns"><span style="color: #ff69b4;">print</span>( [[hello 1 <span style="color: #ff69b4;">print</span>]] )                      <span style="color: #98fb98;">'' print( message );</span>
+<span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"macro test2"</span> )                          <span style="color: #98fb98;">'' funcxx( "macro test2" );</span>
+<span style="color: #ff69b4;">print</span>( <span style="color: #00f5ff;">"macro stat"</span> )                           <span style="color: #98fb98;">'' stat2;</span>
+<span style="color: #fa8072;">for</span> <span style="color: #adff2f;">index</span> = 1, 10 do                            
+  <span style="color: #ff69b4;">print</span>( string.format( <span style="color: #00f5ff;">"hoge %d"</span>, index) )     
+end
+<span style="color: #ff69b4;">print</span>( string.format( <span style="color: #00f5ff;">"foo %d"</span>, 1) )            <span style="color: #98fb98;">'' stat3;</span>
+<span style="color: #ff69b4;">print</span>( string.format( <span style="color: #00f5ff;">"foo %d"</span>, 2) )
+<span style="color: #ff69b4;">print</span>( string.format( <span style="color: #00f5ff;">"foo %d"</span>, 3) )
+<span style="color: #ff69b4;">print</span>( string.format( <span style="color: #00f5ff;">"foo %d"</span>, 4) )
+mfunc1( 10 )                                    <span style="color: #98fb98;">'' stat4(10)</span>
 </pre>
 </div>
 
 <p>
-ここで注目すべき点は、次の 2 点である。
+ここで注目すべき点は、次の点である。
 </p>
 
 <ul class="org-ul">
-<li>symbol 型の変数 sym に、 "%sfunc" (str) で作成した文字列からシンボルを格納した後、
-,,sym でシンボルを展開している。
-</li>
-<li>stat[] 型の変数 list に、 <code>`{}</code> で作成したステートメントを格納した後、
-,,list でステートメントを展開している。
+<li>_test2( 1, print ) のマクロ呼び出しで print を渡しているが、
+これは print が保持する関数オブジェクトを渡しているのではなく、
+print シンボルそのものを渡している。
+<ul class="org-ul">
+<li>マクロ呼び出しに渡す引数は、評価される前のものが渡される。
 </li>
 </ul>
+</li>
+<li>stat2 は、 for 文そのものを展開しているのに対し、
+stat3 は、 for 文で作成したステートメントを展開している。
+</li>
+</ul>
+
 
 <p>
 上記の通り、マクロ内では通常の型以外に次の型を利用できる。
 </p>
 
 <ul class="org-ul">
-<li>シンボルを格納する symbol 型
+<li>シンボルを格納する sym 型
 </li>
 <li>ステートメントを格納する stat 型
 </li>
@@ -2188,8 +2220,8 @@ _test( <span style="color: #00f5ff;">"sub"</span>, 5 );
 <h4 id="sec-5-11-2"><span class="section-number-4">5.11.2</span> マクロの意義</h4>
 <div class="outline-text-4" id="text-5-11-2">
 <p>
-上記の通り、マクロは通常の関数と比べて制限がある。
-またマクロで行なえる処理は、関数等を組合せて実現できる。
+マクロは通常の関数と比べて幾つかの制限がある。
+またマクロで行なえる処理は、関数等を組合せることで実現できる。
 </p>
 
 <p>
@@ -2331,7 +2363,7 @@ require するモジュールの各メンバ、メソッドの型を宣言する
 
 <div class="org-src-container">
 
-<pre class="src src-lns">[pub|pro|pri] <span style="color: #fa8072;">wrap</span> wrapModule : <span style="color: #ff69b4;">module</span> {
+<pre class="src src-lns">[pub|pro|pri] <span style="color: #fa8072;">wrap</span> wrapModule : module {
   <span style="color: #fa8072;">pub</span> <span style="color: #fa8072;">fn</span> <span style="color: #ffff00;">func</span>( arglist ) <span style="color: #fa8072;">mut</span> : retTypeList;
 }
 </pre>
@@ -2466,7 +2498,7 @@ unop ::= '-' | not | '#' | '~' | '?' | '*'
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2018-07-13 金 00:27</p>
+<p class="date">Created: 2018-07-17 火 00:51</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode N/A-fixup)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

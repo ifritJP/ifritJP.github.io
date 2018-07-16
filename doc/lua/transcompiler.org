@@ -1017,14 +1017,15 @@ pub や extend など同じものを宣言しなければならない。
 
 ** マクロ
 
-マクロ定義を採用する。
+簡易的なマクロを採用する。
+List などのような本来のマクロではなく、あくまでも簡易的な機能である。
 
 マクロは次のように定義する。
 
 #+BEGIN_SRC lns
 macro _name ( decl-arg-list ) {
-  macro-statement
-  { expand-statement }
+  { macro-statement }
+  expand-statement
 }
 #+END_SRC
 
@@ -1037,11 +1038,11 @@ decl-arg-list は、マクロで使用する引数を宣言する。
 macro-statement は、 expand-statement で使用する変数を設定する処理を書く。
 expand-statement で書いた内容が、マクロで展開される。
 
-次は、マクロの簡単な例である。
+次は、単純なマクロの例である。
 
 #+BEGIN_SRC lns
 macro _hello( word: str ) {
-  { print( "hello" .. str ); }
+  print( "hello" .. str ); 
 }
 _hello( "world" ); '' print( "hello" .. "world" );
 #+END_SRC
@@ -1056,69 +1057,94 @@ expand-statement の print が展開されている。
 C のような定数に名前を付けるためにマクロは利用できない。
 そのような使い方をしたい場合は enum を使用すること。
 
-*** ~`{ }~
+*** macro-statement で利用できる追加 syntax
 
-マクロ内では、次の特殊な syntax を利用できる。
+macro-statement 内では、次の特殊な syntax を追加で利用できる。
 
-- ~`{ }~
-- ,,
+- ,,,,
 - ,,,
+- ,,
+- ~`{ }~
 
-macro-statement  内で ~`{}~ を使用すると、
-その中で書いたステートメントを、値として扱うことができる。
-
+,,,, は、直後に続く *シンボル* を *文字列に変換* する演算子である。
 ,,, は、直後に続く *式* を評価して得られた *文字列をシンボルに変換* する演算子である。
+
+~`{}~ は、~`{}~  内で書いたステートメントを、そのままの値とすることが出来る。
+macro-statement 内で ~`{}~ で書いたステートメントは、
+macro-expand で展開することができる。
+~`{}~  内では変数の参照や関数の実行を書いても、
+macro-statement 内では評価されない。
+macro-expand で展開時に評価される。
+
 ,, は、直後に続く *式* を評価する演算子である。
+,,、 ,,,、 ,,,,、 は ~`{}~  内で利用することで、
+macro-statement 内で式を評価することが出来る。
+
 
 例えば次のマクロでは、
 
 #+BEGIN_SRC lns
-macro _test( symbol: str, val: int ) {
-   {
-       let symbol: sym = ,,,"%sfunc" (str);
-       let list: stat[] = [];
-       for count = 1, val {
-          table.insert( list, `{ ,,,"func%d" ( count ) (); } );
-       }
-   }
-   {
-      if foo {
-        ,,sym( 1 );
-      }
-      else {
-        ,,list;
-      }
-   }
+macro _test2( val:int, funcxx:sym ) {
+    {
+        fn func(val2:int):str {
+            return "mfunc%d" (val2);
+        }
+        let message = "hello %d %s" ( val, ,,,,funcxx );
+        let stat = `{ print( "macro stat" ); };
+        let stat2 = `{
+            for index = 1, 10 {
+                print( "hoge %d" ( index ) );
+            }
+        };
+        let stat3:stat[] = [];
+        for index = 1, 4 {
+            table.insert( stat3, `{ print( "foo %d" ( ,,index ) ); } );
+        }
+        let stat4 = ,,,func( 1 );
+    }
+    print( message );
+    funcxx( "macro test2" );
+    stat;
+    stat2;
+    stat3;
+    stat4( 10 );
+}
+fn mfunc1( val: int ) {
+    print( "mfunc1", val );
 }
 
-_test( "sub", 5 );
+_test2( 1, print );
 #+END_SRC
 
 マクロ展開によって次のように展開される。
 
 #+BEGIN_SRC lns
-  if foo {
-    subfunc( 1 );
-  }
-  else {
-    func1();
-    func2();
-    func3();
-    func4();
-    func5();
-  }
+print( [[hello 1 print]] )			'' print( message );
+print( "macro test2" )				'' funcxx( "macro test2" );
+print( "macro stat" )				'' stat2;
+for index = 1, 10 do				
+  print( string.format( "hoge %d", index) )	
+end
+print( string.format( "foo %d", 1) )		'' stat3;
+print( string.format( "foo %d", 2) )
+print( string.format( "foo %d", 3) )
+print( string.format( "foo %d", 4) )
+mfunc1( 10 )					'' stat4(10)
 #+END_SRC
 
-ここで注目すべき点は、次の 2 点である。
+ここで注目すべき点は、次の点である。
 
-- symbol 型の変数 sym に、 "%sfunc" (str) で作成した文字列からシンボルを格納した後、
-  ,,sym でシンボルを展開している。
-- stat[] 型の変数 list に、 ~`{}~ で作成したステートメントを格納した後、
-  ,,list でステートメントを展開している。
+- _test2( 1, print ) のマクロ呼び出しで print を渡しているが、
+  これは print が保持する関数オブジェクトを渡しているのではなく、
+  print シンボルそのものを渡している。
+  - マクロ呼び出しに渡す引数は、評価される前のものが渡される。
+- stat2 は、 for 文そのものを展開しているのに対し、
+  stat3 は、 for 文で作成したステートメントを展開している。
+  
 
 上記の通り、マクロ内では通常の型以外に次の型を利用できる。
 
-- シンボルを格納する symbol 型
+- シンボルを格納する sym 型
 - ステートメントを格納する stat 型
 
 マクロはステートメントを定義する箇所であれば、どこでも呼び出せる。
@@ -1126,8 +1152,8 @@ _test( "sub", 5 );
 
 *** マクロの意義
 
-上記の通り、マクロは通常の関数と比べて制限がある。
-またマクロで行なえる処理は、関数等を組合せて実現できる。
+マクロは通常の関数と比べて幾つかの制限がある。
+またマクロで行なえる処理は、関数等を組合せることで実現できる。
 
 では、マクロを使う意義は何か？
 
