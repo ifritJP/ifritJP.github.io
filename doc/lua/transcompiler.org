@@ -379,53 +379,112 @@ let val: int;
 
 *** ! 型 (nilable)
 
-変数の型の末尾に ! を付加することで、nil を設定可能な変数となる。
+変数の型の末尾に ! を付加することで、nil を保持可能な型(nilable)となる。
+逆に言えば、 nilable でなければ、nil は保持出来ない。
+ただし、 stem 型は nil を含めた全ての型のデータを保持できる。
+
+例えば次の val は、nil と int を設定可能であるのに対し、
+val2 は、 nil を設定できない。
+これはコンパイル時に判定される。
 
 #+BEGIN_SRC lns
 let val: int!;
 val = 1;
 val = val + 1; '' error
+let val2: int = nil; '' error
 #+END_SRC
 
-例えば上記は nil を設定可能な int 型となる。
+nilable は nil となる可能性があるが、
+stem 型以外の 非nilable の型は nil にならない。
+つまり、非 nilable 型を利用している間は、
+意図しないタイミングで nil アクセスエラーが発生しないことを保証できる。
 
 nilable 型の値は、そのままでは本来の型としては使用できない。
 上記の例では val は int として演算に使用できない。
 
-*** unwrap
+nilable 型から本来の値に戻すには、次のいずれかの syntax を利用する。
+
+- unwrap
+- unwrap!
+- let!
+
+**** unwrap
 
 nilable 型から本来の型にするには、 unwrap を使用する。
 
-#+BEGIN_SRC lns
-unwrap exp1 [ instead exp2 ]
-#+END_SRC
-
-exp1 には、nilable の値を渡す。
-exp2 には、 exp1 が nil だった時に、代わりとなる値を渡す。
-exp2 の型は、 exp1 の nilable を外した型でなければならない。
-例えば exp1 が int! だった場合、 exp2 は int 型でなければならない。
-instead が省略されていて exp1 が nil だっあ場合は、プログラムをエラー終了する。
+unwrap は、式である。
 
 #+BEGIN_SRC lns
-let val: int!;
-let val2: int = unwrap val instead 0;
-print( "%d", val );
+unwrap exp [ default insexp ]
 #+END_SRC
 
-*** let!
+unwrap の評価結果は、 exp の nilable を外した型となる。
+
+exp には、評価結果が nilable となる式を渡さなければならない。
+insexp には、 exp が nil だった時に、代わりとなる式を渡す。
+insexp の型は、 exp の nilable を外した型でなければならない。
+例えば exp が int! だった場合、 insexp は int 型でなければならない。
+instead が省略されていて exp が nil だった場合、プログラムはエラー終了する。
+
+exp が nilable でない場合は、 コンパイルエラーする。
+
+#+BEGIN_SRC lns
+{
+  let val: int! = nil;
+  let val2 = unwrap val instead 0;
+  print( "%d", val ); '' 0
+}
+{
+  let val: int! = 1;
+  let val2 = unwrap val instead 0;
+  print( "%d", val ); '' 1
+}
+#+END_SRC
+
+上記の例は、
+最初の unwrap では val が nil のため instead の評価結果が返り、
+2つめの unwrap では val が 1 のため、1 が返っている。
+
+
+**** unwrap!
+
+unwrap! は、 前述の unwrap 処理と、変数への代入を同時に行なう。
+     
+#+BEGIN_SRC lns
+unwrap! symbol {, symbol }  = exp[, exp ] block [sync block];
+#+END_SRC
+
+exp が nil でない場合、評価結果を symbol に代入する。
+
+いずれかの exp が nil だった場合、ブロック block を実行する。
+このとき、nil だった exp に対する symbol の値は未定義となる。
+このブロック内では、 symbol に対して適切な値を設定するか、
+symbol のスコープから抜けなければならない。
+またブロック内では、 _exp%d のシンボルで、 exp の結果にアクセスできる。
+
+
+syncblock は、  symbol に値をセットした後に処理するブロックである。
+
+syncblock 処理終了後、syncblock 内で symbol に対して設定した値が、outsymbol に反映される。
+ただし、syncblock を return 等で抜けた場合は反映されない。
+
+*このとき symbol と outsymbol は、同じ型でなければならない。*
+
+
+**** let!
 
 let! は、変数宣言と unwrap を同時に行なう。
     
 #+BEGIN_SRC lns
-let! symbol [, symbol ]  = exp[, exp ] { };
+let! symbol {, symbol }  = exp[, exp ] block [ then thenblock ];
 #+END_SRC
 
-exp の値が nil の場合、{} のブロックを実行する。
+いずれかの exp の値が nil の場合、ブロックを実行する。
 ブロックの処理で、この let を宣言したスコープから抜けるか、
 symbol に適切な値を設定しなければならない。
 
-*let! は、スコープ内に同名の変数を宣言出来る。*
-*ただし、もとの同名の変数の型は、 exp と同じ nilable 型でなければならない。*
+ブロック内では '_' + symbol の名前で exp の値を参照できる。
+
 
 *** 所有権とライフタイム
 
@@ -439,7 +498,7 @@ let & ref: int;
 #+END_SRC
 
 
-次の値は、所有権は移動せずにコピーされる。
+次の値は、所有権が移動せずにコピーされる。
 
 - 数値型
 - func
@@ -509,8 +568,6 @@ let val: int[];
 #+END_SRC
 
 配列型のデータアクセスは Lua と同じ。
-
-
 
 *** Map 型の宣言
      
