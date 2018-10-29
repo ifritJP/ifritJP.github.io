@@ -1,0 +1,113 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript チュートリアル Hello world
+
+今回は、 LuneScript を使った Hello world の紹介です。
+
+* lnsc コマンド
+
+LuneScript を導入すると、lnsc コマンドがインストールされます。
+
+lnsc コマンドは次のように利用します。
+
+#+BEGIN_SRC sh
+$ lnsc src.lns exe
+#+END_SRC
+
+ここで src.lns は、 LuneScript で作成したスクリプトです。
+exe は lnsc のオプションで、 指定したスクリプトを実行することを意味します。
+
+* Hello world 
+
+では LuneScript を使って、伝統の Hello world を実行してみましょう。
+
+次の内容を持つファイル hello.lns を作成してください。
+
+#+BEGIN_SRC sh
+print( "Hello world." );
+#+END_SRC
+
+そして、次のコマンドを実行します。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns exe
+#+END_SRC
+
+これで "Hello world" が出力されました。
+
+これだけだと面白くもなんともないので、もう少し話を続けます。
+
+まずは、 hello.lns を次のように少し変更します。
+
+#+BEGIN_SRC sh
+let txt = "world";
+print( "Hello %s." ( txt ) );
+#+END_SRC
+
+このスクリプトの結果も ~Hello world.~ になります。
+
+では、次のコマンドを実行してみてください。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns lua
+#+END_SRC
+
+次が出力されたと思います。
+
+#+BEGIN_SRC lua
+--hello.lns
+local _moduleObj = {}
+local __mod__ = 'hello'
+if not _lune then
+   _lune = {}
+end
+local txt = "world"
+print( string.format( "Hello %s.", txt) )
+return _moduleObj
+#+END_SRC
+
+これは hello.lns を Lua に変換したコードです。
+
+なんだかゴチャゴチャしていますが、
+~print( string.format( "Hello %s.", txt) )~ が出力されているのが分かると思います。
+
+これは、 LuneScript で書いた ~print( "Hello %s." ( txt ) )~ が、
+Lua にトランスコンパイルする際に
+~print( string.format( "Hello %s.", txt) )~ に展開されていることを示します。
+
+では、次のコマンドを実行してください。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns save
+#+END_SRC
+
+これによって、 hello.lua ファイルが作成されました。
+hello.lua ファイルの内容は、先ほど出力した Lua のコードと同じものです。
+
+では、次のコマンドで hello.lua を実行してください。
+
+#+BEGIN_SRC sh
+$ lua5.3 hello.lua
+#+END_SRC
+
+~Hello world.~ が出力されているでしょう。
+Lua にトランスコンパイルしたコードは、
+LuneScript に依存しない Lua のコードになります。
+
+
+
+最初に実行した ~lnsc hello.lns exe~ は、
+LuneScript のスクリプトをトランスコンパイルし、実行まで行なうコマンドです。
+
+次に実行した ~lnsc hello.lns lua~ は、
+LuneScript のスクリプトをトランスコンパイルし、Lua コードを標準出力するコマンドです。
+
+最後に実行した ~lnsc hello.lns save~ は、
+LuneScript のスクリプトをトランスコンパイルし、Lua コードを保存するコマンドです。
+
+チュートリアルでは exe を利用しつつ、
+変換後のコードを確認する際は save コマンドを利用していきます。
