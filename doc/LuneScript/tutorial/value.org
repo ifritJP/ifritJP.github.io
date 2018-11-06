@@ -1,0 +1,139 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript チュートリアル 値編
+
+今回は、 LuneScript で扱える値について説明します。
+
+* 値の型
+
+LuneScript で扱える値の型と、Lua の値との対応表を示します。
+
+| LuneScript | Lua          | 用途                   | LuneScript での定義方法 |
+|------------+--------------+------------------------+-------------------------|
+| nil, null  | nil          | nil                    | nil                     |
+| int        | 数値         | 整数                   | 0 1 2 3 ?A 0x10 -100    |
+| real       | 数値         | 実数                   | 0.0 1.0 0.001           |
+| str        | 文字列       | 文字列, バイナリデータ | "abc" 'def'  ```hij```  |
+| bool       | 真偽値       | 真偽値                 | true false              |
+| List       | テーブル     | リスト                 | [1, 2, 3 ]              |
+| Array      | テーブル     | 配列(固定長)           | [@ 1, 2, 3 ]            |
+| Map        | テーブル     | マップ                 | { "A":1, "BC": 100 }    |
+| class      | テーブル     | クラス                 | class Test {}           |
+| interface  | テーブル     | インタフェース         | interface Test {}       |
+| fn         | function     | 関数                   | fn func() {}            |
+| enum       | 数値、文字列 | enum                   | enum Test { }           |
+| stem       | 値           | 全ての値を保持可能な型 |                         |
+
+
+上記の通り、 LuneScript では Lua の値を細分化してそれぞれを個別の型として扱います。
+
+細分化の意図は、 Lua の次の仕様を改善することです。
+
+- Lua の数値は全て実数であり、
+  慣れていないと数値が実数であることによる不具合が生じる。
+  例えば ~10/3~ の Lua の計算結果は、3 ではなく 3.3333 となる。
+- Lua のテーブルは、インデックスが自然数となる *シーケンス* と、
+  インデックスが自然数とならない *非シーケンス* に分かれる。
+  - この違いによって、テーブル内のデータを列挙する際の関数が 
+    ipairs と pairs に分かれており、使い分けが必要になる。
+     - pairs だけを使っていれば問題ないとも言えるが。。。
+  - テーブルのサイズを取得する ~#~ 演算子は、シーケンスのサイズを返すのであり、
+    非シーケンスのサイズを返さないため、紛らわしい。
+    
+    
+** 文字
+
+LuneScript は、
+~?~ を使用することで ~?~ に続く文字のコードを、
+int 型のプリミティブな値として扱えます。
+
+#+BEGIN_SRC lns
+print( ?a ) // 97  (0x61)
+#+END_SRC
+
+なお、 ' や " の文字のコードを得る場合、
+?\' のように \ でエスケープする必要があります。
+
+** 文字列
+
+" か ' で囲むと文字列になります。
+"" 内では ' が使用でき、 '' 内では " が使用できます。
+
+なお、 "", '' は改行を含めることはできません。
+改行を含める場合は "\n" とします。
+
+\n を使用せずに複数行の文字列を定義するには ~```~ を使用します。
+~``````~ 内の \n は、改行ではなくそのまま \n として文字列になります。
+
+
+文字列内の特定位置の文字を取得するには、 [] を使用します。
+
+#+BEGIN_SRC lns
+let txt = "abc";
+print( txt[ 2 ] );  // 98
+#+END_SRC
+
+
+** リスト
+
+リストは値を追加、削除可能な型です。
+
+#+BEGIN_SRC lns
+let mut list:List<int> = [];
+list.insert( 1 ); // [ 1 ]
+list.insert( 2 ); // [ 1, 2 ]
+list.insert( 3 ); // [ 1, 2, 3 ]
+list.remove(); // [ 1, 2 ]
+print( list[1] ) // 1
+#+END_SRC
+
+リストの要素には [index] でアクセスします。
+リストの先頭の index は 1 です。
+
+リストの長さを取得するのは ~#~ です。
+例えば ~#list~ は、 リスト型の変数 list の長さを取得します。
+
+** Map   
+    
+Map の表示は JSON フォーマットです。
+また、 null を nil の alias としているため、
+JSON そのものを扱うことが出来ます。
+
+#+BEGIN_SRC lns
+let mut map:Map<str,int> = {};
+map[ "abc" ] = 1;
+map.xyz = 10;
+#+END_SRC
+
+Map の要素には [key] でアクセスします。
+key の型が str の場合、 .key としてもアクセスできます。
+
+例えば、次の [ "abc" ] と .abc は同じ要素にアクセスするため、
+print は true を出力します。
+
+#+BEGIN_SRC lns
+print( map[ "abc" ] == map.abc ); // true
+#+END_SRC
+
+なお、マップに対して ~#~ 演算子は使用できません。
+
+** generics
+
+List, Array, Map は generics 対応しています。
+
+- List<int>
+  - int を要素に持つリスト
+- Array<real>
+  - real を要素に持つ配列
+- Map<str,int>
+  - str をキー、int を値に持つマップ
+
+** enum
+
+LuneScript は enum に対応しています。
+
+詳細は明日の記事を参照してください。
