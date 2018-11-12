@@ -1,0 +1,252 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript チュートリアル enum 編
+
+今回は、 LuneScript の enum 値について説明します。
+
+* enum
+
+LuneScript の enum は、値の集合に名前を付けて管理することが出来ます。
+
+enum として扱える値の型は次の通りです。
+
+- int
+- real
+- str  
+
+1 つの enum の値域は、複数の値から定義できますが、
+値の型は統一する必要があります。
+
+つまり、 int の値を持つ enum は、 real や str の値は定義できません。
+
+** 定義方法
+
+enum は次のように定義します。
+   
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 );  // 0, 1, 2
+#+END_SRC
+
+enum 値の値を指定する場合は、次のように定義します。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0 = 10,
+  val1,
+  val2 = 20,
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 ); // 10, 11, 20
+#+END_SRC
+
+enum 値を定義する際に、値を省略した場合、次に従って値を assign します。
+
+- 直前の enum 値に 1 を加算した値を assign する。
+- 先頭の enum 値は 0 
+
+なお、 enum 値に文字列を assign する場合、値を省略することは出来ません。
+
+
+enum 値に設定する値には、式を指定出来ます。
+ただし、この式はプリミティブな値だけを使用している必要があります。
+
+例えば次のような場合、
+
+#+BEGIN_SRC lns
+fn func(): int {
+  return 100;
+}
+enum TestEnum {
+  val0,
+  val1 = val0 + 10,  // 10
+  val2 = func(),     // error
+}
+#+END_SRC
+
+~val = val0 + 10~ は、プリミティブな値を利用しているため指定可能ですが、
+~val2 = func()~ は、プリミティブな値ではないためエラーとなります。
+
+** 使用方法
+
+定義した enum は、次のように型として利用できます。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+print( func( TestEnum.val1 ) ); // 101
+#+END_SRC
+
+ここで func() の引数 val は TestEnum 型です。
+これにより、 func() の引数 val は単なる int ではなく、
+値域が制限された int とすることが出来ます。
+
+enum 値を指定する場合は、
+~TestEnum.val~ のように ~enum 型シンボル.enum 値シンボル~ となります。
+
+** 省略指定
+
+基本的に enum 値を指定するには、
+~enum 型シンボル.enum 値シンボル~ となりますが、
+代入先の型が enum 型であることが分っている場合、
+~enum 型シンボル~ を省略することが出来ます。
+
+例えば次の場合、 func() の引数は TestEnum 型であることが分っているので、
+TestEnum.val1 ではなく、 .val1 として指定できます。
+   
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+print( func( .val1 ) ); // 101
+#+END_SRC
+
+なお、 外部モジュールで定義されている enum 型を省略指定する場合、
+その外部モジュールを import している必要があります。
+
+import については後日説明します。
+
+** enum 値の変換
+
+enum 値は、enum 値として以外に、定義した値としても利用できます。
+
+これは上の例の val + 100 を見ると分かると思いますが、
+val は TestEnum で定義した enum 値ですが、それは 0, 1, 2 のいずれかでもあります。
+(上の例では val1 を渡しているので 1 になる)。
+よって ~val + 100~ は、 1 + 100 となり結果的に 101 となります。
+
+一方で次の例を見てください。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( val ); // error
+#+END_SRC
+
+この例の ~func( val )~ はエラーとなります。
+
+これは、 val の型が int であり、 TestEnum と異なるためエラーとなります。
+
+enum 値に assign している型の値から、
+対応する enum 値に変換するには、次のように _from() 関数を利用します。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( unwrap TestEnum._from( val ) );
+#+END_SRC
+
+ここで ~func( unwrap TestEnum._from( val ) )~ は、
+TestEnum._from() によって val に対応する TestEnum の enum 値を取得し、
+それを func() に渡しています。
+
+unwrap については後日説明します。
+
+
+** enum 値名
+
+enum 値はシンボルに値を assign します。
+
+enum 値は $_txt によって、このシンボル名を動的に取得できます。
+
+例えば次の場合、TestEnum.val1 が出力されます。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ) {
+   print( val.$_txt ); 
+}
+func( .val1 ); // TestEnum.val1
+#+END_SRC
+
+$_txt によって、 enum 値のシンボル名を取得しています。
+
+$ については後述しますが、関数呼び出しのシンタックスシュガーです。
+
+*** $_txt の注意点
+
+$_txt には次の注意点があります。
+
+*「同値の enum 値が存在する場合、 $_txt がどの enum 値のシンボル名を返すか未定義」*
+
+例えば次の場合、TestEnum.val1, TestEnum.val2 のどれを出力するかは未定義です。
+
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1 = 10,
+  val2 = 10,
+}
+fn func( val:TestEnum ) {
+   print( val.$_txt ); 
+}
+func( .val1 ); // TestEnum.???
+#+END_SRC
+
+** 全 enum 値リスト
+
+$_allList で、enum が定義している全 enum のリストを取得できます。
+
+例えば次のコードの場合、 
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+foreach val in TestEnum.$_allList {
+   print( val.$_txt );
+}
+#+END_SRC
+
+次を出力します。
+
+#+BEGIN_SRC txt
+TestEnum.val0
+TestEnum.val1
+TestEnum.val2
+#+END_SRC
+
+
+* まとめ
+
+enum を利用することで、値域を簡単に定義することが出来、
+enum を楽に扱うイマドキな手段を提供しています。
