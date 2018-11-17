@@ -36,6 +36,7 @@ let val:int = 1.0;  // error
 将来的には、変数が値を保持しているかどうかをフロー解析で判断できるようにして、
 初期値不要にすることを考えています。
 
+
 ** 型推論
 
 LuneScript は型推論をサポートしています。
@@ -191,6 +192,52 @@ let mut val3, mut val4 = func();
 #+END_SRC
 
 mut は各変数名の前に宣言します。
+
+* 型変換(キャスト)
+
+全ての値は stem 型の変数に代入できます。
+
+これには、暗黙的な型変換が行なわれています。
+
+#+BEGIN_SRC lns
+let mut val:stem = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+#+END_SRC
+
+一方、 stem 型の値から異なる型への代入はエラーします。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:int = val1; // error
+#+END_SRC
+
+型変換が必要な場合は、次のように ~@@~ を利用します。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:int = val1@@int;
+#+END_SRC
+
+なお、次のような不正なキャストを行なえてしまいます。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:str[] = val1@@str[];
+#+END_SRC
+
+上記は、 int 型の値 1 を val1 に代入し、
+それを str リストにキャストしています。
+つまり、int 型を str リストにキャストしてしまっています。
+
+現時点の LuneScript では、キャストを使わなければならないケースがいくつかあります
+(例えば可変長引数の処理など)。
+
+しかし、上記の例のようにキャストはリスクを含みます。
+出来るだけ使用しないように心掛けてください。
 
 
 ** まとめ
