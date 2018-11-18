@@ -1,0 +1,423 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript チュートリアル nilable 編
+
+今回は LuneScript の nilable について説明します。
+
+* nilable とは
+
+LuneScript は、値に nil を持ちます。
+
+以前説明しましたが、 stem 型の変数は nil 以外の全ての型を保持できます。
+
+#+BEGIN_SRC lns
+let mut val:stem = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+val = nil; // error
+#+END_SRC
+
+では、どうすれば nil を保持できるのかというと、
+stem ではなく stem! を使用します。
+
+#+BEGIN_SRC lns
+let mut val:stem! = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+val = nil; // ok
+#+END_SRC
+
+このように、 nil を保持可能な型を nilable と言います。
+
+nilable は stem! だけでなく、
+一部を除く全ての型に nilable 型が存在します。
+
+例えば int! や str! は、 int の nilable 型、 str の nilable 型となります。
+
+型名の末尾に ! を付加することで、
+本来の型と nil を保持可能な nilable 型となります。
+
+#+BEGIN_SRC lns
+let mut val1:int = 1;
+val1 = nil;  // error
+
+let mut val2:int! = 1;
+val2 = nil;  // ok
+#+END_SRC
+
+nil は、他のどの値とも異なる値で、異常値として利用するのに便利な値です。
+しかし、 意図しないタイミングで変数の値が nil になることで、不具合の原因となる多くあります。
+
+LuneScript は、 nil を保持出来る nilable 型と、
+nil を保持できない非 nilable 型に分けることで、
+nil 安全(NULL 安全)を実現しています。
+
+* nilable 型の制限
+
+nilable 型は、そのままでは元の型として使用できないという制限があります。
+
+この説明だと何のことだか伝わり難いと思いますので、次の例を見てください。
+
+#+BEGIN_SRC lns
+let val:int! = 1;
+print( val + 1 );  // error
+#+END_SRC
+
+上記の val は int の nilable 型です。
+そして val + 1 を実行していますが、これはエラーとなります。
+
+なぜならば、 val は int ではなく int! なので、そのままでは int としては扱えないためです。
+
+
+では、なぜ nilable にこのような制限があるかというと、次の通りです。
+
+- nilable は nil を保持できる型
+- つまり、nilable 型は nil である可能性がある
+- 元の型として利用するには、 nil でないことを確認しなければならない
+  
+
+非 nilable の型には nil を代入出来ません。
+そして、 nilable 型はそのままで元の型として利用が出来ません。
+
+この制限によって、 ある変数が意図しないタイミングで nil になり、
+不具合となることを論理的に防止することが出来ます。
+
+これが多くの言語で取り入れられている nil 安全(NULL安全)の原理です。
+
+* nilable 型との比較
+
+前述している通り、nilable 型は、そのままでは非 nilable として利用できません。
+
+しかし、次のように比較すること出来ます。
+
+#+BEGIN_SRC lns
+fn check( val:int! ) {
+   if val == 1 {
+      print( "ok" );
+   }
+   else {
+      print( "ng" );
+   }
+}
+check( 1 ); // ok
+check( 2 ); // ng
+#+END_SRC
+
+上記サンプルでは val は int! で、 val == 1 で int と比較しています。
+このように nilable と 非 nilable を比較することは可能です。
+
+* nilable 型から非 nilable 型への変換
+
+次のように、非 nilable 型から nilable 型への変換は、暗黙的に行なわれます。
+
+#+BEGIN_SRC lns
+let val:int! = 1;   // int! <-- int
+#+END_SRC
+
+一方で nilable 型から非 nilable 型への変換は、明示的に行なう必要があります。
+
+
+LuneScript では、nilable 型から非 nilable 型への変換に、次のものを用意しています。
+
+- unwrap 
+- when!
+- if!
+- if! let
+- let!
+- unwrap!
+
+** unwrap
+
+unwrap は、 nilable 型の式を、非 nilable 型へ変換します。
+
+例えば次のように使用します。
+
+#+BEGIN_SRC lns
+let val1:int! = 1;
+let val2:int = unwrap val1;
+#+END_SRC
+
+このサンプルで val1 は int! です。その val1 を unwrap することで、
+int! から int! に変換しています。
+
+なお、次のように unwrap する値が nil だった場合、
+そのプログラムは実行時エラーします。
+
+#+BEGIN_SRC lns
+let val1:int! = nil;
+let val2:int = unwrap val1;   // runtime error
+#+END_SRC
+
+unwrap は、変換対象の値が nil だった場合、実行時エラーします。
+
+この実行時エラーを防ぐのが unwrap default です。
+unwrap default は、変換対象の値が nil だった場合の値を指定します。
+
+次は default を使用した例です。
+
+#+BEGIN_SRC lns
+let val1:int! = nil;
+let val2:int = unwrap val1 default 0;
+#+END_SRC
+
+この例では val1 は nil となるため、 default の 0 が unwrap の評価結果となります。
+
+default のない unwrap の使用は、確実に nil ではないと判っている時のみにしてください。
+
+** when!
+
+when! は、指定の nilable 型の *変数* が nil かどうかを判定し、分岐します。
+
+次に when! の例を示します。
+
+#+BEGIN_SRC lns
+fn func( val:int!, val2:int! ): int {
+   when! val, val2 {
+      return val + val2;
+   }
+   else {
+      return 0;
+   }
+}
+print( func( 1, 2 ) );      // 3
+print( func( nil, 2 ) );    // 0
+print( func( 1, nil ) );    // 0
+print( func( nil, nil ) );  // 0
+#+END_SRC
+
+この例では int! 型の val, val2 に対して when! で分岐しています。
+
+- val と val2 が 非 nil の場合、 ~return val + val2~ を実行
+- val あるいは val2 が nil の場合、 return 0 を実行
+
+when! は、指定の変数全てが非 nil の時に、最初のブロックを実行します。
+*このブロック内では、指定変数は非 nilable の型となります。*
+
+when! に指定した変数のいずれかが nil だった場合、
+else ブロックを実行します。
+else は省略可能です。
+
+なお、 when! に指定できるのは *変数だけ* です。 *式は書けません。*
+
+** if!
+
+if! は、指定の *式* が nil かどうかを判定し、分岐します。
+
+次に if! の例を示します。
+
+#+BEGIN_SRC lns
+fn func( val:int! ): int! {
+   return val;
+}
+fn sub( val:int! ): int {
+   if! func( val ) {
+      return _exp + 10;
+   }  
+   else {
+      return 0;
+   }
+}
+print( sub( 1 ) ); // 11
+print( sub( nil ) ); // 0
+#+END_SRC
+
+この例では func() に対して if! で分岐しています。
+
+- func() が 非 nil の場合、 ~return _exp + 10;~ を実行
+- func() が nil の場合、 return 0 を実行
+
+if! は、指定の式が非 nil だった時に、最初のブロックを実行します。
+このブロック内では、式の結果を *_exp* としてアクセスできます。
+このとき、 _exp は *非 nilable 型* です。
+
+if! に指定した式が nil だった場合、
+else ブロックを実行します。
+else は省略可能です。
+
+ちなみに、 if! で指定した式が複数の値を返す場合、
+最初の戻り値だけが対象です。
+2 つ目以降の戻り値は無視します。
+
+なお、 if! は次のようなネストは出来ません。
+
+なぜならば、 内側の if! の _exp が、外側の if! の _exp によって、
+shadowing されるためです。
+
+#+BEGIN_SRC lns
+   if! func( val ) {
+      if! func( val ) {
+         return _exp + 10;
+      }  
+      else {
+         return 0;
+      }  
+   }  
+#+END_SRC
+
+これを防ぐためには、次の if! let を使用してください。
+
+** if! let
+
+if! let は、 if! で判定する式の結果を格納する変数名を指定可能なバージョンです。
+
+次は if! let のサンプルです。
+
+#+BEGIN_SRC lns
+fn func( val1:int!, val2:int! ): int!, int! {
+   return val1, val2;
+}
+fn sub( val1:int!, val2:int! ): int {
+   if! let work1, work2 = func( val1, val2 ) {
+      return work1 + work2;
+   }  
+   else {
+      return 0;
+   }
+}
+print( sub( 1, 2 ) ); // 3
+print( sub( nil, 2 ) ); // 0
+print( sub( 1, nil ) ); // 0
+print( sub( nil, nil ) ); // 0
+#+END_SRC
+
+この例では ~if! let work1, work2 = func( val1, val2 )~ を実行しています。
+
+これは、 func() の結果を work1, work2 に代入し、
+全てが非 nil だった場合に最初のブロックを実行します。
+このブロック内では work1, work2 にアクセスできます。
+work1, work2 は、 非 nilable 型となります。
+if! let で宣言した変数のスコープは、最初のブロックです。
+
+何れかが nilable の場合、else ブロックを実行します。
+else は省略可能です。
+   
+** let!
+
+let! は、nil 以外の初期値を持つ変数宣言を行ないます。
+
+次に let! のサンプルを示します。
+
+#+BEGIN_SRC lns
+fn func( val1:int!, val2:int! ): int!, int! {
+   return val1, val2;
+}
+fn sub( val1:int!, val2:int! ): int {
+   let mut work0 = 0;
+   let! work1, work2 = func( val1, val2 ) {
+      work1 = 0;
+      work2 = 0;
+   }
+   then {
+      work0 = 10;
+   };     
+   return work0 + work1 + work2;
+}
+print( sub( 1, 2 ) ); // 3
+print( sub( nil, 2 ) ); // 0
+print( sub( 1, nil ) ); // 0
+print( sub( nil, nil ) ); // 0
+#+END_SRC
+
+この例では、 ~let! work1, work2 = func( val1, val2 )~ を実行しています。
+
+- これは、 func() の結果を初期値とする work1, work2 を宣言しています。
+- work1, work2 *いずれかが nil* だった場合、最初のブロックを実行します。
+- 全てが非 nil だった場合、then ブロックを実行します。 then は省略可能です。
+  
+let の文には ; が必要です。
+上記のサンプルでは、 then ブロック終端に ~};~ として ; を付加されています。
+  
+
+最初のブロックには、次のいずれかを処理しなければならない制限があります。
+
+- let で宣言している変数全てに値を設定する。
+- let を宣言しているスコープから抜ける。
+
+上記の例では、 work1, work2 に値を設定していますが、
+return でこの関数を抜けるようにしても OK です。
+
+なお、上記制限が守られていない場合の動作は *未定義* です。
+
+
+** unwrap!
+
+unwrap! は、 let! に似た制御です。異なるのは変数を宣言するのではなく、
+既にある変数に対して代入する点です。
+ 
+次は、 unwrap! の例です。
+   
+#+BEGIN_SRC lns
+fn test( arg:int! ) {
+  let mut val = 0;
+
+  unwrap! val = arg { print( 0 ); return; } then { val = val + 1; };
+  print( val );
+}
+test( 1 );  // print( 2 );
+test( 2 );  // print( 3 );
+test( nil );  // print( 0 );
+#+END_SRC
+
+上記例の val は、 int 型変数です。
+この変数に、unwrap! を使って int! 型の arg を代入しています。
+
+上記 ~unwrap! val = arg { print( 0 ); return; } then { val = val + 1; };~ は、
+次の処理を行ないます。
+
+- arg が nil の場合、 ~{ print( 0 ); return; }~ を実行する。
+- arg が非 nil の場合、 arg を val に代入する。さらに then ブロックを実行する。
+- then は省略可能です。
+  
+  
+* マップ型のアクセス
+
+Map 型データの要素にアクセスした場合、
+その結果は nilable となります。
+
+たとえば次の場合、
+
+#+BEGIN_SRC lns
+let val = { "abc": 1 };
+let val2 = val.abc;
+#+END_SRC
+
+val2 は int ではなく、 int! となります。
+
+なぜならば、 Map 型の要素が存在しない場合、
+その評価結果は nil になるためです。
+
+ちなみに、リスト、配列の要素アクセスは nilable にはなりません。
+
+#+BEGIN_SRC lns
+let val = [ 1, 2, 3 ];
+let val2 = val[ 1 ];
+#+END_SRC
+
+上の例では、 val2 は int! ではなく int になります。
+
+なお、 val[ 4 ] にアクセスした場合の動作は *未定義* です。
+
+リスト、配列にインデックスでアクセスする場合は、十分注意してください。
+
+リスト、配列のインデックスアクセス結果が nilable になるようにも考えましたが、
+やり過ぎな気がしたので実施していません。
+
+* まとめ
+
+LuneScript は、次の仕様によって nil 安全を実現しています。
+
+- nilable と非 nilable
+- unwrap 
+  
+
+次回は nil 条件演算子について説明します。
