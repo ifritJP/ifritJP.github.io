@@ -1,0 +1,325 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript チュートリアル クラス 基本 編
+
+LuneScript は、クラスによるオブジェクト指向プログラミングをサポートします。
+
+* クラスの仕様
+
+LuneScript のクラスは、次をサポートします。
+
+- アクセス制御  
+- accessor
+- 継承
+- abstract
+- override
+- advertise
+- Mapping
+- interface  
+
+今回は基本的なクラス定義を説明します。
+
+* 最小のクラス定義
+
+最小のクラス定義は次のように行ないます。
+
+#+BEGIN_SRC lns
+class Test {
+}
+#+END_SRC
+
+これは Test というクラスを定義しています。
+
+なお、クラス定義は最上位のスコープで行なう必要があります。
+
+** 外部公開
+
+クラスを外部モジュールに公開するには、
+次のように pub を付加します。
+
+#+BEGIN_SRC lns
+pub class Test {
+}
+#+END_SRC
+
+* インスタンス生成
+
+クラスのインスタンス生成は、次のように new 演算子を使用します。
+
+#+BEGIN_SRC lsn
+class Test {
+}
+let test = new Test();
+#+END_SRC
+
+* メソッド定義
+
+メソッド定義は、ほぼ関数定義と同じです。
+
+#+BEGIN_SRC lns
+class Test {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+let test = new Test();
+test.func();  // Test.func
+#+END_SRC
+
+** アクセス制御
+
+アクセス制御は次の 3 つです。
+
+| 種別 | 意味             |
+|------+------------------|
+| pub  | 外部公開         |
+| pro  | サブクラスに公開 |
+| pri  | 非公開           |
+
+指定しない場合、デフォルトは pri です。
+
+
+** self シンボル
+
+メソッド内では、 self シンボルを利用できます。
+
+self シンボルは、自分自身のインスタンスを表します。
+
+次の例では、公開メソッドの sub から、
+非公開メソッドの func() を self 使用してコールしています。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func() {
+      print( __func__ );
+   }
+   pub fn sub() {
+      self.func();
+   }
+}
+let test = new Test();
+test.sub();  // Test.func
+#+END_SRC
+
+** 分離定義
+
+メソッドは、クラス定義と分離して定義することが出来ます。
+
+先ほどのメソッド定義は、次のようにも書けます。
+
+#+BEGIN_SRC lns
+class Test {
+}
+pub fn Test.func() {
+   print( __func__ );
+}
+let test = new Test();
+test.func();  // Test.func
+#+END_SRC
+
+ただし、別モジュールで定義しているクラスのメソッドを、
+import しているモジュール内で定義することは出来ません。
+
+** プロトタイプ宣言
+
+メソッド定義は、クラス定義内に型だけを宣言し、実定義を分離することもできます。
+
+次の例では、 func() をプロトタイプ宣言し、実定義を分離しています。
+
+func() をプロトタイプ宣言することで、sub() 内で func() のコールが可能になります。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func();
+   pub fn sub() {
+      self.func();
+   }
+}
+pub fn Test.func() {
+   print( __func__ );
+}
+let test = new Test();
+test.sub();  // Test.func
+#+END_SRC
+
+当然、プロトタイプ宣言と実定義のメソッドの型は、一致させる必要があります。
+
+   
+** クラスメソッド定義
+
+通常のメソッドはインスタンスに紐付いているためインスタンスがないと実行できませんが、
+クラスに紐付いたクラスメソッドはインスタンスがなくても実行できます。
+
+クラスメソッドの定義は、メソッド定義に static を付加するだけです。
+
+#+BEGIN_SRC lns
+class Test {
+   pub static fn sfunc() {
+      print( __func__ );
+   }
+}
+Test.sfunc(); // Test.sfunc
+#+END_SRC
+
+* メンバ定義
+
+メンバ定義は、ほぼ変数定義と同じですが、次の違いがあります。
+
+- 初期値の設定が出来ない
+- アクセス制御が追加
+- accessor 指定が可能
+
+
+次にメンバ定義の例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pri let val3:int;
+   pub fn func() {
+      print( self.val1, self.val2, self.val3 );
+   }
+
+}
+let mut test = new Test( 1, 2, 3 );
+test.func(); // 1 2 3 
+#+END_SRC
+
+クラス Test は、 val1, val2, val3 をメンバに持ちます。
+
+val1 の定義は ~pri let val1:int;~ となっています。
+
+これは、 これは通常の変数宣言に pri が付いただけなので問題ないと思います。
+
+pri はアクセス制御で、意味はメソッド定義と同じです。
+
+* コンストラクタ定義
+
+コンストラクタは __init で定義できます。
+
+コンストラクタは、メソッド定義と次の点で異なります。
+
+- コンストラクタ名は __init でなければならない。
+- 戻り値の型を指定できない。
+- コンストラクタの定義は、全メンバ定義の後にしなければならない。
+  - nilable 型のメンバを明示的に初期化しない場合、 初期値 nil となります。
+- コンストラクタは、全メンバを初期化しなければならない。
+- コンストラクタ内で return できない。
+
+次にコンストラクタの例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pub fn __init() {
+      self.val1 = 0;
+      self.val2 = 0;
+   }
+}
+let test = new Test();
+#+END_SRC
+
+なお、コンストラクタでは immutable なメンバにも初期値を設定可能です。
+
+** コンストラクタの引数
+
+コンストラクタは引数を持てます。
+この引数は、new 演算子によって与えられます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pub fn __init( val1:int, val2:int ) {
+      self.val1 = val1 + 10;
+      self.val2 = val2 + 10;
+   }
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+}
+let test = new Test( 1, 2 );
+test.func(); // 11 12
+#+END_SRC
+
+** デフォルトコンストラクタ
+
+コンストラクタを定義しない場合、
+自動的に全メンバを設定するコンストラクタが生成されます。
+このコンストラクタをデフォルトコンストラクタと言います。
+
+デフォルトコンストラクタは、全メンバを設定するための引数を持ちます。
+引数の順番は、クラスのメンバの宣言順です。
+
+次のクラス宣言には、コンストラクタが宣言されていないため、
+デフォルトコンストラクタが内部的に生成されます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+}
+#+END_SRC
+
+そのデフォルトコンストラクタは、次のように定義されます。
+
+#+BEGIN_SRC lns
+   pub fn __init( val1:int, val2:int ) {
+      self.val1 = val1;
+      self.val2 = val2;
+   }
+#+END_SRC
+
+デフォルトコンストラクタのアクセス制御は pub です。
+
+
+* クラスメンバ
+
+メソッドにクラスメソッドがあるように、メンバにもクラスメンバがあります。
+
+クラスメンバの定義も static を付けるだけです。
+
+クラスメンバの初期化は __init ブロックで行ないます。
+
+次はクラスメンバ定義の例です。
+
+#+BEGIN_SRC lns
+class Test {
+   pri static let val1:int;
+   pri static let val2:int;
+
+   __init {
+      Test.val1 = 1;
+      Test.val2 = 1;
+   }
+}
+#+END_SRC
+
+__init ブロックは、次の制限があります。
+
+- __init ブロックの定義は、全クラスメンバ定義の後にしなければならない。
+  - nilable 型のメンバを明示的に初期化しない場合、 初期値 nil となります。
+- __init ブロックは、全メンバを初期化しなければならない。
+- __init ブロック内で return できない。
+
+
+
+* まとめ
+
+LuneScript のクラス定義は、次をサポートします。
+
+- キーワード class でクラスを定義する
+- インスタンス生成は new
+- アクセス制御可能  
+- self シンボルで自分自身にアクセス
+- クラス定義とメソッド定義を分離可能
+- プロトタイプ宣言
+- static でクラスメソッド、クラスメンバ
+- コンストラクタは __init
+- コンストラクタを作成しない場合はデフォルトコンストラクタが作られる
