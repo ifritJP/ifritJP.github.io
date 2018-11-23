@@ -8,46 +8,36 @@
 
 今回はメンバの accessor について説明します。
 
-* メンバ定義
+* accessor
 
-メンバ定義は、ほぼ変数定義と同じですが、次の違いがあります。
+メンバの accessor (get,set) を簡単に作成できます。
 
-- 初期値の設定が出来ない
-- アクセス制御が追加
-- accessor 指定が可能
-
-
-次にメンバ定義の例を示します。
+次に例を示します。
 
 #+BEGIN_SRC lns
 class Test {
    pri let val1:int;
-   pri let val2:int {pub};
-   pri let val3:int {pub,pub};
+   pri let val2:int {pub,pub};
+   pri let val3:int {pub};
 }
 let mut test = new Test( 1, 2, 3 );
 print( test.$val2, test.$val3 );  // 2 3
-test.set_val3( 10 );
-print( test.$val2, test.$val3 );  // 2 10
+test.set_val2( 10 );
+print( test.$val2, test.$val3 );  // 10 3
 #+END_SRC
 
-クラス Test は、 val1, val2 をメンバに持ちます。
+上記例で val2 の定義は、 ~pri let val2:int {pub,pub};~ としています。
 
-val1 の定義は ~pri let val1:int;~ となっています。
-
-これは、 これは通常の変数宣言に pri が付いただけなので問題ないと思います。
-
-pri はアクセス制御で、意味はメソッド定義と同じです。
-
-次に val2 の定義は、 ~pri let val2:int {pub};~ となっています。
-
-この ~{pub}~ は、 val2 の accessor を定義しています。
-pub は、 getter のアクセス制御を指定します。
+この ~{pub,pub}~ は、 val2 の accessor を定義しています。
+これは、 getter, setter のアクセス制御を指定します。
 この指定によって、次のメソッドが内部的に作成されます。
 
 #+BEGIN_SRC lns
 pub fn Test.get_val2(): int {
    return self.val2;
+}
+pub fn Test.set_val2( val:int ) {
+   self.val2 = val;
 }
 #+END_SRC
 
@@ -60,84 +50,37 @@ print( test.$val2, test.$val3 );  // 2 3
 
 ~test.$val2~ は、 ~test.get_val2()~ のシンタックスシュガーです。
 
+上記の通り、
+accessor は「getter のアクセス制御」、「setter のアクセス制御」の順で宣言します。
 
-* コンストラクタ定義
+setter が不要な場合、「setter のアクセス制御」を省略します。
 
-コンストラクタは __init で定義できます。
+なお、getter が不要で setter が必要な場合でも、 getter のアクセス制御は省略できません。
 
-コンストラクタは、メソッド定義と次の点で異なります。
+LuneScript の accessor は、普通のメソッドです。
+C# のプロパティのような別のものではありません。
 
-- コンストラクタ名は __init でなければならない。
-- 戻り値の型を指定できない。
-- コンストラクタの定義は、全メンバ定義の後にしなければならない。
-  - nilable 型のメンバを明示的に初期化しない場合、 初期値 nil となります。
-- コンストラクタは、全メンバを初期化しなければならない。
-- コンストラクタ内で return できない。
+* accessor のカスタマイズ
 
-次にコンストラクタの例を示します。
+LuneScript の accessor は、 C# のプロパティのようなカスタマイズ機能
+(単純な setter/getter ではない処理を実装する機能)は用意していません。
 
-#+BEGIN_SRC lns
-class Test {
-   pri let val1:int;
-   pri let val2:int;
-   pub fn __init() {
-      self.val1 = 0;
-      self.val2 = 0;
-   }
-}
-let test = new Test();
-#+END_SRC
+なぜならば、 LuneScript の accessor は、単なるメソッド宣言の簡略化機能であり、
+C# のプロパティのような「別物」ではないので、
+もしも独自処理を行なう accessor が必要ならばその処理を自分で作成すれば良いためです。
 
-なお、コンストラクタでは immutable なメンバにも初期値を設定可能です。
+なお、 独自の getter を定義した場合も $ は利用できます。
 
-** コンストラクタの引数
+$val は、get_val() のシンタックスシュガーで、accessor 専用ということではありません。
 
-コンストラクタは引数を持てます。
-この引数は、new 演算子によって与えられます。
+* まとめ
 
-#+BEGIN_SRC lns
-class Test {
-   pri let val1:int {pub};
-   pri let val2:int {pub};
-   pub fn __init( val1:int, val2:int ) {
-      self.val1 = val1 + 10;
-      self.val2 = val2 + 10;
-   }
-}
-let test = new Test( 1, 2 );
-print( test.$val1, test.$val2 ); // 11 12
-#+END_SRC
+LuneScript の accessor は次の仕様です。
 
-** デフォルトコンストラクタ
-
-コンストラクタを定義しない場合、
-自動的に全メンバを設定するコンストラクタが生成されます。
-このコンストラクタをデフォルトコンストラクタと言います。
-
-デフォルトコンストラクタは、全メンバを設定するための引数を持ちます。
-引数の順番は、クラスのメンバの宣言順です。
-
-次のクラス宣言には、コンストラクタが宣言されていないため、
-デフォルトコンストラクタが内部的に生成されます。
-
-#+BEGIN_SRC lns
-class Test {
-   pri let val1:int {pub};
-   pri let val2:int {pub};
-}
-#+END_SRC
-
-そのデフォルトコンストラクタは、次のように定義されます。
-
-#+BEGIN_SRC lns
-   pub fn __init( val1:int, val2:int ) {
-      self.val1 = val1;
-      self.val2 = val2;
-   }
-#+END_SRC
-
-デフォルトコンストラクタのアクセス制御は pub です。
+- メンバ宣言と同時に宣言出来る
+- getter, setter の順に宣言する
+- getter にアクセスする場合、 メンバ名の前に $ を付加する。
+- 独自の accessor は、自前でメソッドを定義する
 
 
-
-
+次回は継承を説明します。
