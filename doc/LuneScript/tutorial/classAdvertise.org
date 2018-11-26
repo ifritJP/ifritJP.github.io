@@ -1,0 +1,73 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript チュートリアル クラス advertise 編
+
+LuneScript は、クラスが保持するメンバのメソッドに対して、
+透過的にアクセスさせることが出来ます。
+
+
+* advertise
+
+「透過的にアクセス」という表現では伝わり難いと思うので、次の例で説明します。
+
+#+BEGIN_SRC lns
+abstract class Test {
+   pub abstract fn foo(): str;
+   pub abstract fn bar(): str;
+}
+class TestSub1 extend Test {
+   pub override fn foo(): str {
+      return "foo";
+   }
+   pub override fn bar(): str {
+      return "bar";
+   }
+}
+class TestSub2 extend Test {
+   pri let sub:TestSub1;
+   advertise sub;
+   pub override fn bar(): str {
+      return "hoge" .. self.sub.bar();
+   }
+}
+fn func( test:Test ){
+   print( test.foo(), test.bar() );
+}
+func( new TestSub1() ); // foo, bar
+func( new TestSub2( new TestSub1() ) ); // foo, hogebar
+#+END_SRC
+
+TestSub2 は、 メンバ sub を advertise しています。
+
+これにより TestSub2 は、
+次のようにメンバ sub のメソッド (foo,bar) をコールする処理を内部的に生成します。
+
+#+BEGIN_SRC lns
+pub override fn TestSub2.foo(): str {
+   return self.sub.foo();
+}
+pub override fn TestSub2.bar(): str {
+   return self.sub.bar();
+}
+#+END_SRC
+
+この例の TestSub2 では、メソッド bar() を宣言しています。
+
+このように宣言したメソッドと、advertise で生成されるメソッドが同名の場合、
+宣言したメソッドが優先されます。
+
+** 注意
+
+複数のメンバを advertise した時、
+そのメンバ間で同名のメソッドがある場合の動作は *未定義* です。
+
+* まとめ
+
+- advertise 宣言することで、メンバのメソッドを透過的にアクセスさせることが出来る
+- 複数のメンバを advertise する場合は注意が必要
+
+次回は、インタフェースについて説明します。

@@ -36,11 +36,16 @@ $ sudo apt install lua5.3
 前述している通り、LuneScript は Lua のスクリプトとして動作します。
 
 Lua のモジュール管理は非常に単純で、
-Lua が管理するモジュールディレクトリ以下にファイルを置くだけです。
+Lua が管理するモジュールディレクトリにファイルを置くだけです。
 
 LuneScript のモジュールは、github に公開しています。
 
 https://github.com/ifritJP/LuneScript
+
+
+手動でファイルコピーすることでもセットアップできますが、
+以降では LuneScript の setup.lua を使ったセットアップ方法について説明します。
+
 
 *** Lua が管理するモジュールディレクトリ
 
@@ -83,13 +88,6 @@ $ lua5.3 -e 'print( package.path )'
   
 *** LuneScript の導入方法
 
-LuneScript の導入方法には、次の方法があります。
-
-- lua setup.lua を実行する
-- luarocks を利用する
-
-**** lua setup.lua を実行する
-
 LuneScript の setup.lua を実行します。
 
 手順は次の通りです。
@@ -97,21 +95,67 @@ LuneScript の setup.lua を実行します。
 #+BEGIN_SRC sh
 $ git clone https://github.com/ifritJP/LuneScript.git
 $ cd LuneScript/src
-$ lua5.3 setup.lua
+$ lua5.3 setup.lua -d
+$ sudo make install
 #+END_SRC
 
 これにより、 LuneScript がモジュールディレクトリにインストールされます。
 
-**** luarocks を利用する
+LuneScript をインストールする Lua のモジュールディレクトリを指定したい場合、
+~lua5.3 setup.lua -d~ の -d を外して実行してください。
 
-luarocks は、lua 用のパッケージマネージャです。
 
-luarocks については次の公式 URL を参考にインストールしてください。
+* emacs の設定
 
-https://github.com/luarocks/luarocks
-     
-なお、 ubuntu 等の apt コマンドでインストールされる luarocks は、
-lua5.1 用となっているので注意してください。
+LuneScript は、emacs で開発するための emacs lisp を提供しています。
+  
+emacs ユーザは次の設定をしてください。
+
+#+BEGIN_SRC lisp
+  (add-to-list 'load-path "my-lune-path")  ;;; clone した LuneScript のパスを指定
+  (require 'lns-conf)
+  (require 'lns-flymake)
+  (require 'lns-auto-complete)
+  (require 'lns-helm)
+#+END_SRC
+
+これにより、次が利用できます。
+
+- .lns ファイルのインデント、色付け
+- flymake による構文チェック
+- auto-complete による補完
+
+構文チェックは flymake と flycheck をサポートしています。
+flycheck を利用したい場合 lns-flymake ではなく、 lns-flycheck を require してください。
+
+
+** プロジェクトファイル
+
+emacs で LuneScript を扱う場合、プロジェクトファイルを作成する必要があります。
+
+プロジェクトファイルといっても、次の内容を持つ lune.js ファイルをプロジェクトの
+トップディレクトリに置くだけです。
+
+#+BEGIN_SRC js
+{}
+#+END_SRC
+
+このファイルを置いたディレクトリが、モジュールの起点ディレクトリとなります。
+
+例えば次のようなディレクトリ構成の場合、
+
+#+BEGIN_SRC txt
+foo/
+foo/lune.js
+foo/bar/
+foo/bar/mod1.lns
+#+END_SRC
+
+bar.mod1 が、mod1.lns のモジュールパスとなります。
+
+* まとめ
+
+Lua のモジュール管理は非常に単純なため、簡単に導入ができます。  
 
 
 次回は LuneScript による Hello World について紹介します。

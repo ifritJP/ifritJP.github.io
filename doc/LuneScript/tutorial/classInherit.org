@@ -1,0 +1,76 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript チュートリアル クラス 継承 編
+
+LuneScript は、クラスの継承をサポートします。
+
+* クラスの継承
+
+次にクラスの継承例を示します。
+
+#+BEGIN_SRC lns
+class Super {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+class Sub extend Super {
+}
+let sub = new Sub();
+sub.func(); // Super.func
+#+END_SRC
+
+これは、 Super クラスを Sub クラスが継承する例です。
+
+継承は、クラス宣言時に extend を使用して継承する親クラスを指定します。
+
+継承可能なクラスは 1 つだけです。
+
+なお、コンストラクタのアクセス制御が pri の場合、
+そのクラスを継承することは出来ません。
+
+
+** サブクラスのコンストラクタ
+
+親クラスのコンストラクタが引数を持つ場合、
+サブクラスはコンストラクタを宣言する必要があります。
+
+例えば次の例では、 Super クラスはコンストラクタを明示的に宣言していませんが、
+メンバ val を初期化する引数を持つデフォルトコンストラクタが内部的に生成されます。
+
+#+BEGIN_SRC lns
+class Super {
+   pro let val:int;
+}
+class Sub extend Super {
+   pub fn __init( val:int ){
+      super( val );
+   }
+   pub fn func() {
+      print( self.val );
+   }
+}
+let sub = new Sub( 1 );
+sub.func(); // 1
+#+END_SRC
+
+この時 Super を継承する Sub クラスは、親クラスが引数を持つコンストラクタを持つため、
+Sub クラスのコンストラクタを宣言する必要があります。
+また、Sub クラスのコンストラクタ内で 親クラス Super のコンストタクタを実行するため、
+super() を呼びます。この super() は、最初の行に書く必要があります。
+
+* まとめ
+
+LuneScript は次の仕様のクラス継承をサポートします。
+
+- 継承可能なクラスは 1 つだけ
+- サブクラスは、親クラスのコンストラクタをコールしなければならない。
+- 親クラスのコンストラクタ呼び出しは super() で行なう。
+- super() は、コンストラクタの最初の行に各必要があ。
+
+
+次回は、メソッドのオーバーライドについて説明します。
