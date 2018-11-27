@@ -3,7 +3,7 @@
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 
-#+TITLE: C89 での bool の扱い
+#+TITLE: C89 による bool の扱い
 
 これは C 言語 Advent Calendar 2018 の記事です。
 
@@ -12,8 +12,9 @@
 ちょっくら C 言語 Advent Calendar にお邪魔します。
 
 
+* C 言語
 
-「C 言語」といっても、それが何を指すのか明確ではありません。
+単に「C 言語」といっても、それが何を指すのか一意に定まりません。
 なぜなら「C 言語」には C89, C90, C99, C11 の規格があるからです。
 
 ただ、日本国内において「C 言語」といった場合は、C89 を指すことが多いように思います。
@@ -27,12 +28,12 @@
 2018 年に C89 のネタを書くのもどうかと思いますが、
 温故知新ということで時間のある方はお付き合いください。
 
-* C89 でのコードレビューのシーン
+* C89 による、とあるコードレビューシーン
 
 次のように引数に与えられた整数が奇数かどうかを判定する関数を作成したとします。
 
 #+BEGIN_SRC c
-bool_t isOdd( int val ) {
+bool isOdd( int val ) {
     if ( ( val % 2 ) == 0 ) {
         return FALSE;
     }
@@ -76,19 +77,19 @@ bool_t isOdd( int val ) {
 各プロジェクト毎に次のような定義をするのが一般的だと思います。
 
 #+BEGIN_SRC c
-typedef int bool_t;
+typedef int bool;
 #define FALSE 0
 #define TRUE 1
 #+END_SRC
 
-ここで ~typedef int bool_t;~ ではなく、 ~typedef char bool_t;~ とか、
-~typedef enum { FALSE, TRUE } bool_t;~ とか、
+ここで ~typedef int bool;~ ではなく、 ~typedef char bool;~ とか、
+~typedef enum { FALSE, TRUE } bool;~ とか、
 いくつかバリエーションはあるかと思いますが、
 今回のネタの趣旨とは外れるので、そこはつっこまないでください。
 
 そして、ここから次の論理が導き出されます。
 
-- isOdd() の戻り値型の bool_t は、 C 言語で規定された型ではなく、
+- isOdd() の戻り値型の bool は、 C 言語で規定された型ではなく、
   ユーザが定義した型である。
 - TRUE/FALSE についても同様である。
 - よって、どの場面に置いても「TRUE が 0 以外で、 FALSE が 0 となる」保証はない。
@@ -96,7 +97,7 @@ typedef int bool_t;
   
 というのが、指摘の根拠です。
 
-まぁ、 bool_t と TRUE/FALSE がユーザ定義であることは確かにその通りです。
+まぁ、 bool と TRUE/FALSE がユーザ定義であることは確かにその通りです。
 しかし、最後の「TRUE が 0 以外で、 FALSE が 0 となる保証がない。」は、
 根拠としてあまりにナンセンスです。
 
@@ -119,12 +120,38 @@ C89規格で「TRUE が 0 以外で、 FALSE が 0 」と保証されていま�
 指摘はナンセンスです。
 もしもこのような指摘をされた場合は、論理的に反論しましょう。
 
-なお、これが TRUE/FALSE ではなく MODE1/MODE2 を返す関数であれば、
+なお、もしも isOdd が TRUE/FALSE ではなく MODE1/MODE2 を返す関数で、
+たまたま MODE1/MODE2 が 0/1 であるならば、
 ~if ( isOdd( count ) )~ とするのではなく、
-~if ( isOdd( count ) == MODE1 )~ で判定するのは当然で、
+~if ( isOdd( count ) == MODE2 )~ で判定するのは当然で、
 レビューの指摘はごもっともです。
 ついでにいうと、TRUE/FALSE ではなく MODE1/MODE2 を返す関数であれば、
 関数名が ~is~ で始まるのも NG だと思いますが。。。
+
+
+* == TRUE 問題
+
+「== TRUE」の書式に関しては、いろいろな意見があると思いますが、
+少なくとも私は 「== TRUE」撲滅推進派です。
+
+ネットを検索すると、
+「 isOdd( count ), *!* isOdd( count ) と書くより ~== TRUE~, ~== FALSE~ と書いた方が可読性が良い」
+という意見もあったりします。
+
+しかし、それだと C# や swift などの nullable で利用する int! や int? を全否定するの？
+と、ツッコミを入れたくなりますし、
+そもそもほとんどの演算子は 1 文字なんですが。。。
+
+もしも演算子 1 文字だと可読性に問題があるというのであれば、
+-10 と 10 は見分けが付き難く可読性に問題があるということになります。
+
+そういう方は、負の値を使用する際に、次のように定義するんでしょうか？
+
+#+BEGIN_SRC c
+#define MINUS (-1)
+int val1 = MINUS * 10;  // -10
+int val2 = 10;          //  10
+#+END_SRC
 
 * まとめ
 
