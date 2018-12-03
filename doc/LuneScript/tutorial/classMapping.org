@@ -1,0 +1,94 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript 入門 - mapping 編
+
+LuneScript は、クラスのインスタンスとマップとの相互変換をサポートします。
+
+* mapping
+
+LuneScript は、クラスのインスタンスとマップオブジェクトとの相互変換をサポートします。
+
+具体的には、次が可能です。
+
+- クラスのインスタンスからマップオブジェクトの生成
+- マップオブジェクトからクラスのインスタンスの生成
+  
+これによって、例えばクラスのインスタンスから JSON データを生成したり、
+逆に JSON データからクラスのインスタンスを生成できます。
+  
+この機能を mapping と呼びます。
+
+mapping を利用するには、
+クラス宣言時に実装するインタフェースとして Mapping を宣言する必要があります。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test extend (Mapping){
+   let val1:int {pub};
+   let val2:str {pub};
+}
+let test = new Test(1, "abc" );
+let map = test._toMap();
+print( map.val1, map.val2 ); // 1 abc
+let test2 = unwrap Test._fromMap( map );
+print( test2.$val1, test2.$val2 ); // 1 abc
+#+END_SRC
+
+上記の例では、 クラス Test が Mapping 実装を宣言しています。
+
+これにより、次のメソッドが内部的に生成されます。
+
+- fn _toMap():&Map<str,&stem>
+- static fn _fromMap(map:&Map<str,&stem>):Test!,str!
+
+_toMap() は、インスタンスからマップオブジェクトを生成するメソッドで、
+_fromMap() は、マップオブジェクトからインスタンスを生成するクラスメソッドです。
+
+なお _fromMap() は、マップオブジェクトがインスタンスを生成するための
+条件を満さない場合は nil を返します。
+
+具体的には、上記 Test の _fromMap() に、
+次のマップオブジェクトを渡した場合はインスタンスが生成されますが、
+
+#+BEGIN_SRC js
+{
+   "val1": 1,
+   "val2": "abc"
+}
+#+END_SRC
+
+次のマップオブジェクトを渡した場合は、インスタンスが生成されません。
+
+#+BEGIN_SRC js
+{
+   "val1": 1,
+   "val2": 2
+}
+#+END_SRC
+
+上記マップオブジェクトの場合、本来 val2 が str であるはずが、
+int になっていて不整合となるためです。
+
+
+さらに _fromMap() の注意点として、
+_fromMap() はメンバの型の不整合は確認しますが、値域は確認しません。
+
+たとえば、本来取り得ない値からでも、型さえあっていればインスタンスを生成します。
+ただし enum に関しては、マップオブジェクトの値が enum で定義していない値であれば、
+nil を返します。
+
+* まとめ
+
+LuneScript は、クラスのインスタンスとマップとの相互変換をサポートします。
+
+これによって、
+クラスのインスタンスから JSON データの生成などが簡単に実現できます。
+
+
+次回は、nil 条件演算子について説明します。
+

@@ -4,80 +4,91 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-#+TITLE: トランスコンパイラ LuneScript 入門 - mapping 編
+#+TITLE: トランスコンパイラ LuneScript 入門 - インタフェース 編
 
-LuneScript は、クラスのインスタンスとマップとの相互変換をサポートします。
+LuneScript は、クラスの多重継承をサポートしない代わりに、
+インタフェースをサポートします。
 
-* mapping
+* インタフェース
 
-LuneScript は、クラスのインスタンスとマップオブジェクトとの相互変換をサポートします。
+Java や C# を使用していればお馴染だと思いますが、
+インタフェースは機能が制限されたクラスと考えて問題ないです。
 
-具体的には、次が可能です。
+具体的には、インタフェースは、クラスと次の違いがあります。
 
-- クラスのインスタンスからマップオブジェクトの生成
-- マップオブジェクトからクラスのインスタンスの生成
-  
-これによって、例えばクラスのインスタンスから JSON データを生成したり、
-逆に JSON データからクラスのインスタンスを生成できます。
-  
-この機能を mapping と呼びます。
+- 宣言は class ではなく interface。
+- メンバが持てない。
+- メソッドは全て abstract。 よってインタフェース単体ではインスタンスを生成できない。
+- インタフェースを実装するクラスは、extend に () を付ける
+- クラスは複数のインタフェースを実装できる
+- イタフェースを実装するクラスのメソッドには override を付けない。
 
-mapping を利用するには、
-クラス宣言時に実装するインタフェースとして Mapping を宣言する必要があります。
-
-次に例を示します。
+次にインタフェースの例を示します。
 
 #+BEGIN_SRC lns
-class Test extend (Mapping){
-   let val1:int {pub};
-   let val2:str {pub};
+interface IF {
+   pub fn func();
 }
-let test = new Test(1, "abc" );
-let map = test._toMap();
-print( map.val1, map.val2 ); // 1 abc
-let test2 = unwrap Test._fromMap( map );
-print( test2.$val1, test2.$val2 ); // 1 abc
+class Test extend (IF) {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+fn sub( obj:IF ) {
+   obj.func();
+}
+sub( new Test() ); // Test.func
 #+END_SRC
 
-上記の例では、 クラス Test が Mapping 実装を宣言しています。
+この例では、インタフェース IF を定義しています。
 
-これにより、次のメソッドが内部的に生成されます。
+次に 2 つのインタフェースを実装するクラスの例を示します。
 
-- fn _toMap():&Map<str,&stem>
-- static fn _fromMap(map:&Map<str,&stem>):Test!,str!
+#+BEGIN_SRC lns
+interface IF1 {
+   pub fn func1();
+}
+interface IF2 {
+   pub fn func2();
+}
+class Test extend (IF1,IF2) {
+   pub fn func1() {
+      print( __func__ );
+   }
+   pub fn func2() {
+      print( __func__ );
+   }
+}
+fn sub( obj1:IF1, obj2:IF2 ) {
+   obj1.func1();
+   obj2.func2();
+}
+let mut test = new Test();
+sub( test, test ); // Test.func Test.func2
+#+END_SRC
 
-_toMap() は、インスタンスからマップオブジェクトを生成するメソッドで、
-_fromMap() は、マップオブジェクトからインスタンスを生成するクラスメソッドです。
+複数のインタフェースを実装する場合、 extend の後に () の中に続けて宣言します。
 
-なお _fromMap() は、マップオブジェクトがインスタンスを生成するための
-条件を満さない場合は nil を返します。
+ちなみに、複数のインタフェースを実装する場合の制限として、
+次のように実装するインタフェース内に、
+同名で異なる型のメソッドがある場合、エラーとなります。
 
-具体的には、上記 Test の _fromMap() に、
-次のマップオブジェクトを渡した場合はインスタンスが生成されますが、
-
-#+BEGIN_SRC js
-{
-   "val1": 1,
-   "val2": "abc"
+#+BEGIN_SRC lns
+interface IF1 {
+   pub fn func():int;
+}
+interface IF2 {
+   pub fn func():str;
+}
+class Test extend (IF1,IF2) { // mismatch IF1.func, IF2.func
 }
 #+END_SRC
 
-次のマップオブジェクトを渡した場合は、インスタンスが生成されません。
+なお、現在のインタフェースの仕様として、メソッドのデフォルト処理はサポートしていません。
 
-#+BEGIN_SRC js
-{
-   "val1": 1,
-   "val2": 2
-}
-#+END_SRC
+* まとめ
 
-上記マップオブジェクトの場合、本来 val2 が str であるはずが、
-int になっていて不整合となるためです。
+LuneScript は、クラスの多重継承をサポートしない代わりに、
+インタフェースをサポートします。
 
-
-さらに _fromMap() の注意点として、
-_fromMap() はメンバの型の不整合は確認しますが、値域は確認しません。
-
-たとえば、本来取り得ない値からでも、型さえあっていればインスタンスを生成します。
-ただし enum に関しては、マップオブジェクトの値が enum で定義していない値であれば、
-nil を返します。
+次回は、Mapping について説明します。
