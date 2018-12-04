@@ -70,6 +70,59 @@ nil 条件演算子は、
 nilable の式の直後に指定することで、
 nilable の式が nil かどうかで、その後の式を実行するかどうかを制御します。
 
+nilable の式の評価結果が nil でない場合、その後の式を実行し、
+nilable の式の評価結果が nil の場合、その後の式を実行せずにその式の結果を nil とします。
 
 
 
+なおリストにアクセスする場合は ~$[~ 、 関数呼び出しする場合は ~$(~ となります。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pub let val:List<int>;
+   pub fn func():int {
+      return 100;
+   }
+}
+fn sub( test:Test! ) {
+   print( test$.val$[1], test$.func$() );
+}
+sub( new Test( [ 1, 2 ] ) ); // 1 100
+sub( nil ); // nil nil
+#+END_SRC
+
+上記の例では、 sub() 関数内で Test クラスの val リストと、func に
+nil 条件演算子を利用してアクセスしています。
+これにより、 unwrap せずにアクセスすることが出来ます。
+
+* 注意
+
+nil 条件アクセスを使用すると、必ずその評価結果は nilable になります。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pub let val:int;
+}
+fn sub( test:Test! ) {
+   if! test$.val {
+      print( _exp + 1 );
+   }
+}
+sub( new Test( 10 ) ); // 11
+#+END_SRC
+
+上記の場合、Test クラスの val は int です。
+
+上記の例の sub 関数では nilable 型の Test クラスのインスタンスに対し、
+~test$.val~ でアクセスしています。
+この時 ~test$.val~ の評価結果は int ではなく int! となります。
+
+* まとめ
+
+nil 条件アクセスにより、 深いネストの unwrap が簡単に出来ます。
+
+次回は、 モジュール管理について説明します。
