@@ -1,0 +1,147 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <style type="text/css"> <!-- pre.src { color: #ffffff; background-color: #101010; } --> </style>
+
+#+TITLE: Lua モジュール定義方法の Ver5.1, Ver5.2 の違い
+
+Lua のモジュール定義方法は、 Lua のバージョン 5.1, 5.2 で異なります。
+ただし、 5.2 のモジュール定義方法は、 5.1 でそのまま利用できます。
+
+このドキュメントは、それぞれのバージョンでのモジュール定義方法について説明します。
+
+なお、C 言語によるモジュール定義方法ではなく、
+Lua スクリプトによるモジュール定義方法です。
+
+/メジャーバージョンが同じなのに、モジュールの定義方法が変わるってどうなんだろう。。。/
+
+ちなみに 5.0 とも違いますが、 現在の主流は 5.1 以降なので、5.0 は割愛します。
+
+* require() の内部動作概要
+
+モジュール定義方法を説明するには、
+require() の内部動作概要について説明する必要があります。
+
+Lua では、外部モジュールを利用する際に require() を使用します。
+require() には、引数にモジュール名 name を指定します。
+
+この require( name ) は、次を処理します。
+
+- package.loaded[ name ] に値が保持されているかどうかチェックする。
+  - 保持されていれば、それを require() の戻り値として返す。
+- 保持されていない場合、name から Lua モジュールを検索し、
+  見つかった Lua モジュールを実行する。
+- Lua モジュールを実行して、そのモジュールが返した値を
+  package.loaded[ name ] に格納する。
+  - ローダが nil を返して、package.loaded[ name ] に何も格納されていない場合、
+    package.loaded[ name ] に true を格納する。
+- require() は、package.loaded[ name ] に格納されている値を返す。
+
+
+つまり、Lua モジュールは実行時に次のいずれかを行なう必要があります。
+
+- package.loaded[ name ] に値を格納する
+- モジュールの値を返す
+
+Lua 5.1 では、
+前者の「package.loaded[ name ] に値を保持する」方法が良く紹介されているようです。
+
+一方 Lua 5.2 では、
+Lua 5.1 で紹介されていた方法で使用する module 関数が廃止されており、
+後者の 「モジュールの値を返す」が推奨されます。
+
+Lua 5.2 でも「package.loaded[ name ] に値を保持する」ことは出来ますが、
+module が廃止されたことからも、後者を利用すべきだと思います。
+
+
+* Lua 5.1 のモジュール定義方法
+
+Lua 5.1 のモジュール定義方法には、次の 2 つの方法があります。
+
+- module 関数を利用しない方法
+- module 関数を利用する方法
+
+** module 関数を利用しない方法
+
+次に module 関数を利用しないでモジュールを定義する例を示します。
+   
+#+BEGIN_SRC lua
+local mod = {}
+function mod.func1()
+   print( "func1" )
+end
+function mod.func2()
+   return 2
+end
+return mod
+#+END_SRC
+
+この例では、テーブル mod を定義し、そのテーブルのメンバに関数を定義し、
+最後にテーブル mod を return しています。
+
+このモジュールを使用する場合、次のようになります。
+
+#+BEGIN_SRC lua
+local mod = require( 'noUseModule' )
+mod.func1()  -- func1
+print( mod.func2() ) -- 2
+#+END_SRC
+
+** module 関数を利用する方法
+
+次に、上記モジュールを module 関数を利用して定義する例を示します。
+
+#+BEGIN_SRC lua
+local _global=_G
+useModule={}
+module( "useModule" )
+function func1()
+   _global.print( "func1" )
+end
+function func2()
+   return 2
+end
+#+END_SRC
+
+上記は次のように処理します。
+
+- *グローバル* 変数にテーブルを格納する。
+- module() 関数の引数に、この *グローバル変数名* を与えて関数を呼び出す。
+- module() 関数は次を処理する
+  - 引数に与えられた名前のグローバル変数に格納されているテーブル t を、
+    package.loaded[ name ] にセットする
+  - テーブル t を、現在の *環境* としてセットする
+- 外部に公開する関数を、 *グローバル関数* として宣言する。
+
+module() は、上記のように *環境* をセットします。
+*環境* とは、「グルーバルシンボルを管理するテーブル」という認識で良いと思います。
+
+*環境* が useModule に切り替わっているため、
+グルーバル関数を定義すると、それは useModule 内に定義されることになり、
+結果的にモジュールの外部公開関数になる、ということです。
+
+
+なお、 *環境* が新しくセットされるため、
+この状態だとビルトインの関数が利用できなくなります。
+そこで module() を実行する前に、 _G を _global 変数に代入しておきます。
+print() 等のビルトインの関数にアクセスする場合は
+_global.print() としてアクセスが必要になります。
+
+
+* Lua 5.2 のモジュール定義方法
+
+Lua 5.2 は、前述の通り Lua 5.1 の module 関数が廃止されています。
+
+よって、 Lua 5.1 の module 関数を利用しない方法で、モジュールを定義します。
+
+* まとめ
+
+Lua 5.1 と Lua 5.2 では、 module 関数のありなしで違いがあります。
+
+元々 Lua 5.1 でも module 関数を使用しなくてもモジュールは定義できましたし、
+module 関数を使用しない方が直感的で分かりやすいと思います。
+
+よって、今後モジュールを定義する際は、
+module 関数を使用せずに定義することを推奨します。
