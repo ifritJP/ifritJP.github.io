@@ -1,0 +1,92 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript 入門 - require/module 編
+
+今回は LuneScript から Lua モジュールを扱う方法について説明します。
+
+* require
+
+Lua モジュールを扱う場合、 require() を使用します。
+
+require() の仕様は Lua と同じですが、戻り値は stem になります。
+つまり、型情報を持ちません。
+適宜キャストが必要になります。
+
+* module
+
+上記の通り、require() は stem を返します。
+
+stem には型情報が無いため、使い勝手が悪いです。
+
+そこで、 module 宣言を使用します。
+
+例えば、次のような Lua のモジュール Test.lua がある場合、
+
+#+BEGIN_SRC lua
+local mod = {}
+mod.val = 1;
+function mod.func1( val )
+   return val + 10
+end
+function mod:func2( val )
+   return self.val + val
+end
+return mod
+#+END_SRC
+
+この Test.lua モジュールは、次の要素を持ちます。
+
+- int の メンバ val 
+- 関数 func1
+- メソッド func2
+  
+なお、ここで言う関数とは、呼び出す時に obj.func1() のように *.* で呼び出し、
+メソッドとは、呼び出す時に obj:func1() のように *:* で呼び出すものを指します。
+
+この Test.lua モジュールを利用する module 宣言は、次のように行ないます。
+
+#+BEGIN_SRC lns
+module Test require 'Test'
+{
+   pub static let val:int;
+   pub static fn func1( val:int ):int;
+   pub fn func2( val:int ):int;
+}
+print( Test.val, Test.func1( 10 ), Test.func2( 20 ) ); // 1 20 21
+#+END_SRC
+
+まず、 module Test require 'Test' の module Test は、モジュール名 Test を宣言します。
+モジュール名は通常のクラス名と考えてください。
+ここでは Lua のモジュール名と同じにしましたが、違う名前でも問題ありません。
+
+module Test require 'Test' の require 'Test' は、
+どのモジュールをロードするかを指定します。
+ここでは Test モジュールをロードしていることを指定しています。
+
+残りは、通常のクラス宣言と同じです。
+
+module 宣言したモジュールは、モジュール名でアクセスします。
+
+#+BEGIN_SRC lns
+print( Test.val, Test.func1( 10 ), Test.func2( 20 ) );
+#+END_SRC
+
+** module 宣言の制限
+
+module 宣言には、次の制限があります。
+
+- モジュールを継承して新しくクラスを宣言することはできない
+- require した Lua のモジュールと、宣言した module に整合性があるかどうかチェックしない
+
+* まとめ
+
+- LuneScript は、Lua モジュールを扱えます。
+- Lua モジュールを扱う方法には require() と module 宣言があります。
+- module 宣言には制限があります。
+  
+  
+次回は subfile について説明します。
