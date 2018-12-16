@@ -1,0 +1,220 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript 入門 - match 編
+
+LuneScript は、代数的データ型とパターンマッチをサポートします。
+
+* 代数的データ型 (alge型)
+
+enum 型は、 int, real, str のいずれかの値をグルーピングして、値域を制限できます。
+
+一方、代数的データ型は enum 型をより一般的にしたもので、
+int, real, str に限らず全ての型をグルーピングすることが出来ます。
+
+代数的データ型は alge キーワードで宣言します。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Hoge {
+   pri let val:int {pub};
+}
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( int, str ),
+}
+#+END_SRC
+
+この例では、 alge 型 Test を宣言しています。
+
+Test は、 Val1 〜 Val5 までの値域を持ちます。
+また、 Val1 〜 Val5 はそれぞれ次のパラメータを持ちます。
+
+| 値   | パラメータ |
+|------+------------|
+| Val1 | なし       |
+| Val2 | int        |
+| Val3 | str        |
+| Val4 | Hoge       |
+| Val5 | int, str   |
+
+パラメータの型に制限はありません。
+この例の場合、 Val4 は Hoge クラス型をパラメータに持ちます。
+
+パラメータの個数も制限はありません。
+この例の場合、 Val5 は int と str をパラメータに持ちます。
+
+この alge 型の値を使用する場合、次のように書きます。
+
+#+BEGIN_SRC lns
+let val1 = Test.Val1;
+let val2 = Test.Val2( 1 );
+let val3 = Test.Val3( "abc" );
+let val4 = Test.Val4( new Hoge( 100 ) );
+let val5 = Test.Val5( 10, "xyz" );
+#+END_SRC
+
+それぞれの意味は次になります。
+
+- val1 は Test.Val1
+- val2 は 1 をパラメータに持つ Test.Val2
+- val3 は "abc" をパラメータに持つ Test.Val3 
+- val4 は new Hoge( 100 ) をパラメータに持つ Test.Val4
+- val5 は 10, "xyz" をパラメータに持つ Test.Val5
+  
+* match
+
+enum 型は、次のように元の値と同じように使用できます。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( unwrap TestEnum._from( val ) );
+#+END_SRC
+
+この例では、 関数 func() 内で TestEnum 型の値 + 100 をしていますが、
+これは TestEnum 型が int の数値としても利用できることを示しています。
+
+一方で alge 型の値は、特別な処理が必要です。
+その処理が match です。
+
+次に match の例を示します。
+
+#+BEGIN_SRC lns
+class Hoge {
+   pri let val:int {pub};
+}
+
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( int, str ),
+}
+
+fn func( test:Test ) {
+   match test {
+      case .Val1 {
+         print( test.$_txt );
+      }
+      case .Val2( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val3( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val4( x ) {
+         print( test.$_txt, x.$val );
+      }
+      case .Val5( x, y ) {
+         print( test.$_txt, x, y );
+      }
+   }
+}
+
+func( Test.Val1 ); // Test.Val1
+func( Test.Val2( 1 ) ); // Test.Val2 1
+func( Test.Val3( "abc" ) ); // Test.Val3 abc
+func( Test.Val4( new Hoge( 100 ) ) ); // Test.Val4  100
+func( Test.Val5( 10, "xyz" ) ); // Test.Val5 10 xyz
+#+END_SRC
+
+この例では、 func() 関数内で match を実行しています。
+
+case で Val1 〜 Val5 で分岐しています。
+また Val2 〜 Val5 は、それぞれパラメータを受け取る変数を宣言しています。
+
+例えば func( Test.Val2( 1 ) ) は、 ~Test.Val2( 1 )~ を func() に渡しています。
+ここで func() 内の match の ~case .Val2( x )~ にマッチします。
+そして、 x には 1 がセットされ、 ~print( test.$_txt, x )~ が実行されます。
+
+ここで ~test.$_txt~ は、 値域の Val2 を示す "Test.Val2" の文字列が展開されます。
+
+
+* alge の使用例
+
+alge を使うと JSON 構造を次のように書くことが出来ます。
+
+#+BEGIN_SRC lns
+alge JsonVal {
+   JNull,
+   JBool(bool),
+   JInt(int),
+   JReal(real),
+   JStr(str),
+   JArray(List<JsonVal>),
+   JObj(Map<str,JsonVal>),
+}
+fn dumpJson( stream:oStream, jval:JsonVal ) {
+   match jval {
+      case .JNull {
+         stream.write( "null" );
+      }
+      case .JBool( val ) {
+         stream.write( "%s" (val) );
+      }     
+      case .JInt( val ) {
+         stream.write( "%d" (val ) );
+      }        
+      case .JReal( val ) {
+         stream.write( "%g" (val ) );
+      }        
+      case .JStr( val ) {
+         stream.write( '"%s"' (val ) );
+      }        
+      case .JArray( list ) {
+         stream.write( "[" );
+         foreach val, index in list {
+            if index > 1 {
+               stream.write( "," );
+            }
+            dumpJson( stream, val );
+         }
+         stream.write( "]" );
+      }        
+      case .JObj( map ) {
+         stream.write( "{" );
+         let mut cont = false;
+         foreach val, key in map {
+            if cont {
+               stream.write( ',' );
+            }
+            else {
+               cont = true;
+            }
+            stream.write( '"%s":' (key) );
+            dumpJson( stream, val );
+         }
+         stream.write( "}" );
+      }
+   }
+}
+dumpJson( io.stdout,
+          JsonVal.JObj( { "foo": JsonVal.JInt( 1 ),
+                          "bar": JsonVal.JStr( "abc" ) } ) );
+#+END_SRC  
+
+alge を使用せずにキャストや継承などを利用すれば同じことは出来ます。
+しかし、キャストはもちろん、継承にも欠点があります。
+
+alge も万能ではありませんが、
+幾つかの場面ではキャストや継承を使用するよりも、
+より良い選択肢になると思います。
+
+
+次回はインタフェースを説明します。
