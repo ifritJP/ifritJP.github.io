@@ -228,7 +228,8 @@ macro Test( val:int ) {
 その結果を name 変数に代入しています。
 
 なお macro-statement で利用可能な関数は、LuneScript の標準関数のみです。
-同じソース内で定義している関数を、 macro-statement から使用することは出来ません。
+同じソース内で定義している関数でも、その関数がマクロ外で定義している場合、
+macro-statement から使用することは出来ません。
 
 
 macro-statement は、expand-statement と同じようにマクロ専用演算子を利用できます。
@@ -241,14 +242,14 @@ macro-statement は、expand-statement と同じようにマクロ専用演算�
 - ~`{}~
 - ~~  
 
-,,,,|,,,|,, は、 expand-statement とほぼ同じです。
+「,,,,」 「,,,」 「,,」 は、 expand-statement とほぼ同じです。
 expand-statement との違いは、
 expand-statement では直後に続く *変数* を処理対象にしていたのに対し、
 macro-statement では直後に続く *式* を処理対象にします。
 
 ~`{}~ は、 ~`{}~ 内で書いたステートメントを、そのまま値とすることが出来ます。
 
-例えば、 Test マクロは ~`{}~ を使って次のようにも書けます。
+例えば、 上記 Test マクロは ~`{}~ を使って次のようにも書けます。
 
 #+BEGIN_SRC lns
 macro Test( val:int ) {
@@ -319,7 +320,7 @@ Test( 5 );
 print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5
 #+END_SRC
 
-この例では、 ~`{}~ のリスト関数定義を複数格納し、
+この例では、 ~`{}~ のリスト statList に関数定義を複数格納し、
 それを展開することで、複数の関数定義(func1 〜 func5)を行なっています。
 
 
@@ -352,6 +353,39 @@ macro-statement では、次の関数が利用できます。
 ** 少し実用的なマクロの例
 
 次は少し実用的なマクロの例です。
+
+
+Google などが提供する REST API のパラメータやレスポンスなどで利用する JSON を、
+LuneScript で扱うには、
+REST API の JSON フォーマット毎にクラス化しておくと便利です。
+そのような時、何種類もある JSON 形式のデータを扱うクラスを
+手動で定義するのは非効率ですし、バグの元でもあります。
+
+そこで、 サンプルの JSON フォーマットを読み込んで、
+その JSON フォーマットを格納可能なクラスを定義するマクロを作成します。
+
+この例では、次の JSON ファイルを読み込み、
+
+#+NAME: hoge.js
+#+BEGIN_SRC lns
+{
+    "val1": "abc",
+    "val2": 0
+}
+#+END_SRC
+
+上記 JSON を扱うための次のクラスを定義するマクロです。
+
+#+BEGIN_SRC lns
+class Hoge {
+  pri let val1:str {pub};
+  pri let val2:int {pub};
+}
+#+END_SRC
+
+
+次がマクロの具体例です。
+
 
 #+BEGIN_SRC lns
 macro MkClass( name:str, path:str ) {
@@ -394,17 +428,8 @@ print( hoge.$val1, hoge.$val2 );
 
 このマクロは、ファイルから JSON を読み込み、
 その JSON 構造を格納するためのクラスを宣言します。
+
 クラス名はマクロの第一引数で指定します。
-
-この例では、次の JSON ファイルを読み込みます。
-
-#+NAME: hoge.js
-#+BEGIN_SRC lns
-{
-    "val1": "abc",
-    "val2": 0
-}
-#+END_SRC
 
 このマクロは、次の処理を行ないます。
 
@@ -417,16 +442,8 @@ print( hoge.$val1, hoge.$val2 );
 - 列挙した要素を保持するメンバを宣言する ~`{}~ を生成し、memStatList に追加する
 - name と memStatList を使ってクラスを宣言する。  
 
-これによって、次のクラスが定義されます。
-
-#+BEGIN_SRC lns
-class Hoge {
-  pri let val1:str {pub};
-  pri let val2:int {pub};
-}
-#+END_SRC
-
-このサンプルでは、メンバは int と str 型のデータとして扱います。
+このサンプルでは処理を簡単にするために、
+メンバは int と str 型のデータとして扱います。
 リストなどはサポートしていません。
 
 * まとめ
