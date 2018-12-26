@@ -186,7 +186,7 @@ class Test {
    }
 
 }
-let mut test = new Test( 1, 2, 3 );
+let test = new Test( 1, 2, 3 );
 test.func(); // 1 2 3 
 #+END_SRC
 
@@ -197,6 +197,83 @@ val1 の定義は ~pri let val1:int;~ となっています。
 これは、 これは通常の変数宣言に pri が付いただけなので問題ないと思います。
 
 pri はアクセス制御で、意味はメソッド定義と同じです。
+
+* mutable
+
+メンバ、メソッドにも mutable と immutable があります。
+
+メソッドの mutable と immutable の違いは次の通りです。
+
+- mutable なメソッドは、メンバを変更可能なメソッド
+- immutable なメソッドは、メンバを変更不可能なメソッド
+
+  
+次に mutable なメンバ、メソッドの例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val1:int;
+   pri let val2:int;
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+   pub fn add( val:int ) mut {
+      self.val1 = self.val1 + val;
+   }
+}
+let mut test = new Test( 1, 2 );
+test.func(); // 1 2
+test.add( 10 );
+test.func(); // 11 2
+#+END_SRC
+
+この例では、val1 が mutable で val2 が immutable です。
+また func() が immutable で、 add() が mutable です。
+
+mutable なメソッドは、引数宣言後に *mut* を宣言します。
+
+
+mutable のメソッド add() は、 メンバ val1 に値をセットしています。
+これはエラーせずにビルド可能です。
+
+では、次のように メソッド add() の mut 宣言を外した場合はどうなるかというと。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val1:int;
+   pri let val2:int;
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+   pub fn add( val:int ) {
+      self.val1 = self.val1 + val;  // error
+   }
+}
+#+END_SRC
+
+上記の例は、エラーとなります。
+
+mutable でないメソッド内からメンバを変更しようとした場合、エラーします。
+
+
+次の場合もエラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int;
+   pub fn increment() mut {
+      self.val = self.val + 1;
+   }
+   pub fn func() {
+      self.increment(); // error
+   }
+}
+#+END_SRC
+
+上記の例では、 func() から increment() をコールしていますが、
+immutable なメソッドから mutable なメソッドのコールは出来ません。
+
+
 
 * コンストラクタ定義
 
@@ -278,6 +355,51 @@ class Test {
 
 デフォルトコンストラクタのアクセス制御は pub です。
 
+*** デフォルトコンストラクタの明示
+
+デフォルトコンストラクタは、
+コンストラクタを定義しないと内部的に生成されます。
+
+しかしこの振舞いは、次のような処理を書いた時に問題になります。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int {pub};
+   pub static fn create(): Test {
+      return new Test( 1 );  // error
+   }
+}
+#+END_SRC
+
+上記は、 create() メソッド内で Test クラスのインスタンスを生成していますが、
+コンストラクタの宣言がないとしてエラーします。
+
+本来ならば、コンストラクタの定義がないのでデフォルトコンストラクタが
+生成されるのですが、
+デフォルトコンストラクタを定義するタイミングは、クラス定義終了時に行なうため、
+クラス定義内の create() メソッドでは、コンストラクタがありません。
+
+このような場合、明示的にデフォルトコンストラクタを使用することを宣言します。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int {pub};
+   _lune_control default__init;
+   pub static fn create(): Test {
+      return new Test( 1 );
+   }
+}
+#+END_SRC
+
+~_lune_control default__init;~ を宣言すると、
+デフォルトコンストラクタの使用を明示でき、
+このタイミングでデフォルトコンストラクタが生成されます。
+
+なお ~_lune_control default__init;~ は、通常のコンストラクタと同じように、
+全メンバの後に宣言する必要があります。
+    
 
 * クラスメンバ
 
