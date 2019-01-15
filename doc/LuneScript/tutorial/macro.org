@@ -21,8 +21,7 @@ LuneScript は、マクロを対応します。
 
 *関数* は、ある処理をまとめたものです。
 一方、 *マクロ* は、複数の関数定義自体をまとめて定義することが出来ます。
-
-*マクロ* として定義できるのは、
+もちろん *マクロ* として定義できるのは、
 関数定義だけでなく、ほとんど全ての処理を定義できます。
 
 マクロで一番メジャーなプログラミング言語と言えば Lisp だと思いますが、
@@ -34,13 +33,13 @@ LuneScript のマクロは Lisp ほど高機能ではありません。
 次に簡単なマクロの例を示します。
 
 #+BEGIN_SRC lns
-macro Hello() {
+macro _Hello() {
    print( "hello world" );
 }
-Hello(); // hello world
+_Hello(); // hello world
 #+END_SRC
 
-これは hello world を表示するマクロ Hello です。
+これは hello world を表示するマクロ _Hello です。
 
 マクロ定義は macro キーワードを使用します。
 
@@ -72,7 +71,7 @@ Hello(); // hello world
 
 このマクロは、次の仕様となります。
 
-- int の値を返す関数を定義するマクロ Test
+- int の値を返す関数を定義するマクロ _Test
 - 関数で返す int 値は、マクロの引数で与える
 - 定義する関数の名前は、 int の値によって決定する
 - 具体的には 1 を返す関数名は func1 とする
@@ -80,7 +79,7 @@ Hello(); // hello world
 次が具体的なマクロのコードです。
 
 #+BEGIN_SRC lns
-macro Test( val:int ) {
+macro _Test( val:int ) {
    {
       let name = "func%d"(val);
    }
@@ -89,16 +88,16 @@ macro Test( val:int ) {
    }
 }
 
-Test( 1 );
-Test( 10 );
+_Test( 1 );
+_Test( 10 );
 
 print( func1(), func10() ); // 1  10
 #+END_SRC
 
 マクロを展開する場合、関数コールとほとんど同じです。
 
-この場合 Test( 1 ), Test( 10 ) がマクロ展開です。
-Test( 1 ), Test( 10 ) によって、次が展開されます。
+この場合 _Test( 1 ), _Test( 10 ) がマクロ展開です。
+_Test( 1 ), _Test( 10 ) によって、次が展開されます。
 
 #+BEGIN_SRC lns
 // Test( 1 )
@@ -131,6 +130,8 @@ macro name( arg ) {
 #+END_SRC
 
 キーワード macro で開始し、 次にマクロ名 name 、引数 arg と続きます。
+マクロ名 name は、 _ で始まる必要があります。
+逆にマクロ以外のシンボル名は、 _ 以外で始まる必要があります。
 引数の数に制限はありません。
 
 次に macro-statement ブロックと、 expand-statement が続きます。
@@ -143,7 +144,7 @@ macro-statement ブロックの説明の前に、expand-statement を説明し�
 
 expand-statement は、マクロを展開した後のコードを書きます。
 
-Test マクロの例では、 次の部分が expand-statement です。
+_Test マクロの例では、 次の部分が expand-statement です。
 
 #+BEGIN_SRC lns
    fn ,,,name(): int {
@@ -170,7 +171,7 @@ Test マクロの例では、 次の部分が expand-statement です。
 
 つまり、上記例では ,,,name は name 変数内の文字列をシンボルに変換し、
 ,,val は val 変数を展開することで、
-~Test( 1 )~ マクロは、次が展開されます。
+~_Test( 1 )~ マクロは、次が展開されます。
 
 #+BEGIN_SRC lns
 fn func1():int {
@@ -193,7 +194,7 @@ macro-statement ブロックには、 expand-statement で利用する変数を�
 expand-statement で利用する変数は、
 macro-statement ブロックの最上位のスコープで宣言する必要があります。
 
-Test マクロの例では、次が macro-statement です。
+_Test マクロの例では、次が macro-statement です。
 
 #+BEGIN_SRC lns
    {
@@ -208,10 +209,10 @@ name の初期値として、 "func%d" (val) をセットしています。
 macro-statement 内では、LuneScript の全ての機能を利用できます。
 具体的には、macro-statement 内で関数定義なども行なえます。
 
-例えば、 Test マクロは次のようにも書けます。
+例えば、 _Test マクロは次のようにも書けます。
 
 #+BEGIN_SRC lns
-macro Test( val:int ) {
+macro _Test( val:int ) {
    {
       fn funcname(): str {
          return "func%d"(val);
@@ -249,10 +250,10 @@ macro-statement では直後に続く *式* を処理対象にします。
 
 ~`{}~ は、 ~`{}~ 内で書いたステートメントを、そのまま値とすることが出来ます。
 
-例えば、 上記 Test マクロは ~`{}~ を使って次のようにも書けます。
+例えば、 上記 _Test マクロは ~`{}~ を使って次のようにも書けます。
 
 #+BEGIN_SRC lns
-macro Test( val:int ) {
+macro _Test( val:int ) {
    {
       let defstat = `{
          fn ,,,"func%d"(val)~~():int {
@@ -263,8 +264,8 @@ macro Test( val:int ) {
    ,,defstat;
 }
 
-Test( 1 );
-Test( 10 );
+_Test( 1 );
+_Test( 10 );
 
 print( func1(), func10() ); // 1  10
 #+END_SRC
@@ -300,7 +301,7 @@ defstat を expand-statement で展開しています。
 次に ~`{}~ のリストの例を示します。
 
 #+BEGIN_SRC lns
-macro Test( val:int ) {
+macro _Test( val:int ) {
    {
       let mut statList:List<stat> = [];
       for count = 1, val {
@@ -315,7 +316,7 @@ macro Test( val:int ) {
    ,,statList;
 }
 
-Test( 5 );
+_Test( 5 );
 
 print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5
 #+END_SRC
@@ -349,6 +350,19 @@ macro-statement では、次の関数が利用できます。
 ただし、マクロの引数にはリテラルな値しか与えられません。
 
 マクロ展開はビルド時に行なうものであり、実行時には行ないません。
+
+** 公開マクロ
+
+マクロは外部モジュールに公開できます。
+
+次のように pub を宣言することで、そのマクロを import 先で利用できます。
+
+#+BEGIN_SRC lns
+pub macro _Hello() {
+   print( "hello world" );
+}
+#+END_SRC
+
 
 ** 少し実用的なマクロの例
 
@@ -388,7 +402,7 @@ class Hoge {
 
 
 #+BEGIN_SRC lns
-macro MkClass( name:str, path:str ) {
+macro _MkClass( name:str, path:str ) {
    {
       let mut memStatList:List<stat> = [];
       if! let mut fileObj = io.open( path ) {
@@ -420,7 +434,7 @@ macro MkClass( name:str, path:str ) {
       ,,memStatList;
    }
 }
-MkClass( "Hoge", "hoge.js" );
+_MkClass( "Hoge", "hoge.js" );
 
 let hoge = new Hoge( "ABC", 100 );
 print( hoge.$val1, hoge.$val2 );
