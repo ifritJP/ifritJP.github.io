@@ -1,0 +1,143 @@
+#+LAYOUT: post
+#+TITLE: org-mode で blog
+#+TAGS: org-mode jekyll
+
+blog を始めるにあたって、
+emacs から出来るだけ簡単に記事を更新できる環境にするために、
+次の URL の情報をもとにいくつか調査。
+
+<https://orgmode.org/worg/org-blog-wiki.html>
+
+
+とりあえず org-mode + jekyll で構築してみた。
+
+
+以下は、org-mode + jekyll で環境構築から記事を投稿するまでの流れをまとめたメモ。
+
+* 使用するソフト
+
+- ruby
+- gem
+  - bundler 
+  - jekyll
+  - jekyll-org  
+    
+    
+top
+jekyll は、 markdown でサイトを構築可能なツール。
+markdown は書き慣れていないので org-mode で記事を書けるように
+jekyll plugin の jekyll-org を使用する。
+
+** setup
+
+- install ruby
+- install ruby-dev  
+- install gem
+  
+#+BEGIN_SRC txt
+$ gem install bundler jekyll jekyll-org
+#+END_SRC
+
+* jekyll setup
+
+- blog のプロジェクトディレクトリ作成
+
+#+BEGIN_SRC txt
+$ cd blog_top
+$ jekyll new blog
+#+END_SRC
+
+*初回は、ここで必要な gem がインストールされる。*
+
+blog ディレクトリが生成され、blog ディレクトリ以下に幾つかのファイルが作成される。
+
+- _config.yml を編集
+ - 次の項目を編集
+   - title:
+   - email:
+   - description:
+   - twitter_username:
+   - github_username:
+ - plugins の項目に jekyll-org を追加
+
+#+NAME: _config.yml
+#+BEGIN_SRC yml
+plugins:
+  - jekyll-org
+#+END_SRC
+
+* 記事作成
+
+_posts/ 以下に、次の名前のファイルを作成する
+
+#+BEGIN_SRC txt
+YYYY-MM-DD-title.org
+#+END_SRC
+
+例えば 2019-01-01-hoge.org とする。
+
+title は、記事のタイトルで無くてもよい。
+
+_posts/ の下にサブディレクトリを掘って、その中にファイルを作成しても良い。
+
+** 記事のフォーマット
+
+次のメタ情報を入れれば、後は普通の org-mode 通りに記載可能。
+   
+#+BEGIN_SRC org
+#+LAYOUT: post
+#+TITLE: org-mode で blog
+#+TAGS: org-mode jekyll
+#+END_SRC
+   
+*+TAGS* はオプション。
+
+*** ワンポイントネタ
+
+- URL を書くだけだとリンクにならない。
+  - リンクにする場合は URL を ~<>~ で囲む。
+
+
+* 変換
+
+書いた記事は jekyll を使って html に変換する。
+
+#+BEGIN_SRC txt
+$ cd blog
+$ jekyll b
+#+END_SRC
+
+* 確認
+
+jekyll は httpd サーバ機能を持つ。
+
+#+BEGIN_SRC txt
+$ cd blog
+$ jekyll s
+#+END_SRC
+
+この状態でブラウザで http://localhost:4000 にアクセスすれば、
+変換後の内容を確認できる。
+
+なお、記事を修正すれば動的に変換されるので、
+記事を修正後にブラウザをリロードすれば、修正後の内容を確認できる。
+
+httpd サーバを終了する場合は、 Ctrl-C。
+
+** ネットワークアクセス
+
+#+BEGIN_SRC txt
+$ jekyll s 
+#+END_SRC   
+
+このコマンドで起動した httpd サーバは、 localhost でしかアクセスできない。
+
+つまり PC 外部からアクセス出来ない。
+
+セキュリティという意味では安全であるが、不便だったりする。
+
+PC 外部からアクセスしたい場合は、次のコマンドで httpd サーバを起動する。
+
+#+BEGIN_SRC txt
+$ jekyll s --host 0.0.0.0
+#+END_SRC   
