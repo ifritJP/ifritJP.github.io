@@ -1,4 +1,53 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-01-21T07:02:27+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">org-mode で blog</title><link href="https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll.html" rel="alternate" type="text/html" title="org-mode で blog" /><published>2019-01-17T00:00:00+09:00</published><updated>2019-01-17T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll.html">&lt;p&gt;blog を始めるにあたって、
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-01-23T22:39:44+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">デフォルト引数の問題</title><link href="https://ifritjp.github.io/blog/site/2019/01/23/default-arg.html" rel="alternate" type="text/html" title="デフォルト引数の問題" /><published>2019-01-23T00:00:00+09:00</published><updated>2019-01-23T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/23/default-arg</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/23/default-arg.html">&lt;p&gt;関数をコールする際、引数を省略してコールすることができる機能をもつ言語が多く存在する。&lt;/p&gt;
+&lt;p&gt;ここでは、その機能を「デフォルト引数」と呼ぶ。&lt;/p&gt;
+&lt;p&gt;デフォルト引数の例として、Lua のサンプルを次に示す。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lua&quot;&gt;
+local function func( x, y )
+  print( x, y )
+end
+func( &amp;quot;abc&amp;quot; ) // abc nil
+&lt;/pre&gt;
+&lt;p&gt;Lua では関数コール時に省略された引数は、 nil として処理される。
+  上記の &lt;code&gt;func( &amp;quot;abc&amp;quot; )&lt;/code&gt; は、引数 x, y のうち y が省略され、
+  実行すると abc nil が表示される。&lt;/p&gt;
+&lt;p&gt;デフォルト引数は、引数が多い関数を呼び出す際に有効な機能である。
+  特に Lua は、引数の違いによって実行する関数を切り替える関数オーバーロードがないため、
+  デフォルト引数は良く使われる機能の一つである。&lt;/p&gt;
+&lt;p&gt;しかし、デフォルト引数は便利である一方、不具合を発生させるリスクにもなる。&lt;/p&gt;
+&lt;p&gt;そのリスクとは、意図してデフォルト引数を使用しているのか、
+  それとも、本来指定すべき引数を指定し忘れているのか、を判断出来ないということである。
+  タイプミス等で関数に渡す引数を間違えることが良くある。
+  それを判断できないというのはリスクが高い。&lt;/p&gt;
+&lt;p&gt;Lua の トランスコンパイラである LuneScript でも、同じ問題を抱えている。&lt;/p&gt;
+&lt;p&gt;次は LuneScript のデフォルト引数のサンプルである。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lua&quot;&gt;
+fn func( val: int! ): int {
+   when! val {
+      return val + 1;
+   }
+   return 0;
+}
+print( func( 1 ) );   // 2
+print( func( nil ) ); // 0
+print( func() );      // 0
+&lt;/pre&gt;
+&lt;p&gt;このサンプルは、デフォルト引数を持つ func() の関数呼び出しを 3 パターン行なっている。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;func( 1 )&lt;/li&gt;
+  &lt;li&gt;func( nil )&lt;/li&gt;
+  &lt;li&gt;func()&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;LuneScript は Lua と同じで、引数が省略されると nil が指定される。
+  よって、 &lt;code&gt;func( nil )&lt;/code&gt; と &lt;code&gt;func()&lt;/code&gt; は同義である。
+  しかし、 &lt;code&gt;func()&lt;/code&gt; が引数の指定忘れではないと、誰が保証できるだろうか？&lt;/p&gt;
+&lt;p&gt;また、 LuneScript では nilable は必ず省略可能なデフォルト引数になってしまう。&lt;/p&gt;
+&lt;p&gt;デフォルト引数をサポートする多くの言語では、
+  デフォルト引数はデフォルト値を定義する必要がある。
+  一方 LuneScript では、nilable は必ずデフォルト引数になってしまう。&lt;/p&gt;
+&lt;p&gt;「nil の時でも省略せずに明示すべき」としたくても、
+  現在の言語仕様ではそれが出来ない。&lt;/p&gt;
+&lt;p&gt;この辺りを解決する方法を検討している。&lt;/p&gt;
+&lt;p&gt;ただこれを解決するには、現状の言語仕様との互換を持たせるのは難しいかもしれない。&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry><entry><title type="html">org-mode で blog</title><link href="https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll.html" rel="alternate" type="text/html" title="org-mode で blog" /><published>2019-01-17T00:00:00+09:00</published><updated>2019-01-17T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll.html">&lt;p&gt;blog を始めるにあたって、
   emacs から出来るだけ簡単に記事を更新できる環境にするために、
   次の URL の情報をもとにいくつか調査。&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://orgmode.org/worg/org-blog-wiki.html&quot;&gt;https://orgmode.org/worg/org-blog-wiki.html&lt;/a&gt;&lt;/p&gt;
@@ -56,6 +105,17 @@ $ jekyll new blog
 &lt;pre class=&quot;src&quot; lang=&quot;yml&quot;&gt;
 plugins:
   - jekyll-org
+&lt;/pre&gt;
+&lt;h3&gt;jekyll-org の設定&lt;/h3&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/eggcaker/jekyll-org&quot;&gt;https://github.com/eggcaker/jekyll-org&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;Gemfile に次を追加&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+# jekyll-org
+gem &amp;#39;jekyll-org&amp;#39;, &amp;#39;&amp;gt;= 1.0.2&amp;#39;
+&lt;/pre&gt;
+&lt;p&gt;Gemfile 編集後、次のコマンドを実行&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ bundle install
 &lt;/pre&gt;
 &lt;h3&gt;github pages 用の設定&lt;/h3&gt;
 &lt;p&gt;github pages の /blog に jekyll のディレクトリを作成した場合の設定&lt;/p&gt;
