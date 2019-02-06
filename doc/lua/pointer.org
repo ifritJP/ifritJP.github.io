@@ -1,0 +1,361 @@
+* C/C++ 言語プログラマのための Lua 入門リファレンス ( ポインタ編 )
+
+  これは、 C/C++ のポインタを C-Lua 間で受け渡しする際の実装方法を説明するものです。
+
+  簡単に結論を先に言うと、
+  ~luaL_newmetatable()~ と ~lua_setmetatable()~ をちゃんと使おうということです。
+
+  C/C++ のポインタを C-Lua 間で受け渡しする処理として、次の例を挙げます。
+
+  
+  下記の C プログラムで記述した処理があったとき、
+
+#+BEGIN_SRC C
+static int s_val = 0;
+const const int * getPointer() {
+  return &s_val;
+}
+void processPointer( const int * pVal )
+{
+  *pVal = *pVal + 1;
+}
+
+void func( void )
+{
+  const int * pVal = getPointer();
+  processPointer( pVal );
+}
+#+END_SRC
+
+上記の getPointer()、 processPointer() を C で書き、
+func() の処理を Lua で書く時のこと考えます。
+
+ここで Lua の処理は、次のように書くとします。
+
+#+BEGIN_SRC lua
+local function func()
+  local val = getPointer()
+  processPointer( val )
+end
+#+END_SRC
+
+まず基本として、C の関数から Lua にデータを返す場合、 ~lua_push~ 系の関数を利用します。
+一方 Lua からデータを取得する場合、 ~lua_to~ 系の関数、あるいは ~luaL_check~ 系の関数を利用します。
+~luaL_check~ 系は、アクセスしたデータの型が、所定の型でない場合に Lua のエラーになる関数です。
+
+ポインタを扱う場合に、これら関数をどのように使うべきかを説明します。
+
+** やってはいけない方法
+
+まずは、C と Lua 間でポインタを受け渡しする方法として、
+やってはいけない実現方法について説明します。
+
+推奨する方法を知りたい方はこの章を読み飛ばしてください。
+
+*** やってはいけない方法-1. ~lua_Integer~, ~lua_Unsigned~, ~lua_Number~ 系の API を利用する
+
+~lua_to~, ~luaL_check~ 系の関数には ~lua_Integer~, ~lua_Unsigned~, ~lua_Number~ 用の API があります。
+
+~lua_Integer~ は符号付き整数で、 ~lua_Unsigned~ は符号なし整数、 ~lua_Number~ は実数です。
+(Lua のコンフィルレーションによって異なる)
+
+これらの関数を利用すると、getPointer()、 processPointer() は次のように書けます。
+(Lua への関数登録は省きます。)
+ここでは ~lua_Integer~ 向けの API を利用しています。
+
+#+BEGIN_SRC C
+static int s_val = 0;
+int getPointer( lua_State * pLua ) {
+  lua_pushinteger( pLua, &s_val );
+  return 1;
+}
+void processPointer( lua_State * pLua ) {
+{
+  const int * pVal = (int *)luaL_checkinteger( pLua, 1 );
+  *pVal = *pVal + 1;
+  return 0;
+}
+#+END_SRC
+
+C のポインタを扱う際にこれらの API を利用するには、次の問題があります。
+
+- 環境依存になる
+- メモリ破壊の可能性がある
+
+**** 環境依存になる
+
+~lua_Integer~ 、 ~lua_Number~ はそれぞれ、整数、実数を扱うためのデータ型です。
+そもそもポインタを扱うデータ型ではありません。
+
+組込みプログラムなどでは、ポインタ型と整数型の相互のキャストを行なうことは良くあります。
+しかし、Lua とのインタフェースでは、すべきでありません。
+
+なぜならば、互換性を保てない可能性があるためです。
+
+例えばポインタを ~lua_Number~ で扱うことを考えると、
+64bit 処理系では ~lua_Number~ がデフォルトで利用する double が
+誤差なく保持できる整数の範囲では、64bit のアドレス空間を表現できません。
+
+32bit 処理系では、32bit のアドレス空間を double (64bit) で誤差なく表現できますが、
+次のように ~lua_Number~ と ~lua_Integer~ を混在させてしまうと不整合が発生します。
+
+#+BEGIN_SRC C
+static int s_val = 0;
+int getPointer( lua_State * pLua ) {
+  lua_pushnumber( pLua, &s_val );
+  return 1;
+}
+void processPointer( lua_State * pLua ) {
+{
+  const int * pVal = (int *)luaL_checkinteger( pLua, 1 );
+  *pVal = *pVal + 1;
+  return 0;
+}
+#+END_SRC
+
+- getPointer() 内で、 ~lua_pushnumber()~ を使ってポインタを Lua に渡す
+- processPointer() 内で、 ~luaL_checkinteger()~ を使ってポインタを取得する
+
+この処理で問題になるのは、アドレスが 0x80000000 以上になるケースです。
+
+順に追って説明すると、
+
+0x80000000 を ~lua_pushnumber()~ に渡すと、 
+0x80000000 は double で保持可能な範囲であるため、そのまま保持されます。
+なお、0x80000000 は 10 進数では 2147483648 になります。
+また、double は実数なので実際には 2147483648.0 です。
+次に、このデータに対し ~luaL_checkinteger~ すると、2147483648.0 を ~lua_Integer~ に変換します。
+しかし、2147483648.0 は 32bit の ~lua_Integer~ の範囲外になるため、
+~luaL_checkinteger()~ は error となります。
+なお、Lua 5.3 以降では error となりますが、
+Lua 5.2 以前ではこの変換は未定義の動作になり、
+結果的に processPointer() は不定なアドレスにアクセスします。
+
+**** メモリ破壊の可能性について
+
+次のように getPointer() から取得したアドレスを
+processPointer() に渡したのであれば問題ありません。
+
+#+BEGIN_SRC lua
+local function func()
+  local val = getPointer()
+  processPointer( val )
+end
+#+END_SRC
+
+しかし、 processPointer() に渡す値が getPointer() から取得した値でなかった場合は、
+processPointer() は不正なアドレスにアクセスすることになります。
+これにより、メモリ破壊が発生します。
+
+例えば、次のように Lua で書けば、メモリ破壊が発生してしまいます。
+
+#+BEGIN_SRC lua
+local function func()
+  processPointer( 0 )
+end
+#+END_SRC
+
+これは、Lua-C 間に限ったことではなく、
+C-C 間であっても processPointer() の引数に不正な値を設定した場合は、
+メモリ破壊になります。
+
+ただ、C-C 間で同じ問題が起るからといって、
+Lua-C 間で起っても良いという訳ではありません。
+
+
+*** やってはいけない方法-2. ライトユーザデータ系の API を利用する
+
+ライトユーザデータ系の API を利用すると、
+getPointer()、 processPointer() は次のように書けます。
+(Lua への関数登録は省きます。)
+    
+#+BEGIN_SRC C
+static int s_val = 0;
+int getPointer( lua_State * pLua ) {
+  lua_pushlightuserdata( pLua, &s_val );
+  return 1;
+}
+void processPointer( lua_State * pLua ) {
+{
+  const int * pVal = (int *)lua_touserdata( pLua, 1 );
+  *pVal = *pVal + 1;
+  return 0;
+}
+#+END_SRC
+
+特定の条件下では、ポインタを扱う際にライトユーザデータを利用しても問題になりません。
+しかし、その条件を満たさないことが多いのでライトユーザデータを利用すべきではありません。
+
+その条件とは、「C-Lua 間で扱うポインタ型が 1 種類であること」です。
+2種類以上になった場合は、ポインタをライトユーザデータで扱うべきではありません。
+
+その理由は、次の問題のためです。
+
+- メモリ破壊の可能性がある
+  
+1種類であれば、「ユーザデータ = 固定のポインタ型」であることが保証されるので、
+ユーザデータであることさえ確認できればメモリが破壊されることはありません。
+
+#+BEGIN_SRC C
+static int s_val = 0;
+int getPointer( lua_State * pLua ) {
+  lua_pushlightuserdata( pLua, &s_val );
+  return 1;
+}
+void processPointer( lua_State * pLua ) {
+{
+  int * pVal = (int *)lua_touserdata( pLua, 1 );
+  *pVal = *pVal + 1;
+  return 0;
+}
+
+static char s_val2 = 0;
+int getPointer2( lua_State * pLua ) {
+  lua_pushlightuserdata( pLua, &s_val2 );
+  return 1;
+}
+void processPointer2( lua_State * pLua ) {
+{
+  char * pVal = (char *)lua_touserdata( pLua, 1 );
+  *pVal = *pVal + 1;
+  return 0;
+}
+#+END_SRC
+
+上記のように 2 種類(int *, char *)のポインタを扱う場合でも、
+Lua 側で次のように処理すれば何の問題も起りません。
+
+#+BEGIN_SRC lua
+local function func()
+  processPointer( getPointer() )
+  processPointer2( getPointer2() )
+end
+#+END_SRC
+
+しかし、次のようにしてしまった場合、メモリ破壊が発生します。
+
+#+BEGIN_SRC lua
+local function func()
+  processPointer( getPointer2() )
+end
+#+END_SRC
+
+processPointer() は、与えられたライトユーザデータを int * として扱いますが、
+getPointer2() は char * のポインタを示すライトユーザデータを返します。
+これにより、char のメモリ領域を越えて int でアクセスするため、メモリ破壊が発生します。
+
+** 推奨する方法
+
+Lua では、C 側で確保したメモリ領域を、ユーザデータとして扱うことができます。
+
+ただし、Lua が提供する専用の alloc 関数で確保したメモリ領域である必要があります。
+
+*** 推奨する方法-1. 基本
+
+ユーザデータ系の API を利用すると、
+getPointer()、 processPointer() は次のように書けます。
+(Lua への関数登録は省きます。)
+    
+#+BEGIN_SRC C
+static int s_val = 0;
+int getPointer( lua_State * pLua ) {
+  int ** ppVal = lua_newuserdata( pLua, sizeof( &s_val ) );
+  luaL_newmetatable( pLua, "INTP" );
+  lua_setmetatable( pLua, -1 );
+  *ppVal = &s_val;
+  return 1;
+}
+void processPointer( lua_State * pLua ) {
+{
+  int * pVal = (int *)luaL_checkudata( pLua, 1, "INTP" );
+  *pVal = *pVal + 1;
+  return 0;
+}
+static char s_val2 = 0;
+int getPointer2( lua_State * pLua ) {
+  int ** ppVal = lua_newuserdata( pLua, sizeof( &s_val2 ) );
+  luaL_newmetatable( pLua, "CHARP" );
+  lua_setmetatable( pLua, -1 );
+  *ppVal = &s_val2;
+  return 1;
+}
+void processPointer2( lua_State * pLua ) {
+{
+  char * pVal = (char *)luaL_checkudata( pLua, 1, "CHARP" );
+  *pVal = *pVal + 1;
+  return 0;
+}
+#+END_SRC
+
+
+ユーザデータとして扱うメモリを確保するには、
+~lua_newuserdata( lua_State *L, size_t size )~ 関数を使用します。
+この関数を使用することで、そのポインタをユーザデータとして扱えます。
+
+~lua_newuserdata()~ には、確保するメモリのサイズを指定します。
+
+これでユーザデータとして使用できますが、
+これだけだとライトユーザデータと変わりません。
+
+そこで、ユーザデータにメタテーブルを設定します。
+
+Lua スクリプト内では、テーブルオブジェクトに対してのみメタテーブルを設定できますが、
+C 言語からはユーザデータに対してもメタテーブルを設定できます。
+なお、ライトユーザデータにはメタテーブルを設定できません。
+
+メタテーブルは、 ~luaL_newmetatable( lua_State *L, const char *tname )~ で生成します。
+tname には、メタテーブル名を指定します。
+本来 ~luaL_newmetatable()~ は、Lua VM に対して 1 度だけ実行するだけで大丈夫です。
+
+上記 getPointer() では、 ~lua_newuserdata()~ で確保したユーザデータにポインタを格納し、
+~luaL_newmetatable()~ で "INTP" の名前のメタテーブルを生成して、
+~lua_setmetatable()~ でユーザデータにメタテーブルを設定しています。
+
+
+ユーザデータは ~luaL_checkudata()~ が利用でき、
+この API で指定のユーザデータが指定のメタテーブルを持つユーザデータかどうかを
+判定できます。
+
+ポインタの型毎に設定するメタデータを切り替えることで、
+想定とは異なるユーザデータが与えられた時の不正動作を回避できます。
+
+#+BEGIN_SRC lua
+local function func()
+  processPointer( getPointer2() )
+end
+#+END_SRC
+
+たとえば、 Lua で上記のような処理を書いたときも、
+不正な動作ではなく確実に error として弾くことができます。
+
+なお、C-Lua 間で扱うポインタ型が多い場合、
+~lua_setmetatable()~, ~luaL_checkudata()~ のオーバーヘッドが大きくなるため、
+この方法は効率が悪くなる可能性があります。
+
+その場合、ポインタ型ごとにメタデータを切り替えるのではなく、
+下記のような構造体を宣言し、
+この構造体をユーザデータとして生成し、
+構造体の pVal メンバにやり取りするポインタを設定、
+構造体の type メンバにやり取りするポインタの型を設定し、
+~luaL_checkudata()~ の後に type が想定する値であることを検証することで、
+~lua_setmetatable()~, ~luaL_checkudata()~ のオーバーヘッドを下げて
+目的の処理を実現できます。
+
+
+#+BEGIN_SRC C
+typedef enum {
+  pointer_type_int,
+  pointer_type_char,
+} pointer_type_t;
+typedef struct {
+  pointer_type_t type;
+  void * pVal;
+} val_t;
+#+END_SRC
+
+
+「やってはいけない方法」で紹介した方法でも環境によっては動いてしまうので、
+環境が変ったときに解析困難な不具合になったります。
+基本的な内容ですが、公式リファレンスや Web の入門サンプルを流し読みした程度だと見落してしまうので、
+気をつけるべき内容です。
+
