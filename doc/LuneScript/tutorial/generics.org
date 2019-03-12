@@ -1,0 +1,218 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript 入門 - generics 編
+
+ここでは、 LuneScript がサポートする Generics について説明します。
+
+LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、
+ユーザ定義の関数やクラスでも Generics をサポートしました。
+
+* 関数
+
+関数の Generics は次のように宣言します。
+
+#+BEGIN_SRC lns
+fn func<T>( val:T ) : Set<T> {
+   return (@ val);
+}
+#+END_SRC
+
+上記サンプルを見ればだいたい理解できると思いますが、
+関数宣言する際に 関数名 + ~<仮型パラメータ>~ で宣言します。
+
+ここで func<T>() は、引数の値を持つ Set<T> を生成する関数です。
+
+
+仮型パラメータは、複数指定することができます。
+
+#+BEGIN_SRC lns
+fn func<T1,T2>( val1:T1, val2:T2 ) : Set<T1>, List<T2> {
+   return (@ val1), [ val2 ];
+}
+#+END_SRC
+
+
+* nilable, mutable
+
+仮型パラメータは、通常の型と同じく nilable や mutable の概念を持ちます。
+
+これにより、次のような処理を書けます。
+
+#+BEGIN_SRC lsn
+fn func1<T>( val:T ) : T {
+   return val;
+}
+fn func2<T>( val:T ) : &T {
+   return val;
+}
+fn func3<T>( val:T ) : T! {
+   return val;
+}
+let mut test1 = func1( [ 1, 2 ] );
+test1.insert( 1 );
+let mut test2 = func2( [ 1, 2 ] );
+test2.insert( 1 ); // error test2 is not mutable
+let mut test3 = func3( [ 1, 2 ] );
+test3.insert( 1 ); // error test3 is nilable
+#+END_SRC
+
+- func1 は、引数をそのままの型 T で返します。
+- func2 は、引数を immutable 型 &T で返します。
+- func3 は、引数を nilable 型 T! で返します。
+
+これにより、 test1.insert() は可能ですが、
+test2, test3 はコンパイルエラーとなります。
+
+
+なお、ここで気を付けなければならないことは、
+仮型パラメータを使用する時は nilable や mutable を利用できますが、
+仮型パラメータ名を宣言するときは使用できません。
+つまり、次のような ~func1<T!>~ はエラーとなります。
+
+#+BEGIN_SRC lns
+fn func1<T!>( val:T ) : T {
+   return val;
+}
+#+END_SRC
+
+また、仮型パラメータに nilable は利用できません。
+つまり、次の場合エラーします。
+
+#+BEGIN_SRC lns
+fn func1<T>( val:T ) : T {
+   return val;
+}
+let val:int! = 1;
+print( func1( val ) ); // error type mismatch
+#+END_SRC
+
+この例では、 func1( val ) によって int! が func1() に与えられますが、
+~func1<T>(val:T)~ の val は T であり、
+仮型パラメータは nilable を利用できないためエラーとなります。
+
+このような処理を行ないたい場合は、次のように宣言します。
+
+#+BEGIN_SRC lns
+fn func1<T>( val:T! ) : T {
+   return unwrap val;
+}
+let val:int! = 1;
+print( func1( val ) ); // ok
+#+END_SRC
+
+つまり、 ~fn func1<T>( val:T! )~ とすることで、
+func1() の引数が nilable であることを宣言します。
+
+しかし、nilable の値を扱えないと不便なこともあります。
+そのような場合に備えて Nilable<T> を用意しています。
+
+これについては、後日別途説明します。
+
+** サンプル
+
+Generics を利用すると、次のような処理が書けます。
+
+#+BEGIN_SRC lns
+fn func<T>( val:T ) : Set<T> {
+   return (@ val);
+}
+foreach val in func( "foo" ) {
+   print( val .. "bar" );  // foobar
+}
+foreach val in func( 1 ) {
+   print( val + 100 );  // 101
+}
+#+END_SRC
+
+func( "foo" ) は、 (@ "foo" ) の Set<str> を生成し、
+func( 1 ) は、 (@ 1 ) の Set<int> を生成します。
+
+上記を見ると分かる通り、コールした引数に応じて型パラメータを決定しています。
+
+*** 効果
+
+Generics ではなく、stem を利用することで次のように似たような処理を記載できます。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) : Set<stem> {
+   return (@ val);
+}
+foreach val in func( "foo" ) {
+   print( val@@str .. "bar" );
+}
+foreach val in func( 1 ) {
+   print( val@@int + 100 );
+}
+#+END_SRC
+
+しかしこの場合、 str や int などの型情報が stem に丸められてしまいます。
+stem に丸められてしまうので ~@@str~ や ~@@int~ のキャストが必要になります。
+
+キャストするのは不便ですし、なによりも非常に危険です。
+
+Generics を利用することで、キャストを使わずに安全にアクセスできます。
+
+
+* クラス
+
+クラスの Generics は次のように宣言します。
+
+#+BEGIN_SRC lns
+class Test<T> {
+   let val:T;
+   pub fn func() : List<T> {
+      return [ self.val ];
+   }
+}
+#+END_SRC
+
+クラスの場合、クラス宣言の名前を指定する際に仮型パラメータを指定します。
+
+なお、クラス宣言の外にメソッドを宣言する場合、
+次のように仮型パラメータの宣言は不要です。
+
+#+BEGIN_SRC lns
+pub fn Test.func2() : Set<T> {
+   return (@ self.val );
+}
+#+END_SRC
+
+Generics クラスのインスタンスは次のように生成します。
+
+#+BEGIN_SRC lns
+let test = new Test<str>( "abc" );
+#+END_SRC
+
+なお、コンストラクタの引数に全ての仮パラメータを使用している場合、
+次のように実型パラメータを省略することも可能です。
+#+BEGIN_SRC lns
+let test = new Test( "abc" );
+#+END_SRC
+
+* メソッド
+
+メソッドは、クラスの仮型パラメータと、メソッドの仮型パラメータを両方持てます。
+
+次のサンプルは Test.func() メソッドは、
+クラスの仮型パラメータ T と、メソッドの仮型パラメータ T2 を持っています。
+
+#+BEGIN_SRC lns
+class Test<T> {
+   let val:T;
+   pub fn func<T2>(val:T2) : Map<T,T2> {
+      return { self.val: val };
+   }
+}
+let test = new Test( "abc");
+foreach val, key in test.func( 1 ) {
+   print( key .. "xyz", val + 10 );
+}
+foreach val, key in test.func( "ABC" ) {
+   print( key .. "xyz", val .. "XYZ" );
+}
+#+END_SRC
+
