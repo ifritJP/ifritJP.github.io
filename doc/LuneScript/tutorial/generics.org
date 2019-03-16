@@ -216,3 +216,165 @@ foreach val, key in test.func( "ABC" ) {
 }
 #+END_SRC
 
+* 型パラメータの制約
+
+実型パラメータには、 nil 以外の全ての型を指定できます。
+
+このため、 Generics なクラスや関数内で仮型パラメータ型の値に対する処理は
+~==~ や =~== などの型に依存しない演算に限られます。
+
+これだと、Generics 内の処理で効果的な処理を書けません。
+
+そこで、型パラメータの制約を利用します。
+
+** サンプル
+
+次は、型パラメータ制約のサンプルです。
+
+ここでは、 ~class Test<T:Val>~ と宣言することで、
+Test クラスの仮型パラメータは Val クラスに限られます。
+
+これにより、 Test.sub() メソッド内で val の値に対し、
+Val クラスのメソッド func() をコールできるようになります。
+
+#+BEGIN_SRC lns
+abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test<T:Val> {
+   let val:T;
+   pub fn sub() {
+      print( "this is " .. self.val.func() );
+   }
+}
+#+END_SRC
+
+次は、この Test クラスを使ったサンプルです。
+
+#+BEGIN_SRC lns
+abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test<T:Val> {
+   let val:T;
+   pub fn sub() {
+      print( "this is " .. self.val.func() );
+   }
+}
+
+class Val1 extend Val {
+   pub override fn func(): str {
+      return "val1";
+   }
+}
+
+class Val2 extend Val {
+   pub override fn func(): str {
+      return  "val2";
+   }
+}
+
+fn func( test:Test ) {
+   test.sub();
+}
+
+func( new Test( new Val1() ) );  // this is val1
+func( new Test( new Val2() ) );  // this is val2
+#+END_SRC
+
+このサンプルの構成は次になります。
+
+- Val1, Val2 クラスは、Val クラスを継承したクラス
+- func() 関数は Test 型の引数 test を持ち、 test.sub() メソッドをコール。
+- ~new Test( new Val1() )~, ~new Test( new Val2() )~ によって、
+  Val1 と Val2 の実型パラメータの Test 型のインスタンスを生成し func() 関数をコール
+  
+これにより、 Val1.func(), Val2.func() がコールされ
+~this is val1~, ~this is val2~ が 出力される。
+
+なお、 ~Test<T:Val>~ の T は Val である必要があるので、
+例えば ~new Test<"abc">~ のような指定はエラーになります。
+
+なぜならば "abc" は str 型であり、 str 型は Val 型ではないからです。
+
+
+ちなみに仮型パラメータの制約の syntax は class の extend と同じです。
+
+つまり次のようになります。
+
+#+BEGIN_SRC lns
+class Hoge<T:SuperClass(IF,...)> {
+}
+#+END_SRC
+
+ここで SuperClass はクラスで、IF はインタフェースです。
+
+SuperClass, IF は、それぞれ省略可能です。
+
+* generics クラスの Mapping
+
+LuneScript は、
+クラスのインスタンスを Map オブジェクトに変換する Mapping 機能を持ちます。
+
+Mapping に関しては、次の記事を参照してください。
+
+https://qiita.com/dwarfJP/items/070a3d31c57903cb6933
+
+あるクラスを Mapping するには、
+そのクラスが Mapping インタフェースを extend する必要があります。
+
+次は簡単な例です。
+
+#+BEGIN_SRC lns
+class Test<T> extend (Mapping) {
+   let txt:str;
+   pub fn func( val:T ) {
+      print( self.txt, val );
+   }
+}
+
+let test = new Test<int>( "hoge" );
+let map = test._toMap();
+if! let test2 = Test<int>._fromMap( map ) {
+   test2.func( 1 );
+}
+#+END_SRC
+
+Test<T> クラスは Mapping を extend しています。
+これにより、Test<T> クラスは Mapping 可能になります。
+
+上記の場合は、 Generics でない通常のクラスの場合と何も変りません。
+これは、仮型パラメータ型のメンバに持たないためです。
+
+次のように仮型パラメータ型のメンバを持った場合は、エラーになります。
+
+#+BEGIN_SRC lns
+class Test<T> extend (Mapping) {
+   let txt:T;
+}
+#+END_SRC
+
+なぜならば、あるクラスが Mapping を extend するには、
+そのクラスが保持する全てのメンバが Mapping 可能でなければならないのに対し、
+メンバ txt の型である仮型パラメータ T は、nilable 以外の全ての型になり得るからです。
+
+これを回避するには、
+メンバの型として使用する仮型パラメータに Mapping の制約を設定します。
+
+
+具体的には次の通り ~Test<T:(Mapping)>~ とします。
+
+#+BEGIN_SRC lns
+class Test<T:(Mapping)> extend (Mapping) {
+   let val:T {pub};
+}
+
+let test = new Test( "abc" );
+let map = test._toMap();
+if! let test2 = Test<str>._fromMap( map ) {
+   print( test2.$val .. "xyz" );
+}
+#+END_SRC
+
+これにより、 Generics クラスが Mapping 可能になります。
+
