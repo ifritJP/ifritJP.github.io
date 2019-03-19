@@ -145,6 +145,68 @@ case で Val1 〜 Val5 で分岐しています。
 
 ここで ~test.$_txt~ は、 値域の Val2 を示す "Test.Val2" の文字列が展開されます。
 
+* alge 型の省略表記
+
+alge 型も enum 型と同じように省略表記を利用できます。
+
+次のような alge 型の Test と、その Test を引数に持つ関数があった場合、
+
+#+BEGIN_SRC lns
+alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   print( test );
+}
+#+END_SRC
+
+func() をコールする際、次のように Test を省略可能です。
+
+#+BEGIN_SRC lns
+func( .Val1 );
+func( .Val2 );
+func( .Val3( 10 ) );
+#+END_SRC
+
+なお、 外部モジュールで定義されている alge 型を省略指定する場合、
+その外部モジュールを import している必要があります。
+
+* alge型 の比較
+
+パラメータを持たない単純な alge 型の値は、次のように比較することが出来ます。
+
+#+BEGIN_SRC lns
+alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   if test == .Val1 {
+      print( "Val1" );
+   }
+   elseif test == .Val2 {
+      print( "Val2" );
+   }
+   elseif test == .Val3(1) {  // error
+      print( "Val3" );
+   }
+   else {
+      print( "no" );
+   }
+}
+func( .Val1 ); // Val1
+func( .Val2 ); // Val2
+#+END_SRC
+
+なお、パラメータを持つ値 (上記の場合 Val3) は、
+同じパラメータを与えても異なる値になるため注意が必要です。
+ちなみに、上記の ~test == .Val3(1)~ はエラーとなります。
+なぜならば、この式の結果は必ず「false」となるため、
+コンパイルエラーとすることで、実行時に意図しない結果になることを防ぎます。
+
 
 * alge の使用例
 
@@ -216,5 +278,6 @@ alge も万能ではありませんが、
 幾つかの場面ではキャストや継承を使用するよりも、
 より良い選択肢になると思います。
 
-
 次回はインタフェースを説明します。
+
+
