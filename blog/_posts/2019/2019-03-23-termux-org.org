@@ -1,0 +1,137 @@
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: emacs org qiita
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+#+TITLE: Android で emacs/org-mode/qiita 投稿
+
+外出先の暇な時間を有効利用するため、ドキュメント書きをしたくなることがあります。
+
+そして私は emacs ユーザ。
+
+emacs ユーザが書きモノをするといえば、 emacs/org-mode です。
+
+ここでは、 Android で emacs/org-mode を使って qiita に投稿するまでの環境作りを紹介します。
+
+ノート PC を持っている人は、普通にノート PC を持っていけば良いと思います。
+
+* 用意するもの
+
+- タブレット
+- Bluetooth キーボード
+- タブレット用スタンド
+
+* 環境構築
+
+** Android アプリ
+
+まずは Android に次のアプリを入れます。
+  
+- termux
+- ハードウェアキーボード配列変更アプリ (英語 or 日本語)
+- Hacker's Keyboard  
+
+全て Root なしに Google Play で入れられます。
+
+配列変更アプリは US 配列と JIS 配列でアプリが分かれているので、
+好きな方を入れてください。
+入れた後に、 Android の設定でハードウェアキーレイアウトを
+「Ctrl、Caps 交換」に切り替えます。
+なお、 Caps/Ctrl の入れ替えが不要な場合は、配列変更アプリを入れなくて良いです。
+
+Hacker's Keyboard は必須ではないですが、
+他の IME では、ハードウェアキーボードと想定外の干渉をすることがあります。
+
+** termux 設定
+
+- ピンチイン、アウトでフォントサイズを変更
+- 次のパッケージを termux にインストール
+  - emacs
+  - curl
+  - git
+
+** emacs 設定
+
+*** ~/.emacs/init.el 設定
+
+次の内容の ~/.emacs/init.el を作成
+    
+#+BEGIN_SRC lisp
+(package-initialize)
+
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
+#+END_SRC
+
+*** パッケージインストール
+
+M-x package-list-packages で、次のパッケージを emacs にインストール
+
+- ox-qm
+- ddskk
+- helm
+- session
+
+helm/session は必須じゃないけど、入れておいて損はない。
+
+*** org-qiita.el インストール
+
+#+BEGIN_SRC txt
+$ git clone https://github.com/ifritJP/org-qiita-el
+#+END_SRC
+
+設定等の話は次を参考に。
+
+<https://qiita.com/dwarfJP/items/594a8d4b0ac6d248d1e4>
+
+
+**** パッケージ設定
+
+#+BEGIN_SRC lisp
+(show-paren-mode)
+
+(add-to-list 'load-path (expand-file-name "~/work/org-qiita-el"))
+(require 'ox-qmd)
+(require 'org-qiita)
+(setq org-qiita-token "XXXXXXXXXXXXXXXXXXXXXXXXX")  <---- qiita のトークン (org-qiita.el の説明参考)
+(setq org-qiita-export-kill-close t)
+
+
+(setq my-key-map (make-keymap))
+(define-key global-map (kbd "C-z") my-key-map)
+(define-key my-key-map (kbd "SPC") 'set-mark-command)
+(define-key my-key-map (kbd "i") 'helm-imenu)
+
+(define-key global-map (kbd "C-x b") 'helm-mini)
+
+(require 'helm)
+(require 'session)
+(require 'recentf)
+#+END_SRC
+
+*Android は Ctrl-SPC が、「キーボードレイアウト切替」になっています。*
+
+このため、 Ctrl-SPC がシステムに奪われて set-mark-command が動作しません。
+
+暫定対応として、 C-z SPC に set-mark-command を割り当てました。
+使い勝手はイマイチですが、意識してやればなんとか使えるレベルです。
+
+
+* 最後に
+
+簡単なドキュメント書きなら、これで十分です。
+
+ノート PC と比べても、遜色ないレベルです。
+
+とはいえ欠点もあります。
+
+- タブレットでの Web 検索がやり難い
+  - タブレットは org-mode 専用で、検索は別途スマホでやる方が良いと思います。
+  - ただ、検索結果をコピペするような場合は、タブレットでやった方が良いです。
+- C-SPC が使えない。
+  - これは android の制約で、しかたがない？
+    
+
+次回は、外出先でのソフト開発に耐えられる環境について書きたいと思います。
+

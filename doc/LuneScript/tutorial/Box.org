@@ -6,12 +6,11 @@
 
 #+TITLE: トランスコンパイラ LuneScript 入門 - Box 編
 
-
 * Nilable 型
 
-前述している通り、仮型パラメータは nilable にはなりえません。
+前述している通り、 Generics の実型パラメータに nilable は指定できません。
 
-この宣言により、次の ~new Test( val )~ はエラーになります。
+この制限により、次の ~new Test( val )~ はエラーになります。
 
 #+BEGIN_SRC lns
 class Test<T> {
@@ -21,15 +20,23 @@ let val:int! = 1;
 let test = new Test( val ); // error
 #+END_SRC
 
-これを対応するには、 2 つのパターンがあります。
+このエラーを回避するには、 2 つのパターンがあります。
 
 - T! を利用する
 - Nilable 型を利用する
 
 「T! を利用する」のケースでは、上記処理は次のように書けます。
 
-ただこの場合、unwrap 処理が必要だったり、
-開発途中で nilable の対応が必要になったりして面倒です。
+#+BEGIN_SRC lns
+class Test<T> {
+   let val:T!; // <--- T! とする
+}
+let val:int! = 1;
+let test = new Test( val );
+#+END_SRC
+
+ただこうすると、多くの場合は 非 nilable で良いケースでも nilable として宣言しなければならないため、
+unwrap 処理が必須となってしまい面倒です。
 
 そこで、 Nilable 型を利用します。
 
