@@ -1,0 +1,145 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: トランスコンパイラ LuneScript 入門 - キャスト 編
+
+LuneScript は、 3 つのタイプのキャストを提供します。
+
+- ~@@~
+- ~@@@~
+- ~@@=~
+
+* ~@@~  
+
+~@@~ は、変換元の値の型を実行時にチェックせずに強制的に型変換します。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:int = val1@@int;
+#+END_SRC
+
+次のような本来変換できない値も強制的なキャストを行なえてしまいます。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:str[] = val1@@str[];
+print( #val2 ); // runtime error 
+#+END_SRC
+
+上記は、 int 型の値 1 を stem 型の val1 に代入し、
+それを str リスト型の val2 にキャストしています。
+つまり、int 型を str リストにキャストしてしまっています。
+この val2 に対してアクセスすると、 *実行時エラー* となります。
+
+なお、 暗黙的に型変換が行なえるものを @@ で明示的にキャストすると、 
+warning となります。
+
+例えば次のサンプルの ~func( "abc"@@stem )~  は、
+文字列 "abc" から stem への変換は明示キャスト不要で変換可能なため
+warning が出力されます。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) {
+}
+func( "abc"@@stem );
+#+END_SRC
+
+また、明らかに不正な型変換はコンパイルエラーとなります。
+
+例えば次の場合、 ~1@@str~ は int から str に変換していますが、
+この型変換は出来ないためコンパイルエラーとなります。
+
+#+BEGIN_SRC lns
+let val = "abc"@@int;  // error
+let val2 = 1@@str;  // error
+#+END_SRC
+
+クラス型への @@ キャストは warning 出力します。
+
+クラス型へのキャストは ~@@@~ か ~@@=~ を使用してください。
+
+
+* ~@@@~
+
+~@@@~ は、動的に変換元の型をチェックして型変換します。
+
+次は ~@@@~ の例です。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) {
+   if! val@@@int {
+      print( "int:%d" ( _exp ) );
+   }
+   if! val@@@str {
+      print( "str:%s" ( _exp ) );
+   }
+}
+func( 1 ); // int:1
+func( "abc" ); // str:abc
+#+END_SRC
+
+~val@@@int~ は、 val の型をチェックし int 型ならば変換し、
+int 型でなければ nil を返します。
+また、 ~val@@@str~ は val の型をチェックし str 型ならば変換し、
+str 型でなければ nil を返します。
+
+これにより、
+~func( 1 )~ は int:1 を出力し、
+~func( "abc" )~ は str:abc を出力します。
+
+** ~@@@~ の制限 1
+
+なお、小数点以下を持たない real 型の値は、
+@@@ によって int と real どちらにもキャストが成功します。
+
+本来の仕様では、
+小数点以下を持たない real 型の値を int の @@@@ キャストは失敗するべきですが、
+これは現状の制限です。
+
+将来の動作は変更になる可能性があります。
+
+例えば次の ~func( 1 )~ は ~int:1~ , ~real:1~ を出力し、
+~func( 2.5 )~ は ~real:2.5~ を出力します。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) {
+   if! val@@@int {
+      print( "int:%d" ( _exp ) );
+   }
+   if! val@@@real {
+      print( "real:%g" ( _exp ) );
+   }
+}
+func( 1.0 );
+func( 2.5 );
+#+END_SRC
+
+** ~@@@~ の制限 2
+
+@@@ が利用できるのは、 int/real/str/class/interface だけです。
+
+enum などは利用できません。
+
+また、 class でも generics は利用できません。
+
+* ~@@=~
+
+~@@=~ は、メソッドを持たないクラスを変換する際に利用します。
+メソッドを持つクラスや、クラス以外を指定した場合はコンパイルエラーします。
+
+なお、 ~@@=~ も変換元の値をチェックせずに強制的に型変換を行ないます。
+
+~@@=~ は、型チェックに時間がかかるような場合に限り使用するべきです。
+
+
+* まとめ
+
+int、 real 間の変換以外は、出来るだけキャストは避けるべきです。
+generics や、 alge などを利用することで
+型を保ったまま汎用処理を作成できます。
+
+キャストを利用するにしても、 ~@@@~ を利用し、
+~@@~ や ~@@=~ の利用は必要最低限になるように設計してください。
