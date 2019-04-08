@@ -69,6 +69,73 @@ class Test {
 LuneScript の accessor は、普通のメソッドです。
 C# のプロパティのような別のものではありません。
 
+* getter の戻り値型
+
+getter の戻り値型は、通常そのメンバの型と一致します。
+
+例えば次の Test のメンバ list の getter は、 List<int> 型の戻り値を返します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut list:List<int> {pub};
+}
+let test = new Test( [] );
+foreach val in test.$list { 
+   print( val );
+}
+#+END_SRC
+
+ここで、List<int> 型は mutable な型であるので、
+外部操作でメンバ list の値を変更できることになります。
+
+しかし、外部操作での参照は許可しても変更を許可したくない場面が多くあります。
+
+そのような時、 getter の戻り値型を制御することが出来ます。
+制限する方法は次の 2 つあります。
+
+- immutable な型として返す
+- super クラスや interface の型として返す
+  
+** immutable な型として返す
+
+getter を次のように宣言することで、
+mutable なメンバを immutable として返す getter を作成できます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut list:List<int> {pub&};
+}
+#+END_SRC
+
+この例では =pub&= としています。
+getterの「アクセス制御」に *&* を付加することで、その戻り値型は immutable になります。
+
+** super クラスや interface の型として返す
+
+getter を次のように宣言することで、
+メンバの型そのものではなく、 super クラスや interface の型として返すことが出来ます。
+
+#+BEGIN_SRC lns
+class Val {
+}
+class ValSub extend Val {
+}
+
+class Test {
+   pri let val1:ValSub {pub};
+   pri let val2:ValSub {pub:Val};
+}
+let test = new Test( new ValSub(), new ValSub() );
+let val1 = test.$val1;
+let val2 = test.$val2;
+#+END_SRC
+
+ここで、 =Test.val1= の getter は *pub* ですが、
+Test.val2 の getter は *pub:Val* としています。
+
+これにより =test.$val1= は =ValSub= 型を返しますが、 =test.$val2= は Sub 型を返します。
+
+
 * accessor のカスタマイズ
 
 LuneScript の accessor は、 C# のプロパティのようなカスタマイズ機能
@@ -89,7 +156,7 @@ LuneScript の accessor は次の仕様です。
 - メンバ宣言と同時に宣言出来る
 - getter, setter の順に宣言する
 - getter にアクセスする場合、 メンバ名の前に $ を付加する。
-- 独自の accessor は、自前でメソッドを定義する
+- accessor は簡易メソッド定義であり、メソッドと異なる概念ではない。
 
 
 次回は継承を説明します。
