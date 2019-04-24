@@ -1,0 +1,254 @@
+#+LAYOUT: post
+#+TITLE: LuneScript から C 言語へのトランスコンパイル
+#+TAGS: mew outlook
+
+
+LuneScript から C 言語へのトランスコンパイルに関するアイデアをメモする。
+
+* 概要
+
+- モジュール単位で C 言語(ソース、ヘッダ)に変換する
+- ファイル名は "モジュールパス名".c。 
+  - モジュールパスの . は _ に置き換える。
+  - 例えば foo.bar.hoge.lns は foo_bar_hoge.c
+- List 等の値は動的に確保し、参照カウンタでメモリ管理する
+- Lua ライブラリをリンクし、 Lua VM を実行可能にする。
+  - Lua VM を利用する処理
+    - meta 情報の読み込み
+    - マクロ展開
+    - module でアクセスする外部モジュール
+
+* 関数戻り値
+
+LuneScript の関数は多値返却が可能である。
+一方で C は 1 つしか値を返せない。
+
+そこで、多値を扱える型を用意し、
+関数の戻り値はすべてその型に統一する。
+
+#+BEGIN_SRC lns
+fn func0() {
+}
+fn func1(): int {
+  return 1;
+}
+fn func2(): int, int {
+  return 1, 2;
+}
+#+END_SRC
+
+上記関数は戻り値の個数がそれぞれ異なるが、C では全て同じ型とする。
+
+* 関数引数
+  
+LuneScript の関数引数として、関数の多値返却値を利用できる。
+
+ここで、C の戻り値は 1 つの型の値として扱うため、次のような場合に問題が起る。
+
+#+BEGIN_SRC lns
+fn func( val1:int, val2:int ) {
+}
+fn sub(): int, int {
+  return 1, 2;
+}
+func( sub() ); // ここが問題
+#+END_SRC
+
+上記の func は 引数が 2 つある。
+ここで =func( sub() )= を実行すると、
+本来は func() に sub() の多値返却値が渡るべきだが、
+C では 1 の型の値となるため、
+そのままでは func の 2 つの引数に値を与えることが出来ない。
+
+対策としては、次が考えられる。
+
+- 関数の引数も、複数の値を扱える型の値に統一する。
+- 関数ごとにコールするラッパー関数を用意する。
+  
+引数を複数の値を扱える型の値に統一すると、
+多値返却を利用しない普通の関数呼び出しもオーバーヘッドがかかることになる。
+引数として多値返却を使用することは少ないため、
+ここでは関数毎に *ラッパー関数* を用意する。
+
+
+* プリミティブな値を格納する変数
+
+実行時パフォーマンス重視のため、
+LuneScript から C に変換する際、 int/real はその値のまま使用する。
+
+ただし、クロージャで外部変数を操作するような場合は、
+int/real をそのまま扱うとことはできない。
+
+よって、変数シンボルごとにクロージャで利用されるかどうかのフラグを付加し、
+そのフラグが付加されたシンボルは int/real 型であっても lune_stem_t 型を使用する。
+
+
+      
+
+* 参照カウンタ制御
+
+- int など C 言語でリテラルで扱える値以外は全て動的に確保し、
+  参照カウンタでメモリ管理する。
+- 動的に確保する場合、 lune_stem_t 型で扱う。
+  - LuneScript の全ての値は lune_stem_t で扱えるようにする。
+- int のようなリテラルであっても、クロージャでアクセスする場合は、
+  lune_stem_t で扱う。
+
+#+BEGIN_SRC lns
+let val = 1;
+fn func () {
+  val = val + 1;  // クロージャで val にアクセスしているため、 val は lune_stem_t 
+}
+func();
+#+END_SRC
+
+- ブロックごとに、次の情報を管理する
+  - そのブロックで宣言している変数に保持する lune_stem_t 型の値
+  - そのブロック内で生成した lune_stem_t 型の値
+    
+#+BEGIN_SRC lns
+{
+   let val = "abc";
+   func( "xyz" );
+}
+#+END_SRC
+
+   上記の場合、 "abc", "xyz" をこのブロックで管理する。
+
+- ブロック情報 lune_block_t は、次の情報を持つ
+  
+#+BEGIN_SRC lns
+    /**
+     * このブロック内で生成され、
+     * 変数にアサインされていない stem 型データの双方向リスト。
+     * 実際の先頭要素は managedStemTop.pNext。
+     */
+    lune_stem_t managedStemTop;
+#+END_SRC
+
+** lune_stem_t カウンタ制御
+
+- lune_stem_t は次のメンバを持つ。
+  
+#+BEGIN_SRC lns
+    /** 保持しているデータの型 */
+    lune_value_type_t type;
+    /** このデータを参照している数 */
+    int refCount;
+    /** 戻り値として処理中か */
+    bool retValFlag;
+    /** 変数にアサインされる前の値を管理する双方向リスト構造。アサイン済みの場合 NULL。 */
+    struct lune_stem_t * pNext;
+    /** 変数にアサインされる前の値を管理する双方向リスト構造。  */
+    struct lune_stem_t * pPrev;
+#+END_SRC
+
+
+*** 生成時
+
+- lune_stem_t 生成時、
+  - lune_stem_t の参照カウントを 1 で初期化する。
+  - ブロックの managedStemTop の要素として設定される。
+- ブロック終了時 managedStemTop リストの要素の lune_stem_t で、 
+  refCount が 1 のものを開放する。
+  - refCount が 1 より大きい場合は、デクリメントする。
+
+#+BEGIN_SRC lns
+{
+   func( "xyz" );
+}
+#+END_SRC
+
+上記サンプルの場合、
+
+- "xyz" の lune_stem_t が生成される。
+- ブロック終了時、 "xyz" が開放される。
+
+
+*** 変数格納時
+
+- lune_stem_t を変数に格納すると、lune_stem_t の参照カウントをインクリメントし、
+  ブロックの pStemBuf に lune_stem_t のアドレスを格納する。
+- ブロック終了時 pStemBuf に格納されている lune_stem_t の参照カウントをデクリメントし、
+  refCount 0 になったものを開放する。
+
+#+BEGIN_SRC lns
+{
+   let val = "abc";
+}
+#+END_SRC
+
+上記サンプルの場合、
+
+- "abc" の lune_stem_t が生成される。
+  - refCount = 1, managedStemTop -> "abc"
+- 変数 val に格納する。
+  - refCount = 2, pStemBuf[ 0 ] = "abc"
+- ブロック終了時、 
+  - pStemBuf に格納されている値を処理
+    - refCount = 1
+  - managedStemTop に連結されている値を処理
+    - refCount = 0 -> 開放
+
+      
+**** 外部変数格納時
+
+#+BEGIN_SRC lns
+{
+   let val;
+   {
+      val = "abc";
+   }
+}
+#+END_SRC
+
+上記サンプルの場合、
+
+- "abc" の lune_stem_t が生成される。
+  - refCount = 1, 外側の managedStemTop -> "abc"
+- 変数 val に格納する。
+  - refCount = 2, 内側の pStemBuf[ 0 ] = "abc"
+- 内側ブロック終了時、 
+  - pStemBuf に格納されている値を処理
+    - refCount = 1
+- 外側ブロック終了時      
+  - managedStemTop に連結されている値を処理
+    - refCount = 0 -> 開放
+
+
+*** 関数戻り値
+
+- 関数の戻り値として lune_stem_t を返す場合、
+  lune_stem_t が属するブロック情報を、一つ外のブロックとして付け替える。
+
+#+BEGIN_SRC lns
+fn func(): str {
+  let val = "abc";
+  return val;
+}
+{
+   let val2 = func();
+}
+#+END_SRC
+
+上記サンプルの場合、
+
+- func() がコールされる。
+  - func() 内で "abc" の lune_stem_t が生成される。
+    - refCount = 1, func のブロック managedStemTop -> "abc"
+  - 変数 val に格納する。
+    - refCount = 2, func のブロック pStemBuf[ 0 ] = "abc"
+  - return 処理
+    - managedStemTop を、 func ブロックから一つ外側のブロックに付け替え
+  - func のブロック終了時
+    - pStemBuf に格納されている値を処理
+      - refCount = 1
+- 関数コールが終了し、 val2 に戻り値がセットされる
+  - refCount = 2, ブロック pStemBuf[ 0 ] = "abc"
+- ブロック終了時、 
+  - pStemBuf に格納されている値を処理
+    - refCount = 1
+  - managedStemTop に連結されている値を処理
+    - refCount = 0 -> 開放
+
+
