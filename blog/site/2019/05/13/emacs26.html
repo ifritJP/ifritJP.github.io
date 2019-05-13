@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>emacs 更新に伴なう gdb の設定 | hoge blog</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="emacs 更新に伴なう gdb の設定" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<meta property="og:description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<link rel="canonical" href="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html" />
+<meta property="og:site_name" content="hoge blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-05-13T00:00:00+09:00" />
+<script type="application/ld+json">
+{"description":"Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。","@type":"BlogPosting","url":"https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html","headline":"emacs 更新に伴なう gdb の設定","dateModified":"2019-05-13T00:00:00+09:00","datePublished":"2019-05-13T00:00:00+09:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/blog/site/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ifritjp.github.io/blog/site/feed.xml" title="hoge blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/blog/site/">hoge blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/blog/site/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">emacs 更新に伴なう gdb の設定</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-05-13T00:00:00+09:00" itemprop="datePublished">May 13, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+     <p>とある事情で使い続けていた emacs23.4 (2012/1) を、
+  先日 emacs26.2 (2019/4) にアップデートした。</p>
+<p>このとき gdb 周りの設定を変更する必要があったので、備忘録としてまとめておく。</p>
+<h1>emacs の gdb 設定</h1>
+<pre class="src" lang="el">
+;; gud-overlay-arrow-position が nil だとエラーするので。。
+(setq gud-tooltip-display
+      &#39;((and gud-overlay-arrow-position
+	     (eq (tooltip-event-buffer gud-tooltip-event)
+		 (marker-buffer gud-overlay-arrow-position)))))
+
+;; gdb バッファの C-c C-c で、プログラムを停止させる。
+(setq gdb-gud-control-all-threads nil)
+
+;; input/output バッファが勝手に表示されるのはウザいので、抑制
+(setq gdb-display-io-nopopup t)
+</pre>
+<p>以降で、上記の設定について説明する。</p>
+<h2>gud-tooltip-display</h2>
+<p>1 つ目は、単純に gud.el の不具合のような気がするが、
+  tooltip を表示する処理を修正している。</p>
+<p>gud-tooltip-display は、 gud で tooltip を表示する処理のようだが、
+  この処理で <code>(make-buffer gud-overlay-arrow-position)</code> を実行している。</p>
+<p>この処理は、 gud-overlay-arrow-position が nil の時にも実行されるケースがあるようで、
+  その時にエラーにならないように and を追加している。</p>
+<h2>gdb-gud-control-all-threads</h2>
+<p>gdb-gud-control-all-threads は、
+  gud の制御を全スレッドに対して反映させるかどうかのフラグで、
+  emacs 23 からありデフォルト nil だった。</p>
+<p>新しい gdb では、 gdb-gud-control-all-threads がデフォルト t になっている。</p>
+<p>gdb-gud-control-all-threads が t だと、
+  どうにもこうにも意図したデバッグ制御にならなかったので nil とした。</p>
+<p>なお、 C-c C-c でデバッグ対象プログラムを停止できるが、正常に動作しない場合がある。</p>
+<p>その場合 M-x gud-stop-subjob してから C-c C-c すると、停止する。</p>
+<h2>gdb-display-io-nopopup</h2>
+<p>emacs23.4 の gdb は、
+  デバッグ対象プログラムの stdin/out と gdb の制御コマンドを、
+  一つのバッファで管理していた。</p>
+<p>しかし、 新しい gdb は stdin/out と、gdb の制御コマンドを別々のバッファで管理している。</p>
+<p>gdb-display-io-nopopup は、
+  stdin/out に変化があった際のポップアップ制御を抑制するかどうかのフラグ。</p>
+<p>デフォルトだと t だが、
+  これだとソース編集中やステップ実行中に切り替わったりするのがウザいので nil とした。</p>
+<p>なお、gdb-display-io-nopopup を t とすると、
+  M-x gdb 実行時にも stdin/out のバッファが表示されないため、
+  stdin/out にアクセスする場合は 自分で C-x b 等で切り替える必要がある。</p>
+<p>ちなみに stdin/out バッファの名前は <code>*input/output of ...*</code> 。
+  ここで &#8230; には、デバッグ対象のファイル名が入る。</p>
+<p>以上。</p>
+ 
+  </div><a class="u-url" href="/blog/site/2019/05/13/emacs26.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/blog/site/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">hoge blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">hoge blog</li><li><a class="u-email" href="mailto:"></a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ifritJP"><svg class="svg-icon"><use xlink:href="/blog/site/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ifritJP</span></a></li><li><a href="https://www.twitter.com/dwarfJP"><svg class="svg-icon"><use xlink:href="/blog/site/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">dwarfJP</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
