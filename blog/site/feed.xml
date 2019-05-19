@@ -1,4 +1,144 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-05-13T21:36:11+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">emacs 更新に伴なう gdb の設定</title><link href="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html" rel="alternate" type="text/html" title="emacs 更新に伴なう gdb の設定" /><published>2019-05-13T00:00:00+09:00</published><updated>2019-05-13T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/13/emacs26</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html">&lt;p&gt;とある事情で使い続けていた emacs23.4 (2012/1) を、
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-05-19T12:56:55+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">関数ポインタのオーバーヘッド</title><link href="https://ifritjp.github.io/blog/site/2019/05/19/func-pointer.html" rel="alternate" type="text/html" title="関数ポインタのオーバーヘッド" /><published>2019-05-19T00:00:00+09:00</published><updated>2019-05-19T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/19/func-pointer</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/19/func-pointer.html">&lt;p&gt;~# -*- coding:utf-8 -*-&lt;/p&gt;
+&lt;p&gt;現在 LuneScript の C 言語へのトランスコンパイル処理を対応中だが、
+  トランスコンパイルする際に関数ポインタによる関数コールのオーバーヘッドが
+  どの程度なのか気になったので調べてみた。&lt;/p&gt;
+&lt;h1&gt;結果&lt;/h1&gt;
+&lt;p&gt;初めに結果から書くと、&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+関数ポインタによる関数コールのオーバーヘッドは、
+通常の関数コールに比べて *約 1.267 倍* となることが判った。
+&lt;/pre&gt;
+&lt;p&gt;この数値は、あくまで今回の実験結果であって、
+  関数ポインタかどうかの違いだけはなく、他の要因も入ってしまっている。
+  また、実行環境によっても差は出てくるだろう。&lt;/p&gt;
+&lt;p&gt;しかし、それでも目安程度にはなるだろう。&lt;/p&gt;
+&lt;h1&gt;所感&lt;/h1&gt;
+&lt;p&gt;論理的に考えて、関数ポインタの関数コールが通常の関数コールに比べて
+  遅くなることは理解していたが、これまで調べたことはなかったが、
+  今回の実験でそれが明かになった。&lt;/p&gt;
+&lt;p&gt;個人的にはもっと差が出るかと思ったが、案外少ない結果になった。
+  これは、実験用コードが小さ過ぎて全てキャッシュに乗ってしまっているのが一番の要因だとは思う。
+  とはいえ、明らかなオーバーヘッドがあることには違いない。
+  実際のコードでは、もっと影響は大きいだろう。&lt;/p&gt;
+&lt;p&gt;プログラミングをしていれば感じていることだと思うが、
+  プログラムは関数コールの塊だ。&lt;/p&gt;
+&lt;p&gt;つまり、関数コールのオーバーヘッドは、
+  そのままプログラム全体の性能低下に直結する。&lt;/p&gt;
+&lt;p&gt;「関数ポインタ」というと、あまり使わっていないイメージを持つ人も多いかもしれないが、
+  オブジェクト指向の「ポリモーフィズム」あるいは「多態性」というと、
+  良く使っているイメージがあるのではないだろうか？&lt;/p&gt;
+&lt;p&gt;関数ポインタなど動的に動作が変わる処理は、
+  目的の制御を実現する上で非常に重要だが、
+  コードの把握が難しくなったり、オーバーヘッドによる性能低下を引き起こす可能性がある。&lt;/p&gt;
+&lt;p&gt;関数ポインタと通常の関数は、その特性にあわせてどちらを使用するかの検討が必要だ。&lt;/p&gt;
+&lt;p&gt;今回の実験結果をうけて、それがより明らかになったと思う。&lt;/p&gt;
+&lt;h1&gt;実験詳細&lt;/h1&gt;
+&lt;p&gt;ここでは、今回の実験方法について説明する。&lt;/p&gt;
+&lt;h2&gt;コード&lt;/h2&gt;
+&lt;p&gt;実験用に次の C 言語コードを作成した。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;c&quot;&gt;
+void sub( void ) {
+}
+void func_direct( func_t * pFunc ) {
+    sub();
+}
+void func_indirect( func_t * pFunc ) {
+    pFunc();
+}
+&lt;/pre&gt;
+&lt;p&gt;func_direct() は sub() 関数を直接コールする関数で、
+  func_indirect() は sub() 関数を関数ポインタでコールする関数だ。&lt;/p&gt;
+&lt;p&gt;この両者の関数を実行したときの実行時間を比較している。&lt;/p&gt;
+&lt;p&gt;ちなみにコードの全体は次の通りである。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;c&quot;&gt;
+#include &amp;lt;sys/time.h&amp;gt;
+#include &amp;lt;time.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+
+typedef void (func_t)( void );
+
+double getTime( void ) {
+    struct timeval tm;
+    gettimeofday( &amp;amp;tm, NULL );
+    return tm.tv_sec + tm.tv_usec / 1000000.0;
+}
+void sub( void ) {
+}
+void func_direct( func_t * pFunc ) {
+    sub();
+}
+void func_indirect( func_t * pFunc ) {
+    pFunc();
+}
+void func_none( func_t * pFunc ) {
+}
+int main( int argc, const char * argv[] ) {
+    long long loop;
+    const char * pMode;
+
+    double prev = getTime();
+    switch ( argc ) {
+    case 1:
+        pMode = &amp;quot;indirect&amp;quot;;
+        for ( loop = 0; loop &amp;lt; 1000 * 1000 * 1000 * 2; loop++ ) {
+            func_indirect( sub );
+        }
+        break;
+    case 2:
+        pMode = &amp;quot;direct&amp;quot;;
+        for ( loop = 0; loop &amp;lt; 1000 * 1000 * 1000 * 2; loop++ ) {
+            func_direct( sub );
+        }
+        break;
+    case 3:
+        pMode = &amp;quot;none&amp;quot;;
+        for ( loop = 0; loop &amp;lt; 1000 * 1000 * 1000 * 2; loop++ ) {
+            func_none( sub );
+        }
+        break;
+    }
+    printf( &amp;quot;%s: time = %g\n&amp;quot;, pMode, getTime() - prev );
+    return 0;
+}
+&lt;/pre&gt;
+&lt;p&gt;このプログラムは、コマンドラインの引数によって
+  func_direct(), func_indirect(), func_none()  のいずれかを
+  所定の回数分実行し、実行時間を表示する。&lt;/p&gt;
+&lt;p&gt;ちなみに func_none() は、関数ポインタと通常の関数コールの差を出す際に、
+  できるだけ他の要因を除外するために作成した関数だ。&lt;/p&gt;
+&lt;h2&gt;計測結果&lt;/h2&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+indirect: time = 11.4617
+indirect: time = 11.2905
+indirect: time = 11.2595
+indirect: time = 11.3391
+indirect: time = 11.3123
+direct: time = 10.5253
+direct: time = 10.5927
+direct: time = 10.5389
+direct: time = 10.6043
+direct: time = 10.5259
+none: time = 7.64467
+none: time = 7.60627
+none: time = 7.75474
+none: time = 7.60123
+none: time = 7.63887
+&lt;/pre&gt;
+&lt;p&gt;これは、コマンドライン引数を変えて上記のプログラムをそれぞれ 5 回ずつ実行した結果だ。&lt;/p&gt;
+&lt;p&gt;それぞれを平均すると次のようになる。&lt;/p&gt;
+&lt;table&gt;
+  &lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;時間(秒)&lt;/th&gt;&lt;th&gt;関数コールの時間(秒)&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;関数ポインタ&lt;/td&gt;&lt;td&gt;11.333&lt;/td&gt;&lt;td&gt;3.683&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;通常関数コール&lt;/td&gt;&lt;td&gt;10.557&lt;/td&gt;&lt;td&gt;2.908&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;関数コールなし&lt;/td&gt;&lt;td&gt;7.649&lt;/td&gt;&lt;td&gt;&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;上記の「関数コールの時間」は、計測した時間から「関数コールなし」の時間を引いたものだ。&lt;/p&gt;
+&lt;p&gt;つまり、 for 分の制御などの関数ポインタのオーバーヘッドとは直接関係ない処理の時間を引いている。&lt;/p&gt;
+&lt;p&gt;この結果をもとに、次の計算をすると&lt;/p&gt;
+&lt;p&gt;(/ 3.683 2.908) 1.266506189821183&lt;/p&gt;
+&lt;p&gt;関数ポインタによる関数コールのオーバーヘッドは、
+  通常の関数コールに比べて &lt;b&gt;約 1.267 倍&lt;/b&gt; となる。&lt;/p&gt;
+&lt;p&gt;以上&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">emacs 更新に伴なう gdb の設定</title><link href="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html" rel="alternate" type="text/html" title="emacs 更新に伴なう gdb の設定" /><published>2019-05-13T00:00:00+09:00</published><updated>2019-05-13T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/13/emacs26</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html">&lt;p&gt;とある事情で使い続けていた emacs23.4 (2012/1) を、
   先日 emacs26.2 (2019/4) にアップデートした。&lt;/p&gt;
 &lt;p&gt;このとき gdb 周りの設定を変更する必要があったので、備忘録としてまとめておく。&lt;/p&gt;
 &lt;h1&gt;emacs の gdb 設定&lt;/h1&gt;
