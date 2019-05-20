@@ -1,4 +1,63 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-05-19T13:04:18+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">関数ポインタのオーバーヘッド</title><link href="https://ifritjp.github.io/blog/site/2019/05/19/func-pointer.html" rel="alternate" type="text/html" title="関数ポインタのオーバーヘッド" /><published>2019-05-19T00:00:00+09:00</published><updated>2019-05-19T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/19/func-pointer</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/19/func-pointer.html">&lt;p&gt;現在 LuneScript の C 言語へのトランスコンパイル処理を対応中だが、
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-05-20T19:53:08+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">VMWare ディスクイメージが圧縮されないときの対応方法</title><link href="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html" rel="alternate" type="text/html" title="VMWare ディスクイメージが圧縮されないときの対応方法" /><published>2019-05-20T00:00:00+09:00</published><updated>2019-05-20T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/20/vmware</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html">&lt;p&gt;VMWare のディスクイメージのサイズは、Gest OS 上のディスクサイズと異なる。&lt;/p&gt;
+&lt;p&gt;基本的には、Gest OS 上で実際に使用されているサイズに圧縮された形でホスト OS 上に保持される。&lt;/p&gt;
+&lt;p&gt;しかし、 Gest OS 上でファイル作成、削除を繰り返していると、
+  Gest OS 上での使用サイズよりも、
+  ホスト OS 上でのディスクイメージサイズがかなり大きくなっていることがある。&lt;/p&gt;
+&lt;p&gt;このような状態になった時に、ホスト OS 上のディスクイメージサイズを、
+  Gest OS 上での使用サイズ程度に削減するツール(vmware-toolbox-cmd)が
+  vmware から提供されている。&lt;/p&gt;
+&lt;p&gt;通常は、この vmware-toolbox-cmd を使うことで圧縮されるはずなのだが、
+  自分の環境では全くサイズが変わらなかった。&lt;/p&gt;
+&lt;p&gt;いくつか試した結果、削減出来た方法をメモしておく。&lt;/p&gt;
+&lt;h1&gt;Gest OS 上でのディスクのクローン&lt;/h1&gt;
+&lt;p&gt;今回実施した方法は Gest OS 上でのディスクのクローンを作成することだ。&lt;/p&gt;
+&lt;p&gt;ある意味分かりきった方法かもしれない。&lt;/p&gt;
+&lt;p&gt;ただ、クローン作成の方法はファイル単位のコピーではなく、
+  &lt;b&gt;dd コマンドによるクローン作成&lt;/b&gt; で上手くいった、
+  ということは意外と言えるんじゃないだろうか？&lt;/p&gt;
+&lt;p&gt;ファイル単位のコピーだと、コピーにかなり時間がかかると思うが、
+  dd コマンドで済んだので、10 GB 近いコピーも比較的短時間でコピーが出来た。&lt;/p&gt;
+&lt;p&gt;dd コマンドは、特に何か特別なオプションを付けて実行したのではなく、
+  普通に実行しただけだ。&lt;/p&gt;
+&lt;p&gt;念の為、作業手順をまとめておく。&lt;/p&gt;
+&lt;h2&gt;作業手順&lt;/h2&gt;
+&lt;ul&gt;
+  &lt;li&gt;クローン先の空のディスクイメージを作成する&lt;/li&gt;
+  &lt;li&gt;ディスクイメージを VMWare に登録する&lt;/li&gt;
+  &lt;li&gt;Gest OS を起動する&lt;/li&gt;
+  &lt;li&gt;vmware-toolbox-cmd を使って圧縮&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class=&quot;example&quot;&gt;
+vmware-toolbox-cmd disk shrinkonly
+&lt;/pre&gt;
+&lt;ul&gt;
+  &lt;li&gt;Gest OS 上での圧縮対象ディスクと、クローン先のデバイス名をメモる&lt;/li&gt;
+  &lt;li&gt;dd コマンドでクローン作成&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class=&quot;example&quot;&gt;
+dd if=/dev/圧縮対象 of=/dev/クローン先 bs=1M
+&lt;/pre&gt;
+&lt;ul&gt;
+  &lt;li&gt;ここで指定するドライブは、パーティションではなくドライブ全体を指定すること。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;ul&gt;
+  &lt;li&gt;Gest OS を shutdown
+    &lt;ul&gt;
+      &lt;li&gt;ここでクローン先のディスクイメージを見て、
+        Gest OS 上の使用量とほぼ同じサイズに削減されていることを確認する。
+        もしも削減されていない場合、これ以降の作業には意味はない。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;圧縮対象ディスクイメージを VMWare から除外し、
+    代わりにクローンしたイメージを登録する。
+    &lt;ul&gt;
+      &lt;li&gt;この時クローンイメージを割り付けるハードウェアの ID などが、
+        元の圧縮対象ディスクイメージと同じになるように登録する。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Gest OS を起動する。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;以上の手順により、サイズが圧縮されたクローンのイメージで運用できる。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">関数ポインタのオーバーヘッド</title><link href="https://ifritjp.github.io/blog/site/2019/05/19/func-pointer.html" rel="alternate" type="text/html" title="関数ポインタのオーバーヘッド" /><published>2019-05-19T00:00:00+09:00</published><updated>2019-05-19T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/19/func-pointer</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/19/func-pointer.html">&lt;p&gt;現在 LuneScript の C 言語へのトランスコンパイル処理を対応中だが、
   トランスコンパイルする際に関数ポインタによる関数コールのオーバーヘッドが
   どの程度なのか気になったので調べてみた。&lt;/p&gt;
 &lt;h1&gt;結果&lt;/h1&gt;
@@ -576,144 +635,4 @@ print( func() );      // 0
 &lt;p&gt;「nil の時でも省略せずに明示すべき」としたくても、
   現在の言語仕様ではそれが出来ない。&lt;/p&gt;
 &lt;p&gt;この辺りを解決する方法を検討している。&lt;/p&gt;
-&lt;p&gt;ただこれを解決するには、現状の言語仕様との互換を持たせるのは難しいかもしれない。&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry><entry><title type="html">org-mode で blog</title><link href="https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll.html" rel="alternate" type="text/html" title="org-mode で blog" /><published>2019-01-17T00:00:00+09:00</published><updated>2019-01-17T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/17/setup-jekyll.html">&lt;p&gt;blog を始めるにあたって、
-  emacs から出来るだけ簡単に記事を更新できる環境にするために、
-  次の URL の情報をもとにいくつか調査。&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://orgmode.org/worg/org-blog-wiki.html&quot;&gt;https://orgmode.org/worg/org-blog-wiki.html&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;とりあえず org-mode + jekyll で構築してみた。&lt;/p&gt;
-&lt;p&gt;以下は、org-mode + jekyll で環境構築から記事を投稿するまでの流れをまとめたメモ。&lt;/p&gt;
-&lt;h1&gt;使用するソフト&lt;/h1&gt;
-&lt;ul&gt;
-  &lt;li&gt;ruby&lt;/li&gt;
-  &lt;li&gt;gem
-    &lt;ul&gt;
-      &lt;li&gt;bundler&lt;/li&gt;
-      &lt;li&gt;jekyll&lt;/li&gt;
-      &lt;li&gt;jekyll-org&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;jekyll は、 markdown でサイトを構築可能なツール。
-  markdown は書き慣れていないので org-mode で記事を書けるように
-  jekyll plugin の jekyll-org を使用する。&lt;/p&gt;
-&lt;h2&gt;setup&lt;/h2&gt;
-&lt;ul&gt;
-  &lt;li&gt;install ruby&lt;/li&gt;
-  &lt;li&gt;install ruby-dev&lt;/li&gt;
-  &lt;li&gt;install gem&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ gem install bundler jekyll jekyll-org
-&lt;/pre&gt;
-&lt;h3&gt;jekyll setup&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;blog のプロジェクトディレクトリ作成&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ cd blog_top
-$ jekyll new blog
-&lt;/pre&gt;
-&lt;p&gt;&lt;b&gt;初回は、ここで必要な gem がインストールされる。&lt;/b&gt;&lt;/p&gt;
-&lt;p&gt;blog ディレクトリが生成され、blog ディレクトリ以下に幾つかのファイルが作成される。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;_config.yml を編集
-    &lt;ul&gt;
-      &lt;li&gt;次の項目を編集
-        &lt;ul&gt;
-          &lt;li&gt;title:&lt;/li&gt;
-          &lt;li&gt;email:&lt;/li&gt;
-          &lt;li&gt;description:&lt;/li&gt;
-          &lt;li&gt;twitter_username:&lt;/li&gt;
-          &lt;li&gt;github_username:&lt;/li&gt;
-        &lt;/ul&gt;
-      &lt;/li&gt;
-      &lt;li&gt;plugins の項目に jekyll-org を追加&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;yml&quot;&gt;
-plugins:
-  - jekyll-org
-&lt;/pre&gt;
-&lt;h3&gt;jekyll-org の設定&lt;/h3&gt;
-&lt;p&gt;&lt;a href=&quot;https://github.com/eggcaker/jekyll-org&quot;&gt;https://github.com/eggcaker/jekyll-org&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;Gemfile に次を追加&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-# jekyll-org
-gem &amp;#39;jekyll-org&amp;#39;, &amp;#39;&amp;gt;= 1.0.2&amp;#39;
-&lt;/pre&gt;
-&lt;p&gt;Gemfile 編集後、次のコマンドを実行&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ bundle install
-&lt;/pre&gt;
-&lt;h3&gt;github pages 用の設定&lt;/h3&gt;
-&lt;p&gt;github pages の /blog に jekyll のディレクトリを作成した場合の設定&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;_config.yml を編集
-    &lt;ul&gt;
-      &lt;li&gt;次の項目を設定
-        &lt;ul&gt;
-          &lt;li&gt;baseurl: &amp;#8220;/blog/site&amp;#8221;&lt;/li&gt;
-          &lt;li&gt;url: &amp;#8220;https://XXXXXXXX.github.io&amp;#8221;&lt;/li&gt;
-          &lt;li&gt;destination: site&lt;/li&gt;
-        &lt;/ul&gt;
-      &lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;jekyll の変換後の html は _site 以下に出力されるが、
-  github pages は _site 以下にはアクセスできないようなので、
-  &lt;code&gt;destination: site&lt;/code&gt; で出力先を site に変更する。&lt;/p&gt;
-&lt;h1&gt;記事作成&lt;/h1&gt;
-&lt;p&gt;_posts/ 以下に、次の名前のファイルを作成する&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-YYYY-MM-DD-title.org
-&lt;/pre&gt;
-&lt;p&gt;例えば 2019-01-01-hoge.org とする。&lt;/p&gt;
-&lt;p&gt;title は、記事のタイトルで無くてもよい。
-  title は、 記事の URL に使用される。&lt;/p&gt;
-&lt;p&gt;_posts/ の下にサブディレクトリを掘って、その中にファイルを作成しても良い。&lt;/p&gt;
-&lt;h2&gt;記事のフォーマット&lt;/h2&gt;
-&lt;p&gt;次のメタ情報を入れれば、後は普通の org-mode 通りに記載可能。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;org&quot;&gt;
-#+LAYOUT: post
-#+TITLE: org-mode で blog
-#+TAGS: org-mode jekyll
-&lt;/pre&gt;
-&lt;p&gt;&lt;b&gt;+TAGS&lt;/b&gt; はオプション。&lt;/p&gt;
-&lt;h3&gt;ワンポイントネタ&lt;/h3&gt;
-&lt;ul&gt;
-  &lt;li&gt;URL を書くだけだとリンクにならない。
-    &lt;ul&gt;
-      &lt;li&gt;リンクにする場合は URL を &lt;code&gt;&amp;lt;&amp;gt;&lt;/code&gt; で囲む。&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-&lt;h1&gt;変換&lt;/h1&gt;
-&lt;p&gt;書いた記事は jekyll を使って html に変換する。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ cd blog
-$ jekyll b
-&lt;/pre&gt;
-&lt;h1&gt;確認&lt;/h1&gt;
-&lt;p&gt;jekyll は httpd サーバ機能を持つ。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ cd blog
-$ jekyll s
-&lt;/pre&gt;
-&lt;p&gt;この状態でブラウザで http://localhost:4000 にアクセスすれば、
-  変換後の内容を確認できる。&lt;/p&gt;
-&lt;p&gt;なお、記事を修正すれば動的に変換されるので、
-  記事を修正後にブラウザをリロードすれば、修正後の内容を確認できる。&lt;/p&gt;
-&lt;p&gt;httpd サーバを終了する場合は、 Ctrl-C。&lt;/p&gt;
-&lt;h2&gt;ネットワークアクセス&lt;/h2&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ jekyll s 
-&lt;/pre&gt;
-&lt;p&gt;このコマンドで起動した httpd サーバは、 localhost でしかアクセスできない。&lt;/p&gt;
-&lt;p&gt;つまり PC 外部からアクセス出来ない。&lt;/p&gt;
-&lt;p&gt;セキュリティという意味では安全であるが、不便だったりする。&lt;/p&gt;
-&lt;p&gt;PC 外部からアクセスしたい場合は、次のコマンドで httpd サーバを起動する。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ jekyll s --host 0.0.0.0
-&lt;/pre&gt;</content><author><name></name></author><category term="org-mode jekyll" /></entry></feed>
+&lt;p&gt;ただこれを解決するには、現状の言語仕様との互換を持たせるのは難しいかもしれない。&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry></feed>
