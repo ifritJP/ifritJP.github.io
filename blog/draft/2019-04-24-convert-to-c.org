@@ -216,6 +216,124 @@ func();
     - refCount = 0 -> 開放
 
 
+
+*** データの保持
+
+- int/real 
+  - プリミティブな型で持つ
+- str 等
+  - stem 型で持つ
+- closure の int/real  
+  - closure 型で持つ
+- closure の str 等
+  - closure 型で持つ
+
+*** 値のアクセス
+
+- int/real 
+  - SYMBOL
+- str 等
+  - SYMBOL
+- closure の int/real  
+  - lune_closureVal( SYMBOL )->val
+- closure の str 等
+  - lune_closureVal( SYMBOL )
+
+*** 参照カウンタ
+
+- int/real 
+  - なし
+- str 等
+  - SYMBOL
+- closure の int/real  
+  - なし
+  - closure 構造体で管理する
+- closure の str 等
+  - SYMBOL
+  - closure 構造体で管理する 
+
+
+*** ブロック参照
+
+- int/real 
+  - なし
+- str 等
+  - シンボル代入時に更新 
+- closure の int/real  
+  - SYMBOL: closure 構造体生成時に更新
+- closure の str 等
+  - SYMBOL: closure 構造体生成時に更新
+  - lune_closureVal( SYMBOL ): closure 構造体更新時に更新
+  - lune_closureVal( SYMBOL ): シンボル代入時に更新 
+    
+*** 代入 l-value 処理
+
+- int/real 
+  - SYMBOL = r-value
+- str 等
+  - SYMBOL->refCount--
+  - SYMBOL = r-value
+  - SYMBOL->refCount++    
+- closure の int/real  
+  - lune_closureVal( SYMBOL )->val = r-value
+- closure の str 等
+  - lune_closureVal( SYMBOL )->refCount--
+  - lune_closureVal( SYMBOL ) = r-value
+  - lune_closureVal( SYMBOL )->refCount++
+
+*** l-value, r-value の関係
+
+**** l-value が int/real 
+    
+- r-value:int/real
+  - R-SYMBOL
+- r-value:stem
+  - N/A
+- r-value:closure の int/real
+  - lune_closureVal( R-SYMBOL )->val
+- r-value:closure の stem
+  - N/A
+    
+**** l-value が stem
+     
+- r-value:int/real
+  - N/A
+- r-value:stem
+  - R-SYMBOL
+- r-value:closure の int/real
+  - lune_closureVal( R-SYMBOL )
+- r-value:closure の stem
+  - lune_closureVal( R-SYMBOL )
+
+**** l-value が closure の int/real
+     
+- r-value:int/real
+  - R-SYMBOL
+- r-value:stem
+  - N/A
+- r-value:closure の int/real
+  - lune_closureVal( R-SYMBOL )->val
+- r-value:closure の stem
+  - N/A
+
+**** l-value が closure の stem
+     
+- r-value:int/real
+  - N/A
+- r-value:stem
+  - R-SYMBOL
+- r-value:closure の int/real
+  - lune_closureVal( R-SYMBOL )
+- r-value:closure の stem
+  - lune_closureVal( R-SYMBOL )
+
+
+
+
+    
+
+
+
 *** 関数戻り値
 
 - 関数の戻り値として lune_stem_t を返す場合、
