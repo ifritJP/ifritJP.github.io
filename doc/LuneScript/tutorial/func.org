@@ -158,13 +158,13 @@ LuneScript は、関数オブジェクトを値として扱うことが出来ま
 次に form の使用例を示します。
 
 #+BEGIN_SRC lns
-fn test( val:int ) {
-   print( val );
+fn test( txt:str! ) {
+   print( txt );
 }
 fn sub( func:form ) {
-  func( 1 );
+  func( "foo" );
 }
-sub( test ); // 1
+sub( test ); // foo
 #+END_SRC
 
 この例は、次の構成となります。
@@ -173,7 +173,7 @@ sub( test ); // 1
 - 関数 sub は form 型の引数を持つ
 - 引数として test を指定して sub を実行
   
-これによって、 sub 内で test が実行され、 1 が出力されます。
+これによって、 sub 内で test が実行され、 foo が出力されます。
 
 なお、 form 型は次の関数として扱います。
 
@@ -181,11 +181,30 @@ sub( test ); // 1
 fn func(...):... {}
 #+END_SRC
 
-*** form 宣言
+** form 型に代入可能な関数型
 
 上記の通り、form は ~fn func(...):... {}~ と同義です。
 
-これによって、全ての関数を form 型として扱うことが出来ますが、
+また、 =...= は 0 個以上の =stem!= を表わします。
+
+つまり、 stem! 型の引数、戻り値を持つ関数が form 型に代入可能になり、
+非 stem! 型の引数、戻り値を持つ関数は代入不可能になります。
+
+具体的には、次の form1, form3 は代入可能で、form2, form4 は代入不可能です。
+
+#+BEGIN_SRC lns
+let form1:form = fn ( val1:stem! ) { };
+let form2:form = fn ( val1:stem ) { };
+let form3:form = fn ( val1:stem!, val2:stem! ) { };
+let form4:form = fn ( val1:stem!, val2:stem ) { };
+#+END_SRC
+
+
+** form 宣言
+
+上記の通り、form は ~fn func(...):... {}~ と同義です。
+
+これによって、 +全ての+ 関数を form 型として扱うことが出来ますが、
 これでは関数の型情報が失なわれてしまいます。
 
 関数の型情報を保ったまま関数オブジェクトを扱うためには、
@@ -214,7 +233,7 @@ anonymous 関数は、名前を持たない関数を定義します。
 fn sub( func:form ) {
   func( 1 );
 }
-sub( fn ( val:int ) { print( val ); } );  // 1
+sub( fn ( val:int! ) { print( val ); } );  // 1
 #+END_SRC
 
 この例では、 anonymous 関数 ~fn ( val:int ) { print( val ); }~ を定義しています。
