@@ -158,13 +158,13 @@ LuneScript は、関数オブジェクトを値として扱うことが出来ま
 次に form の使用例を示します。
 
 #+BEGIN_SRC lns
-fn test( txt:str! ) {
-   print( txt );
+fn test() {
+   print( "hoge" );
 }
 fn sub( func:form ) {
-  func( "foo" );
+  func();
 }
-sub( test ); // foo
+sub( test ); // hoge
 #+END_SRC
 
 この例は、次の構成となります。
@@ -173,7 +173,7 @@ sub( test ); // foo
 - 関数 sub は form 型の引数を持つ
 - 引数として test を指定して sub を実行
   
-これによって、 sub 内で test が実行され、 foo が出力されます。
+これによって、 sub 内で test が実行され、 hoge が出力されます。
 
 なお、 form 型は次の関数として扱います。
 
@@ -187,28 +187,38 @@ fn func(...):... {}
 
 また、 =...= は 0 個以上の =stem!= を表わします。
 
-つまり、 stem! 型の引数、戻り値を持つ関数が form 型に代入可能になり、
-非 stem! 型の引数、戻り値を持つ関数は代入不可能になります。
+つまり、 stem! 型の引数を持つ関数が form 型に代入可能になり、
+非 stem! 型の引数を持つ関数は代入不可能になります。
 
-具体的には、次の form1, form3 は代入可能で、form2, form4 は代入不可能です。
+もしも代入できてしまうと、
+次の func2( nil ) のコールは func( nil ) をコールすることになり、
+不正動作となってしまいます。
+
+#+BEGIN_SRC lns
+fn func( val:int ) {
+   print( val + 1 );
+}
+let func2:form = func;
+func2( nil );
+#+END_SRC
+
+代入可能なケースと、代入不可能なケースの例を次に示します。
 
 #+BEGIN_SRC lns
 let form1:form = fn ( val1:stem! ) { };
-let form2:form = fn ( val1:stem ) { };
+let form2:form = fn ( val1:stem ) { };  // error
 let form3:form = fn ( val1:stem!, val2:stem! ) { };
-let form4:form = fn ( val1:stem!, val2:stem ) { };
+let form4:form = fn ( val1:stem!, val2:stem ) { }; // error
 #+END_SRC
+
+上記の form1, form3 は代入可能で、form2, form4 は代入不可能です。
 
 
 ** form 宣言
 
-上記の通り、form は ~fn func(...):... {}~ と同義です。
+上記の通り、form で扱える関数の型は一部だけです。
 
-これによって、 +全ての+ 関数を form 型として扱うことが出来ますが、
-これでは関数の型情報が失なわれてしまいます。
-
-関数の型情報を保ったまま関数オブジェクトを扱うためには、
-次のように form 宣言をします。
+form で扱えない関数を扱うには、次のように form 宣言をします。
 
 #+BEGIN_SRC lns
 form funcform( val:int ):int;
