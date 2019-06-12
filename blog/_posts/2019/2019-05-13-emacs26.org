@@ -7,6 +7,8 @@
 
 このとき gdb 周りの設定を変更する必要があったので、備忘録としてまとめておく。
 
+*2019-06-12: my-gud-stop, my-gud-mode-func を追加*
+
 * emacs の gdb 設定
 
 #+BEGIN_SRC el
@@ -21,6 +23,21 @@
 
 ;; input/output バッファが勝手に表示されるのはウザいので、抑制
 (setq gdb-display-io-nopopup t)
+
+;; gdb バッファの C-c C-c ではプログラムが停止しなかったので、修正
+(defun my-gud-stop ()
+  (interactive)
+  (comint-interrupt-subjob)
+  (gud-stop-subjob)
+  )
+
+;; 上記 my-gud-stop 関数を C-cC-c に登録する関数
+(defun my-gud-mode-func ()
+  (define-key (current-local-map) "\C-c\C-c" 'my-gud-stop)
+  )
+;; フックに登録
+(add-hook 'gud-mode-hook 'my-gud-mode-func)
+
 #+END_SRC
 
 以降で、上記の設定について説明する。
@@ -77,6 +94,19 @@ stdin/out にアクセスする場合は 自分で C-x b 等で切り替える�
 ちなみに stdin/out バッファの名前は =*input/output of ...*= 。
 ここで ... には、デバッグ対象のファイル名が入る。
 
+
+** my-gud-stop
+
+emacs23.4 だと C-cC-c でプログラムを停止して (gdb) プロンプトが表示されたのだが、
+emacs26.2 だと C-cC-c でプログラムを停止できない。
+
+そこで、プログラムを停止する関数を作成している。
+
+** my-gud-mode-func
+
+上記関数を C-cC-c に登録するための関数。
+
+gud-mode 時にキーバインドを登録するように gud-mode-hook に追加。
 
 
 以上。

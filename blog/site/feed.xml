@@ -1,4 +1,91 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-05-20T19:56:13+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">VMWare ディスクイメージが圧縮されないときの対応方法</title><link href="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html" rel="alternate" type="text/html" title="VMWare ディスクイメージが圧縮されないときの対応方法" /><published>2019-05-20T00:00:00+09:00</published><updated>2019-05-20T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/20/vmware</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html">&lt;p&gt;VMWare のディスクイメージのサイズは、Gest OS 上のディスクサイズと異なる。&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-06-12T23:50:26+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )</title><link href="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html" rel="alternate" type="text/html" title="Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )" /><published>2019-05-23T00:00:00+09:00</published><updated>2019-05-23T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/23/rasp0w</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html">&lt;p&gt;だいぶ前に買って放置していた Raspberry pi zero w をセットアップした。&lt;/p&gt;
+&lt;p&gt;Raspberry pi zero w と言えば「小型軽量」が売りなんで、
+  今回はポータブルな IOT デバイスとして使う事を目的として、
+  Bluetooth の機能(ファイル送受信、 IP over Bluetooth) のセットアップをした。&lt;/p&gt;
+&lt;p&gt;イマドキ Bluetooth なんて、
+  最新のイメージでセットアップすればすぐに使えるだろうと思って余裕だったが、
+  実際には目的の機能が動作するまでに、かなりの時間が掛ってしまった。&lt;/p&gt;
+&lt;p&gt;少なくとも、パッケージをインストールするだけでは済まず、
+  いくつかのファイルを編集 &amp;amp; コマンド実行が必要です。&lt;/p&gt;
+&lt;p&gt;そんな訳で、次に同じことをする時のために備忘録を残しておく。&lt;/p&gt;
+&lt;p&gt;この記事で扱うメインは以下の通り。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Raspberry pi zero w を USB 接続のみでセットアップ&lt;/li&gt;
+  &lt;li&gt;Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現&lt;/li&gt;
+  &lt;li&gt;IP over Bluetooth (PAN) による、PC との SSH 接続確立&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;スムースにいけば、 10 〜 20分程度で完了する。
+  (OS イメージ書き込み後の作業時間)&lt;/p&gt;
+&lt;p&gt;なお、設定を行なうホスト環境は Ubuntu 18.04.2 LTS とする。&lt;/p&gt;
+&lt;p&gt;Ubuntu が Native で動作する PC でも、
+  Windows 上の Gest OS の Ubuntu でも構わない。&lt;/p&gt;
+&lt;h1&gt;Raspberry pi zero w を USB 接続のみでセットアップ&lt;/h1&gt;
+&lt;h2&gt;SD カードに OS Image を書き込む&lt;/h2&gt;
+&lt;p&gt;公式サイトから OS Image を落して SD カードに書き込む。&lt;/p&gt;
+&lt;p&gt;今回は Raspbian Stretch with desktop and recommended software の
+  2019-04-08 を使用した。&lt;/p&gt;
+&lt;p&gt;以前 raspi で Bluetooth を扱った時、
+  Lite では意図する動作にならなかったトラウマがあるため、今回はこれを使用する。&lt;/p&gt;
+&lt;p&gt;イメージを書いたら、ssh と IP over USB (RNDIS) を有効化するため、
+  SD カードをマウントした直下の次のファイルを編集する。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;ssh&lt;/li&gt;
+  &lt;li&gt;config.txt&lt;/li&gt;
+  &lt;li&gt;cmdline.txt&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;編集内容については、次の URL を参考に。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://qiita.com/mt08/items/ce5e3911d74d7fad4563#%E6%89%8B%E9%A0%86&quot;&gt;https://qiita.com/mt08/items/ce5e3911d74d7fad4563#%E6%89%8B%E9%A0%86&lt;/a&gt;&lt;/p&gt;
+&lt;h2&gt;RNDIS 設定&lt;/h2&gt;
+&lt;p&gt;Ubuntu では、Raspberry pi zero w (以降 raspi) を
+  USB (2つある USB コネクタのうち、 HDMI コネクタ側の方)で接続すれば、
+  運が良ければ特になにもせずに IP over USB (RNDIS) の環境が確立する。&lt;/p&gt;
+&lt;p&gt;確立しているかどうかは、次の方法で確認できる。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ ip a
+&lt;/pre&gt;
+&lt;p&gt;ここで enp0s20u1 的なデバイスが表示されていて、
+  IP アドレスが取れていることを確認する。&lt;/p&gt;
+&lt;p&gt;IP アドレスが取れている場合、次のコマンドで raspi の IP を確認する。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ ip n
+&lt;/pre&gt;
+&lt;p&gt;同じサブネットのアドレスがあれば、それが raspi の IP。&lt;/p&gt;
+&lt;p&gt;raspi の IP が分かったら、 ssh すれば OK。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ ssh -Y pi@10.42.0.100
+&lt;/pre&gt;
+&lt;p&gt;大抵の場合、運が良くないので上記の確認では期待した結果にならない。
+  そのため、次のネットワーク設定が必要になる。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ sudo nmtui
+&lt;/pre&gt;
+&lt;p&gt;ここで重要なのは次。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;interface 名を enp0s20u1 &lt;b&gt;(実際のデバイス名に合せる)&lt;/b&gt;&lt;/li&gt;
+  &lt;li&gt;IP4 config を share にする&lt;/li&gt;
+  &lt;li&gt;Require IPv4 addression for this connection をチェック&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;設定後、connection を activate する。&lt;/p&gt;
+&lt;p&gt;なお、 Ubuntu では USB を接続したタイミングで connection 設定が自動で生成されるので、
+  不要な connection 設定は削除しておく。&lt;/p&gt;
+&lt;p&gt;上手く動作しない場合、 deactivate と activate を何度か繰り返すと解消されることがある。&lt;/p&gt;
+&lt;p&gt;ちなみに Windows をホストにする場合、野良ドライバのインストールが必要となる。&lt;/p&gt;
+&lt;h1&gt;Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現&lt;/h1&gt;
+&lt;p&gt;この状態でも raspi を Bluetooth でペアリング出来るし、
+  Bluetooth の GUI アイコンからファイル送信用の UI まで辿ることは出来る。&lt;/p&gt;
+&lt;p&gt;しかし、その ファイル送信用 UI を通してファイル送受信することはまだ出来ない。&lt;/p&gt;
+&lt;p&gt;Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となる。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ sudo apt install obexftp
+&lt;/pre&gt;
+&lt;p&gt;obex 系の処理を動かすには、 bluetoothd に &amp;#8211;compat オプションを与える必要がある。&lt;/p&gt;
+&lt;p&gt;オプションの指定は次のように /etc/init.d/bluetooth に &amp;#8211;compat を追加する。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+#SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- $NOPLUGIN_OPTION&amp;quot;
+SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION&amp;quot;
+&lt;/pre&gt;
+&lt;h1&gt;IP over Bluetooth (PAN) による、PC との SSH 接続確立&lt;/h1&gt;
+&lt;p&gt;&lt;a href=&quot;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&quot;&gt;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&lt;/a&gt;&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">VMWare ディスクイメージが圧縮されないときの対応方法</title><link href="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html" rel="alternate" type="text/html" title="VMWare ディスクイメージが圧縮されないときの対応方法" /><published>2019-05-20T00:00:00+09:00</published><updated>2019-05-20T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/20/vmware</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html">&lt;p&gt;VMWare のディスクイメージのサイズは、Gest OS 上のディスクサイズと異なる。&lt;/p&gt;
 &lt;p&gt;基本的には、Gest OS 上で実際に使用されているサイズに圧縮された形でホスト OS 上に保持される。&lt;/p&gt;
 &lt;p&gt;しかし、 Gest OS 上でファイル作成、削除を繰り返していると、
   Gest OS 上での使用サイズよりも、
@@ -198,6 +285,7 @@ none: time = 7.63887
 &lt;p&gt;以上&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">emacs 更新に伴なう gdb の設定</title><link href="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html" rel="alternate" type="text/html" title="emacs 更新に伴なう gdb の設定" /><published>2019-05-13T00:00:00+09:00</published><updated>2019-05-13T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/13/emacs26</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/13/emacs26.html">&lt;p&gt;とある事情で使い続けていた emacs23.4 (2012/1) を、
   先日 emacs26.2 (2019/4) にアップデートした。&lt;/p&gt;
 &lt;p&gt;このとき gdb 周りの設定を変更する必要があったので、備忘録としてまとめておく。&lt;/p&gt;
+&lt;p&gt;&lt;b&gt;2019-06-12: my-gud-stop, my-gud-mode-func を追加&lt;/b&gt;&lt;/p&gt;
 &lt;h1&gt;emacs の gdb 設定&lt;/h1&gt;
 &lt;pre class=&quot;src&quot; lang=&quot;el&quot;&gt;
 ;; gud-overlay-arrow-position が nil だとエラーするので。。
@@ -211,6 +299,21 @@ none: time = 7.63887
 
 ;; input/output バッファが勝手に表示されるのはウザいので、抑制
 (setq gdb-display-io-nopopup t)
+
+;; gdb バッファの C-c C-c ではプログラムが停止しなかったので、修正
+(defun my-gud-stop ()
+  (interactive)
+  (comint-interrupt-subjob)
+  (gud-stop-subjob)
+  )
+
+;; 上記 my-gud-stop 関数を C-cC-c に登録する関数
+(defun my-gud-mode-func ()
+  (define-key (current-local-map) &amp;quot;\C-c\C-c&amp;quot; &amp;#39;my-gud-stop)
+  )
+;; フックに登録
+(add-hook &amp;#39;gud-mode-hook &amp;#39;my-gud-mode-func)
+
 &lt;/pre&gt;
 &lt;p&gt;以降で、上記の設定について説明する。&lt;/p&gt;
 &lt;h2&gt;gud-tooltip-display&lt;/h2&gt;
@@ -244,6 +347,13 @@ none: time = 7.63887
   stdin/out にアクセスする場合は 自分で C-x b 等で切り替える必要がある。&lt;/p&gt;
 &lt;p&gt;ちなみに stdin/out バッファの名前は &lt;code&gt;*input/output of ...*&lt;/code&gt; 。
   ここで &amp;#8230; には、デバッグ対象のファイル名が入る。&lt;/p&gt;
+&lt;h2&gt;my-gud-stop&lt;/h2&gt;
+&lt;p&gt;emacs23.4 だと C-cC-c でプログラムを停止して (gdb) プロンプトが表示されたのだが、
+  emacs26.2 だと C-cC-c でプログラムを停止できない。&lt;/p&gt;
+&lt;p&gt;そこで、プログラムを停止する関数を作成している。&lt;/p&gt;
+&lt;h2&gt;my-gud-mode-func&lt;/h2&gt;
+&lt;p&gt;上記関数を C-cC-c に登録するための関数。&lt;/p&gt;
+&lt;p&gt;gud-mode 時にキーバインドを登録するように gud-mode-hook に追加。&lt;/p&gt;
 &lt;p&gt;以上。&lt;/p&gt;</content><author><name></name></author><category term="LuneScript" /></entry><entry><title type="html">『エンジニア就職志望者が情報工学科に行くのは間違い』は間違い</title><link href="https://ifritjp.github.io/blog/site/2019/04/18/engineer.html" rel="alternate" type="text/html" title="『エンジニア就職志望者が情報工学科に行くのは間違い』は間違い" /><published>2019-04-18T00:00:00+09:00</published><updated>2019-04-18T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/04/18/engineer</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/04/18/engineer.html">&lt;p&gt;たまたま見つけたブログの記事で気になったものがあったので、
   自分の意見を書いておきます。&lt;/p&gt;
 &lt;h1&gt;気になったブログの記事&lt;/h1&gt;
@@ -586,53 +696,4 @@ $ git clone https://github.com/ifritJP/org-qiita-el
 &lt;/ul&gt;
 &lt;p&gt;&lt;a href=&quot;http://news.denfaminicogamer.jp/interview/ps_history&quot;&gt;http://news.denfaminicogamer.jp/interview/ps_history&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry><entry><title type="html">デフォルト引数の問題の対応</title><link href="https://ifritjp.github.io/blog/site/2019/01/27/default-arg.html" rel="alternate" type="text/html" title="デフォルト引数の問題の対応" /><published>2019-01-27T00:00:00+09:00</published><updated>2019-01-27T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/27/default-arg</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/27/default-arg.html">&lt;p&gt;先日のデフォルト引数の指定し忘れ問題の対応を行なった。&lt;/p&gt;
 &lt;p&gt;詳しくは、次の記事を参照。&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&quot;&gt;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry><entry><title type="html">デフォルト引数の問題</title><link href="https://ifritjp.github.io/blog/site/2019/01/23/default-arg.html" rel="alternate" type="text/html" title="デフォルト引数の問題" /><published>2019-01-23T00:00:00+09:00</published><updated>2019-01-23T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/23/default-arg</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/23/default-arg.html">&lt;p&gt;関数をコールする際、引数を省略してコールできる機能をもつ言語が多く存在する。&lt;/p&gt;
-&lt;p&gt;ここでは、その機能を「デフォルト引数」と呼ぶ。&lt;/p&gt;
-&lt;p&gt;デフォルト引数の例として、Lua のサンプルを次に示す。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;lua&quot;&gt;
-local function func( x, y )
-  print( x, y )
-end
-func( &amp;quot;abc&amp;quot; ) // abc nil
-&lt;/pre&gt;
-&lt;p&gt;Lua では関数コール時に省略された引数は、 nil として処理される。
-  上記の &lt;code&gt;func( &amp;quot;abc&amp;quot; )&lt;/code&gt; は、引数 x, y のうち y が省略され、
-  実行すると abc nil が表示される。&lt;/p&gt;
-&lt;p&gt;デフォルト引数は、引数が多い関数を呼び出す際に有効な機能である。
-  特に Lua は、引数の違いによって実行する関数を切り替える関数オーバーロードがないため、
-  デフォルト引数は良く使われる機能の一つである。&lt;/p&gt;
-&lt;p&gt;しかし、デフォルト引数は便利である一方、不具合を発生させるリスクにもなる。&lt;/p&gt;
-&lt;p&gt;そのリスクとは、意図してデフォルト引数を使用しているのか、
-  それとも、本来指定すべき引数を指定し忘れているのか、を判断出来ないということである。
-  タイプミス等で関数に渡す引数を間違えることが良くある。
-  それを判断できないというのはリスクが高い。&lt;/p&gt;
-&lt;p&gt;Lua の トランスコンパイラである LuneScript でも、同じ問題を抱えている。&lt;/p&gt;
-&lt;p&gt;次は LuneScript のデフォルト引数のサンプルである。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;lua&quot;&gt;
-fn func( val: int! ): int {
-   when! val {
-      return val + 1;
-   }
-   return 0;
-}
-print( func( 1 ) );   // 2
-print( func( nil ) ); // 0
-print( func() );      // 0
-&lt;/pre&gt;
-&lt;p&gt;このサンプルは、デフォルト引数を持つ func() の関数呼び出しを 3 パターン行なっている。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;func( 1 )&lt;/li&gt;
-  &lt;li&gt;func( nil )&lt;/li&gt;
-  &lt;li&gt;func()&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;LuneScript は Lua と同じで、引数が省略されると nil が指定される。
-  よって、 &lt;code&gt;func( nil )&lt;/code&gt; と &lt;code&gt;func()&lt;/code&gt; は同義である。
-  しかし、 &lt;code&gt;func()&lt;/code&gt; が引数の指定忘れではないと、誰が保証できるだろうか？&lt;/p&gt;
-&lt;p&gt;また、 LuneScript では nilable は必ず省略可能なデフォルト引数になってしまう。&lt;/p&gt;
-&lt;p&gt;デフォルト引数をサポートする多くの言語では、
-  デフォルト引数はデフォルト値を定義する必要がある。
-  一方 LuneScript では、nilable は必ずデフォルト引数になってしまう。&lt;/p&gt;
-&lt;p&gt;「nil の時でも省略せずに明示すべき」としたくても、
-  現在の言語仕様ではそれが出来ない。&lt;/p&gt;
-&lt;p&gt;この辺りを解決する方法を検討している。&lt;/p&gt;
-&lt;p&gt;ただこれを解決するには、現状の言語仕様との互換を持たせるのは難しいかもしれない。&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry></feed>
+&lt;p&gt;&lt;a href=&quot;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&quot;&gt;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry></feed>
