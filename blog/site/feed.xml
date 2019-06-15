@@ -1,4 +1,205 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-06-13T22:29:26+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">VMWare ディスクイメージが圧縮されないときの対応方法</title><link href="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html" rel="alternate" type="text/html" title="VMWare ディスクイメージが圧縮されないときの対応方法" /><published>2019-05-20T00:00:00+09:00</published><updated>2019-05-20T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/20/vmware</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html">&lt;p&gt;VMWare のディスクイメージのサイズは、Gest OS 上のディスクサイズと異なる。&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-06-15T15:17:01+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )</title><link href="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html" rel="alternate" type="text/html" title="Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )" /><published>2019-05-23T00:00:00+09:00</published><updated>2019-05-23T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/23/rasp0w</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html">&lt;p&gt;だいぶ前に買って放置していた Raspberry pi zero w をセットアップしました。&lt;/p&gt;
+&lt;p&gt;Raspberry pi zero w と言えば「小型軽量」が売りなんで、
+  今回はポータブルな IOT デバイスとして使う事を目的として、
+  Bluetooth の機能(ファイル送受信、 IP over Bluetooth) のセットアップをしました。&lt;/p&gt;
+&lt;p&gt;イマドキ Bluetooth なんて、
+  最新のイメージでセットアップすればすぐに使えるだろうと思って余裕でした。
+  しかし、実際には目的の機能が動作するまでに、かなりの時間が掛ってしまいました。&lt;/p&gt;
+&lt;p&gt;少なくとも、パッケージをインストールするだけでは済まず、
+  いくつかのファイルを編集 &amp;amp; コマンド実行が必要です。&lt;/p&gt;
+&lt;p&gt;そんな訳で、次に同じことをする時のために備忘録を残しておきます。&lt;/p&gt;
+&lt;p&gt;この記事で扱うメインは以下の通りです。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Raspberry pi zero w を USB 接続のみでセットアップ&lt;/li&gt;
+  &lt;li&gt;Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現&lt;/li&gt;
+  &lt;li&gt;IP over Bluetooth (PAN) による、PC との SSH 接続確立&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;スムースにいけば、 作業時間は 10 〜 20分程度で完了します。
+  (OS イメージ書き込みや apt 更新などの待ち時間は除く)&lt;/p&gt;
+&lt;p&gt;なお、 Raspberry pi の設定を行なうホスト環境は Ubuntu 18.04.2 LTS とします。&lt;/p&gt;
+&lt;p&gt;Ubuntu が Native で動作する PC でも、
+  Windows 上の Gest OS の Ubuntu でも構いません。
+  ただし、 Windows 10 の subsystem の linux は対象外です。&lt;/p&gt;
+&lt;h1&gt;Raspberry pi zero w を USB 接続のみでセットアップ&lt;/h1&gt;
+&lt;h2&gt;SD カードに OS Image を書き込む&lt;/h2&gt;
+&lt;p&gt;公式サイトから OS Image を落して SD カードに書き込みます。&lt;/p&gt;
+&lt;p&gt;今回は Raspbian Stretch with desktop and recommended software の
+  2019-04-08 を使用しました。&lt;/p&gt;
+&lt;p&gt;以前 raspi で Bluetooth を扱った時、
+  Lite では意図する動作にならなかったトラウマがあるため、今回はこれを使用します。&lt;/p&gt;
+&lt;p&gt;イメージを書いたら、ssh と IP over USB (RNDIS) を有効化するため、
+  SD カードをマウントした直下の次のファイルを編集します。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;ssh&lt;/li&gt;
+  &lt;li&gt;config.txt&lt;/li&gt;
+  &lt;li&gt;cmdline.txt&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;編集内容については、次の URL を参考に。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://qiita.com/mt08/items/ce5e3911d74d7fad4563#%E6%89%8B%E9%A0%86&quot;&gt;https://qiita.com/mt08/items/ce5e3911d74d7fad4563#%E6%89%8B%E9%A0%86&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;念の為要点だけをまとめておくと、&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;空の ssh ファイルを作成&lt;/li&gt;
+  &lt;li&gt;config.txt に次を追加&lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class=&quot;example&quot;&gt;
+dtoverlay=dwc2
+&lt;/pre&gt;
+&lt;ul&gt;
+  &lt;li&gt;cmdline.txt
+    &lt;ul&gt;
+      &lt;li&gt;rootwaitとquietの間に次を挿入&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;pre class=&quot;example&quot;&gt;
+modules-load=dwc2,g_ether
+&lt;/pre&gt;
+&lt;h2&gt;RNDIS 設定&lt;/h2&gt;
+&lt;p&gt;Ubuntu では、Raspberry pi zero w (以降 raspi) を
+  USB (2つある USB コネクタのうち、 HDMI コネクタ側の方)で接続すれば、
+  運が良ければ特になにもせずに IP over USB (RNDIS) で raspi と通信可能になります。&lt;/p&gt;
+&lt;p&gt;通信可能かどうかは、次の方法で確認できます。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ ip a
+&lt;/pre&gt;
+&lt;p&gt;ここで enp0s20u1 的なデバイスが表示されていて、
+  IP アドレスが取れていることを確認します。&lt;/p&gt;
+&lt;p&gt;IP アドレスが取れている場合、次のコマンドで raspi の IP を確認します。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ ip n
+&lt;/pre&gt;
+&lt;p&gt;同じサブネットのアドレスがあれば、それが raspi の IP。&lt;/p&gt;
+&lt;p&gt;raspi の IP が分かったら、 ssh すれば OK。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ ssh -Y pi@10.42.0.100
+&lt;/pre&gt;
+&lt;p&gt;ちなみにデフォルトパスワードは raspberry.&lt;/p&gt;
+&lt;p&gt;大抵の場合、運が良くないので上記の確認では期待した結果にならない。&lt;/p&gt;
+&lt;p&gt;そのため、次のネットワーク設定が必要になる。&lt;/p&gt;
+&lt;p&gt;まず、ネットワーク設定を行なう前に、現在のネットワークの状況を確認します。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ ip a
+&lt;/pre&gt;
+&lt;p&gt;このコマンドで表示される「デバイス名」と「MAC アドレス」をメモっておきます。&lt;/p&gt;
+&lt;p&gt;メモった後に、次のコマンドを実行します。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ sudo nmtui
+&lt;/pre&gt;
+&lt;p&gt;起動すると、いくつかの Ethernet 設定がリストで表示されるので、
+  編集を選択します。&lt;/p&gt;
+&lt;p&gt;編集を選択すると、デバイスの欄に「デバイス名」あるいは「MAC アドレス」が
+  表示されているので、
+  USB の方の情報が表示されている Ethernet 設定を見つけます。&lt;/p&gt;
+&lt;p&gt;設定を見つけたら、一旦その設定自体を消します。
+  USB のデバイスに関する設定が複数ある場合は、全て削除します。&lt;/p&gt;
+&lt;p&gt;そして、新しく設定を追加します。&lt;/p&gt;
+&lt;p&gt;このときの設定内容は次の通りです。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;接続タイプ Ethernet&lt;/li&gt;
+  &lt;li&gt;デバイス名を enp0s20u1 &lt;b&gt;(実際のデバイス名に合せる)&lt;/b&gt;&lt;/li&gt;
+  &lt;li&gt;IP4 config を share にする&lt;/li&gt;
+  &lt;li&gt;Require IPv4 addression for this connection をチェック&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;設定後、connection を activate する。&lt;/p&gt;
+&lt;p&gt;これで再度 &lt;code&gt;ip a&lt;/code&gt; から確認してください。
+  これでも上手く動作しない場合、
+  deactivate と activate を何度か繰り返すと解消されることがあります。&lt;/p&gt;
+&lt;p&gt;ちなみに Windows をホストに作業する場合、野良ドライバのインストールが必要です。
+  個人的には、Windows への野良ドライバインストールはオススメできません。&lt;/p&gt;
+&lt;p&gt;以降は、 raspi に ssh 接続した状態で作業します。&lt;/p&gt;
+&lt;p&gt;まずは、次のコマンドで apt を更新しておきます。&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+$ sudo apt-get update
+$ sudo apt-get install bluez-tools, pulseaudio-module-bluetooth
+&lt;/pre&gt;
+&lt;p&gt;次に、 raspi のホスト名を変更します。
+  このホスト名が、 bluetooth のペアリングのときに使用されます。&lt;/p&gt;
+&lt;p&gt;次のコマンドを実行し、 Network Options -&amp;gt; Hostname で適当に変更します。&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+$ sudo raspi-config
+&lt;/pre&gt;
+&lt;h1&gt;Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現&lt;/h1&gt;
+&lt;p&gt;上記設定をした状態で、raspi を Bluetooth ペアリングしても、
+  Bluetooth によるファイル送受信や PAN 通信はできません。&lt;/p&gt;
+&lt;p&gt;では、ちょっと確認してみましょう。&lt;/p&gt;
+&lt;p&gt;次のコマンドを実行します。&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+$ sudo bluetoothctl
+&lt;/pre&gt;
+&lt;p&gt;さらに次を実行すると&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+show
+&lt;/pre&gt;
+&lt;p&gt;raspi の bluetooth コントーラの情報が表示されます。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+	Class: 0x480000
+	Powered: yes
+	Discoverable: no
+	Pairable: yes
+	UUID: Headset AG                
+	UUID: Generic Attribute Profile 
+	UUID: A/V Remote Control        
+	UUID: Generic Access Profile    
+	UUID: PnP Information           
+	UUID: A/V Remote Control Target 
+	UUID: Audio Source              
+	UUID: Handsfree Audio Gateway   
+	Discovering: no
+&lt;/pre&gt;
+&lt;p&gt;ここで&lt;/p&gt;
+&lt;p&gt;Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となる。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+$ sudo apt install obexpushd
+&lt;/pre&gt;
+&lt;p&gt;obex 系の処理を動かすには、 bluetoothd に &amp;#8211;compat オプションを与える必要がある。&lt;/p&gt;
+&lt;p&gt;オプションの指定は次のように /etc/init.d/bluetooth に &amp;#8211;compat を追加する。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+#SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- $NOPLUGIN_OPTION&amp;quot;
+SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION&amp;quot;
+&lt;/pre&gt;
+&lt;p&gt;&amp;#8211;compat オプションの追加は、
+  /etc/systemd/system/bluetooth.target.wants/bluetooth.service のケースもあります。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+#ExecStart=/usr/lib/bluetooth/bluetoothd
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+&lt;/pre&gt;
+&lt;p&gt;&amp;#8211;compat オプションを反映させます。&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+$ sudo systemctl daemon-reload
+$ sudo /etc/init.d/bluetooth restart
+$ sudo systemctl restart bluetooth
+&lt;/pre&gt;
+&lt;p&gt;次に Bluetooth ファイル受信用ディレクトリを作成します。&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+$ mkdir ~/bluetooth
+&lt;/pre&gt;
+&lt;p&gt;そして次のコマンドを実行します。&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+$ sudo /usr/bin/obexpushd -B -n -o /home/pi/bluetooth
+&lt;/pre&gt;
+&lt;p&gt;これでホスト PC からファイルを送信すると、 /home/pi/bluetooth にファイルを受信します。&lt;/p&gt;
+&lt;p&gt;なお、obexpushd は次のようにサービスとして登録します。&lt;/p&gt;
+&lt;p&gt;/etc/systemd/system/bt-obexpushd.service に次の内容をもつファイルを作成。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+[Unit]
+Description=Bluetooth obexpushd
+
+[Service]
+ExecStart=/usr/bin/obexpushd -B -n -o /home/pi/bluetooth
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+&lt;/pre&gt;
+&lt;p&gt;サービスを有効化&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+$ sudo systemctl enable bt-obexpushd
+$ sudo systemctl start bt-obexpushd
+&lt;/pre&gt;
+&lt;h1&gt;IP over Bluetooth (PAN) による、PC との SSH 接続確立&lt;/h1&gt;
+&lt;p&gt;PAN の設定は、次の URL の回答をそのままで設定すれば OK です。&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&quot;&gt;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;なお、上記 URL の内容を設定後、再度ペアリングをやり直してください。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">VMWare ディスクイメージが圧縮されないときの対応方法</title><link href="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html" rel="alternate" type="text/html" title="VMWare ディスクイメージが圧縮されないときの対応方法" /><published>2019-05-20T00:00:00+09:00</published><updated>2019-05-20T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/20/vmware</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html">&lt;p&gt;VMWare のディスクイメージのサイズは、Gest OS 上のディスクサイズと異なる。&lt;/p&gt;
 &lt;p&gt;基本的には、Gest OS 上で実際に使用されているサイズに圧縮された形でホスト OS 上に保持される。&lt;/p&gt;
 &lt;p&gt;しかし、 Gest OS 上でファイル作成、削除を繰り返していると、
   Gest OS 上での使用サイズよりも、
@@ -609,53 +810,4 @@ $ git clone https://github.com/ifritJP/org-qiita-el
 &lt;/ul&gt;
 &lt;p&gt;&lt;a href=&quot;http://news.denfaminicogamer.jp/interview/ps_history&quot;&gt;http://news.denfaminicogamer.jp/interview/ps_history&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry><entry><title type="html">デフォルト引数の問題の対応</title><link href="https://ifritjp.github.io/blog/site/2019/01/27/default-arg.html" rel="alternate" type="text/html" title="デフォルト引数の問題の対応" /><published>2019-01-27T00:00:00+09:00</published><updated>2019-01-27T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/27/default-arg</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/27/default-arg.html">&lt;p&gt;先日のデフォルト引数の指定し忘れ問題の対応を行なった。&lt;/p&gt;
 &lt;p&gt;詳しくは、次の記事を参照。&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&quot;&gt;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry><entry><title type="html">デフォルト引数の問題</title><link href="https://ifritjp.github.io/blog/site/2019/01/23/default-arg.html" rel="alternate" type="text/html" title="デフォルト引数の問題" /><published>2019-01-23T00:00:00+09:00</published><updated>2019-01-23T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/01/23/default-arg</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/01/23/default-arg.html">&lt;p&gt;関数をコールする際、引数を省略してコールできる機能をもつ言語が多く存在する。&lt;/p&gt;
-&lt;p&gt;ここでは、その機能を「デフォルト引数」と呼ぶ。&lt;/p&gt;
-&lt;p&gt;デフォルト引数の例として、Lua のサンプルを次に示す。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;lua&quot;&gt;
-local function func( x, y )
-  print( x, y )
-end
-func( &amp;quot;abc&amp;quot; ) // abc nil
-&lt;/pre&gt;
-&lt;p&gt;Lua では関数コール時に省略された引数は、 nil として処理される。
-  上記の &lt;code&gt;func( &amp;quot;abc&amp;quot; )&lt;/code&gt; は、引数 x, y のうち y が省略され、
-  実行すると abc nil が表示される。&lt;/p&gt;
-&lt;p&gt;デフォルト引数は、引数が多い関数を呼び出す際に有効な機能である。
-  特に Lua は、引数の違いによって実行する関数を切り替える関数オーバーロードがないため、
-  デフォルト引数は良く使われる機能の一つである。&lt;/p&gt;
-&lt;p&gt;しかし、デフォルト引数は便利である一方、不具合を発生させるリスクにもなる。&lt;/p&gt;
-&lt;p&gt;そのリスクとは、意図してデフォルト引数を使用しているのか、
-  それとも、本来指定すべき引数を指定し忘れているのか、を判断出来ないということである。
-  タイプミス等で関数に渡す引数を間違えることが良くある。
-  それを判断できないというのはリスクが高い。&lt;/p&gt;
-&lt;p&gt;Lua の トランスコンパイラである LuneScript でも、同じ問題を抱えている。&lt;/p&gt;
-&lt;p&gt;次は LuneScript のデフォルト引数のサンプルである。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;lua&quot;&gt;
-fn func( val: int! ): int {
-   when! val {
-      return val + 1;
-   }
-   return 0;
-}
-print( func( 1 ) );   // 2
-print( func( nil ) ); // 0
-print( func() );      // 0
-&lt;/pre&gt;
-&lt;p&gt;このサンプルは、デフォルト引数を持つ func() の関数呼び出しを 3 パターン行なっている。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;func( 1 )&lt;/li&gt;
-  &lt;li&gt;func( nil )&lt;/li&gt;
-  &lt;li&gt;func()&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;LuneScript は Lua と同じで、引数が省略されると nil が指定される。
-  よって、 &lt;code&gt;func( nil )&lt;/code&gt; と &lt;code&gt;func()&lt;/code&gt; は同義である。
-  しかし、 &lt;code&gt;func()&lt;/code&gt; が引数の指定忘れではないと、誰が保証できるだろうか？&lt;/p&gt;
-&lt;p&gt;また、 LuneScript では nilable は必ず省略可能なデフォルト引数になってしまう。&lt;/p&gt;
-&lt;p&gt;デフォルト引数をサポートする多くの言語では、
-  デフォルト引数はデフォルト値を定義する必要がある。
-  一方 LuneScript では、nilable は必ずデフォルト引数になってしまう。&lt;/p&gt;
-&lt;p&gt;「nil の時でも省略せずに明示すべき」としたくても、
-  現在の言語仕様ではそれが出来ない。&lt;/p&gt;
-&lt;p&gt;この辺りを解決する方法を検討している。&lt;/p&gt;
-&lt;p&gt;ただこれを解決するには、現状の言語仕様との互換を持たせるのは難しいかもしれない。&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry></feed>
+&lt;p&gt;&lt;a href=&quot;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&quot;&gt;https://qiita.com/dwarfJP/items/922c523d27a6d77fff6d&lt;/a&gt;&lt;/p&gt;</content><author><name></name></author><category term="言語処理系" /></entry></feed>
