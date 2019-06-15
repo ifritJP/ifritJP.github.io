@@ -160,7 +160,11 @@ deactivate と activate を何度か繰り返すと解消されることがあ�
 まずは、次のコマンドで apt を更新しておきます。
 
 : $ sudo apt-get update
-: $ sudo apt-get install bluez-tools, pulseaudio-module-bluetooth
+: $ sudo apt-get install bluez-tools pulseaudio-module-bluetooth
+
+本来 pulseaudio-module-bluetooth は、 audio sink 用のものなので、
+今回の目的には不要のはずなんですが、
+これがないとペアリング後の接続すら出来なかったので入れておきます。
 
 
 
@@ -174,51 +178,16 @@ deactivate と activate を何度か繰り返すと解消されることがあ�
 
 * Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現
 
-上記設定をした状態で、raspi を Bluetooth ペアリングしても、
-Bluetooth によるファイル送受信や PAN 通信はできません。
-
-では、ちょっと確認してみましょう。
-
-次のコマンドを実行します。
-
-: $ sudo bluetoothctl
-
-さらに次を実行すると
-
-: show
-
-raspi の bluetooth コントーラの情報が表示されます。
-
-#+BEGIN_SRC txt
-	Class: 0x480000
-	Powered: yes
-	Discoverable: no
-	Pairable: yes
-	UUID: Headset AG                
-	UUID: Generic Attribute Profile 
-	UUID: A/V Remote Control        
-	UUID: Generic Access Profile    
-	UUID: PnP Information           
-	UUID: A/V Remote Control Target 
-	UUID: Audio Source              
-	UUID: Handsfree Audio Gateway   
-	Discovering: no
-#+END_SRC
-
-ここで 
-
-
-
-Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となる。
+Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となります。
 
 #+BEGIN_SRC txt
 $ sudo apt install obexpushd
 #+END_SRC
 
-obex 系の処理を動かすには、 bluetoothd に --compat オプションを与える必要がある。
+obex 系の処理を動かすには、 bluetoothd に --compat オプションを必要です。
 
 
-オプションの指定は次のように /etc/init.d/bluetooth に --compat を追加する。
+オプションの指定は次のように /etc/init.d/bluetooth に --compat を追加します。
 
 #+NAME: /etc/init.d/bluetooth
 #+BEGIN_SRC txt
@@ -226,8 +195,8 @@ obex 系の処理を動かすには、 bluetoothd に --compat オプション�
 SSD_OPTIONS="--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION"
 #+END_SRC
 
---compat オプションの追加は、
-/etc/systemd/system/bluetooth.target.wants/bluetooth.service のケースもあります。
+あるいは、
+/etc/systemd/system/bluetooth.target.wants/bluetooth.service に追加するケースもあります。
 
 #+NAME: /etc/systemd/system/bluetooth.target.wants/bluetooth.service
 #+BEGIN_SRC txt
@@ -235,7 +204,7 @@ SSD_OPTIONS="--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION"
 ExecStart=/usr/lib/bluetooth/bluetoothd --compat
 #+END_SRC
 
---compat オプションを反映させます。
+ファイル編集後 --compat オプションを反映させます。
 
 : $ sudo systemctl daemon-reload
 : $ sudo /etc/init.d/bluetooth restart
@@ -261,8 +230,10 @@ ExecStart=/usr/lib/bluetooth/bluetoothd --compat
 #+BEGIN_SRC txt
 [Unit]
 Description=Bluetooth obexpushd
+After = bluetooth.service
 
 [Service]
+ExecStartPre=/bin/sleep 4
 ExecStart=/usr/bin/obexpushd -B -n -o /home/pi/bluetooth
 Type=simple
 
@@ -278,8 +249,10 @@ WantedBy=multi-user.target
   
 * IP over Bluetooth (PAN) による、PC との SSH 接続確立
 
-PAN の設定は、次の URL の回答をそのままで設定すれば OK です。
-  
+PAN の設定は、次の URL の回答をそのまま設定すれば OK です。
+
+ 
 <https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod>
+
 
 なお、上記 URL の内容を設定後、再度ペアリングをやり直してください。

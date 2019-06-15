@@ -10,13 +10,13 @@
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
 <meta property="og:description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
-<link rel="canonical" href="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html" />
-<meta property="og:url" content="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html" />
+<link rel="canonical" href="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html" />
 <meta property="og:site_name" content="hoge blog" />
 <meta property="og:type" content="article" />
-<meta property="article:published_time" content="2019-05-23T00:00:00+09:00" />
+<meta property="article:published_time" content="2019-06-15T00:00:00+09:00" />
 <script type="application/ld+json">
-{"description":"Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。","author":{"@type":"Person","name":"ifritJP"},"@type":"BlogPosting","url":"https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html","headline":"Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )","dateModified":"2019-05-23T00:00:00+09:00","datePublished":"2019-05-23T00:00:00+09:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html"},"@context":"http://schema.org"}</script>
+{"description":"Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。","author":{"@type":"Person","name":"ifritJP"},"@type":"BlogPosting","url":"https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html","headline":"Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )","dateModified":"2019-06-15T00:00:00+09:00","datePublished":"2019-06-15T00:00:00+09:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html"},"@context":"http://schema.org"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/blog/site/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ifritjp.github.io/blog/site/feed.xml" title="hoge blog" /></head>
 <body><header class="site-header" role="banner">
@@ -41,7 +41,7 @@
   <header class="post-header">
     <h1 class="post-title p-name" itemprop="name headline">Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )</h1>
     <p class="post-meta">
-      <time class="dt-published" datetime="2019-05-23T00:00:00+09:00" itemprop="datePublished">May 23, 2019
+      <time class="dt-published" datetime="2019-06-15T00:00:00+09:00" itemprop="datePublished">Jun 15, 2019
       </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">ifritJP</span></span></p>
   </header>
 
@@ -158,8 +158,11 @@ $ sudo nmtui
 <p>まずは、次のコマンドで apt を更新しておきます。</p>
 <pre class="example">
 $ sudo apt-get update
-$ sudo apt-get install bluez-tools, pulseaudio-module-bluetooth
+$ sudo apt-get install bluez-tools pulseaudio-module-bluetooth
 </pre>
+<p>本来 pulseaudio-module-bluetooth は、 audio sink 用のものなので、
+  今回の目的には不要のはずなんですが、
+  これがないとペアリング後の接続すら出来なかったので入れておきます。</p>
 <p>次に、 raspi のホスト名を変更します。
   このホスト名が、 bluetooth のペアリングのときに使用されます。</p>
 <p>次のコマンドを実行し、 Network Options -&gt; Hostname で適当に変更します。</p>
@@ -167,51 +170,23 @@ $ sudo apt-get install bluez-tools, pulseaudio-module-bluetooth
 $ sudo raspi-config
 </pre>
 <h1>Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現</h1>
-<p>上記設定をした状態で、raspi を Bluetooth ペアリングしても、
-  Bluetooth によるファイル送受信や PAN 通信はできません。</p>
-<p>では、ちょっと確認してみましょう。</p>
-<p>次のコマンドを実行します。</p>
-<pre class="example">
-$ sudo bluetoothctl
-</pre>
-<p>さらに次を実行すると</p>
-<pre class="example">
-show
-</pre>
-<p>raspi の bluetooth コントーラの情報が表示されます。</p>
-<pre class="src" lang="txt">
-	Class: 0x480000
-	Powered: yes
-	Discoverable: no
-	Pairable: yes
-	UUID: Headset AG                
-	UUID: Generic Attribute Profile 
-	UUID: A/V Remote Control        
-	UUID: Generic Access Profile    
-	UUID: PnP Information           
-	UUID: A/V Remote Control Target 
-	UUID: Audio Source              
-	UUID: Handsfree Audio Gateway   
-	Discovering: no
-</pre>
-<p>ここで</p>
-<p>Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となる。</p>
+<p>Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となります。</p>
 <pre class="src" lang="txt">
 $ sudo apt install obexpushd
 </pre>
-<p>obex 系の処理を動かすには、 bluetoothd に &#8211;compat オプションを与える必要がある。</p>
-<p>オプションの指定は次のように /etc/init.d/bluetooth に &#8211;compat を追加する。</p>
+<p>obex 系の処理を動かすには、 bluetoothd に &#8211;compat オプションを必要です。</p>
+<p>オプションの指定は次のように /etc/init.d/bluetooth に &#8211;compat を追加します。</p>
 <pre class="src" lang="txt">
 #SSD_OPTIONS=&quot;--oknodo --quiet --exec $DAEMON -- $NOPLUGIN_OPTION&quot;
 SSD_OPTIONS=&quot;--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION&quot;
 </pre>
-<p>&#8211;compat オプションの追加は、
-  /etc/systemd/system/bluetooth.target.wants/bluetooth.service のケースもあります。</p>
+<p>あるいは、
+  /etc/systemd/system/bluetooth.target.wants/bluetooth.service に追加するケースもあります。</p>
 <pre class="src" lang="txt">
 #ExecStart=/usr/lib/bluetooth/bluetoothd
 ExecStart=/usr/lib/bluetooth/bluetoothd --compat
 </pre>
-<p>&#8211;compat オプションを反映させます。</p>
+<p>ファイル編集後 &#8211;compat オプションを反映させます。</p>
 <pre class="example">
 $ sudo systemctl daemon-reload
 $ sudo /etc/init.d/bluetooth restart
@@ -231,8 +206,10 @@ $ sudo /usr/bin/obexpushd -B -n -o /home/pi/bluetooth
 <pre class="src" lang="txt">
 [Unit]
 Description=Bluetooth obexpushd
+After = bluetooth.service
 
 [Service]
+ExecStartPre=/bin/sleep 4
 ExecStart=/usr/bin/obexpushd -B -n -o /home/pi/bluetooth
 Type=simple
 
@@ -245,11 +222,11 @@ $ sudo systemctl enable bt-obexpushd
 $ sudo systemctl start bt-obexpushd
 </pre>
 <h1>IP over Bluetooth (PAN) による、PC との SSH 接続確立</h1>
-<p>PAN の設定は、次の URL の回答をそのままで設定すれば OK です。</p>
+<p>PAN の設定は、次の URL の回答をそのまま設定すれば OK です。</p>
 <p><a href="https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod">https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod</a></p>
 <p>なお、上記 URL の内容を設定後、再度ペアリングをやり直してください。</p>
  
-  </div><a class="u-url" href="/blog/site/2019/05/23/rasp0w.html" hidden></a>
+  </div><a class="u-url" href="/blog/site/2019/06/15/rasp0w.html" hidden></a>
 </article>
 
       </div>

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-06-15T15:17:01+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )</title><link href="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html" rel="alternate" type="text/html" title="Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )" /><published>2019-05-23T00:00:00+09:00</published><updated>2019-05-23T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/23/rasp0w</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/23/rasp0w.html">&lt;p&gt;だいぶ前に買って放置していた Raspberry pi zero w をセットアップしました。&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-06-15T18:40:47+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )</title><link href="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html" rel="alternate" type="text/html" title="Raspberry pi zero w で Bluetooth 色々(ファイル送受信:obex、 IP over BT:PAN )" /><published>2019-06-15T00:00:00+09:00</published><updated>2019-06-15T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/06/15/rasp0w</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html">&lt;p&gt;だいぶ前に買って放置していた Raspberry pi zero w をセットアップしました。&lt;/p&gt;
 &lt;p&gt;Raspberry pi zero w と言えば「小型軽量」が売りなんで、
   今回はポータブルな IOT デバイスとして使う事を目的として、
   Bluetooth の機能(ファイル送受信、 IP over Bluetooth) のセットアップをしました。&lt;/p&gt;
@@ -110,8 +110,11 @@ $ sudo nmtui
 &lt;p&gt;まずは、次のコマンドで apt を更新しておきます。&lt;/p&gt;
 &lt;pre class=&quot;example&quot;&gt;
 $ sudo apt-get update
-$ sudo apt-get install bluez-tools, pulseaudio-module-bluetooth
+$ sudo apt-get install bluez-tools pulseaudio-module-bluetooth
 &lt;/pre&gt;
+&lt;p&gt;本来 pulseaudio-module-bluetooth は、 audio sink 用のものなので、
+  今回の目的には不要のはずなんですが、
+  これがないとペアリング後の接続すら出来なかったので入れておきます。&lt;/p&gt;
 &lt;p&gt;次に、 raspi のホスト名を変更します。
   このホスト名が、 bluetooth のペアリングのときに使用されます。&lt;/p&gt;
 &lt;p&gt;次のコマンドを実行し、 Network Options -&amp;gt; Hostname で適当に変更します。&lt;/p&gt;
@@ -119,51 +122,23 @@ $ sudo apt-get install bluez-tools, pulseaudio-module-bluetooth
 $ sudo raspi-config
 &lt;/pre&gt;
 &lt;h1&gt;Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現&lt;/h1&gt;
-&lt;p&gt;上記設定をした状態で、raspi を Bluetooth ペアリングしても、
-  Bluetooth によるファイル送受信や PAN 通信はできません。&lt;/p&gt;
-&lt;p&gt;では、ちょっと確認してみましょう。&lt;/p&gt;
-&lt;p&gt;次のコマンドを実行します。&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-$ sudo bluetoothctl
-&lt;/pre&gt;
-&lt;p&gt;さらに次を実行すると&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-show
-&lt;/pre&gt;
-&lt;p&gt;raspi の bluetooth コントーラの情報が表示されます。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-	Class: 0x480000
-	Powered: yes
-	Discoverable: no
-	Pairable: yes
-	UUID: Headset AG                
-	UUID: Generic Attribute Profile 
-	UUID: A/V Remote Control        
-	UUID: Generic Access Profile    
-	UUID: PnP Information           
-	UUID: A/V Remote Control Target 
-	UUID: Audio Source              
-	UUID: Handsfree Audio Gateway   
-	Discovering: no
-&lt;/pre&gt;
-&lt;p&gt;ここで&lt;/p&gt;
-&lt;p&gt;Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となる。&lt;/p&gt;
+&lt;p&gt;Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となります。&lt;/p&gt;
 &lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
 $ sudo apt install obexpushd
 &lt;/pre&gt;
-&lt;p&gt;obex 系の処理を動かすには、 bluetoothd に &amp;#8211;compat オプションを与える必要がある。&lt;/p&gt;
-&lt;p&gt;オプションの指定は次のように /etc/init.d/bluetooth に &amp;#8211;compat を追加する。&lt;/p&gt;
+&lt;p&gt;obex 系の処理を動かすには、 bluetoothd に &amp;#8211;compat オプションを必要です。&lt;/p&gt;
+&lt;p&gt;オプションの指定は次のように /etc/init.d/bluetooth に &amp;#8211;compat を追加します。&lt;/p&gt;
 &lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
 #SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- $NOPLUGIN_OPTION&amp;quot;
 SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION&amp;quot;
 &lt;/pre&gt;
-&lt;p&gt;&amp;#8211;compat オプションの追加は、
-  /etc/systemd/system/bluetooth.target.wants/bluetooth.service のケースもあります。&lt;/p&gt;
+&lt;p&gt;あるいは、
+  /etc/systemd/system/bluetooth.target.wants/bluetooth.service に追加するケースもあります。&lt;/p&gt;
 &lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
 #ExecStart=/usr/lib/bluetooth/bluetoothd
 ExecStart=/usr/lib/bluetooth/bluetoothd --compat
 &lt;/pre&gt;
-&lt;p&gt;&amp;#8211;compat オプションを反映させます。&lt;/p&gt;
+&lt;p&gt;ファイル編集後 &amp;#8211;compat オプションを反映させます。&lt;/p&gt;
 &lt;pre class=&quot;example&quot;&gt;
 $ sudo systemctl daemon-reload
 $ sudo /etc/init.d/bluetooth restart
@@ -183,8 +158,10 @@ $ sudo /usr/bin/obexpushd -B -n -o /home/pi/bluetooth
 &lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
 [Unit]
 Description=Bluetooth obexpushd
+After = bluetooth.service
 
 [Service]
+ExecStartPre=/bin/sleep 4
 ExecStart=/usr/bin/obexpushd -B -n -o /home/pi/bluetooth
 Type=simple
 
@@ -197,7 +174,7 @@ $ sudo systemctl enable bt-obexpushd
 $ sudo systemctl start bt-obexpushd
 &lt;/pre&gt;
 &lt;h1&gt;IP over Bluetooth (PAN) による、PC との SSH 接続確立&lt;/h1&gt;
-&lt;p&gt;PAN の設定は、次の URL の回答をそのままで設定すれば OK です。&lt;/p&gt;
+&lt;p&gt;PAN の設定は、次の URL の回答をそのまま設定すれば OK です。&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&quot;&gt;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;なお、上記 URL の内容を設定後、再度ペアリングをやり直してください。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">VMWare ディスクイメージが圧縮されないときの対応方法</title><link href="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html" rel="alternate" type="text/html" title="VMWare ディスクイメージが圧縮されないときの対応方法" /><published>2019-05-20T00:00:00+09:00</published><updated>2019-05-20T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/20/vmware</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html">&lt;p&gt;VMWare のディスクイメージのサイズは、Gest OS 上のディスクサイズと異なる。&lt;/p&gt;
 &lt;p&gt;基本的には、Gest OS 上で実際に使用されているサイズに圧縮された形でホスト OS 上に保持される。&lt;/p&gt;
