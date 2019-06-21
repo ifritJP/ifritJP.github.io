@@ -113,6 +113,134 @@ LuneScript のスクリプトをトランスコンパイルし、Lua コード�
 変換後のコードを確認する際は save コマンドを利用していきます。
 
 
+* ランタイム
+
+ちょっと Hello world をネタにしている記事にしては重い内容ですが、
+出力した Lua のコードを見たついでにランタイムについて説明します。
+
+LuneScript から Lua に出力したコードには、
+そのコードを動作させるために必要なランタイムが付加されます。
+
+例えば、次の LuneScript のコードを Lua に出力すると、
+
+#+BEGIN_SRC lns
+fn add( val:int! ):int {
+   return 10 + unwrap val default 0;
+}
+print( add( 1 ) ); // 11
+print( add( nil ) ); // 10
+#+END_SRC
+
+
+次のようになります。
+
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = {}
+if _lune1 then
+   _lune = _lune1
+end
+function _lune.unwrap( val )
+   if val == nil then
+      __luneScript:error( 'unwrap val is nil' )
+   end
+   return val
+end
+function _lune.unwrapDefault( val, defval )
+   if val == nil then
+      return defval
+   end
+   return val
+end
+
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+そこそこの量のランタイムが出力されていることが分かると思います。
+ちなみに、 =local function add( val )= より上が、ランタイムです。
+
+なお、 LuneScript のコードによって挿入されるランタイムが増減し、
+ランタイム全てを出力すると、サイズは約 8KB となっています。
+
+このランタイムは、変換した全ての Lua コードに出力されます。
+
+Lua コードにランタイムのコードが挿入されることが気になる場合、
+lnsc のコマンドラインオプションに =-r= を指定することで、
+次のようにランタイムの展開を =require= に置き換えることが出来ます。
+
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = require( "lune.base._lune1" )
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+ただしこの場合、
+lune.base._lune1 を require することになるので、
+lune.base._lune1 にロードパスを通しておく必要があります。
+
+ここで、 _lune1 の 1 はランタイムのバージョンを示します。
+
+LuneScript が動作している環境であれば気にする必要はないですが、
+変換した Lua コードだけを別の環境で動かす場合は注意が必要です。
+
+なお、 =-r= オプションの代わりに =--runtime mod= オプションを指定することで、
+
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = require( "mod" )
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+上記のように lune.base._lune をロードする代わりに、
+指定の mod モジュールに切り替えることが出来ます。
+
+LuneScript のバージョンが変わると、LuneScript のランタイムも変わることがあります。
+もしも、異なるバージョンの LuneScript で変換した Lua モジュールが混在する場合、
+デフォルトの lune.base._lune を使用すると正常に動作しないことがあります。
+
+これを避けるために、 --runtime オプションを利用して、
+意図しないバージョンのランタイムがロードされることを防止します。
+
+
+なお、コマンドラインに =-mklunemod path= を指定することで、
+指定の path にランタイムのモジュールファイルを生成します。
+
 * コメント
 
 LuneScript におけるコメントは、 ~//~ と ~/* */~ です。  
