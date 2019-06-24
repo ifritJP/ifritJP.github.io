@@ -36,6 +36,7 @@ LuneScript のソースは、特に何も宣言しなくても 1 つのモジュ
 
 例えば、次のような Test.lns は関数 func を持つモジュールとなります。
 
+#+NAME: Test.lns
 #+BEGIN_SRC lns
 // Test.lns
 fn func(): str, str {
@@ -47,6 +48,7 @@ fn func(): str, str {
 
 具体的には、次のように pub を宣言する必要があります。
 
+#+NAME: Test.lns
 #+BEGIN_SRC lns
 // Test.lns
 pub fn func(): str, str {
@@ -60,17 +62,23 @@ pub fn func(): str, str {
 
 import は、外部モジュールの利用を宣言します。
 
+import は、モジュールの先頭に宣言してください。
+
+*(2019/6/24) 関数内部でも宣言できるように対応しました。*
+
+
 上記 Test.lns を利用するには、次の様にします。
 
 #+BEGIN_SRC lns
 import Test;
 
-print( Test.func() ); // Test   Test.func
+print( Test.func() ); // @Test   Test.func
 #+END_SRC
 
 上記の例では、 Test.func() で Test モジュール内の func() を呼び出しています。
 
-このように、 import したモジュール内で pub 宣言しているシンボルにアクセス出来ます。
+このように import することで、
+外部モジュールが pub 宣言しているシンボルにアクセス出来ます。
 
 
 なお、work/Test.lns を import する場合は、次のようになります。
@@ -85,7 +93,8 @@ print( Test.func() ); // work.Test	Test.func
 そのモジュール名の最後の . 以降の名前を使用します。
 上記例の場合、 work.Test を import しているので、シンボル Test でアクセスします。
 
-なお、アクセス名が同じになるモジュールを import する場合は、
+なお、複数モジュールを import する時に、
+アクセス名が同じになる場合は(例えば foo.bar と hoge.bar を import する場合)、
 次に説明する as を利用してください。
 
 ** import as
@@ -107,7 +116,7 @@ LuneScript は、Lua のトランスコンパイラです。
 つまり、 LuneScript で書いたモジュールは、
 Lua から require() して使用することが出来ます。
 
-LuneScript で書いたモジュールを require すると、必ずテーブルを返します。
+この場合、 LuneScript で書いたモジュールは、必ずテーブルとなります。
 
 例えば、上記 Test.lns のトランスコンパイル後の Lua ソースは、次のようになります。
 
