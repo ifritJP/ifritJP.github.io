@@ -63,7 +63,8 @@ LuneScript では、次のように登録しました。
     (init (when (not (eq (lns-command-sync "--version") 0))
 	    (error "not found lns")))
     ;; 補完を開始する prefix の定義。 . で区切った場合に開始する。
-    (prefix (company-grab-symbol-cons "\\." 1))
+    (prefix (and (eq major-mode 'lns-mode)
+		 (company-grab-symbol-cons "\\." 1)))
     ;; 候補を生成する。 非同期。
     (candidates (cons :async
 		      (lambda (callback)
@@ -145,7 +146,19 @@ LuneScript では次を登録しています。
 (company-grab-symbol-cons "\\." 1)
 #+END_SRC
 
-これは、 =.= で区切った箇所でも補完候補生成を開始することを意味しています。 
+これは、 =.= で区切った箇所でも補完候補生成を開始することを意味しています。
+
+
+なお、 company-mode が有効な時は、
+無効化されていない全ての backend で prefix が処理され、
+そのパターンがマッチした candidates がコールされます。
+
+例えば Python コードを編集中も、LuneScript の backend が動作することになります。
+つまり backend は、自分がどのバッファで実行されているかを判断し、
+そのバッファが処理対象でないことを検知した場合は prefix 処理で nil を返し、
+速やかに処理を終了する必要があります。
+これにより、その backend の candidates はコールされず、
+次の backend が処理されます。
    
 ** candidates
 
@@ -164,15 +177,6 @@ company-mode が補完候補として表示します。
 #+BEGIN_SRC el
  (candidates '("abcd" "efgh" "ijkl"))
 #+END_SRC
-
-なお、 company-mode が有効な時は、
-無効化されていない全ての backend で prefix が処理され、
-そのパターンがマッチした candidates がコールされます。
-
-例えば Python コードを編集中も、LuneScript の backend が動作することになります。
-つまり backend は、自分がどのバッファで実行されているかを判断し、
-そのバッファが処理対象でないことを検知した場合は速やかに処理を終了する必要があります。
-
 
 company-mode の candidates 処理の特徴として、
 非同期処理が考慮されていることが挙げられます。
@@ -230,6 +234,12 @@ elisp は原則全てが同期処理です。
 
 つまり、 candidates 処理を非同期にするには、
 外部プロセスで処理を行なうことが前提です。
+
+ただし emacs26 以降で elisp 自体にスレッドが追加になったので、
+プロセスである必要はないです。
+とはいえ、そもそも elisp のパフォーマンスには難があります。
+スレッド化しても elisp の処理が早くなる訳ではないので、
+外部プロセスにまかせるのが無難でしょう。
 
 
 ** annotation
