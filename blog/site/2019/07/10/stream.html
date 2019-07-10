@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>stream は rewind/seek できる？ | hoge blog</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="stream は rewind/seek できる？" />
+<meta name="author" content="ifritJP" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<meta property="og:description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<link rel="canonical" href="https://ifritjp.github.io/blog/site/2019/07/10/stream.html" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/site/2019/07/10/stream.html" />
+<meta property="og:site_name" content="hoge blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-07-10T00:00:00+09:00" />
+<script type="application/ld+json">
+{"description":"Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。","author":{"@type":"Person","name":"ifritJP"},"@type":"BlogPosting","url":"https://ifritjp.github.io/blog/site/2019/07/10/stream.html","headline":"stream は rewind/seek できる？","dateModified":"2019-07-10T00:00:00+09:00","datePublished":"2019-07-10T00:00:00+09:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://ifritjp.github.io/blog/site/2019/07/10/stream.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/blog/site/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ifritjp.github.io/blog/site/feed.xml" title="hoge blog" /></head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/blog/site/">hoge blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/blog/site/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">stream は rewind/seek できる？</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-07-10T00:00:00+09:00" itemprop="datePublished">Jul 10, 2019
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">ifritJP</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+     <p>皆さんは bitstream という単語をご存知でしょうか？</p>
+<p>AV (Audio&amp;Visual) が好きな人や、
+  それらの業界に関係のある人ならそこそこ聞く単語だと思いますが、
+  一般的にはあまり馴染の無い単語でしょうか。</p>
+<p>馴染の無い人の為に身近な HDD レコーダを具体例に挙げて説明すると、
+  HDD レコーダはデジタル放送の電波に乗っているデータをそのまま記録していますが、
+  このデータが bitstream です。
+  HDD レコーダは、デジタル放送の bitstream を HDD に記録し、
+  記録した bitstream を再生する装置と言えます。
+  もちろん、実際にはそんな単純ではないですが、概ね間違ったことは言ってません。</p>
+<h1>stream</h1>
+<p>プログラムでデータを扱う時、stream という概念を使って制御します。</p>
+<table>
+  <tr><th>言語</th><th>stream (入力)</th></tr>
+  <tr><td>Java</td><td>InputStream</td></tr>
+  <tr><td>Swift</td><td>InputStream</td></tr>
+  <tr><td>Go</td><td>io.Reader</td></tr>
+</table>
+<p>上記は言語毎の入力系 stream の例です。</p>
+<p>ちなみに入力系の stream とは何かというと、
+  流れてくるデータを読み出してそれを処理するためのものです。</p>
+<p>例えば、先ほどの HDD レコーダの例で説明すると、</p>
+<ul>
+  <li>デジタル放送の電波に乗っている bitstream を読み取る部分</li>
+  <li>HDD に記録されている bitstream を読み込む部分</li>
+</ul>
+<p>が入力系の stream です。</p>
+<p>また、上記言語の stream には共通することがあります。</p>
+<p>それは、データの流れが一方通行で遡ることが出来ない、ということです。</p>
+<p>プログラム的に言うと、上記の stream は seek や rewind をサポートしていません。</p>
+<p>これを、先ほどの HDD レコーダの例で説明すると、
+  「過去に放送された番組の録画はできない」ということです。</p>
+<p>24 時間全ての番組を常に録画し続けて、
+  「1週間前に放送された任意の番組を再生する」機能を持つ HDD レコーダはありますが、
+  それはあくまで録画してあるものを再生しているのであって、
+  過去に放送された番組を録画することは出来ません。
+  もしそれが出来るなら、
+  本当の意味でのタイムマシーンを作ることが出来ることと同義になります。</p>
+<p>なお、「過去に放送された番組の録画はできない」ですが、
+  「録画した番組」の逆再生などは出来ます。</p>
+<p>先ほど説明した通り、次のどちらもの入力 stream です。</p>
+<ul>
+  <li>デジタル放送の電波に乗っている bitstream を読み取る部分
+    <ul>
+      <li>過去に放送された番組の録画はできない</li>
+    </ul>
+  </li>
+  <li>HDD に記録されている bitstream を読み込む部分
+    <ul>
+      <li>録画した番組は逆再生など出来る</li>
+    </ul>
+  </li>
+</ul>
+<p>これはつまり、 stream には次の 2 つのタイプが存在することを意味します。</p>
+<ul>
+  <li>流れが一方通行で遡ることが出来ない stream</li>
+  <li>流れを遡ることが出来る stream</li>
+</ul>
+<p>これ以降、上記をそれぞれ none_seekable と seekable とします。</p>
+<h1>none_seekable と seekable の使い分け</h1>
+<p>上記の通り、stream には次の 2 つのタイプが存在します。</p>
+<p>では、実際のプログラムでは stream はどう使い分けるべきか？ と考えた場合、
+  seekable である必要がない場合は極力 none_seekable を使うべきです。</p>
+<p>なぜならば、
+  seekable は none_seekable を包括する概念であり、
+  seekable な stream は none_seekable として使用することが出来ますが、
+  none_seekable な stream を seekable として使用することが出来ないからです。</p>
+<p>次に、疑似言語を使って説明します。</p>
+<pre class="src" lang="txt">
+fn funcA( data: seekable ) {
+  sub( data );
+}
+fn funcB( data: none_seekable ) {
+  sub( data );
+}
+</pre>
+<p>上記は、 seekable な引数を持つ関数 funcA と、
+  none_seekable な引数を持つ関数 funcB を定義する疑似言語です。
+  また sub() は、 none_seekable な引数を持つ関数です。</p>
+<p>ここで、この関数 funcA は seekable な stream でしか使用できないのに対し、
+  この関数 funcB は seekable, none_seekable どちらでも使用できることになり、
+  funcB は funcA よりも汎用性が高いと言えます。</p>
+<p>関数の汎用性が高いことが良いプログラムである、とは一概には言えませんが、
+  ミドルウェアなどのライブラリでは、汎用性が高い方が良いとされます。</p>
+<p>つまり、 stream を入力に持つ関数の処理においては、
+  seek や rewind の使用は極力避け、
+  none_seekable の strem で処理可能にすべきである、と言えます。</p>
+<p>ただし、 seek や rewind を使用しないと目標のパフォーマンスが出ないとか、
+  必要なワークメモリが規定を越えてしまう、等の問題がある場合は、
+  無理に none_seekable で処理する必要はありません。</p>
+<p>とはいえ、あくまでも原則は、
+  seekable ではなく none_seekable で処理できるかどうかを検討するべきです。</p>
+<h1>データフォーマット</h1>
+<p>stream を処理する際に、
+  それを none_seekable として扱うには、
+  stream に流れるデータのフォーマットが none_seekable として
+  扱い易い構造になっている必要があります。</p>
+<p>データフォーマットが none_seekable として扱い難い構造の場合、
+  上記のように「目標のパフォーマンスが出ない」、「必要なワークメモリが規定を越えてしまう」
+  という問題が発生してしまいます。</p>
+<p>データフォーマットを定義する時は、
+  必ず none_seekable で処理することを考えて定義しましょう。</p>
+<p>なお、 stream で処理することが多い画像や音声などのデータフォーマットは、
+  基本的には none_seekable で処理できるように定義されています。</p>
+<p>もしもそうでなければ、放送でデジタルデータを扱うことは出来ません。</p>
+<h1>まとめ</h1>
+<p>stream を扱う際は、次を注意する必要があります。</p>
+<ul>
+  <li>極力 none_seekable で扱う</li>
+  <li>データフォーマットを決める時点で、 none_seekable で扱えることを考慮する</li>
+</ul>
+<h1>最後に</h1>
+<p>なんでこんなことを書いたかというと、
+  最近とある画像デーコードのライブラリを扱うことがあったんですが、
+  そのライブラリの入力が seekable であることを前提としていてムカついた、
+  という経験をしたためです。</p>
+<p>データ streaming 処理を行なう場合の基本的な考え方なので、
+  必ずこれらを考慮に入れて設計するようにお願いします。</p>
+<p>以上。</p>
+ 
+  </div><a class="u-url" href="/blog/site/2019/07/10/stream.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/blog/site/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">hoge blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">hoge blog</li><li><a class="u-email" href="mailto:"></a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ifritJP"><svg class="svg-icon"><use xlink:href="/blog/site/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ifritJP</span></a></li><li><a href="https://www.twitter.com/dwarfJP"><svg class="svg-icon"><use xlink:href="/blog/site/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">dwarfJP</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

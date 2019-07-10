@@ -1,4 +1,122 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-07-08T21:50:26+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">python のクラスを JSON 化</title><link href="https://ifritjp.github.io/blog/site/2019/07/04/python-json.html" rel="alternate" type="text/html" title="python のクラスを JSON 化" /><published>2019-07-04T00:00:00+09:00</published><updated>2019-07-04T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/07/04/python-json</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/07/04/python-json.html">&lt;p&gt;&lt;a href=&quot;https://github.com/ifritJP/game-message-tts&quot;&gt;コレ&lt;/a&gt; を作るにあたって、データの serialize/deserialize の方法を調べた結果、
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-07-10T18:38:07+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">stream は rewind/seek できる？</title><link href="https://ifritjp.github.io/blog/site/2019/07/10/stream.html" rel="alternate" type="text/html" title="stream は rewind/seek できる？" /><published>2019-07-10T00:00:00+09:00</published><updated>2019-07-10T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/07/10/stream</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/07/10/stream.html">&lt;p&gt;皆さんは bitstream という単語をご存知でしょうか？&lt;/p&gt;
+&lt;p&gt;AV (Audio&amp;amp;Visual) が好きな人や、
+  それらの業界に関係のある人ならそこそこ聞く単語だと思いますが、
+  一般的にはあまり馴染の無い単語でしょうか。&lt;/p&gt;
+&lt;p&gt;馴染の無い人の為に身近な HDD レコーダを具体例に挙げて説明すると、
+  HDD レコーダはデジタル放送の電波に乗っているデータをそのまま記録していますが、
+  このデータが bitstream です。
+  HDD レコーダは、デジタル放送の bitstream を HDD に記録し、
+  記録した bitstream を再生する装置と言えます。
+  もちろん、実際にはそんな単純ではないですが、概ね間違ったことは言ってません。&lt;/p&gt;
+&lt;h1&gt;stream&lt;/h1&gt;
+&lt;p&gt;プログラムでデータを扱う時、stream という概念を使って制御します。&lt;/p&gt;
+&lt;table&gt;
+  &lt;tr&gt;&lt;th&gt;言語&lt;/th&gt;&lt;th&gt;stream (入力)&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;Java&lt;/td&gt;&lt;td&gt;InputStream&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;Swift&lt;/td&gt;&lt;td&gt;InputStream&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;Go&lt;/td&gt;&lt;td&gt;io.Reader&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;上記は言語毎の入力系 stream の例です。&lt;/p&gt;
+&lt;p&gt;ちなみに入力系の stream とは何かというと、
+  流れてくるデータを読み出してそれを処理するためのものです。&lt;/p&gt;
+&lt;p&gt;例えば、先ほどの HDD レコーダの例で説明すると、&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;デジタル放送の電波に乗っている bitstream を読み取る部分&lt;/li&gt;
+  &lt;li&gt;HDD に記録されている bitstream を読み込む部分&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;が入力系の stream です。&lt;/p&gt;
+&lt;p&gt;また、上記言語の stream には共通することがあります。&lt;/p&gt;
+&lt;p&gt;それは、データの流れが一方通行で遡ることが出来ない、ということです。&lt;/p&gt;
+&lt;p&gt;プログラム的に言うと、上記の stream は seek や rewind をサポートしていません。&lt;/p&gt;
+&lt;p&gt;これを、先ほどの HDD レコーダの例で説明すると、
+  「過去に放送された番組の録画はできない」ということです。&lt;/p&gt;
+&lt;p&gt;24 時間全ての番組を常に録画し続けて、
+  「1週間前に放送された任意の番組を再生する」機能を持つ HDD レコーダはありますが、
+  それはあくまで録画してあるものを再生しているのであって、
+  過去に放送された番組を録画することは出来ません。
+  もしそれが出来るなら、
+  本当の意味でのタイムマシーンを作ることが出来ることと同義になります。&lt;/p&gt;
+&lt;p&gt;なお、「過去に放送された番組の録画はできない」ですが、
+  「録画した番組」の逆再生などは出来ます。&lt;/p&gt;
+&lt;p&gt;先ほど説明した通り、次のどちらもの入力 stream です。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;デジタル放送の電波に乗っている bitstream を読み取る部分
+    &lt;ul&gt;
+      &lt;li&gt;過去に放送された番組の録画はできない&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;HDD に記録されている bitstream を読み込む部分
+    &lt;ul&gt;
+      &lt;li&gt;録画した番組は逆再生など出来る&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;これはつまり、 stream には次の 2 つのタイプが存在することを意味します。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;流れが一方通行で遡ることが出来ない stream&lt;/li&gt;
+  &lt;li&gt;流れを遡ることが出来る stream&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;これ以降、上記をそれぞれ none_seekable と seekable とします。&lt;/p&gt;
+&lt;h1&gt;none_seekable と seekable の使い分け&lt;/h1&gt;
+&lt;p&gt;上記の通り、stream には次の 2 つのタイプが存在します。&lt;/p&gt;
+&lt;p&gt;では、実際のプログラムでは stream はどう使い分けるべきか？ と考えた場合、
+  seekable である必要がない場合は極力 none_seekable を使うべきです。&lt;/p&gt;
+&lt;p&gt;なぜならば、
+  seekable は none_seekable を包括する概念であり、
+  seekable な stream は none_seekable として使用することが出来ますが、
+  none_seekable な stream を seekable として使用することが出来ないからです。&lt;/p&gt;
+&lt;p&gt;次に、疑似言語を使って説明します。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+fn funcA( data: seekable ) {
+  sub( data );
+}
+fn funcB( data: none_seekable ) {
+  sub( data );
+}
+&lt;/pre&gt;
+&lt;p&gt;上記は、 seekable な引数を持つ関数 funcA と、
+  none_seekable な引数を持つ関数 funcB を定義する疑似言語です。
+  また sub() は、 none_seekable な引数を持つ関数です。&lt;/p&gt;
+&lt;p&gt;ここで、この関数 funcA は seekable な stream でしか使用できないのに対し、
+  この関数 funcB は seekable, none_seekable どちらでも使用できることになり、
+  funcB は funcA よりも汎用性が高いと言えます。&lt;/p&gt;
+&lt;p&gt;関数の汎用性が高いことが良いプログラムである、とは一概には言えませんが、
+  ミドルウェアなどのライブラリでは、汎用性が高い方が良いとされます。&lt;/p&gt;
+&lt;p&gt;つまり、 stream を入力に持つ関数の処理においては、
+  seek や rewind の使用は極力避け、
+  none_seekable の strem で処理可能にすべきである、と言えます。&lt;/p&gt;
+&lt;p&gt;ただし、 seek や rewind を使用しないと目標のパフォーマンスが出ないとか、
+  必要なワークメモリが規定を越えてしまう、等の問題がある場合は、
+  無理に none_seekable で処理する必要はありません。&lt;/p&gt;
+&lt;p&gt;とはいえ、あくまでも原則は、
+  seekable ではなく none_seekable で処理できるかどうかを検討するべきです。&lt;/p&gt;
+&lt;h1&gt;データフォーマット&lt;/h1&gt;
+&lt;p&gt;stream を処理する際に、
+  それを none_seekable として扱うには、
+  stream に流れるデータのフォーマットが none_seekable として
+  扱い易い構造になっている必要があります。&lt;/p&gt;
+&lt;p&gt;データフォーマットが none_seekable として扱い難い構造の場合、
+  上記のように「目標のパフォーマンスが出ない」、「必要なワークメモリが規定を越えてしまう」
+  という問題が発生してしまいます。&lt;/p&gt;
+&lt;p&gt;データフォーマットを定義する時は、
+  必ず none_seekable で処理することを考えて定義しましょう。&lt;/p&gt;
+&lt;p&gt;なお、 stream で処理することが多い画像や音声などのデータフォーマットは、
+  基本的には none_seekable で処理できるように定義されています。&lt;/p&gt;
+&lt;p&gt;もしもそうでなければ、放送でデジタルデータを扱うことは出来ません。&lt;/p&gt;
+&lt;h1&gt;まとめ&lt;/h1&gt;
+&lt;p&gt;stream を扱う際は、次を注意する必要があります。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;極力 none_seekable で扱う&lt;/li&gt;
+  &lt;li&gt;データフォーマットを決める時点で、 none_seekable で扱えることを考慮する&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;最後に&lt;/h1&gt;
+&lt;p&gt;なんでこんなことを書いたかというと、
+  最近とある画像デーコードのライブラリを扱うことがあったんですが、
+  そのライブラリの入力が seekable であることを前提としていてムカついた、
+  という経験をしたためです。&lt;/p&gt;
+&lt;p&gt;データ streaming 処理を行なう場合の基本的な考え方なので、
+  必ずこれらを考慮に入れて設計するようにお願いします。&lt;/p&gt;
+&lt;p&gt;以上。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="english" /></entry><entry><title type="html">python のクラスを JSON 化</title><link href="https://ifritjp.github.io/blog/site/2019/07/04/python-json.html" rel="alternate" type="text/html" title="python のクラスを JSON 化" /><published>2019-07-04T00:00:00+09:00</published><updated>2019-07-04T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/07/04/python-json</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/07/04/python-json.html">&lt;p&gt;&lt;a href=&quot;https://github.com/ifritJP/game-message-tts&quot;&gt;コレ&lt;/a&gt; を作るにあたって、データの serialize/deserialize の方法を調べた結果、
   &lt;a href=&quot;https://pypi.org/project/marshmallow-dataclass/&quot;&gt;marshmallow_dataclass&lt;/a&gt; に落ち着きました。&lt;/p&gt;
 &lt;p&gt;いくつか調べた中で、パッと見、直感的に出来そうだった、というだけの理由ですが。。&lt;/p&gt;
 &lt;p&gt;実際、面倒な処理はほとんど無く、 serialize/deserialize が可能になりました。&lt;/p&gt;
@@ -901,85 +1019,4 @@ $ git clone https://github.com/ifritJP/org-qiita-el
   &lt;/li&gt;
 &lt;/ul&gt;
 &lt;p&gt;次回は、外出先でのソフト開発に耐えられる環境について書きたいと思います。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="emacs org qiita" /></entry><entry><title type="html">この度 Lua 神を拝命しました</title><link href="https://ifritjp.github.io/blog/site/2019/03/16/lua.html" rel="alternate" type="text/html" title="この度 Lua 神を拝命しました" /><published>2019-03-16T00:00:00+09:00</published><updated>2019-03-16T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/03/16/lua</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/03/16/lua.html">&lt;p&gt;forkwell の github 分析結果が面白かったので貼っておく。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;forkwell.png&quot; alt=&quot;forkwell.png&quot; /&gt;&lt;/p&gt;</content><author><name></name></author><category term="mew outlook" /></entry><entry><title type="html">Outlook で送信された日本語メールを Mew で受信すると文字化けする問題の対応</title><link href="https://ifritjp.github.io/blog/site/2019/02/07/outlook.html" rel="alternate" type="text/html" title="Outlook で送信された日本語メールを Mew で受信すると文字化けする問題の対応" /><published>2019-02-07T00:00:00+09:00</published><updated>2019-02-07T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/02/07/outlook</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/02/07/outlook.html">&lt;p&gt;Outlook は当初から評判が良くないため個人的には使用していません。
-  もうず〜〜〜〜〜と、 PC のメール環境は Mew を使用しています。&lt;/p&gt;
-&lt;p&gt;しかし、自分のメール送信・受信環境は好きなものを選べますが、
-  相手のメール送信・受信環境は選べません。&lt;/p&gt;
-&lt;p&gt;そしてつい先日も、 Outlook から送信されたメールで文字化けメールを受信しました。&lt;/p&gt;
-&lt;p&gt;どうして化けたのか気になったので、調べてみました。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;メールの MIME に示されているコードは &amp;#8221;&lt;b&gt;gb2312&lt;/b&gt;&amp;#8221; となっている&lt;/li&gt;
-  &lt;li&gt;同じメールを Outlook で受信している人に聞いてみると、文字化けしていないと言う&lt;/li&gt;
-  &lt;li&gt;emacs のコード変換で化けたのか？と思い、
-    メールを保存してブラウザの表示言語を簡体字中国語設定で表示してみると文字化けしなかった。
-    &lt;ul&gt;
-      &lt;li&gt;この時のブラウザのテキストエンコーディングを見てみると &amp;#8221;&lt;b&gt;GBK&lt;/b&gt;&amp;#8221; だった&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;emacs で利用可能な文字コードを見てみると &amp;#8221;&lt;b&gt;gb2312&lt;/b&gt;&amp;#8221; と &amp;#8221;&lt;b&gt;GBK&lt;/b&gt;&amp;#8221; は別ものとして存在している。&lt;/li&gt;
-  &lt;li&gt;試しに文字化けしたメールを、 emacs の &amp;#8221;&lt;b&gt;GBK&lt;/b&gt;&amp;#8221; を指定して開くと文字化けしなかった&lt;/li&gt;
-  &lt;li&gt;Wikipedia を見ると &amp;#8221;&lt;b&gt;GBK&lt;/b&gt;&amp;#8221; は &amp;#8221;&lt;b&gt;gb2312&lt;/b&gt;&amp;#8221; を拡張したものということが分った
-    &lt;ul&gt;
-      &lt;li&gt;また、 Microsoft が GBK を Windows コードページ 936 として定義した、との記載がある。&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;MS も Outlook で送信すると文字コード判定が間違えることを認識している
-    &lt;ul&gt;
-      &lt;li&gt;次の URL に記載されている「方法3」が、まさにそれの対処方法&lt;/li&gt;
-      &lt;li&gt;&lt;a href=&quot;https://support.microsoft.com/ja-jp/help/881816&quot;&gt;https://support.microsoft.com/ja-jp/help/881816&lt;/a&gt;&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;以上のことから、次の事が考えられます。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;Outlook で所定の文字を含むメールを送信する際、
-    Outlook の自動文字コード判定によって WCP936 として認識される。&lt;/li&gt;
-  &lt;li&gt;WCP936 は本来 GBK であるが、メールの MIME には charset=&amp;#8221;gb2312&amp;#8221; として宣言される&lt;/li&gt;
-  &lt;li&gt;メールを受信した Mew は、 MIME の情報を見て gb2312 として処理するが、
-    実際のメールは gb2312 ではなく GBK でエンコーディングされているため、文字化けする。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;h1&gt;Mew での対応&lt;/h1&gt;
-&lt;p&gt;Outlook のダメさ加減を嘆いてもしようがないので、
-  ここでは Mew で受信した時に化けずに表示できる対応をします。&lt;/p&gt;
-&lt;p&gt;対応コードは以下です。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;el&quot;&gt;
-(defun my-mew-change-gb2312-for-outlook ()
-  &amp;quot;outlook 対応。 Outlook の gb2312 は gbk になっている。。。&amp;quot;
-  (setq mew-cs-database-for-decoding
-	(mapcar (lambda (X)
-		  (if (equal (car X) &amp;quot;gb2312&amp;quot;)
-		      (list (car X) &amp;#39;gbk)
-		    X))
-		mew-cs-database-for-decoding)))
-
-(eval-after-load &amp;quot;mew&amp;quot;
-  &amp;#39;(my-mew-change-gb2312-for-outlook))
-&lt;/pre&gt;
-&lt;p&gt;以下で上記処理の説明をします。&lt;/p&gt;
-&lt;p&gt;Mew は MIME の charset と、
-  emacs の coding-system の紐付けを &lt;b&gt;mew-cs-database-for-decoding&lt;/b&gt; で管理しています。&lt;/p&gt;
-&lt;p&gt;こんな感じ。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-(defvar mew-cs-database-for-decoding
-  `((&amp;quot;us-ascii&amp;quot;          nil)
-    (&amp;quot;iso-8859-1&amp;quot;        iso-8859-1)
-    (&amp;quot;iso-8859-2&amp;quot;        iso-8859-2)
-    (&amp;quot;iso-8859-3&amp;quot;        iso-8859-3)
-    (&amp;quot;iso-8859-4&amp;quot;        iso-8859-4)
-    (&amp;quot;iso-8859-5&amp;quot;        iso-8859-5)
-    (&amp;quot;iso-8859-6&amp;quot;        iso-8859-6)
-    (&amp;quot;iso-8859-7&amp;quot;        iso-8859-7)
-    (&amp;quot;iso-8859-8&amp;quot;        iso-8859-8)
-    (&amp;quot;iso-8859-8-i&amp;quot;      iso-8859-8) ;; temporary solution
-    (&amp;quot;iso-8859-9&amp;quot;        iso-8859-9)
-    (&amp;quot;iso-8859-15&amp;quot;       iso-8859-15)
-    (&amp;quot;iso-2022-cn&amp;quot;       iso-2022-cn)
-    (&amp;quot;iso-2022-cn-ext&amp;quot;   iso-2022-cn-ext)
-    (&amp;quot;gbk&amp;quot;               gbk)
-    (&amp;quot;gb2312&amp;quot;            cn-gb-2312) ;; should be before cn-gb
-    (&amp;quot;cn-gb&amp;quot;             cn-gb-2312)
-&lt;/pre&gt;
-&lt;p&gt;この設定では、 MIME の gb2312 を cn-gb-2312 に紐付けしているので、
-  gb2312 を gbk の紐付けに変更しているのが先ほどのコードとなります。&lt;/p&gt;
-&lt;p&gt;中国語圏とメールのやり取りしたときに何か問題がおこるかもですが、
-  自分にはそんな予定はないのでとりあえずこれで十分かな、と。&lt;/p&gt;</content><author><name></name></author><category term="mew outlook" /></entry></feed>
+&lt;p&gt;&lt;img src=&quot;forkwell.png&quot; alt=&quot;forkwell.png&quot; /&gt;&lt;/p&gt;</content><author><name></name></author><category term="mew outlook" /></entry></feed>
