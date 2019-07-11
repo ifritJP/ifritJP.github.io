@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-07-10T18:38:07+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">stream は rewind/seek できる？</title><link href="https://ifritjp.github.io/blog/site/2019/07/10/stream.html" rel="alternate" type="text/html" title="stream は rewind/seek できる？" /><published>2019-07-10T00:00:00+09:00</published><updated>2019-07-10T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/07/10/stream</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/07/10/stream.html">&lt;p&gt;皆さんは bitstream という単語をご存知でしょうか？&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-07-11T22:17:47+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">stream は rewind/seek できる？</title><link href="https://ifritjp.github.io/blog/site/2019/07/10/stream.html" rel="alternate" type="text/html" title="stream は rewind/seek できる？" /><published>2019-07-10T00:00:00+09:00</published><updated>2019-07-10T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/07/10/stream</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/07/10/stream.html">&lt;p&gt;皆さんは bitstream という単語をご存知でしょうか？&lt;/p&gt;
 &lt;p&gt;AV (Audio&amp;amp;Visual) が好きな人や、
   それらの業界に関係のある人ならそこそこ聞く単語だと思いますが、
   一般的にはあまり馴染の無い単語でしょうか。&lt;/p&gt;
@@ -116,6 +116,192 @@ fn funcB( data: none_seekable ) {
   という経験をしたためです。&lt;/p&gt;
 &lt;p&gt;データ streaming 処理を行なう場合の基本的な考え方なので、
   必ずこれらを考慮に入れて設計するようにお願いします。&lt;/p&gt;
+&lt;p&gt;以上。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="english" /></entry><entry><title type="html">stream は rewind/seek できる？</title><link href="https://ifritjp.github.io/blog/site/2019/07/10/stream.html" rel="alternate" type="text/html" title="stream は rewind/seek できる？" /><published>2019-07-10T00:00:00+09:00</published><updated>2019-07-10T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/07/10/stream</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/07/10/stream.html">&lt;p&gt;&lt;b&gt;これは seekable な stream と none_seekable な stream の使い分けに関する記事です。&lt;/b&gt;&lt;/p&gt;
+&lt;p&gt;&lt;b&gt;使い分けが十分出来ている人は読まなくても大丈夫です。&lt;/b&gt;&lt;/p&gt;
+&lt;p&gt;皆さんは bitstream という単語をご存知でしょうか？&lt;/p&gt;
+&lt;p&gt;AV (Audio&amp;amp;Visual) が好きな人や、
+  それらの業界に関係のある人ならそこそこ聞く単語だと思いますが、
+  一般的にはあまり馴染の無い単語でしょうか。&lt;/p&gt;
+&lt;p&gt;馴染の無い人の為に身近な HDD レコーダを例に挙げて説明すると、
+  HDD レコーダはデジタル放送の電波に乗っているデータをそのまま記録していますが、
+  このデータが bitstream です。
+  HDD レコーダは、デジタル放送の bitstream を HDD に記録し、
+  記録した bitstream を再生する装置と言えます。
+  もちろん、実際にはそんな単純ではないですが、概ね間違ったことは言ってません。&lt;/p&gt;
+&lt;h1&gt;stream&lt;/h1&gt;
+&lt;p&gt;プログラムでデータを扱う時、stream という概念を使って制御します。&lt;/p&gt;
+&lt;table&gt;
+  &lt;tr&gt;&lt;th&gt;言語&lt;/th&gt;&lt;th&gt;stream (入力)&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;Java&lt;/td&gt;&lt;td&gt;InputStream&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;Swift&lt;/td&gt;&lt;td&gt;InputStream&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;Go&lt;/td&gt;&lt;td&gt;io.Reader&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;上記は言語毎の入力系 stream の例です。&lt;/p&gt;
+&lt;p&gt;ちなみに入力系の stream とは何かというと、
+  流れてくるデータを読み出すためのものです。&lt;/p&gt;
+&lt;p&gt;例えば、先ほどの HDD レコーダの例で説明すると、&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;デジタル放送の電波に乗っている bitstream を読み取る部分&lt;/li&gt;
+  &lt;li&gt;HDD に記録されている bitstream を読み込む部分&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;が入力系の stream です。&lt;/p&gt;
+&lt;p&gt;また、上記言語の stream (InputStream,io.Reader)には共通することがあります。&lt;/p&gt;
+&lt;p&gt;それは、データの流れが一方通行で遡ることが出来ない、ということです。&lt;/p&gt;
+&lt;p&gt;プログラム的に言うと、上記の stream は seek や rewind をサポートしていません。&lt;/p&gt;
+&lt;p&gt;これを、先ほどの HDD レコーダの例で説明すると、
+  「過去に放送された番組の録画はできない」ということです。&lt;/p&gt;
+&lt;p&gt;24 時間全ての番組を常に録画し続けて、
+  「1週間前に放送された任意の番組を再生する」機能を持つ HDD レコーダはありますが、
+  それはあくまで録画してあるものを再生しているのであって、
+  過去に放送された番組を録画することは出来ません。
+  もしそれが出来るなら、
+  本当の意味でのタイムマシーンを作ることが出来ることと同義になります。&lt;/p&gt;
+&lt;p&gt;なお、「過去に放送された番組の録画はできない」ですが、
+  「録画した番組」の逆再生などは出来ます。&lt;/p&gt;
+&lt;p&gt;先ほど説明した通り、次のどちらもの入力 stream です。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;デジタル放送の電波に乗っている bitstream を読み取る部分
+    &lt;ul&gt;
+      &lt;li&gt;過去に放送された番組の録画はできない&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;HDD に記録されている bitstream を読み込む部分
+    &lt;ul&gt;
+      &lt;li&gt;録画した番組は逆再生など出来る&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;これはつまり、 stream には次の 2 つのタイプが存在することを意味します。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;流れが一方通行で遡ることが出来ない stream&lt;/li&gt;
+  &lt;li&gt;流れを遡ることが出来る stream&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;これ以降、上記をそれぞれ none_seekable と seekable とします。&lt;/p&gt;
+&lt;h1&gt;none_seekable と seekable の使い分け&lt;/h1&gt;
+&lt;p&gt;上記の通り、stream には none_seekable と seekable の 2 つのタイプが存在します。&lt;/p&gt;
+&lt;p&gt;では、実際のプログラムでは stream はどう使い分けるべきか？ と考えた場合、
+  seekable である必要がない場合は極力 none_seekable を使うべきです。&lt;/p&gt;
+&lt;p&gt;なぜならば、
+  seekable は none_seekable を包括する概念であり、
+  seekable な stream は none_seekable として使用することが出来ますが、
+  none_seekable な stream は seekable として使用することが出来ないからです。&lt;/p&gt;
+&lt;p&gt;次に、疑似言語を使って説明します。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+fn funcA( data: seekable ) {
+  sub( data );
+}
+fn funcB( data: none_seekable ) {
+  sub( data );
+}
+&lt;/pre&gt;
+&lt;p&gt;上記は、 seekable な引数を持つ関数 funcA と、
+  none_seekable な引数を持つ関数 funcB を定義する疑似言語コードです。
+  また sub() は、 none_seekable な引数を持つ関数とします。&lt;/p&gt;
+&lt;p&gt;ここで、この関数 funcA は seekable な stream でしか使用できないのに対し、
+  この関数 funcB は seekable, none_seekable どちらでも使用できることになり、
+  funcB は funcA よりも汎用性が高いと言えます。&lt;/p&gt;
+&lt;p&gt;関数の汎用性が高いことが良いプログラムである、とは一概には言えませんが、
+  ミドルウェアなどのライブラリでは、汎用性が高い方が良いとされます。&lt;/p&gt;
+&lt;p&gt;つまり、 stream を入力に持つ関数の処理においては、
+  seek や rewind の使用は極力避け、
+  none_seekable の stream で処理可能にすべきである、と言えます。&lt;/p&gt;
+&lt;p&gt;ただし例外として、 seek や rewind を使用しないと目標のパフォーマンスが出ないとか、
+  必要なワークメモリが規定を越えてしまう、等の問題がある場合は、
+  無理に none_seekable で処理する必要はありません。&lt;/p&gt;
+&lt;p&gt;とはいえ、あくまでも原則は、
+  seekable ではなく none_seekable で処理できるかどうかを検討するべきです。&lt;/p&gt;
+&lt;p&gt;言語の組込みの型として seekable と none_seekable が分かれていない言語は、
+  結構あると思います。&lt;/p&gt;
+&lt;p&gt;そのような言語でも、
+  seekable と none_seekable の考え方自体は有効なので実践してください。&lt;/p&gt;
+&lt;h1&gt;none_seekable で処理することのメリット&lt;/h1&gt;
+&lt;p&gt;seekable ではなく none_seekable で処理することのメリットとして、
+  Web ブラウザでの処理を例に挙げて説明します。&lt;/p&gt;
+&lt;p&gt;もしもブラウザの処理が全て seekable であった場合、
+  ブラウジングスピードが遅くなることが予想されます。&lt;/p&gt;
+&lt;p&gt;なぜなら、Web ブラウザは、サーバから HTML をダウンロードし、
+  HTML 内のリンクを抽出し、そのリンクをさらにダウンロードします。
+  そしてリンクが画像の場合、画像をデコードして表示します。&lt;/p&gt;
+&lt;p&gt;画像のデコード処理が none_seekable であるならば、
+  画像データのダウンロード開始と同時にデコード処理が開始でき、
+  画像データのダウンロード終了とほぼ同時にデコード処理を完了できます。&lt;/p&gt;
+&lt;p&gt;一方でもしも画像のデコード処理が seekable だった場合、
+  画像データをダウンロード終了してからデコード処理を行なわなければならず、
+  その分タイムロスになります。
+  さらに欠点はタイムロスだけでなく、
+  画像データの全てをダウンロードして一旦 RAM やストレージに格納しておく必要があり、
+  その分のリソースを消費することになります。&lt;/p&gt;
+&lt;p&gt;画像データのサイズなんてイマドキのハードウェアスペックなら無視できる、
+  という意見もあるかもしれませんが、例えば 8K の低圧縮画像などは軽く数 10MB を越えます。
+  こういった画像のデータを全てダウンロードしてからデコードするなんてしてたら、
+  無駄にリソースを消費することが分かると思います。&lt;/p&gt;
+&lt;p&gt;また、最近はほとんど使われていませんが、
+  progressive JPEG なんて画像フォーマットが使われていた時期がありましたが、
+  これは none_seekable で処理して始めて意味のあるものです。&lt;/p&gt;
+&lt;p&gt;progressive JPEG を簡単に説明すると、
+  画像データの一部をダウンロードするだけで、低解像度の画像をデコードできる技術で、
+  ダウンロードが進むごとにデコード結果の解像度が上がるというものです。&lt;/p&gt;
+&lt;p&gt;これは、ネットワークの通信速度が低速なころに使用されていた画像フォーマットで、
+  いまではほとんど使われなくなったものですが、
+  none_seekable で処理しなければ全く意味のないものです。&lt;/p&gt;
+&lt;p&gt;他にも none_seekable で処理することのメリットとして、
+  動画配信に代表されるストリーミングサービスがあります。&lt;/p&gt;
+&lt;p&gt;あれも、 none_seekable が前提にあるからこそ可能なサービスです。&lt;/p&gt;
+&lt;p&gt;「ストリーミングサービスが none_seekable だ」と書くと
+  「Youtube はシークできるぞ」とかツッコミがあると思うので一応補足しておきます。&lt;/p&gt;
+&lt;p&gt;たしかに Youtube などの動画配信サービスはシークできるのが当たり前です。
+  しかし、通常再生時は none_seekable で処理していて、
+  シークなどの操作が入った時だけ、
+  サーバからデータをダウンロードしなおして処理しています。
+  つまり、基本は none_seekable です。&lt;/p&gt;
+&lt;p&gt;もしも動画データが seekable 前提だった場合、
+  動画データを全てダウンロードしてからでないと再生できないか、
+  seek 処理が大量に発生してサーバ間の通信負荷が非常に高くなることが予想されます。&lt;/p&gt;
+&lt;h1&gt;データフォーマット&lt;/h1&gt;
+&lt;p&gt;stream を処理する際に、
+  それを none_seekable として扱うには、
+  stream に流れるデータのフォーマットが none_seekable として
+  扱い易い構造になっている必要があります。&lt;/p&gt;
+&lt;p&gt;データフォーマットが none_seekable として扱い難い構造の場合、
+  上記のように「目標のパフォーマンスが出ない」、「必要なワークメモリが規定を越えてしまう」
+  という問題が発生する可能性があります。&lt;/p&gt;
+&lt;p&gt;ある程度の大きさになるデータフォーマットを定義する時は、
+  必ず none_seekable で処理することを考えて定義しましょう。&lt;/p&gt;
+&lt;p&gt;なお、 stream で処理することが多い画像や音声などのデータフォーマットは、
+  基本的には none_seekable で処理できるように定義されています。&lt;/p&gt;
+&lt;p&gt;もしもそうでなければ、放送や動画配信でデジタルデータを扱うことは出来ません。&lt;/p&gt;
+&lt;p&gt;ちなみに、データの encode と decode の none_seekable での扱い易さは、
+  相反することがあります。&lt;/p&gt;
+&lt;p&gt;その場合、どちらかを優先するか、折衷案の検討が必要です。
+  一つ言えることは、作業バッファを 0 にすることはまず不可能なので、
+  どの程度の作業バッファサイズなら妥当かを判断することが重要です。&lt;/p&gt;
+&lt;h1&gt;例外&lt;/h1&gt;
+&lt;p&gt;none_seekable で処理することで、
+  ダウンロードとデコードを同時に処理できるため高速に処理できる、と説明しましたが、
+  一部例外があります。&lt;/p&gt;
+&lt;p&gt;それは、専用ハードウェアを使用してデコードする場合です。&lt;/p&gt;
+&lt;p&gt;HDD レコーダなどの家電製品では、
+  動画や音声を処理する専用ハードウェアを搭載しています。
+  それら専用ハードウェアは、データを渡すと高速に処理して結果を返してくれますが、
+  処理するデータは全て揃えてから渡さなければならない、
+  という制約があることがほとんどです。&lt;/p&gt;
+&lt;p&gt;その場合は、none_seekable でダウンロードとデコードを同時に処理するよりも、
+  専用ハードウェアを使用して処理する方が高速に処理できます。&lt;/p&gt;
+&lt;p&gt;ただし、当然専用ハードウェアであるため、処理できるデータは限られていますし、
+  そのような専用ハードウェアが利用できる環境は限られています。&lt;/p&gt;
+&lt;h1&gt;まとめ&lt;/h1&gt;
+&lt;p&gt;stream を扱う際は、次を注意する必要があります。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;極力 none_seekable で扱う&lt;/li&gt;
+  &lt;li&gt;データフォーマットを決める時点で、 none_seekable で扱えることを考慮する&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h1&gt;最後に&lt;/h1&gt;
+&lt;p&gt;なんでこんなことを書いたかというと、
+  最近とある画像コーデックのライブラリを扱うことがあったんですが、
+  そのライブラリへの入力が seekable であることを前提としていてムカついた、
+  という経験をしたためです。&lt;/p&gt;
+&lt;p&gt;データ streaming 処理を行なう場合の基本的な考えなので、
+  必ずこれらを考慮に入れて設計するようにお願いします。&lt;/p&gt;
 &lt;p&gt;以上。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="english" /></entry><entry><title type="html">python のクラスを JSON 化</title><link href="https://ifritjp.github.io/blog/site/2019/07/04/python-json.html" rel="alternate" type="text/html" title="python のクラスを JSON 化" /><published>2019-07-04T00:00:00+09:00</published><updated>2019-07-04T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/07/04/python-json</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/07/04/python-json.html">&lt;p&gt;&lt;a href=&quot;https://github.com/ifritJP/game-message-tts&quot;&gt;コレ&lt;/a&gt; を作るにあたって、データの serialize/deserialize の方法を調べた結果、
   &lt;a href=&quot;https://pypi.org/project/marshmallow-dataclass/&quot;&gt;marshmallow_dataclass&lt;/a&gt; に落ち着きました。&lt;/p&gt;
 &lt;p&gt;いくつか調べた中で、パッと見、直感的に出来そうだった、というだけの理由ですが。。&lt;/p&gt;
@@ -153,10 +339,14 @@ LogItem.Schema().load( json.loads( text ) ).data
 &lt;p&gt;とても簡単です。&lt;/p&gt;
 &lt;p&gt;ただ、躓いた点があったので、気をつけるべき点として書いておきます。&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;&lt;code&gt;@dataclass&lt;/code&gt; デコレータを付けたクラスのコンストラクタ __init__ を宣言しない。&lt;/li&gt;
-  &lt;li&gt;&lt;code&gt;@dataclass&lt;/code&gt; デコレータを付けたクラスに load() @staticmethod を宣言しない。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;これらを宣言すると、 エラーします。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="python" /></entry><entry><title type="html">ゲームのメッセージ欄に表示されたメッセージの読み上げシステム</title><link href="https://ifritjp.github.io/blog/site/2019/06/28/text-to-speech.html" rel="alternate" type="text/html" title="ゲームのメッセージ欄に表示されたメッセージの読み上げシステム" /><published>2019-06-28T00:00:00+09:00</published><updated>2019-06-28T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/06/28/text-to-speech</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/06/28/text-to-speech.html">&lt;p&gt;4 月頃から、英語のレベルを上げるため参考書を買って勉強をしている。&lt;/p&gt;
+  &lt;li&gt;python3.7 以降を使用する&lt;/li&gt;
+  &lt;li&gt;&lt;code&gt;@dataclass&lt;/code&gt; デコレータを付けたクラスに次を宣言してはならない
+    &lt;ul&gt;
+      &lt;li&gt;コンストラクタ __init__&lt;/li&gt;
+      &lt;li&gt;@staticmethod load()&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;</content><author><name>ifritJP</name></author><category term="python" /></entry><entry><title type="html">ゲームのメッセージ欄に表示されたメッセージの読み上げシステム</title><link href="https://ifritjp.github.io/blog/site/2019/06/28/text-to-speech.html" rel="alternate" type="text/html" title="ゲームのメッセージ欄に表示されたメッセージの読み上げシステム" /><published>2019-06-28T00:00:00+09:00</published><updated>2019-06-28T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/06/28/text-to-speech</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/06/28/text-to-speech.html">&lt;p&gt;4 月頃から、英語のレベルを上げるため参考書を買って勉強をしている。&lt;/p&gt;
 &lt;p&gt;その参考書を使った最低限の基礎英語の復習は終ったので、次のステップに進むことにした。&lt;/p&gt;
 &lt;p&gt;基礎が終った後の学習方法には何が良いのか色々と調べてみたが、
   色々な意見があるが最終的には「持続できるものが良い」というのが結論のようだ。&lt;/p&gt;
@@ -1018,5 +1208,4 @@ $ git clone https://github.com/ifritJP/org-qiita-el
     &lt;/ul&gt;
   &lt;/li&gt;
 &lt;/ul&gt;
-&lt;p&gt;次回は、外出先でのソフト開発に耐えられる環境について書きたいと思います。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="emacs org qiita" /></entry><entry><title type="html">この度 Lua 神を拝命しました</title><link href="https://ifritjp.github.io/blog/site/2019/03/16/lua.html" rel="alternate" type="text/html" title="この度 Lua 神を拝命しました" /><published>2019-03-16T00:00:00+09:00</published><updated>2019-03-16T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/03/16/lua</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/03/16/lua.html">&lt;p&gt;forkwell の github 分析結果が面白かったので貼っておく。&lt;/p&gt;
-&lt;p&gt;&lt;img src=&quot;forkwell.png&quot; alt=&quot;forkwell.png&quot; /&gt;&lt;/p&gt;</content><author><name></name></author><category term="mew outlook" /></entry></feed>
+&lt;p&gt;次回は、外出先でのソフト開発に耐えられる環境について書きたいと思います。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="emacs org qiita" /></entry></feed>
