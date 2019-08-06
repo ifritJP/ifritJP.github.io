@@ -1,4 +1,151 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-08-02T20:15:11+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">如何なる開発手法、プログラム言語を用いても、日本の全てのソフトウェアプロジェクトは必ず技術的負債になる</title><link href="https://ifritjp.github.io/blog/site/2019/08/02/engineering.html" rel="alternate" type="text/html" title="如何なる開発手法、プログラム言語を用いても、日本の全てのソフトウェアプロジェクトは必ず技術的負債になる" /><published>2019-08-02T00:00:00+09:00</published><updated>2019-08-02T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/08/02/engineering</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/08/02/engineering.html">&lt;p&gt;「日本の全てのソフトウェアプロジェクトは必ず技術的負債になる」というタイトルですが、
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-08-06T21:10:58+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">C 言語の可変長引数 (va_list) 処理のオーバーヘッド</title><link href="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html" rel="alternate" type="text/html" title="C 言語の可変長引数 (va_list) 処理のオーバーヘッド" /><published>2019-08-06T00:00:00+09:00</published><updated>2019-08-06T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/08/06/va-performance</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html">&lt;p&gt;以前 C 言語の関数ポインタによる関数コールのオーバーヘッドがどの程度なのか調べたが、
+  今回は可変長引数(va_list)処理のオーバーヘッドについて調べてみた。&lt;/p&gt;
+&lt;h1&gt;結果&lt;/h1&gt;
+&lt;p&gt;初めに結果から書くと、&lt;/p&gt;
+&lt;pre class=&quot;example&quot;&gt;
+可変長引数(va_list)処理のオーバーヘッドは、めちゃめちゃ掛る。
+また、引数の数に応じて時間が増加する。
+&lt;/pre&gt;
+&lt;h1&gt;所感&lt;/h1&gt;
+&lt;p&gt;今回の実験によって、 va_list 処理には当初の想定を遥かに越えたオーバーヘッドが
+  かかることが分った。&lt;/p&gt;
+&lt;p&gt;個人的には、コンパイラがもっと賢くやってくれているものだと思っていたが、
+  実際には全く賢くなかった。&lt;/p&gt;
+&lt;p&gt;C 言語で可変長引数を積極的に使用することはあまりないとは思うが、
+  可変長引数の使用はオーバーヘッドを十分考慮に入れて慎重に検討するべきだということが判った。&lt;/p&gt;
+&lt;p&gt;この可変長引数のオーバーヘッドを調べたのは、
+  LuneScript のメソッド呼び出し処理を C 言語にトランスコンパイルした際に
+  可変長引数を利用しようと思ったからなのだが、
+  この結果から可変長引数は使えないことが分った。&lt;/p&gt;
+&lt;p&gt;対応する前に結果が分って良かったが、
+  可変長引数が使えなくなったのは当初の目論見が崩れてしまった。&lt;/p&gt;
+&lt;h1&gt;実験詳細&lt;/h1&gt;
+&lt;p&gt;ここでは、今回の実験方法について説明する。&lt;/p&gt;
+&lt;h2&gt;コード&lt;/h2&gt;
+&lt;p&gt;実験用に次の C 言語コードを作成した。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;c&quot;&gt;
+int func( int val1, int val2 ) {
+    return val1 + val2;
+}
+int sub( int dummy, int val1, int val2 ) {
+    return func( val1, val2 );
+}
+
+
+int funcv2( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    return val1 + val2;
+}
+int subv2( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv2( ap );
+    
+    va_end( ap );
+    return val;
+}
+&lt;/pre&gt;
+&lt;p&gt;func, sub は、可変長引数を使用しないパターン。
+  funcv2, subv2 は、可変長引数を使用しするパターン。&lt;/p&gt;
+&lt;p&gt;ちなみにコードの全体は次の通りである。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;c&quot;&gt;
+#include &amp;lt;sys/time.h&amp;gt;
+#include &amp;lt;time.h&amp;gt;
+#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;stdarg.h&amp;gt;
+
+int func( int val1, int val2 ) {
+    return val1 + val2;
+}
+
+int sub( int dummy, int val1, int val2 ) {
+    return func( val1, val2 );
+}
+
+
+int funcv2( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    return val1 + val2;
+}
+
+int subv2( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv2( ap );
+    
+    va_end( ap );
+    return val;
+}
+
+int funcv3( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    int val3 = va_arg( ap, int );
+    return val1 + val2 + val3;
+}
+
+int subv3( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv3( ap );
+    
+    va_end( ap );
+    return val;
+}
+
+
+double getTime( void ) {
+    struct timeval tm;
+    gettimeofday( &amp;amp;tm, NULL );
+    return tm.tv_sec + tm.tv_usec / 1000000.0;
+}
+
+
+main( int argc, const char * argv[] ) {
+    long long loop = strtoll( argv[ 1 ], NULL, 10 ) * 1000ll;
+    long long count = 0;
+    int sum = 0;
+
+    double prev = getTime();
+    if ( strcmp( argv[ 2 ], &amp;quot;1&amp;quot; ) == 0 ) {
+        for ( count = 0; count &amp;lt; loop; count++ ) {
+            sum += sub( 0, 1, 2 );
+        }
+    }
+    else if ( strcmp( argv[ 2 ], &amp;quot;2&amp;quot; ) == 0 ) {
+        for ( count = 0; count &amp;lt; loop; count++ ) {
+            sum += subv2( 0, 1, 2 );
+        }
+    }
+    else {
+        for ( count = 0; count &amp;lt; loop; count++ ) {
+            sum += subv3( 0, 1, 2, 3 );
+        }
+    }
+    printf( &amp;quot;%s: %lld time = %g, %d\n&amp;quot;, argv[ 2 ], loop, getTime() - prev, sum );
+}
+
+&lt;/pre&gt;
+&lt;p&gt;このプログラムは、コマンドラインの引数によって
+  sub, subv2, subv3 を指定の回数分実行し、実行時間を表示する。&lt;/p&gt;
+&lt;h2&gt;計測結果&lt;/h2&gt;
+&lt;table&gt;
+  &lt;tr&gt;&lt;th&gt;&lt;/th&gt;&lt;th&gt;時間(秒)&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;固定長引数(2 引数)&lt;/td&gt;&lt;td&gt;0.62&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;可変長引数(2 引数)&lt;/td&gt;&lt;td&gt;11.95&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;可変長引数(3 引数)&lt;/td&gt;&lt;td&gt;16.16&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;上記結果を見ると分かる通り、可変長引数は処理時間の桁が違う。&lt;/p&gt;
+&lt;p&gt;また、引数の数に応じて時間が増加する。&lt;/p&gt;
+&lt;p&gt;以上&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">如何なる開発手法、プログラム言語を用いても、日本の全てのソフトウェアプロジェクトは必ず技術的負債になる</title><link href="https://ifritjp.github.io/blog/site/2019/08/02/engineering.html" rel="alternate" type="text/html" title="如何なる開発手法、プログラム言語を用いても、日本の全てのソフトウェアプロジェクトは必ず技術的負債になる" /><published>2019-08-02T00:00:00+09:00</published><updated>2019-08-02T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/08/02/engineering</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/08/02/engineering.html">&lt;p&gt;「日本の全てのソフトウェアプロジェクトは必ず技術的負債になる」というタイトルですが、
   次の条件を満す場合に限ります。&lt;/p&gt;
 &lt;p&gt;&lt;b&gt;「プロジェクトに関わるソフトウェアエンジニアの大半が技術に無関心」&lt;/b&gt;&lt;/p&gt;
 &lt;h1&gt;動機&lt;/h1&gt;
@@ -1045,147 +1192,4 @@ none: time = 7.63887
 &lt;h2&gt;my-gud-mode-func&lt;/h2&gt;
 &lt;p&gt;上記関数を C-cC-c に登録するための関数。&lt;/p&gt;
 &lt;p&gt;gud-mode 時にキーバインドを登録するように gud-mode-hook に追加。&lt;/p&gt;
-&lt;p&gt;以上。&lt;/p&gt;</content><author><name></name></author><category term="LuneScript" /></entry><entry><title type="html">『エンジニア就職志望者が情報工学科に行くのは間違い』は間違い</title><link href="https://ifritjp.github.io/blog/site/2019/04/18/engineer.html" rel="alternate" type="text/html" title="『エンジニア就職志望者が情報工学科に行くのは間違い』は間違い" /><published>2019-04-18T00:00:00+09:00</published><updated>2019-04-18T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/04/18/engineer</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/04/18/engineer.html">&lt;p&gt;たまたま見つけたブログの記事で気になったものがあったので、
-  自分の意見を書いておきます。&lt;/p&gt;
-&lt;h1&gt;気になったブログの記事&lt;/h1&gt;
-&lt;p&gt;「エンジニア就職志望者が情報工学科に行くのは間違いです！学べることが違います！」&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://www.torikun.com/entry/engineer-jouhoukougaku&quot;&gt;https://www.torikun.com/entry/engineer-jouhoukougaku&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;この記事を要約すると、&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;大学の情報工学科のプログラミング単位取得だけでは
-    学習時間が足りないのでプログラミングスキルを上げるのは難しい。&lt;/li&gt;
-  &lt;li&gt;スキルを上げるにはプログラミングスクールがオススメ&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;というモノです。&lt;/p&gt;
-&lt;p&gt;まぁ確かに、
-  大学の講義・実習だけで十分なプログラミングスキルを身に付けるのは不可能であるのは事実です。&lt;/p&gt;
-&lt;p&gt;とはいえ、『エンジニア就職志望者が情報工学科に行くのは間違い』というのは、
-  流石に異論があります。&lt;/p&gt;
-&lt;p&gt;ブログの著者と自分とで異なる意見になる理由を考えると、&lt;/p&gt;
-&lt;p&gt;&lt;b&gt;【「エンジニア」という言葉の定義が違う】&lt;/b&gt;&lt;/p&gt;
-&lt;p&gt;から、だと思います。&lt;/p&gt;
-&lt;h1&gt;「エンジニア」とは&lt;/h1&gt;
-&lt;p&gt;上記の記事では、エンジニアには次の能力が必要だとしています。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;プログラミングスキル&lt;/li&gt;
-  &lt;li&gt;コミュニケーション能力&lt;/li&gt;
-  &lt;li&gt;マネジメント能力&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;これらは確かに重要です。&lt;/p&gt;
-&lt;p&gt;というか、「コミュニケーション能力」や「マネジメント能力」は、
-  エンジニアでなくても社会で働くには必要な能力です。&lt;/p&gt;
-&lt;p&gt;つまりこの著者は、&lt;/p&gt;
-&lt;p&gt;&lt;b&gt;【「エンジニア」に特化して必要な能力は「プログラミングスキル」だけ】&lt;/b&gt;&lt;/p&gt;
-&lt;p&gt;と主張しているように読めます。&lt;/p&gt;
-&lt;p&gt;これは、私の考えと完全に異なります。&lt;/p&gt;
-&lt;p&gt;まず、私が考える「エンジニア」像を説明します。&lt;/p&gt;
-&lt;p&gt;&lt;b&gt;エンジニアとは、曖昧なゴールイメージを技術によってスマートな形で実現できる能力を持つ人。&lt;/b&gt;&lt;/p&gt;
-&lt;p&gt;例えば「家を建てる」というゴールイメージがあるとします。&lt;/p&gt;
-&lt;p&gt;家を建てることは情報系の「エンジニア」の仕事ではないと思いますが、
-  あくまで例として考えてください。&lt;/p&gt;
-&lt;p&gt;この場合、次のような様々なことを決定し、設計書を作成して建築する必要があります。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;建てる場所&lt;/li&gt;
-  &lt;li&gt;予算&lt;/li&gt;
-  &lt;li&gt;広さ&lt;/li&gt;
-  &lt;li&gt;デザイン&lt;/li&gt;
-  &lt;li&gt;機能性&lt;/li&gt;
-  &lt;li&gt;耐久性&lt;/li&gt;
-  &lt;li&gt;拡張性&lt;/li&gt;
-  &lt;li&gt;メンテナンス性&lt;/li&gt;
-  &lt;li&gt;建材&lt;/li&gt;
-  &lt;li&gt;日程&lt;/li&gt;
-  &lt;li&gt;etc&amp;#8230;&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;このように、
-  曖昧なゴールイメージを実現するために具体的な作業項目に分解し、
-  分解された作業の課題を洗い出し、
-  課題を解決し、
-  イメージを具現化する技術を持つのが、私が考える「エンジニア」です。&lt;/p&gt;
-&lt;p&gt;もちろん、現実には一人のエンジニアが全てを担当できる訳ではありません。&lt;/p&gt;
-&lt;p&gt;しかし、ブログの著者のような「エンジニア ＝ プログラミングスキルのある人 」では、
-  絶対にありません。&lt;/p&gt;
-&lt;p&gt;またブログの記事には、次の記載があります。&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-例えば、大学２年生の時にはフーリエ変換という数学の公式を習います。
-この技術はパソコンの仕組みを突き詰めて行くと重要になってくる有名な数式です。
-微分とか積分とかいろいろ難しい公式を覚えて問題を解いていきます。
-エンジニアの方ならおわかりかと思いますが、
-エンジニアとして仕事をする上でこのフーリエ変換を使う人はぜんぜんいません。
-&lt;/pre&gt;
-&lt;p&gt;確かに全てのエンジニアが微分・積分を必要とする訳ではないです。
-  しかし、技術の背景を知っているエンジニアと、
-  プログラミングしか出来ないプログラマーでは、担当できる範囲が全く違ってきます。&lt;/p&gt;
-&lt;p&gt;たとえばディープラーニングなどの技術は、
-  プログラミングしか出来ないプログラマーでは &lt;b&gt;絶対&lt;/b&gt; に作り出すことは出来ません。
-  様々な知識を持つエンジニアが集結してこそ可能なものです。&lt;/p&gt;
-&lt;p&gt;もちろん大学の講義レベルの知識だけで、すぐに何かが実現出来るということはありません。
-  しかし、大学の講義はさまざまな技術の基礎そのものであり、
-  その基礎を身に付けているかどうかで、その後の応用が出来るかどうかの違いに繋がってきます。&lt;/p&gt;
-&lt;p&gt;特に基礎部分は、体系的に学んだ方がより深い理解につながります。
-  そして大学の情報工学部の単位は、体系的に学ぶことが出来る構成になっています。&lt;/p&gt;
-&lt;p&gt;つまり大学の情報工学部は、『「エンジニア」になるためのもっとも早道である』と言えます。&lt;/p&gt;
-&lt;h1&gt;認識が異なる理由&lt;/h1&gt;
-&lt;p&gt;では、ブログの著者は何故「エンジニア ＝ プログラミングスキルのある人」という
-  認識なのでしょうか？&lt;/p&gt;
-&lt;p&gt;あくまで私の想像ですが、これは日本のソフトウェア開発業界の特色によるものだと思います。&lt;/p&gt;
-&lt;p&gt;その特色とは、いわゆる「ゼネコン方式」です。&lt;/p&gt;
-&lt;p&gt;&lt;b&gt;大手が仕様を決め、実装を外部にアウトソーシングする。&lt;/b&gt;&lt;/p&gt;
-&lt;p&gt;ブログ著者にとって「エンジニア」とはアウトソーシング先であり、
-  「エンジニアは安い金額で実装さえ出来れば良い」という思考なのではないでしょうか？&lt;/p&gt;
-&lt;p&gt;日本には、このような思考が蔓延しているため、
-  エンジニアの待遇は良くならないし、
-  技術レベルも世界から離される一方なのではないでしょうか？&lt;/p&gt;
-&lt;p&gt;なお、ブログ著者のプロフィールを見ると、 IBM Tokyo Lab に務めているとあります。
-  いわゆる大手であるのは間違いないでしょう。&lt;/p&gt;
-&lt;h1&gt;エンジニア就職志望者はどうあるべきか&lt;/h1&gt;
-&lt;p&gt;私の考えは、「エンジニア就職志望者は様々な技術を学ぶべき」です。&lt;/p&gt;
-&lt;p&gt;「他人が作った仕様を元に、プログラムだけ組んでいれば幸せ」という人は、
-  ブログ著者が主張するようにプログラミングスクールなりに行けば良いと思います。&lt;/p&gt;
-&lt;p&gt;ただ、日本のゼネコン方式ソフトウェア開発を請け負う、
-  いわゆる SIer の給与は発注元の企業よりもかなり低いのが一般的です。
-  それこそ IBM の半分かそれ以下ではないでしょうか？
-  そのことは認識しておく必要があります。&lt;/p&gt;
-&lt;p&gt;なお、エンジニア志望者が行くべきなのは、情報工学科でなくても良いと思います。&lt;/p&gt;
-&lt;p&gt;というのも、私の「エンジニア」の定義は広いので、
-  情報工学科では収まりきらないためです。
-  何を極めたいかによって、何を学ぶべきかは変ってくるでしょう。&lt;/p&gt;
-&lt;p&gt;一つだけ必須技術を上げるならば、それは &lt;b&gt;「英語」&lt;/b&gt; です。&lt;/p&gt;
-&lt;p&gt;今後の「エンジニア」業界で、
-  日本が世界をリードすることは極一部を除いて無いでしょう。&lt;/p&gt;
-&lt;p&gt;つまり、新しい技術は海外から導入することになります。
-  その時、その技術の解説は英語であるのが一般的です。&lt;/p&gt;
-&lt;p&gt;英語が出来れば、いち早く技術の導入が可能になります。&lt;/p&gt;
-&lt;p&gt;まぁ、これは今に始まったことではなく、
-  それこそコンピュータサイエンスという言葉が一般化したころから英語が標準でした。&lt;/p&gt;
-&lt;p&gt;ただ平成の時代は、&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;今よりは技術の進歩が激しくなく、日本語の翻訳を待っていてもまだどうにかなっていた&lt;/li&gt;
-  &lt;li&gt;国内で働いているだけなら、外国人を相手にする機会がほとんどなかった&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;などの理由から「英語は出来た方が良い」というレベルでした。&lt;/p&gt;
-&lt;p&gt;しかし現在は、&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;技術の進歩が激しく、日本語の翻訳を待っていたら周回遅れどころか浦島太郎になる&lt;/li&gt;
-  &lt;li&gt;ある程度新しい技術を取り入れる場合、国内の日本人だけで開発するのが難しくなった&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;などで、まともな「エンジニア」として働くには、英語はなくてはならない状況です。&lt;/p&gt;
-&lt;p&gt;もしもあなたがエンジニアを志す学生で、英語を苦手としているのならば、
-  留年してでも英語は習得しておくべきです。&lt;/p&gt;
-&lt;p&gt;世界と戦う意思のあるまともな日本の企業でエンジニアとして働くのであれば、
-  入社資格として英語のレベルを問われるでしょう。&lt;/p&gt;
-&lt;p&gt;逆に英語のレベルを不問とするような会社は、
-  世界と戦うことを諦めているか、
-  あなたを安く使える労働力と捉えているかのどちらかの可能性が高いです。&lt;/p&gt;
-&lt;p&gt;また、英語がまともに出来れば外資系や海外で働くことも選択肢になります。&lt;/p&gt;
-&lt;p&gt;英語習得のために大学を 1 年留年したとしても、
-  その後のエンジニア人生を考えれば充分おつりがくるでしょう。&lt;/p&gt;
-&lt;p&gt;英語が出来ない私だからこそ、
-  英語が出来ない現状がどれほどマズいことかを、
-  この歳になって身をもって感じています。&lt;/p&gt;
-&lt;p&gt;私はこれまで何度も英語の学習に挑戦と挫折を繰り返してきましたが、
-  今の状況なって本当にマズいことを実感し、
-  ラストチャンスとして人生で何度目かのトライをしています。&lt;/p&gt;
-&lt;p&gt;皆さんは、私のような思いをしないで済むように、英語だけは身につけてください。&lt;/p&gt;
-&lt;p&gt;もしかしたら、英語よりも中国語の方が良いかもしれませんが、
-  それはまだ何ともいえない状況です。&lt;/p&gt;</content><author><name></name></author><category term="LuneScript" /></entry></feed>
+&lt;p&gt;以上。&lt;/p&gt;</content><author><name></name></author><category term="LuneScript" /></entry></feed>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>C 言語の可変長引数 (va_list) 処理のオーバーヘッド | hoge blog</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="C 言語の可変長引数 (va_list) 処理のオーバーヘッド" />
+<meta name="author" content="ifritJP" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<meta property="og:description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<link rel="canonical" href="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html" />
+<meta property="og:site_name" content="hoge blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-08-06T00:00:00+09:00" />
+<script type="application/ld+json">
+{"description":"Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。","author":{"@type":"Person","name":"ifritJP"},"@type":"BlogPosting","url":"https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html","headline":"C 言語の可変長引数 (va_list) 処理のオーバーヘッド","dateModified":"2019-08-06T00:00:00+09:00","datePublished":"2019-08-06T00:00:00+09:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/blog/site/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ifritjp.github.io/blog/site/feed.xml" title="hoge blog" />
+
+
+
+<meta name="twitter:card" content="summary">
+
+  <meta name="twitter:title" content="C 言語の可変長引数 (va_list) 処理のオーバーヘッド" />
+
+<meta name="twitter:url" content="/blog/site/2019/08/06/va-performance.html">
+<meta name="twitter:description" content="hoge blog">
+<meta name="twitter:image" content="https://ifritjp.github.io/blog/favicon.png"><body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/blog/site/">hoge blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/blog/site/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">C 言語の可変長引数 (va_list) 処理のオーバーヘッド</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-08-06T00:00:00+09:00" itemprop="datePublished">Aug 6, 2019
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">ifritJP</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+     <p>以前 C 言語の関数ポインタによる関数コールのオーバーヘッドがどの程度なのか調べたが、
+  今回は可変長引数(va_list)処理のオーバーヘッドについて調べてみた。</p>
+<h1>結果</h1>
+<p>初めに結果から書くと、</p>
+<pre class="example">
+可変長引数(va_list)処理のオーバーヘッドは、めちゃめちゃ掛る。
+また、引数の数に応じて時間が増加する。
+</pre>
+<h1>所感</h1>
+<p>今回の実験によって、 va_list 処理には当初の想定を遥かに越えたオーバーヘッドが
+  かかることが分った。</p>
+<p>個人的には、コンパイラがもっと賢くやってくれているものだと思っていたが、
+  実際には全く賢くなかった。</p>
+<p>C 言語で可変長引数を積極的に使用することはあまりないとは思うが、
+  可変長引数の使用はオーバーヘッドを十分考慮に入れて慎重に検討するべきだということが判った。</p>
+<p>この可変長引数のオーバーヘッドを調べたのは、
+  LuneScript のメソッド呼び出し処理を C 言語にトランスコンパイルした際に
+  可変長引数を利用しようと思ったからなのだが、
+  この結果から可変長引数は使えないことが分った。</p>
+<p>対応する前に結果が分って良かったが、
+  可変長引数が使えなくなったのは当初の目論見が崩れてしまった。</p>
+<h1>実験詳細</h1>
+<p>ここでは、今回の実験方法について説明する。</p>
+<h2>コード</h2>
+<p>実験用に次の C 言語コードを作成した。</p>
+<pre class="src" lang="c">
+int func( int val1, int val2 ) {
+    return val1 + val2;
+}
+int sub( int dummy, int val1, int val2 ) {
+    return func( val1, val2 );
+}
+
+
+int funcv2( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    return val1 + val2;
+}
+int subv2( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv2( ap );
+    
+    va_end( ap );
+    return val;
+}
+</pre>
+<p>func, sub は、可変長引数を使用しないパターン。
+  funcv2, subv2 は、可変長引数を使用しするパターン。</p>
+<p>ちなみにコードの全体は次の通りである。</p>
+<pre class="src" lang="c">
+#include &lt;sys/time.h&gt;
+#include &lt;time.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;stdarg.h&gt;
+
+int func( int val1, int val2 ) {
+    return val1 + val2;
+}
+
+int sub( int dummy, int val1, int val2 ) {
+    return func( val1, val2 );
+}
+
+
+int funcv2( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    return val1 + val2;
+}
+
+int subv2( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv2( ap );
+    
+    va_end( ap );
+    return val;
+}
+
+int funcv3( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    int val3 = va_arg( ap, int );
+    return val1 + val2 + val3;
+}
+
+int subv3( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv3( ap );
+    
+    va_end( ap );
+    return val;
+}
+
+
+double getTime( void ) {
+    struct timeval tm;
+    gettimeofday( &amp;tm, NULL );
+    return tm.tv_sec + tm.tv_usec / 1000000.0;
+}
+
+
+main( int argc, const char * argv[] ) {
+    long long loop = strtoll( argv[ 1 ], NULL, 10 ) * 1000ll;
+    long long count = 0;
+    int sum = 0;
+
+    double prev = getTime();
+    if ( strcmp( argv[ 2 ], &quot;1&quot; ) == 0 ) {
+        for ( count = 0; count &lt; loop; count++ ) {
+            sum += sub( 0, 1, 2 );
+        }
+    }
+    else if ( strcmp( argv[ 2 ], &quot;2&quot; ) == 0 ) {
+        for ( count = 0; count &lt; loop; count++ ) {
+            sum += subv2( 0, 1, 2 );
+        }
+    }
+    else {
+        for ( count = 0; count &lt; loop; count++ ) {
+            sum += subv3( 0, 1, 2, 3 );
+        }
+    }
+    printf( &quot;%s: %lld time = %g, %d\n&quot;, argv[ 2 ], loop, getTime() - prev, sum );
+}
+
+</pre>
+<p>このプログラムは、コマンドラインの引数によって
+  sub, subv2, subv3 を指定の回数分実行し、実行時間を表示する。</p>
+<h2>計測結果</h2>
+<table>
+  <tr><th></th><th>時間(秒)</th></tr>
+  <tr><td>固定長引数(2 引数)</td><td>0.62</td></tr>
+  <tr><td>可変長引数(2 引数)</td><td>11.95</td></tr>
+  <tr><td>可変長引数(3 引数)</td><td>16.16</td></tr>
+</table>
+<p>上記結果を見ると分かる通り、可変長引数は処理時間の桁が違う。</p>
+<p>また、引数の数に応じて時間が増加する。</p>
+<p>以上</p>
+ 
+  </div><a class="u-url" href="/blog/site/2019/08/06/va-performance.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/blog/site/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">hoge blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">hoge blog</li><li><a class="u-email" href="mailto:"></a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/ifritJP"><svg class="svg-icon"><use xlink:href="/blog/site/assets/minima-social-icons.svg#github"></use></svg> <span class="username">ifritJP</span></a></li><li><a href="https://www.twitter.com/dwarfJP"><svg class="svg-icon"><use xlink:href="/blog/site/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">dwarfJP</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
