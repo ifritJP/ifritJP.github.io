@@ -9,6 +9,14 @@
 
 *2019-06-12: my-gud-stop, my-gud-mode-func を追加*
 
+*2019-08-26: dedicate の抑制追加*
+
+なお、M-x gud-gdb で起動すれば従来形式のインタフェースが利用できるが、
+ブレークポイントが表示されない等の不具合があるので M-x gdb を利用する。
+
+それにしても、新しい M-x gdb のインタフェースは emacs っぽくないと思うんだけど、
+オレがおっさんだからそう思うんだろうか？
+
 * emacs の gdb 設定
 
 #+BEGIN_SRC el
@@ -23,6 +31,16 @@
 
 ;; input/output バッファが勝手に表示されるのはウザいので、抑制
 (setq gdb-display-io-nopopup t)
+
+;; input/output バッファが dedicate されるのはウザいので、抑制
+(defadvice gdb-display-buffer (around gdb-display-buffer)
+  (let (window)
+    (setq window ad-do-it)
+    (set-window-dedicated-p window nil)
+    window
+  ))
+(ad-activate 'gdb-display-buffer)
+
 
 ;; gdb バッファの C-c C-c ではプログラムが停止しなかったので、修正
 (defun my-gud-stop ()
@@ -108,5 +126,13 @@ emacs26.2 だと C-cC-c でプログラムを停止できない。
 
 gud-mode 時にキーバインドを登録するように gud-mode-hook に追加。
 
+** dedicate
+
+普通に使うと、 gud の input/output バッファの window が dedicate される。
+
+dedicate されると、 C-x b などでバッファを切り替えられなくなる。
+
+個人的にこれは使い勝手が悪いので、
+dedicate されないように gdb-display-buffer の処理をかえる。
 
 以上。
