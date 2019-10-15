@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en"><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.5.0 -->
+<title>C 言語のラッパー関数オーバーヘッド | hoge blog</title>
+<meta name="generator" content="Jekyll v3.8.5" />
+<meta property="og:title" content="C 言語のラッパー関数オーバーヘッド" />
+<meta name="author" content="ifritJP" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<meta property="og:description" content="Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。" />
+<link rel="canonical" href="https://ifritjp.github.io/blog/site/2019/10/15/wrapper-overhead.html" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/site/2019/10/15/wrapper-overhead.html" />
+<meta property="og:site_name" content="hoge blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-10-15T00:00:00+09:00" />
+<script type="application/ld+json">
+{"description":"Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。","author":{"@type":"Person","name":"ifritJP"},"@type":"BlogPosting","url":"https://ifritjp.github.io/blog/site/2019/10/15/wrapper-overhead.html","headline":"C 言語のラッパー関数オーバーヘッド","dateModified":"2019-10-15T00:00:00+09:00","datePublished":"2019-10-15T00:00:00+09:00","mainEntityOfPage":{"@type":"WebPage","@id":"https://ifritjp.github.io/blog/site/2019/10/15/wrapper-overhead.html"},"@context":"http://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/blog/site/assets/main.css"><link type="application/atom+xml" rel="alternate" href="https://ifritjp.github.io/blog/site/feed.xml" title="hoge blog" />
+
+
+
+<meta name="twitter:card" content="summary">
+
+  <meta name="twitter:title" content="C 言語のラッパー関数オーバーヘッド" />
+
+<meta name="twitter:url" content="/blog/site/2019/10/15/wrapper-overhead.html">
+<meta name="twitter:description" content="hoge blog">
+<meta name="twitter:image" content="https://ifritjp.github.io/blog/favicon.png"><body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/blog/site/">hoge blog</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/blog/site/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">C 言語のラッパー関数オーバーヘッド</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-10-15T00:00:00+09:00" itemprop="datePublished">Oct 15, 2019
+      </time>• <span itemprop="author" itemscope itemtype="http://schema.org/Person"><span class="p-author h-card" itemprop="name">ifritJP</span></span></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+     <p>プログラムを組む際、ラッパー関数を作ることは良くある。</p>
+<p>このラッパー関数のオーバーヘッドが気になったので簡単に調べてみた。</p>
+<p>計測用サンプルは次の通り。</p>
+<pre class="src" lang="c">
+#include&lt;stdio.h&gt;
+typedef void (func_t)( int val1, int val2 );
+void func( int val1, int val2 )
+{
+    printf( &quot;%d %d&quot;, val1, val2 );
+}
+void wrapper0( int val1, int val2 )
+{
+    func( val1, val2 );
+}
+void wrapper1( func_t * pFunc, int val1, int val2 )
+{
+    pFunc( val1, val2 );
+}
+void wrapper2( int val1, int val2, func_t * pFunc )
+{
+    pFunc( val1, val2 );
+}
+main() {
+    wrapper0( 0, 1 );
+    wrapper1( func, 0, 1 );
+    wrapper2( 0, 1, func );
+}
+</pre>
+<p>関数 func() をコールする 3 種類のラッパー関数 wrapper0, wrapper1, wrapper2 を用意した。</p>
+<p>それぞれのラッパー関数は次の形になっている。</p>
+<table>
+  <tr><th>ラッパー</th><th>引数</th></tr>
+  <tr><td>wrapper0</td><td>呼び出し先と同じ引数</td></tr>
+  <tr><td>wrapper1</td><td>ラッパー独自引数の後に呼び出し先と同じ引数</td></tr>
+  <tr><td>wrapper2</td><td>呼び出し先と同じ引数の後にラッパー独自引数</td></tr>
+</table>
+<p>これを gcc の x64 で -O の最適化した結果が次になる。
+  (func の処理は省略)</p>
+<pre class="src" lang="asm">
+0000000000000021 &lt;wrapper0&gt;:
+  21:	48 83 ec 08          	sub    $0x8,%rsp
+  25:	e8 00 00 00 00       	callq  2a &lt;wrapper0+0x9&gt;
+  2a:	48 83 c4 08          	add    $0x8,%rsp
+  2e:	c3                   	retq   
+
+000000000000002f &lt;wrapper1&gt;:
+  2f:	48 83 ec 08          	sub    $0x8,%rsp
+  33:	48 89 f8             	mov    %rdi,%rax
+  36:	89 f7                	mov    %esi,%edi
+  38:	89 d6                	mov    %edx,%esi
+  3a:	ff d0                	callq  *%rax
+  3c:	48 83 c4 08          	add    $0x8,%rsp
+  40:	c3                   	retq   
+
+0000000000000041 &lt;wrapper2&gt;:
+  41:	48 83 ec 08          	sub    $0x8,%rsp
+  45:	ff d2                	callq  *%rdx
+  47:	48 83 c4 08          	add    $0x8,%rsp
+  4b:	c3                   	retq   
+
+000000000000004c &lt;main&gt;:
+  4c:	48 83 ec 08          	sub    $0x8,%rsp
+  50:	be 01 00 00 00       	mov    $0x1,%esi
+  55:	bf 00 00 00 00       	mov    $0x0,%edi
+  5a:	e8 00 00 00 00       	callq  5f &lt;main+0x13&gt;
+  5f:	ba 01 00 00 00       	mov    $0x1,%edx
+  64:	be 00 00 00 00       	mov    $0x0,%esi
+  69:	bf 00 00 00 00       	mov    $0x0,%edi
+  6e:	e8 00 00 00 00       	callq  73 &lt;main+0x27&gt;
+  73:	ba 00 00 00 00       	mov    $0x0,%edx
+  78:	be 01 00 00 00       	mov    $0x1,%esi
+  7d:	bf 00 00 00 00       	mov    $0x0,%edi
+  82:	e8 00 00 00 00       	callq  87 &lt;main+0x3b&gt;
+  87:	b8 00 00 00 00       	mov    $0x0,%eax
+  8c:	48 83 c4 08          	add    $0x8,%rsp
+  90:	c3                   	retq   
+</pre>
+<p>上記通り wrapper0 と wrapper2 は、ほぼ同じコードになっており、
+  wrapper1 は引数をずらす処理が余分に入っている。</p>
+<p>想像通りの結果といえば想像通りだが、
+  ちゃんと最適化された処理になっている。</p>
+<p>以上のことから言えることは、
+  ラッパー関数独自の引数は、先頭ではなく末尾にもっていった方が良いということだ。</p>
+<p>ただし、ここまで最適化が効くケースは、
+  ラッパー関数内での目的の関数コールが先頭にある場合に限られるので、
+  目的の関数コールを先頭に持ってこれない場合は、気にしないで良いだろう。</p>
+<p>なお、 -O2 で最適化をかけると wrapper1, wrapper2 は次の処理に最適化された。</p>
+<pre class="src" lang="asm">
+0000000000000030 &lt;wrapper1&gt;:
+  30:	48 89 f8             	mov    %rdi,%rax
+  33:	89 f7                	mov    %esi,%edi
+  35:	89 d6                	mov    %edx,%esi
+  37:	ff e0                	jmpq   *%rax
+  39:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+0000000000000040 &lt;wrapper2&gt;:
+  40:	ff e2                	jmpq   *%rdx
+</pre>
+<p>個人的には、こっちの方が納得がいく。</p>
+<p>また、次のようにラッパー関数に static 宣言を付加して、
+  外部からコールされないことを明示すると、</p>
+<pre class="src" lang="c">
+#include&lt;stdio.h&gt;
+typedef void (func_t)( int val1, int val2 );
+void func( int val1, int val2 )
+{
+    printf( &quot;%d %d&quot;, val1, val2 );
+}
+static void wrapper0( int val1, int val2 )
+{
+    func( val1, val2 );
+}
+static void wrapper1( func_t * pFunc, int val1, int val2 )
+{
+    pFunc( val1, val2 );
+}
+static void wrapper2( int val1, int val2, func_t * pFunc )
+{
+    pFunc( val1, val2 );
+}
+main() {
+    wrapper0( 0, 1 );
+    wrapper1( func, 0, 1 );
+    wrapper2( 0, 1, func );
+}
+</pre>
+<p>出力結果は次のように、 ラッパーがインライン展開され、
+  ラッパーの引数の違いによる差分は無くなった。</p>
+<pre class="src" lang="asm">
+0000000000000021 &lt;main&gt;:
+  21:	48 83 ec 08          	sub    $0x8,%rsp
+  25:	be 01 00 00 00       	mov    $0x1,%esi
+  2a:	bf 00 00 00 00       	mov    $0x0,%edi
+  2f:	e8 00 00 00 00       	callq  34 &lt;main+0x13&gt;
+  34:	be 01 00 00 00       	mov    $0x1,%esi
+  39:	bf 00 00 00 00       	mov    $0x0,%edi
+  3e:	e8 00 00 00 00       	callq  43 &lt;main+0x22&gt;
+  43:	be 01 00 00 00       	mov    $0x1,%esi
+  48:	bf 00 00 00 00       	mov    $0x0,%edi
+  4d:	e8 00 00 00 00       	callq  52 &lt;main+0x31&gt;
+  52:	b8 00 00 00 00       	mov    $0x0,%eax
+  57:	48 83 c4 08          	add    $0x8,%rsp
+  5b:	c3                   	retq   
+</pre>
+<p>基本的に、ソースコードはメンテナンス性や可読性を優先すべきだが、
+  ソースコードを自動生成するような場合は、
+  このような細かいことも意識しておいた方が良いだろう。</p>
+<p>以上。</p>
+ 
+  </div><a class="u-url" href="/blog/site/2019/10/15/wrapper-overhead.html" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/blog/site/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">hoge blog</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">hoge blog</li><li><a class="u-email" href="mailto:"></a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><a href="https://b.hatena.ne.jp/entry/" class="hatena-bookmark-button" data-hatena-bookmark-layout="touch" title="このエントリーをはてなブックマークに追加"><img src="https://b.st-hatena.com/images/v4/public/entry-button/button-only@2x.png" alt="このエントリーをはてなブックマークに追加" width="20" height="20" style="border: none;" /></a><script type="text/javascript" src="https://b.st-hatena.com/js/bookmark_button.js" charset="utf-8" async="async"></script>
+　
+<a href="https://twitter.com/share?ref_src=twsrc%5Etfw" class="twitter-share-button" data-show-count="false">Tweet</a><script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

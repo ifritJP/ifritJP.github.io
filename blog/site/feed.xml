@@ -1,4 +1,151 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-08-28T00:57:39+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">C 言語の可変長引数 (va_list) 処理のオーバーヘッド</title><link href="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html" rel="alternate" type="text/html" title="C 言語の可変長引数 (va_list) 処理のオーバーヘッド" /><published>2019-08-06T00:00:00+09:00</published><updated>2019-08-06T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/08/06/va-performance</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html">&lt;p&gt;以前 C 言語の関数ポインタによる関数コールのオーバーヘッドがどの程度なのか調べたが、
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2019-10-15T23:39:14+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">C 言語のラッパー関数オーバーヘッド</title><link href="https://ifritjp.github.io/blog/site/2019/10/15/wrapper-overhead.html" rel="alternate" type="text/html" title="C 言語のラッパー関数オーバーヘッド" /><published>2019-10-15T00:00:00+09:00</published><updated>2019-10-15T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/10/15/wrapper-overhead</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/10/15/wrapper-overhead.html">&lt;p&gt;プログラムを組む際、ラッパー関数を作ることは良くある。&lt;/p&gt;
+&lt;p&gt;このラッパー関数のオーバーヘッドが気になったので簡単に調べてみた。&lt;/p&gt;
+&lt;p&gt;計測用サンプルは次の通り。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;c&quot;&gt;
+#include&amp;lt;stdio.h&amp;gt;
+typedef void (func_t)( int val1, int val2 );
+void func( int val1, int val2 )
+{
+    printf( &amp;quot;%d %d&amp;quot;, val1, val2 );
+}
+void wrapper0( int val1, int val2 )
+{
+    func( val1, val2 );
+}
+void wrapper1( func_t * pFunc, int val1, int val2 )
+{
+    pFunc( val1, val2 );
+}
+void wrapper2( int val1, int val2, func_t * pFunc )
+{
+    pFunc( val1, val2 );
+}
+main() {
+    wrapper0( 0, 1 );
+    wrapper1( func, 0, 1 );
+    wrapper2( 0, 1, func );
+}
+&lt;/pre&gt;
+&lt;p&gt;関数 func() をコールする 3 種類のラッパー関数 wrapper0, wrapper1, wrapper2 を用意した。&lt;/p&gt;
+&lt;p&gt;それぞれのラッパー関数は次の形になっている。&lt;/p&gt;
+&lt;table&gt;
+  &lt;tr&gt;&lt;th&gt;ラッパー&lt;/th&gt;&lt;th&gt;引数&lt;/th&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;wrapper0&lt;/td&gt;&lt;td&gt;呼び出し先と同じ引数&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;wrapper1&lt;/td&gt;&lt;td&gt;ラッパー独自引数の後に呼び出し先と同じ引数&lt;/td&gt;&lt;/tr&gt;
+  &lt;tr&gt;&lt;td&gt;wrapper2&lt;/td&gt;&lt;td&gt;呼び出し先と同じ引数の後にラッパー独自引数&lt;/td&gt;&lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;これを gcc の x64 で -O の最適化した結果が次になる。
+  (func の処理は省略)&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;asm&quot;&gt;
+0000000000000021 &amp;lt;wrapper0&amp;gt;:
+  21:	48 83 ec 08          	sub    $0x8,%rsp
+  25:	e8 00 00 00 00       	callq  2a &amp;lt;wrapper0+0x9&amp;gt;
+  2a:	48 83 c4 08          	add    $0x8,%rsp
+  2e:	c3                   	retq   
+
+000000000000002f &amp;lt;wrapper1&amp;gt;:
+  2f:	48 83 ec 08          	sub    $0x8,%rsp
+  33:	48 89 f8             	mov    %rdi,%rax
+  36:	89 f7                	mov    %esi,%edi
+  38:	89 d6                	mov    %edx,%esi
+  3a:	ff d0                	callq  *%rax
+  3c:	48 83 c4 08          	add    $0x8,%rsp
+  40:	c3                   	retq   
+
+0000000000000041 &amp;lt;wrapper2&amp;gt;:
+  41:	48 83 ec 08          	sub    $0x8,%rsp
+  45:	ff d2                	callq  *%rdx
+  47:	48 83 c4 08          	add    $0x8,%rsp
+  4b:	c3                   	retq   
+
+000000000000004c &amp;lt;main&amp;gt;:
+  4c:	48 83 ec 08          	sub    $0x8,%rsp
+  50:	be 01 00 00 00       	mov    $0x1,%esi
+  55:	bf 00 00 00 00       	mov    $0x0,%edi
+  5a:	e8 00 00 00 00       	callq  5f &amp;lt;main+0x13&amp;gt;
+  5f:	ba 01 00 00 00       	mov    $0x1,%edx
+  64:	be 00 00 00 00       	mov    $0x0,%esi
+  69:	bf 00 00 00 00       	mov    $0x0,%edi
+  6e:	e8 00 00 00 00       	callq  73 &amp;lt;main+0x27&amp;gt;
+  73:	ba 00 00 00 00       	mov    $0x0,%edx
+  78:	be 01 00 00 00       	mov    $0x1,%esi
+  7d:	bf 00 00 00 00       	mov    $0x0,%edi
+  82:	e8 00 00 00 00       	callq  87 &amp;lt;main+0x3b&amp;gt;
+  87:	b8 00 00 00 00       	mov    $0x0,%eax
+  8c:	48 83 c4 08          	add    $0x8,%rsp
+  90:	c3                   	retq   
+&lt;/pre&gt;
+&lt;p&gt;上記通り wrapper0 と wrapper2 は、ほぼ同じコードになっており、
+  wrapper1 は引数をずらす処理が余分に入っている。&lt;/p&gt;
+&lt;p&gt;想像通りの結果といえば想像通りだが、
+  ちゃんと最適化された処理になっている。&lt;/p&gt;
+&lt;p&gt;以上のことから言えることは、
+  ラッパー関数独自の引数は、先頭ではなく末尾にもっていった方が良いということだ。&lt;/p&gt;
+&lt;p&gt;ただし、ここまで最適化が効くケースは、
+  ラッパー関数内での目的の関数コールが先頭にある場合に限られるので、
+  目的の関数コールを先頭に持ってこれない場合は、気にしないで良いだろう。&lt;/p&gt;
+&lt;p&gt;なお、 -O2 で最適化をかけると wrapper1, wrapper2 は次の処理に最適化された。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;asm&quot;&gt;
+0000000000000030 &amp;lt;wrapper1&amp;gt;:
+  30:	48 89 f8             	mov    %rdi,%rax
+  33:	89 f7                	mov    %esi,%edi
+  35:	89 d6                	mov    %edx,%esi
+  37:	ff e0                	jmpq   *%rax
+  39:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+0000000000000040 &amp;lt;wrapper2&amp;gt;:
+  40:	ff e2                	jmpq   *%rdx
+&lt;/pre&gt;
+&lt;p&gt;個人的には、こっちの方が納得がいく。&lt;/p&gt;
+&lt;p&gt;また、次のようにラッパー関数に static 宣言を付加して、
+  外部からコールされないことを明示すると、&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;c&quot;&gt;
+#include&amp;lt;stdio.h&amp;gt;
+typedef void (func_t)( int val1, int val2 );
+void func( int val1, int val2 )
+{
+    printf( &amp;quot;%d %d&amp;quot;, val1, val2 );
+}
+static void wrapper0( int val1, int val2 )
+{
+    func( val1, val2 );
+}
+static void wrapper1( func_t * pFunc, int val1, int val2 )
+{
+    pFunc( val1, val2 );
+}
+static void wrapper2( int val1, int val2, func_t * pFunc )
+{
+    pFunc( val1, val2 );
+}
+main() {
+    wrapper0( 0, 1 );
+    wrapper1( func, 0, 1 );
+    wrapper2( 0, 1, func );
+}
+&lt;/pre&gt;
+&lt;p&gt;出力結果は次のように、 ラッパーがインライン展開され、
+  ラッパーの引数の違いによる差分は無くなった。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;asm&quot;&gt;
+0000000000000021 &amp;lt;main&amp;gt;:
+  21:	48 83 ec 08          	sub    $0x8,%rsp
+  25:	be 01 00 00 00       	mov    $0x1,%esi
+  2a:	bf 00 00 00 00       	mov    $0x0,%edi
+  2f:	e8 00 00 00 00       	callq  34 &amp;lt;main+0x13&amp;gt;
+  34:	be 01 00 00 00       	mov    $0x1,%esi
+  39:	bf 00 00 00 00       	mov    $0x0,%edi
+  3e:	e8 00 00 00 00       	callq  43 &amp;lt;main+0x22&amp;gt;
+  43:	be 01 00 00 00       	mov    $0x1,%esi
+  48:	bf 00 00 00 00       	mov    $0x0,%edi
+  4d:	e8 00 00 00 00       	callq  52 &amp;lt;main+0x31&amp;gt;
+  52:	b8 00 00 00 00       	mov    $0x0,%eax
+  57:	48 83 c4 08          	add    $0x8,%rsp
+  5b:	c3                   	retq   
+&lt;/pre&gt;
+&lt;p&gt;基本的に、ソースコードはメンテナンス性や可読性を優先すべきだが、
+  ソースコードを自動生成するような場合は、
+  このような細かいことも意識しておいた方が良いだろう。&lt;/p&gt;
+&lt;p&gt;以上。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="C" /></entry><entry><title type="html">C 言語の可変長引数 (va_list) 処理のオーバーヘッド</title><link href="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html" rel="alternate" type="text/html" title="C 言語の可変長引数 (va_list) 処理のオーバーヘッド" /><published>2019-08-06T00:00:00+09:00</published><updated>2019-08-06T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/08/06/va-performance</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/08/06/va-performance.html">&lt;p&gt;以前 C 言語の関数ポインタによる関数コールのオーバーヘッドがどの程度なのか調べたが、
   今回は可変長引数(va_list)処理のオーバーヘッドについて調べてみた。&lt;/p&gt;
 &lt;h1&gt;結果&lt;/h1&gt;
 &lt;p&gt;初めに結果から書くと、&lt;/p&gt;
@@ -1120,96 +1267,4 @@ none: time = 7.63887
 &lt;p&gt;(/ 3.683 2.908) 1.266506189821183&lt;/p&gt;
 &lt;p&gt;関数ポインタによる関数コールのオーバーヘッドは、
   通常の関数コールに比べて &lt;b&gt;約 1.267 倍&lt;/b&gt; となる。&lt;/p&gt;
-&lt;p&gt;以上&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">emacs 更新に伴なう gdb の設定</title><link href="https://ifritjp.github.io/blog/site/2019/05/13/emacs26-gdb.html" rel="alternate" type="text/html" title="emacs 更新に伴なう gdb の設定" /><published>2019-05-13T00:00:00+09:00</published><updated>2019-05-13T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/13/emacs26-gdb</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/13/emacs26-gdb.html">&lt;p&gt;とある事情で使い続けていた emacs23.4 (2012/1) を、
-  先日 emacs26.2 (2019/4) にアップデートした。&lt;/p&gt;
-&lt;p&gt;このとき gdb 周りの設定を変更する必要があったので、備忘録としてまとめておく。&lt;/p&gt;
-&lt;p&gt;&lt;b&gt;2019-06-12: my-gud-stop, my-gud-mode-func を追加&lt;/b&gt;&lt;/p&gt;
-&lt;p&gt;&lt;b&gt;2019-08-26: dedicate の抑制追加&lt;/b&gt;&lt;/p&gt;
-&lt;p&gt;なお、M-x gud-gdb で起動すれば従来形式のインタフェースが利用できるが、
-  ブレークポイントが表示されない等の不具合があるので M-x gdb を利用する。&lt;/p&gt;
-&lt;p&gt;それにしても、新しい M-x gdb のインタフェースは emacs っぽくないと思うんだけど、
-  オレがおっさんだからそう思うんだろうか？&lt;/p&gt;
-&lt;h1&gt;emacs の gdb 設定&lt;/h1&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;el&quot;&gt;
-;; gud-overlay-arrow-position が nil だとエラーするので。。
-(setq gud-tooltip-display
-      &amp;#39;((and gud-overlay-arrow-position
-	     (eq (tooltip-event-buffer gud-tooltip-event)
-		 (marker-buffer gud-overlay-arrow-position)))))
-
-;; gdb バッファの C-c C-c で、プログラムを停止させる。
-(setq gdb-gud-control-all-threads nil)
-
-;; input/output バッファが勝手に表示されるのはウザいので、抑制
-(setq gdb-display-io-nopopup t)
-
-;; input/output バッファが dedicate されるのはウザいので、抑制
-(defadvice gdb-display-buffer (around gdb-display-buffer)
-  (let (window)
-    (setq window ad-do-it)
-    (set-window-dedicated-p window nil)
-    window
-  ))
-(ad-activate &amp;#39;gdb-display-buffer)
-
-
-;; gdb バッファの C-c C-c ではプログラムが停止しなかったので、修正
-(defun my-gud-stop ()
-  (interactive)
-  (comint-interrupt-subjob)
-  (gud-stop-subjob)
-  )
-
-;; 上記 my-gud-stop 関数を C-cC-c に登録する関数
-(defun my-gud-mode-func ()
-  (define-key (current-local-map) &amp;quot;\C-c\C-c&amp;quot; &amp;#39;my-gud-stop)
-  )
-;; フックに登録
-(add-hook &amp;#39;gud-mode-hook &amp;#39;my-gud-mode-func)
-
-&lt;/pre&gt;
-&lt;p&gt;以降で、上記の設定について説明する。&lt;/p&gt;
-&lt;h2&gt;gud-tooltip-display&lt;/h2&gt;
-&lt;p&gt;1 つ目は、単純に gud.el の不具合のような気がするが、
-  tooltip を表示する処理を修正している。&lt;/p&gt;
-&lt;p&gt;gud-tooltip-display は、 gud で tooltip を表示する処理のようだが、
-  この処理で &lt;code&gt;(make-buffer gud-overlay-arrow-position)&lt;/code&gt; を実行している。&lt;/p&gt;
-&lt;p&gt;この処理は、 gud-overlay-arrow-position が nil の時にも実行されるケースがあるようで、
-  その時にエラーにならないように and を追加している。&lt;/p&gt;
-&lt;h2&gt;gdb-gud-control-all-threads&lt;/h2&gt;
-&lt;p&gt;gdb-gud-control-all-threads は、
-  gud の制御を全スレッドに対して反映させるかどうかのフラグで、
-  emacs 23 ではデフォルト nil だった。&lt;/p&gt;
-&lt;p&gt;新しい gdb では、 gdb-gud-control-all-threads がデフォルト t になっている。&lt;/p&gt;
-&lt;p&gt;gdb-gud-control-all-threads が t だと、
-  どうにもこうにも意図したデバッグ制御にならなかったので nil とした。&lt;/p&gt;
-&lt;p&gt;なお、 C-c C-c でデバッグ対象プログラムを停止できるが、正常に動作しない場合がある。&lt;/p&gt;
-&lt;p&gt;その場合 M-x gud-stop-subjob してから C-c C-c すると、停止する。&lt;/p&gt;
-&lt;h2&gt;gdb-display-io-nopopup&lt;/h2&gt;
-&lt;p&gt;emacs23.4 の gdb は、
-  デバッグ対象プログラムの stdin/out と gdb の制御コマンドを、
-  一つのバッファで管理していた。&lt;/p&gt;
-&lt;p&gt;しかし、 新しい gdb は stdin/out と、gdb の制御コマンドを別々のバッファで管理している。&lt;/p&gt;
-&lt;p&gt;gdb-display-io-nopopup は、
-  stdin/out に変化があった際のポップアップ制御を抑制するかどうかのフラグ。&lt;/p&gt;
-&lt;p&gt;デフォルトだと t だが、
-  これだとソース編集中やステップ実行中に、
-  stdin/out のバッファが突然表示されてウザいので nil とした。&lt;/p&gt;
-&lt;p&gt;なお、gdb-display-io-nopopup を t とすると、
-  M-x gdb 実行時にも stdin/out のバッファが表示されないため、
-  stdin/out にアクセスする場合は 自分で C-x b 等で切り替える必要がある。&lt;/p&gt;
-&lt;p&gt;ちなみに stdin/out バッファの名前は &lt;code&gt;*input/output of ...*&lt;/code&gt; 。
-  ここで &amp;#8230; には、デバッグ対象のファイル名が入る。&lt;/p&gt;
-&lt;h2&gt;my-gud-stop&lt;/h2&gt;
-&lt;p&gt;emacs23.4 だと C-cC-c でプログラムを停止して (gdb) プロンプトが表示されたのだが、
-  emacs26.2 だと C-cC-c でプログラムを停止できない。&lt;/p&gt;
-&lt;p&gt;そこで、プログラムを停止する関数を作成している。&lt;/p&gt;
-&lt;h2&gt;my-gud-mode-func&lt;/h2&gt;
-&lt;p&gt;上記関数を C-cC-c に登録するための関数。&lt;/p&gt;
-&lt;p&gt;gud-mode 時にキーバインドを登録するように gud-mode-hook に追加。&lt;/p&gt;
-&lt;h2&gt;dedicate&lt;/h2&gt;
-&lt;p&gt;普通に使うと、 gud の input/output バッファの window が dedicate される。&lt;/p&gt;
-&lt;p&gt;dedicate されると、 C-x b などでバッファを切り替えられなくなる。&lt;/p&gt;
-&lt;p&gt;個人的にこれは使い勝手が悪いので、
-  dedicate されないように gdb-display-buffer の処理をかえる。&lt;/p&gt;
-&lt;p&gt;以上。&lt;/p&gt;</content><author><name></name></author><category term="LuneScript" /></entry></feed>
+&lt;p&gt;以上&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry></feed>
