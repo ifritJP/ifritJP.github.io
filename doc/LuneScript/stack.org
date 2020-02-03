@@ -34,8 +34,11 @@ LuneScript の数値以外のオブジェクトは、スタックで管理する
 }    
 #+END_SRC
 
-- ExpStmtNode の関数呼び出し時に、ret をクリアする。
-  要は、 関数の引数で実行される関数コール等ではクリアしない。
+- ret は次のタイミングでクリアする。
+  - 関数のエントリで、受け取った引数分をクリア
+  - multiret の一部を捨てる場合、捨てる分をクリア
+  - 戻り値を使用しない関数呼び出し
+
 
 - ローカル変数は、 stack の末尾のアドレス var_t * 型
 - ローカル変数宣言時、 stack を拡張し、そのアドレスを変数に代入する
@@ -75,7 +78,6 @@ LuneScript の数値以外のオブジェクトは、スタックで管理する
       - オブジェクトを MAJOR にセット
       - major リンクにオブジェクトを追加
       - newvar とリンクする var_t の pNewVar を NULL クリア
-      - newvar を開放	
     - age が所定の値以下の場合、次を実行
       - オブジェクトを REFED にセット
       - workpool にコピー
@@ -133,6 +135,7 @@ typedef struct varLink_t {
    /** この newvar のオリジナル var */
    struct var_t * pVar;
 } varLink_t;
+/** int/real/bool 等の primitive なデータ以外を保持する変数 */
 typedef struct var_t {
    stem_t stem;
 

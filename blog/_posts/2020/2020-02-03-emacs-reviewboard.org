@@ -1,0 +1,123 @@
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TITLE: emacs 用 reviewboard モードの宣伝
+#+TAGS: emacs reviewboard
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+この記事は、emacs 用 reviewboard モードの宣伝である。
+
+<https://github.com/ifritJP/emacs-reviewboard-front>
+
+reviewboard は、ソースコードレビューを Web 上で行ない記録するためのツール。
+
+今は github の Pull-Request に代表されるように
+Web 上のソースレビューが普及しているが、
+reviewboard の初版が 2007 年であることを考えると、
+当時は先進的なツールだったと思う。
+
+そんな reviewboard を emacs で操作するモードを今になって作ったので、
+どれ程の人が使うかは不明だが、折角なので宣伝しておく。
+
+* 機能
+
+このモードでは、次の機能を提供する。
+
+*面倒なので、以後 review request を rrb と略記する。*
+
+- svnp.el で選択したファイルを reviewboard に登録
+- reviewboard に登録した rrb の summary/description/testing_done を編集
+- rrb に登録したファイルを修正後に、一発再アップロード
+- rrb の close/discard
+ 
+
+** 設定
+
+*** 環境
+   
+- curl, rbt, svn を事前にインストールしておく
+  - rbt は、 diff の登録に利用する。
+  - curl は、 reviewboard の WebAPI へのアクセスに利用する。
+  - 環境によっては、 proxy 等の環境変数設定が必要な場合がある。
+- 上記 github から emacs-reviewboard-front を取得し適当な場所に展開する
+
+*** emacs-lisp
+
+- emacs-reviewboard-front のパスに load-path に追加する。
+- 次の設定を行なう。
+
+#+BEGIN_SRC el
+(require 'rbfront-mode)
+(setq rb/front-rb-api-token "TOKEN")
+(setq rb/front-rb-url "http://reviewboard.host/path")
+(setq rb/front-rbt "rbt")
+(setq rb/front-proxy "http://proxy.host:8080/")
+(setq rb/front-rb-repository "RESPOSITORY_NAME")
+#+END_SRC
+
+- rb/front-rb-api-token は、
+  reviewboard のアカウント管理ページで生成した API Tokens を指定する。
+- rb/front-rb-url は、
+  reviewboard のサーバの URL を指定する。
+- rb/front-proxy は、
+  reviewboard のサーバにアクセスする際に使用する proxy を指定する。
+- front-rb-repository は、
+  reviewboard に diff を登録する際の repository 名を指定する。
+
+** 新規登録
+
+emacs-reviewboard-front では、現状 svnp.el を使用することを前提としている。
+
+ここでは、svnp.el の細かい使用方法については説明しない。
+rrb の新規登録に必要な最低限の操作について説明する。
+
+- M-x svn-status で修正ファイル一覧を表示し、
+  commit する要領でファイルを選択する。
+- j キー押下で、次のような rrb 変数バッファが表示されるので、
+  ここで title と description、 test を編集する。
+
+[[/blog/site/assets/rb-new.png]]
+
+- rrb に登録する修正ファイルを追加したい場合、 C-c C-a を押下する。
+  - mini-buffer で、ファイルが存在するディレクトリを指定し、
+    その後表示されるファイル一覧から上記のようにファイルを選択する。
+  - 選択後、 j キー押下で、ファイルが追加される。
+- 編集後、 C-c C-c 押下により submit 処理で reviewboard に登録する。
+  - この時、登録と同時に publish する。
+  - この publish のため、 mini-buffer で reviewer を選択する。
+    - この mini-buffer では TAB キーによる補完が可能。
+
+** rrb リスト表示
+
+M-x rb/front-list で、
+次のように自分が登録した rrb 一覧を表示する。
+  
+[[/blog/site/assets/rb-list.png]]
+
+*** リスト操作
+
+- (g) :: リストを更新する
+- (RET) :: カーソル位置の rrb を編集する
+- (u) :: カーソル位置の rrb の diff を、再アップロードする
+- (p) :: カーソル位置の rrb を publish する。
+- (c) :: カーソル位置の rrb を close する。
+- (d) :: カーソル位置の rrb を discard する。
+
+*** diff の再アップロード
+
+再アップロードを行なうため、ローカルの work ディレクトリを指定する必要がある。
+work ディレクトリの指定は mini-buffer で行なう。
+
+** 注意
+
+- rrb 編集バッファで C-c C-c を実行すると、
+  バッファ内容がサーバに登録され、即時 publish する。
+  draft 状態の保持は、現状サポートしない。
+- rrb 編集バッファの C-c C-a による修正ファイル追加は、
+  新規 rrb の場合を除き即時 publish する。
+  新規 rrb の場合、submit 時に rrb 情報と一緒に更新ファイル情報が登録される。
+  
+  
+
+
