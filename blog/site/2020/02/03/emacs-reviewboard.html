@@ -67,10 +67,15 @@
 <p>このモードでは、次の機能を提供する。</p>
 <p><b>面倒なので、以後 review request を rrq と略記する。</b></p>
 <ul>
-  <li>svnp.el で選択したファイルを reviewboard に登録</li>
-  <li>reviewboard に登録した rrq の summary/description/testing_done を編集</li>
-  <li>rrq に登録したファイルを修正後に、一発再アップロード</li>
-  <li>rrq の close/discard</li>
+  <li>修正ファイル一覧から必要なファイルを選択して review request (以降 rrq と記す)を登録
+    <ul>
+      <li>rrq の summary/description/testing_done を編集</li>
+      <li>修正ファイルの追加、削除可能</li>
+    </ul>
+  </li>
+  <li>レビューを受けて更新したファイル郡を、一発でアップロード</li>
+  <li>レビューコメントのリプライ登録</li>
+  <li>rrq の publish/close/discard</li>
 </ul>
 <h2>設定</h2>
 <h3>環境</h3>
@@ -114,10 +119,23 @@
 <ul>
   <li>M-x svn-status で修正ファイル一覧を表示し、
     commit する要領でファイルを選択する。</li>
-  <li>j キー押下で、次のような rrq 変数バッファが表示されるので、
-    ここで title と description、 test を編集する。</li>
+  <li>j キー押下で、rrq 編集バッファが表示される。</li>
 </ul>
+<h2>編集バッファ</h2>
 <p><img src="/blog/site/assets/rb-new.png" alt="/blog/site/assets/rb-new.png" /></p>
+<ul>
+  <li>title と description、 test を編集する。</li>
+  <li>編集後、 C-c C-c 押下により submit 処理で reviewboard に登録する。
+    <ul>
+      <li>新規登録の場合、 mini-buffer で reviewer を選択する。
+        <ul>
+          <li>この mini-buffer では TAB キーによる補完が可能。</li>
+        </ul>
+      </li>
+    </ul>
+  </li>
+</ul>
+<h3>修正ファイルの追加・削除</h3>
 <ul>
   <li>rrq に登録する修正ファイルを追加したい場合、 C-c C-a を押下する。
     <ul>
@@ -126,20 +144,35 @@
       <li>選択後、 j キー押下で、ファイルが追加される。</li>
     </ul>
   </li>
-  <li>編集後、 C-c C-c 押下により submit 処理で reviewboard に登録する。
+  <li>rrq に登録する修正ファイルを除外する場合、
+    除外するファイルにカーソルを移動して C-c C-SPC を押下する。
     <ul>
-      <li>この時、登録と同時に publish する。</li>
-      <li>この publish のため、 mini-buffer で reviewer を選択する。
-        <ul>
-          <li>この mini-buffer では TAB キーによる補完が可能。</li>
-        </ul>
-      </li>
+      <li>除外を reviewboard に反映するには、 C-c C-u を押下する。</li>
     </ul>
   </li>
 </ul>
+<h3>review コメント</h3>
+<ul>
+  <li>review コメントの表示はサーバアクセスが多くなるため、
+    デフォルトでは非表示にしている。</li>
+  <li>表示する場合、 C-c C-d する。</li>
+  <li>デフォルトで表示にする場合、 rb/front-display-comment-p に nil 以外を設定する。</li>
+  <li>review コメントに対するリプライを登録する場合、
+    コメントにカーソルを合わせて C-c C-r。</li>
+</ul>
+<h3>submit モード</h3>
+<p>submit 時の動作を、次のどちらかに変更できる。</p>
+<ul>
+  <li>submit と同時に publish する</li>
+  <li>submit だけする</li>
+</ul>
+<p>C-c C-t でモードを切り替える。</p>
+<p>デフォルトは publish する。</p>
+<p>デフォルトを submit だけに切り替える場合、
+  rb/front-submit-and-publish-p に nil を設定する。</p>
 <h2>rrq リスト表示</h2>
 <p>M-x rb/front-list で、
-  次のように自分が登録した rrq 一覧を表示する。</p>
+  自分が登録した rrq 一覧を表示する。</p>
 <p><img src="/blog/site/assets/rb-list.png" alt="/blog/site/assets/rb-list.png" /></p>
 <h3>リスト操作</h3>
 <dl>
@@ -149,6 +182,7 @@
   <dt>(p)</dt><dd>カーソル位置の rrq を publish する。</dd>
   <dt>(c)</dt><dd>カーソル位置の rrq を close する。</dd>
   <dt>(d)</dt><dd>カーソル位置の rrq を discard する。</dd>
+  <dt>(C)</dt><dd>カーソル位置の rrq に登録したファイルを commit する。</dd>
 </dl>
 <h3>diff の再アップロード</h3>
 <p>再アップロードを行なうため、ローカルの work ディレクトリを指定する必要がある。
@@ -156,8 +190,7 @@
 <h2>注意</h2>
 <ul>
   <li>rrq 編集バッファで C-c C-c を実行すると、
-    バッファ内容がサーバに登録され、即時 publish する。
-    draft 状態の保持は、現状サポートしない。</li>
+    バッファ内容がサーバに登録され、即時 publish する。</li>
   <li>rrq 編集バッファの C-c C-a による修正ファイル追加は、
     新規 rrq の場合を除き即時 publish する。
     新規 rrq の場合、submit 時に rrq 情報と一緒に更新ファイル情報が登録される。</li>

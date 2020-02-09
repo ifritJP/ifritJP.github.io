@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2020-02-03T22:40:25+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">emacs 用 reviewboard モードの宣伝</title><link href="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html" rel="alternate" type="text/html" title="emacs 用 reviewboard モードの宣伝" /><published>2020-02-03T00:00:00+09:00</published><updated>2020-02-03T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html">&lt;p&gt;この記事は、emacs 用 reviewboard モードの宣伝である。&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2020-02-09T15:53:58+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">emacs 用 reviewboard モードの宣伝</title><link href="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html" rel="alternate" type="text/html" title="emacs 用 reviewboard モードの宣伝" /><published>2020-02-03T00:00:00+09:00</published><updated>2020-02-03T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html">&lt;p&gt;この記事は、emacs 用 reviewboard モードの宣伝である。&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://github.com/ifritJP/emacs-reviewboard-front&quot;&gt;https://github.com/ifritJP/emacs-reviewboard-front&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;reviewboard は、ソースコードレビューを Web 上で行ない記録するためのツール。&lt;/p&gt;
 &lt;p&gt;今は github の Pull-Request に代表されるように
@@ -11,10 +11,15 @@
 &lt;p&gt;このモードでは、次の機能を提供する。&lt;/p&gt;
 &lt;p&gt;&lt;b&gt;面倒なので、以後 review request を rrq と略記する。&lt;/b&gt;&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;svnp.el で選択したファイルを reviewboard に登録&lt;/li&gt;
-  &lt;li&gt;reviewboard に登録した rrq の summary/description/testing_done を編集&lt;/li&gt;
-  &lt;li&gt;rrq に登録したファイルを修正後に、一発再アップロード&lt;/li&gt;
-  &lt;li&gt;rrq の close/discard&lt;/li&gt;
+  &lt;li&gt;修正ファイル一覧から必要なファイルを選択して review request (以降 rrq と記す)を登録
+    &lt;ul&gt;
+      &lt;li&gt;rrq の summary/description/testing_done を編集&lt;/li&gt;
+      &lt;li&gt;修正ファイルの追加、削除可能&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;レビューを受けて更新したファイル郡を、一発でアップロード&lt;/li&gt;
+  &lt;li&gt;レビューコメントのリプライ登録&lt;/li&gt;
+  &lt;li&gt;rrq の publish/close/discard&lt;/li&gt;
 &lt;/ul&gt;
 &lt;h2&gt;設定&lt;/h2&gt;
 &lt;h3&gt;環境&lt;/h3&gt;
@@ -58,10 +63,23 @@
 &lt;ul&gt;
   &lt;li&gt;M-x svn-status で修正ファイル一覧を表示し、
     commit する要領でファイルを選択する。&lt;/li&gt;
-  &lt;li&gt;j キー押下で、次のような rrq 変数バッファが表示されるので、
-    ここで title と description、 test を編集する。&lt;/li&gt;
+  &lt;li&gt;j キー押下で、rrq 編集バッファが表示される。&lt;/li&gt;
 &lt;/ul&gt;
+&lt;h2&gt;編集バッファ&lt;/h2&gt;
 &lt;p&gt;&lt;img src=&quot;/blog/site/assets/rb-new.png&quot; alt=&quot;/blog/site/assets/rb-new.png&quot; /&gt;&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;title と description、 test を編集する。&lt;/li&gt;
+  &lt;li&gt;編集後、 C-c C-c 押下により submit 処理で reviewboard に登録する。
+    &lt;ul&gt;
+      &lt;li&gt;新規登録の場合、 mini-buffer で reviewer を選択する。
+        &lt;ul&gt;
+          &lt;li&gt;この mini-buffer では TAB キーによる補完が可能。&lt;/li&gt;
+        &lt;/ul&gt;
+      &lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;修正ファイルの追加・削除&lt;/h3&gt;
 &lt;ul&gt;
   &lt;li&gt;rrq に登録する修正ファイルを追加したい場合、 C-c C-a を押下する。
     &lt;ul&gt;
@@ -70,20 +88,35 @@
       &lt;li&gt;選択後、 j キー押下で、ファイルが追加される。&lt;/li&gt;
     &lt;/ul&gt;
   &lt;/li&gt;
-  &lt;li&gt;編集後、 C-c C-c 押下により submit 処理で reviewboard に登録する。
+  &lt;li&gt;rrq に登録する修正ファイルを除外する場合、
+    除外するファイルにカーソルを移動して C-c C-SPC を押下する。
     &lt;ul&gt;
-      &lt;li&gt;この時、登録と同時に publish する。&lt;/li&gt;
-      &lt;li&gt;この publish のため、 mini-buffer で reviewer を選択する。
-        &lt;ul&gt;
-          &lt;li&gt;この mini-buffer では TAB キーによる補完が可能。&lt;/li&gt;
-        &lt;/ul&gt;
-      &lt;/li&gt;
+      &lt;li&gt;除外を reviewboard に反映するには、 C-c C-u を押下する。&lt;/li&gt;
     &lt;/ul&gt;
   &lt;/li&gt;
 &lt;/ul&gt;
+&lt;h3&gt;review コメント&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;review コメントの表示はサーバアクセスが多くなるため、
+    デフォルトでは非表示にしている。&lt;/li&gt;
+  &lt;li&gt;表示する場合、 C-c C-d する。&lt;/li&gt;
+  &lt;li&gt;デフォルトで表示にする場合、 rb/front-display-comment-p に nil 以外を設定する。&lt;/li&gt;
+  &lt;li&gt;review コメントに対するリプライを登録する場合、
+    コメントにカーソルを合わせて C-c C-r。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;submit モード&lt;/h3&gt;
+&lt;p&gt;submit 時の動作を、次のどちらかに変更できる。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;submit と同時に publish する&lt;/li&gt;
+  &lt;li&gt;submit だけする&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;C-c C-t でモードを切り替える。&lt;/p&gt;
+&lt;p&gt;デフォルトは publish する。&lt;/p&gt;
+&lt;p&gt;デフォルトを submit だけに切り替える場合、
+  rb/front-submit-and-publish-p に nil を設定する。&lt;/p&gt;
 &lt;h2&gt;rrq リスト表示&lt;/h2&gt;
 &lt;p&gt;M-x rb/front-list で、
-  次のように自分が登録した rrq 一覧を表示する。&lt;/p&gt;
+  自分が登録した rrq 一覧を表示する。&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;/blog/site/assets/rb-list.png&quot; alt=&quot;/blog/site/assets/rb-list.png&quot; /&gt;&lt;/p&gt;
 &lt;h3&gt;リスト操作&lt;/h3&gt;
 &lt;dl&gt;
@@ -93,6 +126,7 @@
   &lt;dt&gt;(p)&lt;/dt&gt;&lt;dd&gt;カーソル位置の rrq を publish する。&lt;/dd&gt;
   &lt;dt&gt;(c)&lt;/dt&gt;&lt;dd&gt;カーソル位置の rrq を close する。&lt;/dd&gt;
   &lt;dt&gt;(d)&lt;/dt&gt;&lt;dd&gt;カーソル位置の rrq を discard する。&lt;/dd&gt;
+  &lt;dt&gt;(C)&lt;/dt&gt;&lt;dd&gt;カーソル位置の rrq に登録したファイルを commit する。&lt;/dd&gt;
 &lt;/dl&gt;
 &lt;h3&gt;diff の再アップロード&lt;/h3&gt;
 &lt;p&gt;再アップロードを行なうため、ローカルの work ディレクトリを指定する必要がある。
@@ -100,8 +134,7 @@
 &lt;h2&gt;注意&lt;/h2&gt;
 &lt;ul&gt;
   &lt;li&gt;rrq 編集バッファで C-c C-c を実行すると、
-    バッファ内容がサーバに登録され、即時 publish する。
-    draft 状態の保持は、現状サポートしない。&lt;/li&gt;
+    バッファ内容がサーバに登録され、即時 publish する。&lt;/li&gt;
   &lt;li&gt;rrq 編集バッファの C-c C-a による修正ファイル追加は、
     新規 rrq の場合を除き即時 publish する。
     新規 rrq の場合、submit 時に rrq 情報と一緒に更新ファイル情報が登録される。&lt;/li&gt;
