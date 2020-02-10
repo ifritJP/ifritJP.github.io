@@ -1,0 +1,228 @@
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+TITLE: emacs の reviewboard mode 開発で調べた reviewboard WebAPI のアクセス方法まとめ
+
+2020 年現在、
+ソースコード review からバージョン管理システム(VCS)への登録までのフローを
+システム化した環境が普及しています。
+
+一方で、review と VCS への登録をそれぞれ独立して行なう
+旧来の環境で開発している人も少なくないと思います。
+
+/(私がそうです。)/
+
+そのような環境下で力を発揮するのが、
+ソースコード review に特化した reviewboard です。
+
+reviewboard は多くのバージョン管理ツールに対応しているため、
+様々なプロジェクトで利用可能です。
+
+また、reviewboard は WebAPI をサポートしているので、
+reviewboard を導入するプロジェクトに合せた様々なサポートツールを
+開発することが可能です。
+
+私も、この Web API を使って emacs の reviewboard mode を作成しました。
+
+<https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html>
+
+その reviewboard mode 開発時に調べた WebAPI のアクセス方法を以降にまとめました。
+
+reviewboard の公式サイトに WebAPI の詳細がしっかりと記載されているので、
+それを読めば何の問題もないと思いますが、その導入のヒントになれば幸いです。
+
+ちなみに、公式ドキュメントは以下の URL です。
+
+<https://www.reviewboard.org/docs/>
+
+* API Token
+    
+ WebAPI アクセスには API Token が必要です。
+
+ reviewboard にログインして、アカウント管理画面から Web API Token を生成します。
+
+ この Token を次のように HTTP Header に追加します。
+
+: Authorization: token XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+* GET/POST/PUT メソッド
+
+reviewboard の WebAPI は REST 形式で、
+HTTP の GET/POST/PUT/DELETE メソッドを使用します。
+
+ |----------+----------------|
+ | メソッド | 処理内容       |
+ |----------+----------------|
+ | GET      | 情報の取得     |
+ | POST     | 情報の新規登録 |
+ | PUT      | 情報の更新     |
+ | DELETE   | 情報の削除     |
+ |----------+----------------|
+
+ - GET は、URL の query によって問い合わせのパラメータを指定します。
+ - POST/PUT は、 *multipart/form-data* の形式の Body によってパラメータを指定します。
+
+なお、reviewboard のレスポンスは JSON (あるいは XML)形式です。
+
+リクエストとレスポンスの形式が異なるので注意が必要です。
+
+- GET の例 :: ユーザ hoge が投稿した review request 一覧を取得
+
+: curl -s -H "Authorization: token XXXXXXXXXXXXXXXXX" "http://reviewboard.host/api/review-requests/?from-user=hoge"
+
+- POST の例 :: review request を新規に投稿
+
+: curl -s -X POST --data-binary file -H "Authorization: token XXXXXXXXXXXXXXXXX" -H "Content-Type: multipart/form-data; boundary=\"=-=-=\"" "http://reviewboard.host/api/review-requests/"
+
+ここで file は、次の内容を持つファイルです。
+
+#+NAME: file
+#+BEGIN_SRC txt
+--=-=-=
+Content-Type: text/plain; name=repository
+Content-Disposition: form-data; name=repository
+
+REPOSITORY_NAME
+--=-=-=--
+#+END_SRC
+
+* リソース
+
+reviewboard が管理する代表的なリソースについて簡単に説明します。
+
+- Review Requests
+  - レビュー要件を管理する基本のリソース。
+  - Review Requests ごとに、修正内容、修正ファイル等を管理する。
+- Diffs
+  - 修正ファイルの差分を管理する。
+- Repositories
+  - repository を管理する。
+- Review Requests Drafts
+  - draft 状態を管理する。
+- Reviews
+  - 修正ファイルに対する指摘コメントを管理する。
+- Reviews Replies
+  - 指摘コメントに対する回答を管理する。
+- Review Groups
+  - レビュアーとして登録可能なユーザグループを管理する。
+- Users  
+  - ユーザを管理する。
+
+各リソースには ID が振られて管理されます。
+
+各リソースにアクセスすると、
+そのリソースが管理する情報と、
+そのリソースに関連付けられた情報へのリンク URL が取得できます。
+
+たとえば、 Review Requests にアクセスすると、
+その Review Requests が管理するレビュー要件のサマリーや説明などの情報と、
+Diffs や Reviews などへのリンク URL が取得できます。
+
+
+どのリソースが、どのリソースとリンクしているかは、次の情報を見ると分かり易いです。
+
+<https://www.reviewboard.org/docs/manual/3.0/webapi/2.0/resources/resource-tree/>
+
+* review request
+
+: API: /api/review-requests/
+: API: /api/review-requests/{review-request-id}/
+
+review request は、レビュー要件を管理する基本のリソースです。
+
+review request は、reviewboard を操作する上で起点となります。
+
+* draft
+
+: API: /api/review-requests/{review-request-id}/draft/
+
+reviewboard は、 review request などの編集中の状態を保持できます。
+この編集中の状態が draft です。
+
+review request や review コメントは、
+必ず draft 状態を経由して情報を更新します。
+
+draft 状態への移行は、
+=/api/review-requests/{review-request-id}/draft/= に対する PUT で行ないます。
+
+なお、review request の変更情報は履歴が残りますが、draft の変更は上書きです。
+
+ある review request が draft 状態かどうかは、
+=/api/review-requests/{review-request-id}/draft/= を GET できるかどうかで判断します。
+
+
+** publish
+
+draft の情報は本人だけが参照可能な状態なので、
+編集完了後は公開(publish)する必要があります。
+
+publish は、 =/api/review-requests/{review-request-id}/draft/= への PUT 時に
+public パラメータを true にセットすることで処理されます。
+
+* repository と diff
+
+: API: /api/repositories/
+: API: /api/review-requests/{review-request-id}/draft/diffs/
+: API: /api/review-requests/{review-request-id}/diffs/
+
+reviewboard は、ソースコードの差分を管理します。
+
+これを実現するため reviewboard の管理情報に、repository 情報登録します。
+repository 情報には名前を付けて登録します。
+また、review request には管理情報に登録した repository の名前と、
+ソースコードの情報(パス、リビジョン、diff)を登録します。
+
+ここで注目すべきは、
+review request には変更後のファイルの内容ではなく、
+*diffを登録する* ということです。
+この diff 情報はファイル単位で管理されず、
+review request 毎の全修正ファイルの diff を 1 つにまとめて管理されています。
+
+つまり、 review request に複数のファイルを登録後、
+レビュー指摘を受けて一部のファイルを修正し、その修正情報を登録する場合、
+修正した一部のファイルの diff だけではなく、
+review request に登録している全ファイルの diff を登録する必要があります。
+
+なお、 diff の登録は WebAPI を使うよりも RBTools(rbt) を使うのが簡単です。
+
+ちなみに、 review request に diff を登録するには、
+事前に repository を登録しておくことが必須です。
+
+* review コメント
+
+: API: /api/review-requests/{review-request-id}/reviews/
+: API: /api/review-requests/{review-request-id}/reviews/{review-id}/diff-comments/
+  
+review request に登録したファイル差分には、指摘コメントを記録できます。
+
+指摘コメントも draft 状態があり、
+記録した指摘コメントは publish する必要があります。
+
+reviewboard は、指摘コメントを diff_comments と review で管理します。
+
+- diff_comments は次の情報を管理します。
+-- 指摘ファイル
+-- 指摘場所
+-- コメント内容
+
+- review は、diff_comments の集合を管理します。
+  - 1 つの review は、publish されるまでに追加された diff_comments を管理します。
+
+diff_comments は publish した後に *編集不可能* です。
+
+* review reply
+
+: API: /api/review-requests/{review-request-id}/reviews/{review-id}/replies/
+
+review reply は、指摘コメントに対する回答です。
+
+review reply の構成は、基本的に review と同じです。
+
+review reply の diff_comments にはリプライ先を示す reply-to のリンクがあり、
+review にはリプライを示す replies のリンクがあるのが大きな違いです。
+
+
+以上。
