@@ -1,4 +1,129 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2020-02-09T15:57:10+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">emacs 用 reviewboard モードの宣伝</title><link href="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html" rel="alternate" type="text/html" title="emacs 用 reviewboard モードの宣伝" /><published>2020-02-03T00:00:00+09:00</published><updated>2020-02-03T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html">&lt;p&gt;この記事は、emacs 用 reviewboard モードの宣伝である。&lt;/p&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://ifritjp.github.io/blog/site/feed.xml" rel="self" type="application/atom+xml" /><link href="https://ifritjp.github.io/blog/site/" rel="alternate" type="text/html" /><updated>2020-02-19T06:16:59+09:00</updated><id>https://ifritjp.github.io/blog/site/feed.xml</id><title type="html">hoge blog</title><subtitle>Qiita に投稿する程でないネタを上げるネタサイト。 ポエムや、メモ、自分用の備忘録、Web から集めただけの情報などなど。</subtitle><entry><title type="html">emacs lisp の quote</title><link href="https://ifritjp.github.io/blog/site/2020/02/18/emacs-quoted-list.html" rel="alternate" type="text/html" title="emacs lisp の quote" /><published>2020-02-18T00:00:00+09:00</published><updated>2020-02-18T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2020/02/18/emacs-quoted-list</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2020/02/18/emacs-quoted-list.html">&lt;p&gt;emacs lisp の quote でハマったのでネタに書いておく。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lisp&quot;&gt;
+(defvar hoge-val nil)
+(defun hoge-init ()
+  (setq hoge-val &amp;#39;(:val nil))
+  )
+(defun hoge-set ()
+  (plist-put hoge-val :val &amp;quot;1&amp;quot;))
+&lt;/pre&gt;
+&lt;p&gt;上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、
+  次のようにコールすると。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lisp&quot;&gt;
+(let (val1 val2 val3)
+   (hoge-init)
+   (setq val1 (plist-get hoge-val :val))
+   (hoge-set)
+   (setq val2 (plist-get hoge-val :val))
+   (hoge-init)
+   (setq val3 (plist-get hoge-val :val))
+   (message (format &amp;quot;%s %s %s&amp;quot; val1 val2 val3)))
+&lt;/pre&gt;
+&lt;p&gt;最後の (message (format &amp;#8220;%s %s %s&amp;#8221; val1 val2 val3)) で &amp;#8220;nil 1 1&amp;#8221; が出力される。&lt;/p&gt;
+&lt;p&gt;てっきり、 &amp;#8220;nil 1 nil&amp;#8221; が出力されるものだと思っていた。
+  なぜなら、val3 をセットする直前に hoge-init を実行しており、
+  この hoge-init は hoge-val を =&amp;#8217;(:val nil)= で初期化する関数なので、
+  &lt;code&gt;(plist-get hoge-val :val)&lt;/code&gt; は nil を返すと考えたからだ。&lt;/p&gt;
+&lt;p&gt;しかし実際には、最後の &lt;code&gt;(plist-get hoge-val :val)&lt;/code&gt; は &amp;#8220;1&amp;#8221; になる。&lt;/p&gt;
+&lt;p&gt;なぜこのような結果になるかと言うと、
+  =&amp;#8217;()= は定数として扱い、
+  関数 hoge-init を実行する際には新しくリストを生成せず、
+  defun を評価した時の値そのものが使い続けられる。&lt;/p&gt;
+&lt;p&gt;そして (plist-put) でリストの中身を操作した場合、その定数自体が書き変わり、
+  hoge-init 関数は変数に書き変わった定数を代入しているため初期化できない。&lt;/p&gt;
+&lt;p&gt;一方で、 hoge-init の処理に list 関数を使うと、&amp;#8221;nil 1 nil&amp;#8221; となる。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lisp&quot;&gt;
+(defun hoge-init ()
+  (setq hoge-val (list :val nil))
+  )
+&lt;/pre&gt;
+&lt;p&gt;(list) は評価されるたび新規にリストを生成しているため、変数を初期化出来る。&lt;/p&gt;
+&lt;p&gt;よく考えてみると納得できるけど、
+  実際の動きと見た目のギャップにどうにもこうにも意味不明だった。&lt;/p&gt;
+&lt;p&gt;これまで一度も意識せずにきたのが不思議なくらい、かなり基本的な内容だと思う。&lt;/p&gt;
+&lt;p&gt;quote した値の変更は、要注意ってことで。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="emacs org-mode" /></entry><entry><title type="html">org-mode 9.3.5 で babel(dot/plantuml) が動かなかった</title><link href="https://ifritjp.github.io/blog/site/2020/02/13/emacs-org-9.3.5.html" rel="alternate" type="text/html" title="org-mode 9.3.5 で babel(dot/plantuml) が動かなかった" /><published>2020-02-13T00:00:00+09:00</published><updated>2020-02-13T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2020/02/13/emacs-org-9.3.5</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2020/02/13/emacs-org-9.3.5.html">&lt;p&gt;emacs の org-mode では、
+  .org ファイル内に C や python 等ソースコードを書いて、
+  export 時にそのソースコードを色付けした状態で載せることができる。&lt;/p&gt;
+&lt;p&gt;この機能を babel と言う。&lt;/p&gt;
+&lt;p&gt;babel では、ソースコードの色付けだけでなく、
+  ソースコードに dot や plantuml 等のグラフ生成言語を利用することで、
+  .org ファイル内に書いたグラフ生成言語からグラフを生成して、
+  所定位置にグラフを挿入することもできる。&lt;/p&gt;
+&lt;p&gt;今回、 org-mode 9.3.5 の babel を使って dot の画像を出力しようとしたところ、
+  エラーしたので原因を追ってみた。&lt;/p&gt;
+&lt;h1&gt;エラー箇所&lt;/h1&gt;
+&lt;p&gt;エラーは次の関数で発生していた。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lisp&quot;&gt;
+(defun org-babel-chomp (string &amp;amp;optional regexp)
+  &amp;quot;Strip a trailing space or carriage return from STRING.
+The default regexp used is \&amp;quot;[ \\f\\t\\n\\r\\v]\&amp;quot; but another one
+can be specified as the REGEXP argument.&amp;quot;
+  (let ((regexp (or regexp &amp;quot;[ \f\t\n\r\v]&amp;quot;)))
+    (while (and (&amp;gt; (length string) 0)
+                (string-match regexp (substring string -1)))
+      (setq string (substring string 0 -1)))
+    string))
+&lt;/pre&gt;
+&lt;p&gt;エラーの内容は次のものだった。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
+Debugger entered--Lisp error: (wrong-type-argument stringp nil)
+  string-match(nil &amp;quot;c&amp;quot;)
+  (and (&amp;gt; (length string) 0) (string-match regexp (substring string -1)))
+  (while (and (&amp;gt; (length string) 0) (string-match regexp (substring string -1))) (setq string (substring string 0 -1)))
+  (let ((regexp (or regexp &amp;quot;[ \f\011\n\015\013]&amp;quot;))) (while (and (&amp;gt; (length string) 0) (string-match regexp (substring string -1))) (setq string (substring string 0 -1))) string)
+&lt;/pre&gt;
+&lt;p&gt;このエラーは、
+  上記の org-babel-chomp 関数の regexp 引数が nil だった場合に発生する。&lt;/p&gt;
+&lt;h1&gt;エラーの修正&lt;/h1&gt;
+&lt;p&gt;このエラーに対し、
+  次のように let で宣言する変数を別名(regexp-work)で定義することで回避した。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lisp&quot;&gt;
+(defun org-babel-chomp (string &amp;amp;optional regexp)
+  &amp;quot;Strip a trailing space or carriage return from STRING.
+The default regexp used is \&amp;quot;[ \\f\\t\\n\\r\\v]\&amp;quot; but another one
+can be specified as the REGEXP argument.&amp;quot;
+  (let ((regexp-work (or regexp &amp;quot;[ \f\t\n\r\v]&amp;quot;)))
+    (while (and (&amp;gt; (length string) 0)
+                (string-match regexp-work (substring string -1)))
+      (setq string (substring string 0 -1)))
+    string))
+&lt;/pre&gt;
+&lt;h1&gt;エラーの原因&lt;/h1&gt;
+&lt;p&gt;エラーの原因を確認するため、
+  エラーを再現する処理を抜き出して書き換えると次になる。&lt;/p&gt;
+&lt;pre class=&quot;src&quot; lang=&quot;lisp&quot;&gt;
+;;; -*- lexical-binding: t; -*-
+(defun hoge (regexp)
+  (let ((regexp (or regexp &amp;quot;a&amp;quot;)))
+    (string-match regexp &amp;quot;b&amp;quot;)))
+&lt;/pre&gt;
+&lt;p&gt;上記の hoge 関数の引数 regexp に nil をセットしてコールすると同じエラーになる。
+  なお、この現象は lexical-binding を有効にしている時だけ発生する。&lt;/p&gt;
+&lt;p&gt;上記関数の処理を説明すると次のようになる。&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;let で新しく変数 regexp を宣言する
+    &lt;ul&gt;
+      &lt;li&gt;このとき、引数 regexp が nil 以外なら、引数 regexp の値を変数 regexp にセットする&lt;/li&gt;
+      &lt;li&gt;引数 regexp が nil なら、 &amp;#8220;a&amp;#8221; を変数 regexp にセットする。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;つまり、let で宣言している変数 regexp には必ず nil 以外がセットされるはずである。&lt;/p&gt;
+&lt;p&gt;しかし、実際には string-match に渡される regexp には nil がセットされている。&lt;/p&gt;
+&lt;p&gt;何故このような結果になるか原因を想像すると、&lt;/p&gt;
+&lt;p&gt;「string-match でアクセスするシンボル regexp は、
+  let で宣言している regexp ではなく、関数の引数 regexp が参照されるため」&lt;/p&gt;
+&lt;p&gt;と考えるのが妥当だろう。&lt;/p&gt;
+&lt;p&gt;string-match は let のスコープなので、
+  普通に考えれば string-match の regexp は let で宣言している変数 regexp であるはず。
+  しかし、実際には何故か関数の引数 regexp になっている。&lt;/p&gt;
+&lt;p&gt;これが emacs lisp の仕様なのか、はたまた仕様外の動作なのかは良く分からない。&lt;/p&gt;
+&lt;p&gt;ちなみに、これが発生している環境は emacs 26.2 だが、
+  他の環境で発生するかどうかは確認していない。&lt;/p&gt;
+&lt;p&gt;org-mode の履歴を追ってみたが、
+  この関数の処理は lexical-binding を使うようになる前から変っていないので、
+  lexical-binding にした事による影響だろう。&lt;/p&gt;
+&lt;p&gt;以上。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="emacs org-mode" /></entry><entry><title type="html">emacs 用 reviewboard モードの宣伝</title><link href="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html" rel="alternate" type="text/html" title="emacs 用 reviewboard モードの宣伝" /><published>2020-02-03T00:00:00+09:00</published><updated>2020-02-03T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2020/02/03/emacs-reviewboard.html">&lt;p&gt;この記事は、emacs 用 reviewboard モードの宣伝である。&lt;/p&gt;
 &lt;p&gt;&lt;a href=&quot;https://github.com/ifritJP/emacs-reviewboard-front&quot;&gt;https://github.com/ifritJP/emacs-reviewboard-front&lt;/a&gt;&lt;/p&gt;
 &lt;p&gt;reviewboard は、ソースコードレビューを Web 上で行ない記録するためのツール。&lt;/p&gt;
 &lt;p&gt;今は github の Pull-Request に代表されるように
@@ -1032,241 +1157,4 @@ $ pip3 install pyocr
 &lt;p&gt;専門知識がなくても、フリーの技術を組合せるだけで、
   これだけのものが作れるようになったというのはスゴい時代になったものだ。&lt;/p&gt;
 &lt;p&gt;ちなみにソースは &lt;a href=&quot;https://github.com/ifritJP/game-message-tts.git&quot;&gt;https://github.com/ifritJP/game-message-tts.git&lt;/a&gt; にある。
-  興味があれば。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="english" /></entry><entry><title type="html">Raspberry pi zero w で Bluetooth 色々(ファイル転送:obex、 IP over BT:PAN )</title><link href="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html" rel="alternate" type="text/html" title="Raspberry pi zero w で Bluetooth 色々(ファイル転送:obex、 IP over BT:PAN )" /><published>2019-06-15T00:00:00+09:00</published><updated>2019-06-15T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/06/15/rasp0w</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html">&lt;p&gt;だいぶ前に買って放置していた Raspberry pi zero w をセットアップしました。&lt;/p&gt;
-&lt;p&gt;Raspberry pi zero w と言えば「小型軽量」が売りなんで、
-  今回はポータブルな IOT デバイスとして使う事を目的として、
-  Bluetooth の機能(ファイル転送、 IP over Bluetooth) のセットアップをしました。&lt;/p&gt;
-&lt;p&gt;イマドキ Bluetooth なんて、
-  最新のイメージでセットアップすればすぐに使えるだろうと思って余裕でした。
-  しかし、実際には目的の機能が動作するまでに、かなりの時間が掛ってしまいました。&lt;/p&gt;
-&lt;p&gt;少なくとも、パッケージをインストールするだけでは済まず、
-  いくつかのファイルを編集 &amp;amp; コマンド実行が必要です。&lt;/p&gt;
-&lt;p&gt;そんな訳で、次に同じことをする時のために備忘録を残しておきます。&lt;/p&gt;
-&lt;p&gt;この記事で扱うメインは以下の通りです。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;Raspberry pi zero w を USB 接続のみでセットアップ&lt;/li&gt;
-  &lt;li&gt;Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現&lt;/li&gt;
-  &lt;li&gt;IP over Bluetooth (PAN) による、PC との SSH 接続確立&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;スムースにいけば、 作業時間は 10 〜 20分程度で完了します。
-  (OS イメージ書き込みや apt 更新などの待ち時間は除く)&lt;/p&gt;
-&lt;p&gt;なお、 Raspberry pi の設定を行なうホスト環境は Ubuntu 18.04.2 LTS とします。&lt;/p&gt;
-&lt;p&gt;Ubuntu が Native で動作する PC でも、
-  Windows 上の Gest OS の Ubuntu でも構いません。
-  ただし、 Windows 10 の subsystem の linux は対象外です。&lt;/p&gt;
-&lt;h1&gt;Raspberry pi zero w を USB 接続のみでセットアップ&lt;/h1&gt;
-&lt;h2&gt;SD カードに OS Image を書き込む&lt;/h2&gt;
-&lt;p&gt;公式サイトから OS Image を落して SD カードに書き込みます。&lt;/p&gt;
-&lt;p&gt;今回は Raspbian Stretch with desktop and recommended software の
-  2019-04-08 を使用しました。&lt;/p&gt;
-&lt;p&gt;以前 raspi で Bluetooth を扱った時、
-  Lite では意図する動作にならなかったトラウマがあるため、今回はこれを使用します。&lt;/p&gt;
-&lt;p&gt;イメージを書いたら、ssh と IP over USB (RNDIS) を有効化するため、
-  SD カードをマウントした直下の次のファイルを編集します。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;ssh&lt;/li&gt;
-  &lt;li&gt;config.txt&lt;/li&gt;
-  &lt;li&gt;cmdline.txt&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;編集内容については、次の URL を参考に。&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://qiita.com/mt08/items/ce5e3911d74d7fad4563#%E6%89%8B%E9%A0%86&quot;&gt;https://qiita.com/mt08/items/ce5e3911d74d7fad4563#%E6%89%8B%E9%A0%86&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;念の為要点だけをまとめておくと、&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;空の ssh ファイルを作成&lt;/li&gt;
-  &lt;li&gt;config.txt に次を追加&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class=&quot;example&quot;&gt;
-dtoverlay=dwc2
-&lt;/pre&gt;
-&lt;ul&gt;
-  &lt;li&gt;cmdline.txt
-    &lt;ul&gt;
-      &lt;li&gt;rootwaitとquietの間に次を挿入&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class=&quot;example&quot;&gt;
-modules-load=dwc2,g_ether
-&lt;/pre&gt;
-&lt;h2&gt;RNDIS 設定&lt;/h2&gt;
-&lt;p&gt;Ubuntu では、Raspberry pi zero w (以降 raspi) を
-  USB (2つある USB コネクタのうち、 HDMI コネクタ側の方)で接続すれば、
-  運が良ければ特になにもせずに IP over USB (RNDIS) で raspi と通信可能になります。&lt;/p&gt;
-&lt;p&gt;通信可能かどうかは、次の方法で確認できます。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ ip a
-&lt;/pre&gt;
-&lt;p&gt;ここで enp0s20u1 的なデバイスが表示されていて、
-  IP アドレスが取れていることを確認します。&lt;/p&gt;
-&lt;p&gt;IP アドレスが取れている場合、次のコマンドで raspi の IP を確認します。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ ip n
-&lt;/pre&gt;
-&lt;p&gt;同じサブネットのアドレスがあれば、それが raspi の IP。&lt;/p&gt;
-&lt;p&gt;raspi の IP が分かったら、 ssh すれば OK。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ ssh -Y pi@10.42.0.100
-&lt;/pre&gt;
-&lt;p&gt;ちなみにデフォルトパスワードは raspberry.&lt;/p&gt;
-&lt;p&gt;大抵の場合、運が良くないので上記の確認では期待した結果にならない。&lt;/p&gt;
-&lt;p&gt;そのため、次のネットワーク設定が必要になる。&lt;/p&gt;
-&lt;p&gt;まず、ネットワーク設定を行なう前に、現在のネットワークの状況を確認します。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ ip a
-&lt;/pre&gt;
-&lt;p&gt;このコマンドで表示される「デバイス名」と「MAC アドレス」をメモっておきます。&lt;/p&gt;
-&lt;p&gt;メモった後に、次のコマンドを実行します。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ sudo nmtui
-&lt;/pre&gt;
-&lt;p&gt;起動すると、いくつかの Ethernet 設定がリストで表示されるので、
-  編集を選択します。&lt;/p&gt;
-&lt;p&gt;編集を選択すると、デバイスの欄に「デバイス名」あるいは「MAC アドレス」が
-  表示されているので、
-  USB の方の情報が表示されている Ethernet 設定を見つけます。&lt;/p&gt;
-&lt;p&gt;設定を見つけたら、一旦その設定自体を消します。
-  USB のデバイスに関する設定が複数ある場合は、全て削除します。&lt;/p&gt;
-&lt;p&gt;そして、新しく設定を追加します。&lt;/p&gt;
-&lt;p&gt;このときの設定内容は次の通りです。&lt;/p&gt;
-&lt;ul&gt;
-  &lt;li&gt;接続タイプ Ethernet&lt;/li&gt;
-  &lt;li&gt;デバイス名を enp0s20u1 &lt;b&gt;(実際のデバイス名に合せる)&lt;/b&gt;&lt;/li&gt;
-  &lt;li&gt;IP4 config を share にする&lt;/li&gt;
-  &lt;li&gt;Require IPv4 addression for this connection をチェック&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;設定後、connection を activate する。&lt;/p&gt;
-&lt;p&gt;これで再度 &lt;code&gt;ip a&lt;/code&gt; から確認してください。
-  これでも上手く動作しない場合、
-  deactivate と activate を何度か繰り返すと解消されることがあります。&lt;/p&gt;
-&lt;p&gt;ちなみに Windows をホストに作業する場合、野良ドライバのインストールが必要です。
-  個人的には、Windows への野良ドライバインストールはオススメできません。&lt;/p&gt;
-&lt;p&gt;以降は、 raspi に ssh 接続した状態で作業します。&lt;/p&gt;
-&lt;p&gt;まずは、次のコマンドで apt を更新しておきます。&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-$ sudo apt-get update
-$ sudo apt-get install bluez-tools pulseaudio-module-bluetooth
-&lt;/pre&gt;
-&lt;p&gt;本来 pulseaudio-module-bluetooth は、 audio sink 用のものなので、
-  今回の目的には不要のはずなんですが、
-  これがないとペアリング後の接続すら出来なかったので入れておきます。&lt;/p&gt;
-&lt;p&gt;次に、 raspi のホスト名を変更します。
-  このホスト名が、 bluetooth のペアリングのときに使用されます。&lt;/p&gt;
-&lt;p&gt;次のコマンドを実行し、 Network Options -&amp;gt; Hostname で適当に変更します。&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-$ sudo raspi-config
-&lt;/pre&gt;
-&lt;h1&gt;Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現&lt;/h1&gt;
-&lt;p&gt;Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となります。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-$ sudo apt install obexpushd
-&lt;/pre&gt;
-&lt;p&gt;obex 系の処理を動かすには、 bluetoothd に &amp;#8211;compat オプションを必要です。&lt;/p&gt;
-&lt;p&gt;オプションの指定は次のように /etc/init.d/bluetooth に &amp;#8211;compat を追加します。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-#SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- $NOPLUGIN_OPTION&amp;quot;
-SSD_OPTIONS=&amp;quot;--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION&amp;quot;
-&lt;/pre&gt;
-&lt;p&gt;あるいは、
-  /etc/systemd/system/bluetooth.target.wants/bluetooth.service に追加するケースもあります。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-#ExecStart=/usr/lib/bluetooth/bluetoothd
-ExecStart=/usr/lib/bluetooth/bluetoothd --compat
-&lt;/pre&gt;
-&lt;p&gt;ファイル編集後 &amp;#8211;compat オプションを反映させます。&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-$ sudo systemctl daemon-reload
-$ sudo /etc/init.d/bluetooth restart
-$ sudo systemctl restart bluetooth
-&lt;/pre&gt;
-&lt;p&gt;次に Bluetooth ファイル受信用ディレクトリを作成します。&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-$ mkdir ~/bluetooth
-&lt;/pre&gt;
-&lt;p&gt;そして次のコマンドを実行します。&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-$ sudo /usr/bin/obexpushd -B -n -o /home/pi/bluetooth
-&lt;/pre&gt;
-&lt;p&gt;これでホスト PC からファイルを送信すると、 /home/pi/bluetooth にファイルを受信します。&lt;/p&gt;
-&lt;p&gt;なお、obexpushd は次のようにサービスとして登録します。&lt;/p&gt;
-&lt;p&gt;/etc/systemd/system/bt-obexpushd.service に次の内容をもつファイルを作成。&lt;/p&gt;
-&lt;pre class=&quot;src&quot; lang=&quot;txt&quot;&gt;
-[Unit]
-Description=Bluetooth obexpushd
-After = bluetooth.service
-
-[Service]
-ExecStartPre=/bin/sleep 4
-ExecStart=/usr/bin/obexpushd -B -n -o /home/pi/bluetooth
-Type=simple
-
-[Install]
-WantedBy=multi-user.target
-&lt;/pre&gt;
-&lt;p&gt;サービスを有効化&lt;/p&gt;
-&lt;pre class=&quot;example&quot;&gt;
-$ sudo systemctl enable bt-obexpushd
-$ sudo systemctl start bt-obexpushd
-&lt;/pre&gt;
-&lt;h1&gt;IP over Bluetooth (PAN) による、PC との SSH 接続確立&lt;/h1&gt;
-&lt;p&gt;PAN の設定は、次の URL の回答をそのまま設定すれば OK です。&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&quot;&gt;https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod&lt;/a&gt;&lt;/p&gt;
-&lt;p&gt;なお、上記 URL の内容を設定後、再度ペアリングをやり直してください。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry><entry><title type="html">VMWare ディスクイメージが圧縮されないときの対応方法</title><link href="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html" rel="alternate" type="text/html" title="VMWare ディスクイメージが圧縮されないときの対応方法" /><published>2019-05-20T00:00:00+09:00</published><updated>2019-05-20T00:00:00+09:00</updated><id>https://ifritjp.github.io/blog/site/2019/05/20/vmware</id><content type="html" xml:base="https://ifritjp.github.io/blog/site/2019/05/20/vmware.html">&lt;p&gt;VMWare のディスクイメージのサイズは、Gest OS 上のディスクサイズと異なる。&lt;/p&gt;
-&lt;p&gt;基本的には、Gest OS 上で実際に使用されているサイズに圧縮された形でホスト OS 上に保持される。&lt;/p&gt;
-&lt;p&gt;しかし、 Gest OS 上でファイル作成、削除を繰り返していると、
-  Gest OS 上での使用サイズよりも、
-  ホスト OS 上でのディスクイメージサイズがかなり大きくなっていることがある。&lt;/p&gt;
-&lt;p&gt;このような状態になった時に、ホスト OS 上のディスクイメージサイズを、
-  Gest OS 上での使用サイズ程度に削減するツール(vmware-toolbox-cmd)が
-  vmware から提供されている。&lt;/p&gt;
-&lt;p&gt;通常は、この vmware-toolbox-cmd を使うことで圧縮されるはずなのだが、
-  自分の環境では全くサイズが変わらなかった。&lt;/p&gt;
-&lt;p&gt;いくつか試した結果、削減出来た方法をメモしておく。&lt;/p&gt;
-&lt;h1&gt;Gest OS 上でのディスクのクローン&lt;/h1&gt;
-&lt;p&gt;今回実施した方法は Gest OS 上でのディスクのクローンを作成することだ。&lt;/p&gt;
-&lt;p&gt;ある意味分かりきった方法かもしれない。&lt;/p&gt;
-&lt;p&gt;ただ、クローン作成の方法はファイル単位のコピーではなく、
-  &lt;b&gt;dd コマンドによるクローン作成&lt;/b&gt; で上手くいった、
-  ということは意外と言えるんじゃないだろうか？&lt;/p&gt;
-&lt;p&gt;ファイル単位のコピーだと、コピーにかなり時間がかかると思うが、
-  dd コマンドで済んだので、10 GB 近いコピーも比較的短時間でコピーが出来た。&lt;/p&gt;
-&lt;p&gt;dd コマンドは、特に何か特別なオプションを付けて実行したのではなく、
-  普通に実行しただけだ。&lt;/p&gt;
-&lt;p&gt;念の為、作業手順をまとめておく。&lt;/p&gt;
-&lt;h2&gt;作業手順&lt;/h2&gt;
-&lt;ul&gt;
-  &lt;li&gt;クローン先の空のディスクイメージを作成する&lt;/li&gt;
-  &lt;li&gt;ディスクイメージを VMWare に登録する&lt;/li&gt;
-  &lt;li&gt;Gest OS を起動する&lt;/li&gt;
-  &lt;li&gt;vmware-toolbox-cmd を使って圧縮&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class=&quot;example&quot;&gt;
-vmware-toolbox-cmd disk shrinkonly
-&lt;/pre&gt;
-&lt;ul&gt;
-  &lt;li&gt;Gest OS 上での圧縮対象ディスクと、クローン先のデバイス名をメモる&lt;/li&gt;
-  &lt;li&gt;dd コマンドでクローン作成&lt;/li&gt;
-&lt;/ul&gt;
-&lt;pre class=&quot;example&quot;&gt;
-dd if=/dev/圧縮対象 of=/dev/クローン先 bs=1M
-&lt;/pre&gt;
-&lt;ul&gt;
-  &lt;li&gt;ここで指定するドライブは、パーティションではなくドライブ全体を指定すること。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;ul&gt;
-  &lt;li&gt;Gest OS を shutdown
-    &lt;ul&gt;
-      &lt;li&gt;ここでクローン先のディスクイメージを見て、
-        Gest OS 上の使用量とほぼ同じサイズに削減されていることを確認する。
-        もしも削減されていない場合、これ以降の作業には意味はない。&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;圧縮対象ディスクイメージを VMWare から除外し、
-    代わりにクローンしたイメージを登録する。
-    &lt;ul&gt;
-      &lt;li&gt;この時クローンイメージを割り付けるハードウェアの ID などが、
-        元の圧縮対象ディスクイメージと同じになるように登録する。&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;Gest OS を起動する。&lt;/li&gt;
-&lt;/ul&gt;
-&lt;p&gt;以上の手順により、サイズが圧縮されたクローンのイメージで運用できる。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="LuneScript" /></entry></feed>
+  興味があれば。&lt;/p&gt;</content><author><name>ifritJP</name></author><category term="english" /></entry></feed>
