@@ -3,10 +3,10 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2020-02-20 木 22:34 -->
+<!-- 2020-02-22 土 13:54 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>gc 検討(図解)</title>
+<title>LuneScript の GC 検討(図解)</title>
 <meta name="generator" content="Org mode" />
 <meta name="author" content="ifritJP" />
 <style type="text/css">
@@ -243,69 +243,86 @@ for the JavaScript code in this tag.
 </head>
 <body>
 <div id="content">
-<h1 class="title">gc 検討(図解)</h1>
+<h1 class="title">LuneScript の GC 検討(図解)</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org9003405">1. 世代別 GC 概要</a></li>
-<li><a href="#org33bd7d4">2. 原理</a>
+<li><a href="#org7e26e5a">1. 世代別 GC 概要</a></li>
+<li><a href="#orgb34cd97">2. 原理</a>
 <ul>
-<li><a href="#orgac141d5">2.1. 属性</a></li>
+<li><a href="#org42d08aa">2.1. 属性</a></li>
+<li><a href="#org7876669">2.2. MinorObject を参照する MinorSymbol リスト minorRefList の実現方法</a>
+<ul>
+<li><a href="#org3071601">2.2.1. MinorSymbol 側に pNext/pPrev のリスト構造を持たせる</a></li>
+<li><a href="#org9768b19">2.2.2. MinorObject 側に MinorSymbol を管理する配列を持たせる</a></li>
 </ul>
 </li>
-<li><a href="#org88e31b4">3. 手順</a>
-<ul>
-<li><a href="#orgb3345be">3.1. case1</a>
-<ul>
-<li><a href="#org2c2ce6b">3.1.1. gc</a></li>
 </ul>
 </li>
-<li><a href="#org513986a">3.2. case2</a>
+<li><a href="#org78bf360">3. gcNew の手順</a>
 <ul>
-<li><a href="#orgfb937f3">3.2.1. gc</a></li>
+<li><a href="#orgd167157">3.1. case1</a>
+<ul>
+<li><a href="#org00c6712">3.1.1. gc</a></li>
 </ul>
 </li>
-<li><a href="#org1c7ac03">3.3. gc 実行後</a></li>
+<li><a href="#orga43214c">3.2. case2</a>
+<ul>
+<li><a href="#orgdb50040">3.2.1. gc</a></li>
+</ul>
+</li>
+<li><a href="#orgb8c8d2c">3.3. gc 実行後</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 <p>
-世代別 GC の minor GC の動作。
+LuneScript の GC を、参照カウンタ型から世代別 GC に切り替えるための検討。
 </p>
 
-<div id="outline-container-org9003405" class="outline-2">
-<h2 id="org9003405"><span class="section-number-2">1</span> 世代別 GC 概要</h2>
+<div id="outline-container-org7e26e5a" class="outline-2">
+<h2 id="org7e26e5a"><span class="section-number-2">1</span> 世代別 GC 概要</h2>
 <div class="outline-text-2" id="text-1">
 <p>
-新しく生成したオブジェクトは使い捨てされる可能性が高いく、
-古いオブジェクトは生存期間が長い傾向がある。
+生成したオブジェクトの生存期間は、次の特性を持つ傾向にある。
 </p>
+
+<ul class="org-ul">
+<li>新しく生成したオブジェクトは使い捨てされる</li>
+<li>ある期間使用され続けたオブジェクトは、そのまま使用され続ける</li>
+</ul>
 
 <p>
-この傾向を利用し、新しく生成したオブジェクトと古いオブジェクトとで、
-GC の方式を変えて積極的に新しいオブジェクトの未使用オブジェクトを破棄することで、
-GC 処理を効率的に行なう。
+この傾向を利用し、新しく生成したオブジェクトと古いオブジェクトとで
+GC の方式を変えて積極的に新しいオブジェクトの未使用オブジェクトを破棄し、
+GC 処理を効率的に行なうのが世代別 GC の戦略だ。
 </p>
 </div>
 </div>
 
-<div id="outline-container-org33bd7d4" class="outline-2">
-<h2 id="org33bd7d4"><span class="section-number-2">2</span> 原理</h2>
+
+<div id="outline-container-orgb34cd97" class="outline-2">
+<h2 id="orgb34cd97"><span class="section-number-2">2</span> 原理</h2>
 <div class="outline-text-2" id="text-2">
 <ul class="org-ul">
-<li>世代別 GC は gcNew と gcFull で分割
+<li>世代別 GC は gcNew と gcFull で GC 処理を分割する。
 <ul class="org-ul">
 <li>gcNew は、新しいオブジェクト minor のみを対象とする</li>
 <li>gcFull は、全てのオブジェクトを対象とする</li>
 </ul></li>
 <li>新しく生成したオブジェクトは minor として管理し、
-minor オブジェクトの総数が規定の個数になったタイミングで gcNew を実行する。</li>
-<li>gcNew で minor オブジェクトの生存確認を実行し、
+minor オブジェクトの総数が規定の個数になったタイミングで gcNew を実行する。
+<ul class="org-ul">
+<li>gcNew は、 minor オブジェクトの生存確認を実行し、
 生存したオブジェクトの生存カウンタをインクリメントする。</li>
 <li>生存カウンタが一定値に到達したオブジェクトは manor から major に昇格させる</li>
+</ul></li>
+<li>使用メモリの総サイズが一定に到達したタイミングで gcFull を実行する。
+<ul class="org-ul">
+<li>gcFull は、全オブジェクトの生存確認を実行する。</li>
+</ul></li>
 </ul>
 
 
@@ -319,13 +336,24 @@ Sorry, your browser does not support SVG.</object>
 
 
 
-<div id="outline-container-orgac141d5" class="outline-3">
-<h3 id="orgac141d5"><span class="section-number-3">2.1</span> 属性</h3>
+<div id="outline-container-org42d08aa" class="outline-3">
+<h3 id="org42d08aa"><span class="section-number-3">2.1</span> 属性</h3>
 <div class="outline-text-3" id="text-2-1">
 <ul class="org-ul">
-<li>全てのオブジェクトは、minor か major どちらに属するかを示す情報を持つ</li>
-<li>minor から major に昇格するが、 major から minor への降格はない</li>
-<li>minor に属するオブジェクトは、どのシンボルから参照されているかのリストを持つ</li>
+<li>全オブジェクトは次の状態を持つ
+<ul class="org-ul">
+<li>minor</li>
+<li>major</li>
+<li>生存未確定</li>
+<li>生存確認中</li>
+<li>破棄確定</li>
+</ul></li>
+<li>minor から major に昇格(promote)するが、 major から minor への降格はない</li>
+<li>minor に属するオブジェクトは、次の情報を持つ
+<ul class="org-ul">
+<li>どのシンボルから参照されているかのリスト</li>
+<li>gcNew の GC 処理で生存した回数を保持する生存カウンタ</li>
+</ul></li>
 
 <li>minor に属するオブジェクトを配列で管理</li>
 
@@ -334,13 +362,48 @@ Sorry, your browser does not support SVG.</object>
 <li>メンバの場合、そのメンバを保持するオブジェクトを示す情報を持つ</li>
 </ul></li>
 </ul>
+
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="attrib.svg" class="" width="40%">
+Sorry, your browser does not support SVG.</object>
+</p>
 </div>
 </div>
 </div>
 
 
-<div id="outline-container-org88e31b4" class="outline-2">
-<h2 id="org88e31b4"><span class="section-number-2">3</span> 手順</h2>
+<div id="outline-container-org7876669" class="outline-3">
+<h3 id="org7876669"><span class="section-number-3">2.2</span> MinorObject を参照する MinorSymbol リスト minorRefList の実現方法</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+minorRefList の実現方法には、次の 2 つが考えられる。
+</p>
+
+<ul class="org-ul">
+<li>MinorSymbol 側に pNext/pPrev のリスト構造を持たせる</li>
+<li>MinorObject 側に MinorSymbol を管理する配列を持たせる</li>
+</ul>
+
+<p>
+次節ではそれぞれの特徴を述べる
+</p>
+</div>
+
+<div id="outline-container-org3071601" class="outline-4">
+<h4 id="org3071601"><span class="section-number-4">2.2.1</span> MinorSymbol 側に pNext/pPrev のリスト構造を持たせる</h4>
+</div>
+
+<div id="outline-container-org9768b19" class="outline-4">
+<h4 id="org9768b19"><span class="section-number-4">2.2.2</span> MinorObject 側に MinorSymbol を管理する配列を持たせる</h4>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-org78bf360" class="outline-2">
+<h2 id="org78bf360"><span class="section-number-2">3</span> gcNew の手順</h2>
 <div class="outline-text-2" id="text-3">
 <ul class="org-ul">
 <li>minor リストのオブジェクトに対し次を実行
@@ -373,8 +436,8 @@ Sorry, your browser does not support SVG.</object>
 
 
 
-<div id="outline-container-orgb3345be" class="outline-3">
-<h3 id="orgb3345be"><span class="section-number-3">3.1</span> case1</h3>
+<div id="outline-container-orgd167157" class="outline-3">
+<h3 id="orgd167157"><span class="section-number-3">3.1</span> case1</h3>
 <div class="outline-text-3" id="text-3-1">
 
 <div class="figure">
@@ -384,8 +447,8 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </div>
 
-<div id="outline-container-org2c2ce6b" class="outline-4">
-<h4 id="org2c2ce6b"><span class="section-number-4">3.1.1</span> gc</h4>
+<div id="outline-container-org00c6712" class="outline-4">
+<h4 id="org00c6712"><span class="section-number-4">3.1.1</span> gc</h4>
 <div class="outline-text-4" id="text-3-1-1">
 
 <div class="figure">
@@ -396,7 +459,7 @@ Sorry, your browser does not support SVG.</object>
 </div>
 
 <ol class="org-ol">
-<li><a id="org3194a08"></a>step<br />
+<li><a id="org580664a"></a>step<br />
 <div class="outline-text-5" id="text-3-1-1-1">
 <ul class="org-ul">
 <li>obj1 は、 var1 で参照されているため <b>生存</b></li>
@@ -417,8 +480,8 @@ Sorry, your browser does not support SVG.</object>
 </div>
 
 
-<div id="outline-container-org513986a" class="outline-3">
-<h3 id="org513986a"><span class="section-number-3">3.2</span> case2</h3>
+<div id="outline-container-orga43214c" class="outline-3">
+<h3 id="orga43214c"><span class="section-number-3">3.2</span> case2</h3>
 <div class="outline-text-3" id="text-3-2">
 <p>
 case1 から var1 のスコープが外れる。
@@ -432,8 +495,8 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </div>
 
-<div id="outline-container-orgfb937f3" class="outline-4">
-<h4 id="orgfb937f3"><span class="section-number-4">3.2.1</span> gc</h4>
+<div id="outline-container-orgdb50040" class="outline-4">
+<h4 id="orgdb50040"><span class="section-number-4">3.2.1</span> gc</h4>
 <div class="outline-text-4" id="text-3-2-1">
 
 <div class="figure">
@@ -445,7 +508,7 @@ Sorry, your browser does not support SVG.</object>
 
 
 <ol class="org-ol">
-<li><a id="orgdf9acb9"></a>step<br />
+<li><a id="org384a7a6"></a>step<br />
 <div class="outline-text-5" id="text-3-2-1-1">
 <ul class="org-ul">
 <li>1 回目の確認    
@@ -487,8 +550,8 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </div>
 
-<div id="outline-container-org1c7ac03" class="outline-3">
-<h3 id="org1c7ac03"><span class="section-number-3">3.3</span> gc 実行後</h3>
+<div id="outline-container-orgb8c8d2c" class="outline-3">
+<h3 id="orgb8c8d2c"><span class="section-number-3">3.3</span> gc 実行後</h3>
 <div class="outline-text-3" id="text-3-3">
 
 <div class="figure">
@@ -502,7 +565,7 @@ Sorry, your browser does not support SVG.</object>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2020-02-20 木 22:34</p>
+<p class="date">Created: 2020-02-22 土 13:54</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
