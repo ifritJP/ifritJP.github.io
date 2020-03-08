@@ -7,7 +7,7 @@
 
 *2019/6 Bluetooth のファイル転送、PAN 設定について書きました。* 
 
-https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html
+- https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html
 
 
 RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
@@ -19,7 +19,7 @@ Web に載っていますが、幾つかハマったポイントがあったの�
 いくつかハマるポイントがあります。
 
 なお、基本的には次の URL に記載されている設定手順を参考にしますが、
-多くの手順は不要です。
+その URL に記載されている多くの手順は不要です。
 
 https://www.raspberrypi.org/forums/viewtopic.php?t=68779
 
@@ -39,6 +39,21 @@ RaspberryPi の OS イメージは、
 Raspbian のバージョンによっては lite でも問題ないかもしれませんが、
 ここでは *Raspbian Stretch with desktop* を使用します。
 
+
+*2020/3/08 追記*
+
+*2020/3 現在、 Raspbian Buster と RaspberryPi3 Model B の組み合わせだと、A2DP 再生時の音声ノイズを改善できません。*
+Raspbian Stretch でも、バージョンが異なるとノイズを改善できない可能性があります。
+RaspberryPi3 Model B 以外でどうか、
+あるいは、RaspberryPi3 Model B の他の個体でどうかは確認できていません。
+
+なお、RaspberryPi3 の WiFi で脆弱性が確認されているようです。
+
+https://pc.watch.impress.co.jp/docs/news/1237645.html
+
+この記事では、末尾で WiFi を無効化しているので影響はありませんが、
+もしも WiFi を有効化している場合は *各自の自己責任* のもと、
+注意して運用してください。
 
 * sshd 有効化
 
@@ -60,13 +75,15 @@ OS イメージ書き込み時にファイルを作成しておいた方が良�
 
 これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。
 
+※ デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。
+
 * apt パッケージ更新
 
 まずは apt パッケージを更新します。
 
 #+BEGIN_SRC txt
 $ sudo apt-get update
-$ sudo apt-get upgrade
+$ sudo apt-get upgrade # ※※※※ 2020/3 現在、 upgrade すると bluetooth の音声ノイズを改善できません
 #+END_SRC
 
 これはお決まりのパターンなんで、特に理由がない限りやっておきます。
@@ -220,9 +237,7 @@ discoverable が on の状態だと新規にペアリングを登録可能なの
 
 そこで、次のコマンドでペアリングを認証します。
 
-#+BEGIN_SRC txt
-[bluetooth]# trust XX:XX:XX:XX:XX:XX
-#+END_SRC
+: [bluetooth]# trust XX:XX:XX:XX:XX:XX
 
 これでペアリングが認証され次のように表示されます。
 
@@ -245,17 +260,13 @@ $ pactl list sources short
 
 これで次のような出力がされます。
 
-#+BEGIN_SRC txt
-0	lsa_output.platform-soc_audio.analog-stereo.monitor	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED
-#+END_SRC
+: 0	lsa_output.platform-soc_audio.analog-stereo.monitor	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED
 
 これは、 Audio のソース一覧を出力するコマンドです。
 A2DP で接続すると、このリストに次のような情報が出力されると、
  Web の解説ページには記載されていましたが、私の環境では表示されませんでした。
 
-#+BEGIN_SRC txt
-6	bluez_source.XX_XX_XX_XX_XX_XX.a2dp_source	module-bluez5-device.c	s16le 2ch 44100Hz	RUNNING
-#+END_SRC
+: 6	bluez_source.XX_XX_XX_XX_XX_XX.a2dp_source	module-bluez5-device.c	s16le 2ch 44100Hz	RUNNING
 
 ここでは慌てず騒がず、
 client 側の Audio 出力設定を Bluetooth に切り替えて音楽を再生してから、
@@ -267,9 +278,7 @@ client 側の設定で出力を A2DP に変更してください。
 
 それでも駄目な場合、次のコマンドを実行してください。
 
-#+BEGIN_SRC txt
-$ sudo service bluetooth restart
-#+END_SRC
+: $ sudo service bluetooth restart
 
 これで出力される場合、 rc.local に次の処理を追加します。
 
@@ -298,9 +307,7 @@ $ pactl list sinks short
 デフォルトの出力先を変更する場合は、
 /etc/pulse/default.pa に出力先名を設定します。
 
-#+BEGIN_SRC txt
-set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
-#+END_SRC
+: set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
 
 これでリブートすれば出力先が切り替わります。
 
@@ -315,7 +322,7 @@ RaspberryPi3 の WiFi を有効にしていると、干渉ノイズが入りま�
 WiFi 無効化は /boot/config.txt に次の設定を追加します。
 
 # WiFi off
-dtoverlay=pi3-disable-wifi
+: dtoverlay=pi3-disable-wifi
 
 
 * /etc/pulse/daemon.conf の設定
@@ -324,9 +331,7 @@ dtoverlay=pi3-disable-wifi
 
 /etc/pulse/daemon.conf に追記し、リブートさせます。
 
-#+BEGIN_SRC txt
-resample-method = trivial
-#+END_SRC
+: resample-method = trivial
 
 この設定をしないと、多くの場合にノイズが発生します。
 
@@ -338,9 +343,7 @@ resample-method = trivial
 Client によっては、デフォルトだとペアリングできないことがあります。
 その場合 /etc/bluetooth/main.conf に次を設定します。
 
-#+BEGIN_SRC txt
-Class = 0x240404
-#+END_SRC
+: Class = 0x240404
 
 Amazon Fire TV とペアリングする場合、この設定が必要でした。
 
