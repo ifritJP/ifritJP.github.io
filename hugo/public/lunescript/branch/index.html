@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>一般分岐構文 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/branch/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="一般分岐構文 編" />
+<meta property="og:description" content="今回は LuneScript の一般分岐構文について説明します。 構文一覧 LuneScript は、次の一般分岐構文をサポートします。 if switch ちなみに、ここであえて「一般」分岐制御としてい" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/branch/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="一般分岐構文 編"/>
+<meta name="twitter:description" content="今回は LuneScript の一般分岐構文について説明します。 構文一覧 LuneScript は、次の一般分岐構文をサポートします。 if switch ちなみに、ここであえて「一般」分岐制御としてい"/>
+<meta itemprop="name" content="一般分岐構文 編">
+<meta itemprop="description" content="今回は LuneScript の一般分岐構文について説明します。 構文一覧 LuneScript は、次の一般分岐構文をサポートします。 if switch ちなみに、ここであえて「一般」分岐制御としてい">
+
+<meta itemprop="wordCount" content="831">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>一般分岐構文 編</h1>
+
+<p>
+今回は LuneScript の一般分岐構文について説明します。
+</p>
+<h2 id="headline-1">
+構文一覧
+</h2>
+<p>
+LuneScript は、次の一般分岐構文をサポートします。
+</p>
+<ul>
+<li>
+<p>
+if
+</p>
+</li>
+<li>
+<p>
+switch
+</p>
+</li>
+</ul>
+<p>
+ちなみに、ここであえて「一般」分岐制御としているのは、
+nilable 制御で別途分岐制御があるためです。
+</p>
+<h3 id="headline-2">
+if
+</h3>
+<p>
+if 文は、次のように使用します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val = 1;
+if val == 1 {
+   print( &#34;hoge&#34; );
+}
+elseif val == 2 {
+   print( &#34;foo&#34; );
+}
+else {
+   print( &#34;bar&#34; );
+}</code></pre>
+</div>
+<p>
+説明は不要かと思いますが、次のように処理されます。
+</p>
+<ul>
+<li>
+<p>
+if の式が成立している場合、 if のブロックが実行される。
+</p>
+</li>
+<li>
+<p>
+if の式が不成立で elseif の式が成立している場合、elseif のブロックが実行される。
+</p>
+</li>
+<li>
+<p>
+全ての式が不成立の場合、else のブロックが実行される。
+</p>
+</li>
+<li>
+<p>
+elseif は複数存在しても良い。
+</p>
+</li>
+<li>
+<p>
+elseif, else は存在しなくてもよい。  
+</p>
+</li>
+<li>
+<p>
+式が <strong>「不成立」</strong> する条件は、その式の結果が nil か false の時。
+</p>
+</li>
+</ul>
+<h4 id="headline-3">
+bool 値との比較
+</h4>
+<p>
+LuneScript では、 bool 値との比較を推奨していません。
+</p>
+<p>
+具体的には次のようなオペレーションを推奨しません。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">   let val1 = true;
+   if val1 == true {
+   }
+   if val1 == false {
+   }
+   if val1 ~= false {
+   }
+   if val1 ~= true {
+   }</code></pre>
+</div>
+<p>
+上記のオペレーションは、近い将来廃止予定です。
+</p>
+<p>
+現在は、コンパイル時に warning メッセージを出力します。
+</p>
+<p>
+bool の真偽値によって処理を切り替える場合、
+次のようにしてください。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let exp = true;
+if exp {
+   print( &#34;exp is true&#34; );
+}
+else {
+   print( &#34;exp is false&#34; );
+}
+if not exp {
+   print( &#34;exp is false&#34; );
+}</code></pre>
+</div>
+<p>
+次の記事のコメントにあるような議論は、これで不要になります。
+</p>
+<p>
+https://qiita.com/dwarfJP/items/b65ae583e195ef3b87ee
+</p>
+<h3 id="headline-4">
+switch
+</h3>
+<p>
+switch 文は次のように使用します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val = 1;
+switch val {
+   case 1 {
+      print( &#34;hoge&#34; );
+   }
+   case 2 {
+      print( &#34;foo&#34; );
+   }
+   default {
+      print( &#34;bar&#34; );
+   }
+}</code></pre>
+</div>
+<p>
+なおこのサンプルは、上記 if のサンプルと同義です。
+</p>
+<p>
+switch の case には、次のように複数の式を書けます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val = 1;
+switch val {
+   case 10, 20, 30 {
+      print( &#34;hoge&#34; );
+   }
+   default {
+      print( &#34;bar&#34; );
+   }
+}</code></pre>
+</div>
+<p>
+これは次の if 文と同義で、いづれかの値に一致すると、そのブロックを実行します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val = 1;
+if val == 10 or val == 20 or val == 30 {
+   print( &#34;hoge&#34; );
+}
+else {
+   print( &#34;bar&#34; );
+}</code></pre>
+</div>
+<p>
+switch 文で注意すべき点は、 C 言語などと違い break が不要であることです。
+</p>
+<p>
+例えば次の break は、 switch 文を抜けるのではなく for 文を抜けることになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">for count = 1, 10 {
+   switch count {
+      case 5 {
+         break;
+      }
+   }
+}</code></pre>
+</div>
+<h2 id="headline-5">
+まとめ
+</h2>
+<p>
+LuneScript の一般分岐構文は、 if と switch があります。
+</p>
+<p>
+goto はありません。
+</p>
+<p>
+次回は、繰り返し制御について説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/macro/" title="マクロ 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - マクロ 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/value/" title="値編">Next - 値編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

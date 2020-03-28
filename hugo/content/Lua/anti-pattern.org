@@ -1,0 +1,273 @@
+#+TITLE: Lua でやりがちなミス
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+Lua は少し癖のある言語なので、その癖を知らないとミスに繋がることがあります。
+
+この記事では Lua のコードを組む際に、やってしまいがちなミスについて説明します。
+
+コードをテストすれば、すぐに検出できるレベルのものばかりですが、
+コーディング時に避けられるように知識として持っておくべきでしょう。
+
+また、 Lua のトランスコンパイラである LuneScript を使用した場合の
+解決方法も一緒に紹介します。
+
+* シーケンスでないテーブルの要素数を # 演算子を使って取得する
+
+#+BEGIN_SRC lua
+local data1 = {}
+data1[ "key1" ] = 1
+data1[ "key2" ] = 2
+data1[ "key3" ] = 3
+local data2 = {}
+data2[ 1 ] = 1
+data2[ 2 ] = 2
+data2[ 3 ] = 3
+print( #data1, #data2 )  -- 0 3
+#+END_SRC
+
+上記サンプルの ~print( #data1, #data2 )~ は、 0 3 を出力します。
+
+Lua は、リスト構造をテーブルで管理します。
+
+Lua のテーブルは、
+要素にアクセスするインデックスとして、数値以外を利用することができます。
+
+テーブルのインデックスが、連続した自然数であるテーブルを *シーケンス* といい、
+~#~ 演算子は *シーケンス* の長さを返します。
+
+上記サンプルの data1, data2 の要素数は両方とも 3 ですが、
+data2 はシーケンスであるため #data2 は 3 となります。
+一方、data1 はシーケンスではないため #data1 は 0 となります。
+
+
+** LuneScript の場合
+
+LuneScript では、 List と Map を別の型として扱い、
+~#~ 演算子が利用できるのは List に対してのみです。
+Map に対して # 演算子を使用するとコンパイルエラーとなります。
+
+* table.insert() で nil を追加する
+
+#+BEGIN_SRC lua
+local list = {}
+table.insert( list, 1 )
+table.insert( list, nil )
+table.insert( list, 3 )
+print( #list ) -- 2
+#+END_SRC
+
+上記サンプルは、
+リスト list に対して insert() を 3 回実行しているにもかかわらず、
+#list は 2 になります。
+
+Lua のテーブルは、キーと値を紐付けて管理します。
+このキーと値は nil 以外である必要があります。
+
+上記サンプルでは、 list テーブルに対して値 1, nil, 3 を順次追加していますが、
+テーブルに nil は保持できず、結果的に ~{1,3}~ となるため #list は 2 となります。
+
+** LuneScript の場合
+
+LuneScript では、 List に対して nil(nilable) を insert() すると、
+コンパイルエラーになります。
+
+* nil を含むリストに対して table.remove() する。
+
+Lua のテーブルは nil を保持できないと書きましたが、
+次のリストを表現することができます。
+
+#+BEGIN_SRC lua
+local list = { 1, nil, 3 }
+print( list[1],list[2],list[3],#list ) -- 1 nil 3 3
+#+END_SRC
+
+どういうことかというと、 Lua のテーブルは nil を保持できませんが、
+一見 nil が入っているかのように見えるテーブルが作れるということです。
+
+
+では、このリストに対して table.remove() したらどうなるでしょうか？
+
+#+BEGIN_SRC lua
+local list = { 1, nil, 3 }
+print( list[1],list[2],list[3],#list ) -- 1 nil 3 3
+table.remove( list )
+print( list[1],list[2],list[3],#list ) -- 1 nil nil 1
+#+END_SRC
+
+table.remove() 後の ~#list~ は 1 になります。
+
+このように、長さ 3 のテーブルから要素を一つ削除すると、長さ 1 になる、
+という奇妙な動作となります。
+
+Lua のテーブルの仕様上しかたがないですが、かなり特殊な動作といえます。
+
+** LuneScript の場合
+
+nil(nilable) の値を保持可能な List に対し remove() した場合、
+コンパイル時に warning となります。
+
+* local の付け忘れ
+
+Lua のシンボルは、デフォルトでグローバルとして扱われます。
+スコープを限定したローカルなシンボルを定義するには、  ~local~ 宣言が必要です。
+
+#+BEGIN_SRC lua
+val1 = 1;
+local val2 = 2;
+#+END_SRC
+
+上記の val1 はグローバルで、 val2 はローカルとなります。
+
+関数定義も同様に、ローカルな関数にするには local 宣言が必要です。
+
+この local 宣言は、ついつい忘れてしまいがちです。
+
+luacheck コマンドを導入することで、
+global なシンボル定義している箇所を確認することができます。
+
+** LuneScript の場合
+
+LuneScript では、シンボルはデフォルトでローカルとなります。
+
+* / 演算の結果をそのまま使用する
+
+Lua の数値は原則実数です。
+
+よって、 4/3 は 1.33333 となります。
+
+#+BEGIN_SRC lua
+print( 4/3 )   -- 1.333333
+#+END_SRC
+
+整数と実数をわけて管理する言語に慣れていると、
+ついつい 4/3 は 1 になることを期待してしまいます。
+
+Lua で 4 ÷ 3 の結果を 1 とするには、次の対応が必要です。
+
+- Lua5.3 は、整数の除算用の ~//~ を使用する
+- Lua5.2 は、math.floor() を使用する
+
+** LuneScript の場合
+
+LuneScript では int と real が型として存在します。
+
+よって 4/3 は 1 で、 4/3.0 は 1.33333 となります。
+
+* return 抜け
+
+#+BEGIN_SRC lua
+function func( val )
+   if val then
+      return val + 1
+   end
+end
+print( func(), func( 1 ) ) -- nil 2
+#+END_SRC
+
+Lua の関数は return で戻り値を指定します。
+return が実行されない関数の戻り値は nil になります。
+
+上記サンプルの func() は、
+引数 val に nil 以外が指定されている場合 return で戻り値を指定していますが、
+val が nil だった場合 return がありません。
+
+これが意図した仕様ならば良いですが、
+return が抜けている可能性があります。
+
+もしも意図していない抜けであったとしても、 Lua はそれを検出できません。
+
+** LuneScript の場合
+
+LuneScript では、 値を返す関数に return がない場合はコンパイルエラーとなります。
+
+他にも型由来のエラーは、 LuneScript ではコンパイルエラーとなります。
+
+* nil 安全
+
+Lua は nil 安全な言語ではありません。
+
+** LuneScript の場合
+
+LuneScript は nil 安全です。
+
+* 意図せずに多値の関数戻り値を使用してしまう
+
+次の func1() と func2() は、同じ引数 "abcb" を与えているのに異なる結果を出力します。
+func1() と func2() で何が違うか分かるでしょうか？
+  
+#+BEGIN_SRC lua
+local function func1( txt ) 
+   print( string.byte( txt:gsub( "b", "B" ) ) )
+end
+local function func2( txt ) 
+   print( string.byte( (txt:gsub( "b", "B" )) ) )
+end
+func1( "abcb" ) -- 66
+func2( "abcb" ) -- 97
+#+END_SRC
+
+答は、 func1() は string.byte に ~txt:gsub( "b", "B" )~ の
+戻り値そのままを渡しているのに対し、
+func2() は ~()~ を括った ~(txt:gsub( "b", "B" ))~ を渡しています。
+
+Lua の関数の戻り値が多値だった場合、第一の戻り値だけを引数に渡しているつもりが、
+多値の戻り値を引数に渡してしまう可能性があります。
+
+これにより、意図しない動作になってしまうことがあります。
+
+** LuneScript の場合
+
+LuneScript では、多値の戻り値を使用する場合は、明示が必要です。
+
+明示しない場合は warning になります。
+
+詳しくは次を参考に。
+
+[[../../lunescript/multipleretval]]
+
+* and or を利用した三項演算
+
+Lua には三項演算子はなく、
+その代わりとして次のような and or を利用したテクニックが良く紹介されています。
+
+  ~EXP and VAL1 or VAL2~
+
+これは EXP が真の時に VAL1 となり、偽の時に VAL2 となります。
+
+例えば次の場合、 ~func(1)~ は ~1 nil~ を出力し、  ~func(2)~ は ~nil 1~ を出力します。
+
+#+BEGIN_SRC lua
+local function func( val )
+   print( val == 1 and 1 or nil, val == 2 and 1 or nil )
+end
+func( 1 ) -- 1 nil
+func( 2 ) -- nil 1
+#+END_SRC
+
+and or を利用したテクニックの場合、
+VAL1 が偽 ( nil あるいは false ) となると、期待する動作になりません。
+
+上記 func() の VAL1, VAL2 の関係を置き換えた場合、次のようになります。
+
+#+BEGIN_SRC lua
+local function func( val )
+   print( val == 1 and nil or 1, val == 2 and nil or 1 )
+end
+func( 1 ) -- 1 1
+func( 2 ) -- 1 1
+#+END_SRC
+
+この場合、 ~func(1)~ , ~func(2)~ ともに ~1 1~ を出力します。
+
+and or の仕様としては正しい動作ですが、
+and or を三項演算子として使用した場合は異なる結果になります。
+
+** LuneScript の場合
+
+これについては LuneScript も同じです。
+
+そのうち三項演算子を実装しようかな。。

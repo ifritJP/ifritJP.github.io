@@ -1,0 +1,160 @@
+#+TITLE: 一般分岐構文 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の一般分岐構文について説明します。
+
+* 構文一覧
+
+LuneScript は、次の一般分岐構文をサポートします。
+
+- if
+- switch
+
+ちなみに、ここであえて「一般」分岐制御としているのは、
+nilable 制御で別途分岐制御があるためです。
+
+** if
+
+if 文は、次のように使用します。
+
+#+BEGIN_SRC lns
+let val = 1;
+if val == 1 {
+   print( "hoge" );
+}
+elseif val == 2 {
+   print( "foo" );
+}
+else {
+   print( "bar" );
+}
+#+END_SRC
+
+説明は不要かと思いますが、次のように処理されます。
+
+- if の式が成立している場合、 if のブロックが実行される。
+- if の式が不成立で elseif の式が成立している場合、elseif のブロックが実行される。
+- 全ての式が不成立の場合、else のブロックが実行される。
+- elseif は複数存在しても良い。
+- elseif, else は存在しなくてもよい。  
+- 式が *「不成立」* する条件は、その式の結果が nil か false の時。
+  
+  
+*** bool 値との比較
+
+LuneScript では、 bool 値との比較を推奨していません。
+
+具体的には次のようなオペレーションを推奨しません。
+
+#+BEGIN_SRC lns
+   let val1 = true;
+   if val1 == true {
+   }
+   if val1 == false {
+   }
+   if val1 ~= false {
+   }
+   if val1 ~= true {
+   }
+#+END_SRC
+
+上記のオペレーションは、近い将来廃止予定です。
+
+現在は、コンパイル時に warning メッセージを出力します。
+
+bool の真偽値によって処理を切り替える場合、
+次のようにしてください。
+
+#+BEGIN_SRC lns
+let exp = true;
+if exp {
+   print( "exp is true" );
+}
+else {
+   print( "exp is false" );
+}
+if not exp {
+   print( "exp is false" );
+}
+#+END_SRC
+
+次の記事のコメントにあるような議論は、これで不要になります。
+
+https://qiita.com/dwarfJP/items/b65ae583e195ef3b87ee
+
+
+** switch
+
+switch 文は次のように使用します。
+
+#+BEGIN_SRC lns
+let val = 1;
+switch val {
+   case 1 {
+      print( "hoge" );
+   }
+   case 2 {
+      print( "foo" );
+   }
+   default {
+      print( "bar" );
+   }
+}
+#+END_SRC
+
+なおこのサンプルは、上記 if のサンプルと同義です。
+
+switch の case には、次のように複数の式を書けます。
+
+#+BEGIN_SRC lns
+let val = 1;
+switch val {
+   case 10, 20, 30 {
+      print( "hoge" );
+   }
+   default {
+      print( "bar" );
+   }
+}
+#+END_SRC
+
+これは次の if 文と同義で、いづれかの値に一致すると、そのブロックを実行します。
+
+#+BEGIN_SRC lns
+let val = 1;
+if val == 10 or val == 20 or val == 30 {
+   print( "hoge" );
+}
+else {
+   print( "bar" );
+}
+#+END_SRC
+
+switch 文で注意すべき点は、 C 言語などと違い break が不要であることです。
+
+例えば次の break は、 switch 文を抜けるのではなく for 文を抜けることになります。
+
+#+BEGIN_SRC lns
+for count = 1, 10 {
+   switch count {
+      case 5 {
+         break;
+      }
+   }
+}
+#+END_SRC
+
+* まとめ
+
+LuneScript の一般分岐構文は、 if と switch があります。
+
+goto はありません。
+
+
+
+次回は、繰り返し制御について説明します。

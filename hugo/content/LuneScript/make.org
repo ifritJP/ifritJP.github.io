@@ -1,0 +1,250 @@
+#+TITLE: ビルド 編
+~# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。
+
+LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、
+LuneScript 専用のビルドツールは提供していません。
+よって、ここでは一般的なビルド方法について説明します。
+
+* ビルド
+
+LuneScript は Lua のトランスコンパイラですが、
+LuneScript のコードそのままでも実行可能です。
+
+例えば、次のようなソースは
+
+#+NAME: hoge.lns
+#+BEGIN_SRC lns
+print( "hello" );
+#+END_SRC
+
+次のコマンドで実行できます。
+
+#+BEGIN_SRC txt
+$ lnsc hello.lns exe
+#+END_SRC
+
+しかし、これでは LuneScript から Lua へのトランスコンパイル処理が走るため、
+ある程度の規模のプロジェクトになると効率が悪くなります。
+
+そこで、モジュール毎に Lua へトランスコンパイルするビルド管理が必要になります。
+
+** トランスコンパイル
+
+Lua へトランスコンパイルするには、次のコマンドを実行します。
+   
+#+BEGIN_SRC txt
+$ lnsc hello.lns save
+#+END_SRC
+
+これにより hello.lns をトランスコンパイルし、
+変換後のコードを hello.lua に出力します。
+
+この hello.lua は Lua コマンドで実行できます。
+
+#+BEGIN_SRC txt
+$ lua hello.lua
+#+END_SRC
+
+モジュールごとにトランスコンパイルしておくだけでも
+lnsc コマンドで直接実行するよりは効率良くなりますが、
+まだ改善できます。
+
+それは LuneScript の import です。
+
+LuneScript の import は、指定のモジュールを読み込みます。
+このとき、LuneScript は指定モジュールを解析します。
+この解析には時間がかかります。
+
+LuneScript は、この解析時間を短縮する手段を提供しています。
+
+** メタ情報ファイル
+
+メタ情報ファイルとは、モジュールが公開しているクラスや、
+そのモジュールが import している他のモジュールの依存関係などの情報を
+まとめたファイルです。
+
+import する際、モジュールを解析する代わりに
+このメタ情報ファイルを読み込むことで、解析時間を短縮できます。
+
+メタ情報ファイルは、次のコマンドで生成できます。
+
+#+BEGIN_SRC txt
+$ lnsc hello.lns SAVE
+#+END_SRC
+
+先程のコマンドと何が違うかというと、 "*save*" と "*SAVE*" の違いです。
+
+小文字の save は、トランスコンパイルした Lua コードだけ生成しますが、
+大文字の SAVE は、 Lua コードとメタ情報ファイルを生成します。
+
+具体的には、上記コマンドを実行すると hello.lua と hello.meta が生成されます。
+
+LuneScript はモジュールを import する際、
+次の条件が全て成り立つ時に .meta ファイルをロードします。
+このとき、import 対象の .lns ファイルの解析は行ないません。
+
+- .lns に対応する .lua と .meta が存在する
+- それぞれのファイルの更新時間について、次の条件を満す
+  - ~.lns < .meta~
+- インポート対象の mod1.lns 内で import しているモジュール mod2 の更新時間に対し、
+  次の条件を満す。
+  - ~mod1 > mod2~
+- .meta ファイルのフォーマットバージョンが正しい
+
+
+** 依存関係
+
+2 つのモジュール mod1, mod2 があった時、
+mod1 が mod2 を import していると、「mod1 が mod2 に依存する」ことになります。
+
+「mod1 が mod2 に依存する」ということは、
+mod2 を修正した時は「mod2 だけでなく、mod1 もトランスコンパイルが必要になる」
+ということです。
+
+このような依存関係があるモジュールをビルドするには、
+古くから make コマンドが利用されています。
+近年は様々なビルドツールがありますが、
+make が代表的なビルドツールであることには違いありません。
+
+make コマンドは、定義された依存関係によって、
+あるファイルが修正された際、
+そのファイルに依存するファイルを更新する制御を行ないます。
+
+この依存関係を手動で定義するのは、意外と面倒なものです。
+
+LuneScript は、 make コマンドの依存関係を自動生成する機能を提供します。
+
+LuneScript で依存関係を自動生成するには、次のように SAVE 時にオプションを指定します。
+
+#+BEGIN_SRC sh
+$ lnsc mod1.lns --depends depends/mod1.d SAVE
+#+END_SRC
+
+これは、 mod1.lns をトランスコンパイルすると同時に、
+depends/mod1.d に mod1.lns の依存関係情報を出力します。
+
+この依存関係情報を Makefile に取り込むことで、
+手動で依存関係を定義することなく、簡単に make によるビルド制御が可能になります。
+
+*** サンプル
+
+例えば次のようなモジュールをもつプロジェクトを作成したとします。
+
+#+BEGIN_SRC txt
+test/proj/
+      |
+      +--- Mod1.lns
+      |
+      +--- Mod2.lns
+      |
+      +--- Mod3.lns
+      |
+      +--- Mod4.lns
+#+END_SRC
+
+ここで、それぞれのファイルの中身は次とします。
+
+#+NAME: Mod1.lns
+#+BEGIN_SRC lns
+import test.proj.Mod2;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod2.func() );
+}
+print( func() );
+#+END_SRC
+
+#+NAME: Mod2.lns
+#+BEGIN_SRC lns
+import test.proj.Mod3;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod3.func() );
+}
+#+END_SRC
+
+#+NAME: Mod3.lns
+#+BEGIN_SRC lns
+import test.proj.Mod4;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod4.func() );
+}
+#+END_SRC
+
+#+NAME: Mod4.lns
+#+BEGIN_SRC lns
+pub fn func(): str {
+   return __func__;
+}
+#+END_SRC
+
+上記のファイルの依存関係は次のようになっています。
+
+| ファイル | 依存ファイル |
+|----------+--------------|
+| Mod1.lns | Mod2.lns     |
+| Mod2.lns | Mod3.lns     |
+| Mod3.lns | Mod4.lns     |
+| Mod4.lns | なし         |
+
+このプロジェクトをビルドする Makefile は、次のようになります。
+
+#+BEGIN_SRC makefile
+PROJ_DIR=test/proj
+MKFILE=$(PROJ_DIR)/Makefile
+SRC_DIR=$(PROJ_DIR)/
+
+.PHONY: test all build setup
+
+define comp
+	@echo "$1 -> $2"
+	lnsc $1 --depends depends/$(shell echo $1 | sed 's@/@.@g').d SAVE
+endef
+
+%.meta: %.lns
+	$(call comp,$<,$@)
+
+SRCS =
+SRCS += Mod1.lns
+SRCS += Mod2.lns
+SRCS += Mod3.lns
+SRCS += Mod4.lns
+
+SRCS := $(addprefix $(SRC_DIR),$(SRCS))
+
+META_LIST=$(SRCS:.lns=.meta)
+LUA_LIST=$(SRCS:.lns=.lua)
+
+-include depends/*.d
+
+all:
+	@echo make setup
+	@echo make build
+
+setup:
+	mkdir -p depends
+
+build: $(META_LIST)
+#+END_SRC
+
+ここで重要なのが、 ~define comp~ と ~-include depends/*.d~ の部分です。
+
+- ~define comp~ は、トランスコンパイルと依存情報ファイルの生成処理を登録しています。
+- ~-include depends/*.d~ は、生成した依存情報ファイルを読み込んでいます。
+  
+このような makefile を作成することで、
+import の依存関係に応じたビルドが可能になります。
+
+
+* まとめ
+
+make コマンドを使うことで、
+LuneScript プロジェクトのビルド制御を簡単に実現できます。

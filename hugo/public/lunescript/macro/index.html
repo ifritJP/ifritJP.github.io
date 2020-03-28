@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>マクロ 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/macro/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="マクロ 編" />
+<meta property="og:description" content="今回は LuneScript のマクロについて説明します。 マクロ LuneScript は、マクロを対応します。 もしかしたら、 最近は マクロ というよりも メタプログラミング と言った方が 意味" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/macro/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="マクロ 編"/>
+<meta name="twitter:description" content="今回は LuneScript のマクロについて説明します。 マクロ LuneScript は、マクロを対応します。 もしかしたら、 最近は マクロ というよりも メタプログラミング と言った方が 意味"/>
+<meta itemprop="name" content="マクロ 編">
+<meta itemprop="description" content="今回は LuneScript のマクロについて説明します。 マクロ LuneScript は、マクロを対応します。 もしかしたら、 最近は マクロ というよりも メタプログラミング と言った方が 意味">
+
+<meta itemprop="wordCount" content="3735">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>マクロ 編</h1>
+
+<p>
+今回は LuneScript のマクロについて説明します。
+</p>
+<h2 id="headline-1">
+マクロ
+</h2>
+<p>
+LuneScript は、マクロを対応します。
+</p>
+<p>
+もしかしたら、
+最近は <strong>マクロ</strong> というよりも <strong>メタプログラミング</strong> と言った方が
+意味が通り易いのかもしれません。
+</p>
+<p>
+「マクロとは何か」を説明するには、
+関数との違いを説明すると分かりやすいと思います。
+</p>
+<p>
+<strong>関数</strong> は、ある処理をまとめたものです。
+一方、 <strong>マクロ</strong> は、複数の関数定義自体をまとめて定義することが出来ます。
+もちろん <strong>マクロ</strong> として定義できるのは、
+関数定義だけでなく、ほとんど全ての処理を定義できます。
+</p>
+<p>
+マクロで一番メジャーなプログラミング言語と言えば Lisp だと思いますが、
+LuneScript のマクロは Lisp ほど高機能ではありません。
+しかし、 C 言語のマクロほど限定的でもありません。
+</p>
+<h3 id="headline-2">
+簡単なマクロの例
+</h3>
+<p>
+次に簡単なマクロの例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro _Hello() {
+   print( &#34;hello world&#34; );
+}
+_Hello(); // hello world</code></pre>
+</div>
+<p>
+これは hello world を表示するマクロ _Hello です。
+</p>
+<p>
+マクロ定義は macro キーワードを使用します。
+</p>
+<p>
+この例は、関数定義を使用した場合と全く変わらないマクロであり、
+マクロとして定義する意味はありません。
+</p>
+<p>
+しかし、「関数定義と同じ感覚でマクロを定義できる」、
+ということを伝えるには良い例だと言えます。
+</p>
+<p>
+マクロを搭載するプログラム言語では、
+マクロ定義には、一般の関数定義などとは違い、
+特殊な処理が必要なことが多いです。
+</p>
+<p>
+それによって、「マクロは何か難しそう」と心のハードルが上ってしまいます。
+</p>
+<p>
+しかし LuneScript では、
+上記の hello world のサンプルのように、
+ほとんど一般の関数定義と変わらない感覚でマクロ定義を行なえます。
+</p>
+<p>
+ただ、上記の例のようなマクロの書き方では、
+意味のあるマクロは定義できません。
+</p>
+<p>
+以降では、意味のあるマクロを定義する方法を説明します。
+</p>
+<h3 id="headline-3">
+マクロの例
+</h3>
+<p>
+少し実用的なマクロの例を次に示します。
+</p>
+<p>
+このマクロは、次の仕様となります。
+</p>
+<ul>
+<li>
+<p>
+int の値を返す関数を定義するマクロ _Test
+</p>
+</li>
+<li>
+<p>
+関数で返す int 値は、マクロの引数で与える
+</p>
+</li>
+<li>
+<p>
+定義する関数の名前は、 int の値によって決定する
+</p>
+</li>
+<li>
+<p>
+具体的には 1 を返す関数名は func1 とする
+</p>
+</li>
+</ul>
+<p>
+次が具体的なマクロのコードです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+   {
+      let name = &#34;func%d&#34;(val);
+   }
+   fn ,,,name(): int {
+      return ,,val;
+   }
+}
+
+_Test( 1 );
+_Test( 10 );
+
+print( func1(), func10() ); // 1  10</code></pre>
+</div>
+<p>
+マクロを展開する場合、関数コールとほとんど同じです。
+</p>
+<p>
+この場合 _Test( 1 ), _Test( 10 ) がマクロ展開です。
+_Test( 1 ), _Test( 10 ) によって、次が展開されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// Test( 1 )
+fn func1():int {
+   return 1;
+}
+// Test( 10 )
+fn func10():int {
+   return 10;
+}</code></pre>
+</div>
+<p>
+これにより関数 func1(), func10() が定義されるので、
+<code>print( func1(), func10() )</code> は 1 10 が出力されます。
+</p>
+<p>
+このマクロについて、以降で説明します。
+</p>
+<h3 id="headline-4">
+マクロの書き方
+</h3>
+<p>
+マクロの定義の syntax は次になります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro name( arg ) {
+   {
+      macro-statement
+   }
+   expand-statement
+}</code></pre>
+</div>
+<p>
+キーワード macro で開始し、 次にマクロ名 name 、引数 arg と続きます。
+マクロ名 name は、 _ で始まる必要があります。
+逆にマクロ以外のシンボル名は、 _ 以外で始まる必要があります。
+引数の数に制限はありません。
+</p>
+<p>
+次に macro-statement ブロックと、 expand-statement が続きます。
+</p>
+<p>
+マクロの定義方法を理解するには、
+expand-statement を先に理解した方が分かり易いので、
+macro-statement ブロックの説明の前に、expand-statement を説明します。
+</p>
+<h4 id="headline-5">
+expand-statement
+</h4>
+<p>
+expand-statement は、マクロを展開した後のコードを書きます。
+</p>
+<p>
+_Test マクロの例では、 次の部分が expand-statement です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">   fn ,,,name(): int {
+      return ,,val;
+   }</code></pre>
+</div>
+<p>
+これによって、関数定義が展開されます。
+</p>
+<p>
+この expand-statement では、マクロ専用の演算子が利用できます。
+,, がその演算子です。
+</p>
+<p>
+利用可能な演算子には、次があります。
+</p>
+<ul>
+<li>
+<p>
+,,,,
+</p>
+</li>
+<li>
+<p>
+,,,
+</p>
+</li>
+<li>
+<p>
+,,
+</p>
+</li>
+</ul>
+<p>
+,,,, は、直後に続く <strong>変数</strong> を評価して得られた <strong>シンボル</strong> を <strong>文字列に変換</strong> する演算子です。
+</p>
+<p>
+,,, は、直後に続く <strong>変数</strong> を評価して得られた <strong>文字列</strong> を <strong>シンボルに変換</strong> する演算子です。
+</p>
+<p>
+,, は、直後に続く <strong>変数</strong> を展開する演算子です。
+</p>
+<p>
+つまり、上記例では ,,,name は name 変数内の文字列をシンボルに変換し、
+,,val は val 変数を展開することで、
+<code>_Test( 1 )</code> マクロは、次が展開されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func1():int {
+   return 1;
+}</code></pre>
+</div>
+<p>
+expand-statement には、次の制限を満せば、いかなるコードも書くことが出来ます。
+</p>
+<p>
+  <strong>expand-statement は、文でなければならない。</strong>
+</p>
+<p>
+つまり expand-statement は、式や、不完全なトークンの一部などの、
+文として成立しないものでなければ、どのようなコードも書けます。
+</p>
+<p>
+また、expand-statement には複数の文を書くことも出来ます。
+</p>
+<h4 id="headline-6">
+macro-statement
+</h4>
+<p>
+macro-statement ブロックには、 expand-statement で利用する変数を定義します。
+expand-statement で利用する変数は、
+macro-statement ブロックの最上位のスコープで宣言する必要があります。
+</p>
+<p>
+_Test マクロの例では、次が macro-statement です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">   {
+      let name = &#34;func%d&#34;(val);
+   }</code></pre>
+</div>
+<p>
+ここでは、変数 name を定義しています。
+name の初期値として、 &#34;func%d&#34; (val) をセットしています。
+</p>
+<p>
+macro-statement 内では、LuneScript の全ての機能を利用できます。
+具体的には、macro-statement 内で関数定義なども行なえます。
+</p>
+<p>
+例えば、 _Test マクロは次のようにも書けます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+   {
+      fn funcname(): str {
+         return &#34;func%d&#34;(val);
+      }
+      let name = funcname();
+   }
+   fn ,,,name(): int {
+      return ,,val;
+   }
+}</code></pre>
+</div>
+<p>
+この例では、 macro-statement で funcname() 関数を宣言し、
+その結果を name 変数に代入しています。
+</p>
+<p>
+なお macro-statement で利用可能な関数は、LuneScript の標準関数のみです。
+同じソース内で定義している関数でも、その関数がマクロ外で定義している場合、
+macro-statement から使用することは出来ません。
+</p>
+<p>
+macro-statement は、expand-statement と同じようにマクロ専用演算子を利用できます。
+</p>
+<p>
+具体的には、次の演算子を利用できます。
+</p>
+<ul>
+<li>
+<p>
+,,,,
+</p>
+</li>
+<li>
+<p>
+,,,
+</p>
+</li>
+<li>
+<p>
+,,
+</p>
+</li>
+<li>
+<p>
+<code>`{}</code>
+</p>
+</li>
+<li>
+<p>
+~~  
+</p>
+</li>
+</ul>
+<p>
+「,,,,」 「,,,」 「,,」 は、 expand-statement とほぼ同じです。
+expand-statement との違いは、
+expand-statement では直後に続く <strong>変数</strong> を処理対象にしていたのに対し、
+macro-statement では直後に続く <strong>式</strong> を処理対象にします。
+</p>
+<p>
+<code>`{}</code> は、 <code>`{}</code> 内で書いたステートメントを、そのまま値とすることが出来ます。
+</p>
+<p>
+例えば、 上記 _Test マクロは <code>`{}</code> を使って次のようにも書けます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+   {
+      let defstat = `{
+         fn ,,,&#34;func%d&#34;(val)~~():int {
+            return ,,val;
+         }
+      };
+   }
+   ,,defstat;
+}
+
+_Test( 1 );
+_Test( 10 );
+
+print( func1(), func10() ); // 1  10</code></pre>
+</div>
+<p>
+ここでは、 <code>`{}</code> を使って関数定義そのものを変数 defstat に格納し、
+defstat を expand-statement で展開しています。
+</p>
+<p>
+この defstat の初期化部分を抜き出すと、次のようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">      let defstat = `{
+         fn ,,,&#34;func%d&#34;(val)~~():int {
+            return ,,val;
+         }
+      };</code></pre>
+</div>
+<p>
+ここで、 <strong>~~</strong> を使用しているのが分かります。
+</p>
+<p>
+<strong>~~</strong> は、 ,,, などの演算子の式の区切りを指定するものです。
+上記では、&#34;func%d&#34;(val) の後に ~~ を利用しています。
+これは、,,, 演算子を適応する式が &#34;func%d&#34;(val) までで、
+その後の () はマクロ展開するステートメントの一部であることを示しています。
+</p>
+<p>
+~~ を指定しないと、
+&#34;func%d&#34;(val) で生成した文字列に () を付けていることになり、
+構文エラーとなります。
+</p>
+<p>
+<code>`{}</code> は、その他の値と同じようにリストやマップに格納できます。
+なお、 <code>`{}</code> の型は stat となります。stat はマクロ内でのみ有効です。
+</p>
+<p>
+次に <code>`{}</code> のリストの例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+   {
+      let mut statList:List&lt;stat&gt; = [];
+      for count = 1, val {
+         statList.insert(
+            `{          
+               fn ,,,&#34;func%d&#34;(count)~~():int {
+                  return ,,count;
+               }
+            } );
+      }
+   }
+   ,,statList;
+}
+
+_Test( 5 );
+
+print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5</code></pre>
+</div>
+<p>
+この例では、 <code>`{}</code> のリスト statList に関数定義を複数格納し、
+それを展開することで、複数の関数定義(func1 〜 func5)を行なっています。
+</p>
+<p>
+なお macro-statement ブロックは、必須ではありません。
+macro-statement ブロックを省略する場合、次のように {} ごと省略します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro name( arg ) {
+   expand-statement
+}</code></pre>
+</div>
+<h4 id="headline-7">
+macro-statement で利用できる関数
+</h4>
+<p>
+macro-statement では、次の関数が利用できます。
+</p>
+<ul>
+<li>
+<p>
+fn _lnsLoad( name:str, code:str ): stem;
+</p>
+</li>
+</ul>
+<p>
+この関数は、code で指定した LuneScript のコードをロードし、
+そのモジュールを返します。
+</p>
+<h4 id="headline-8">
+マクロ展開
+</h4>
+<p>
+マクロを展開する方法は、関数コールとほとんど同じです。
+ただし、マクロの引数にはリテラルな値しか与えられません。
+</p>
+<p>
+マクロ展開はビルド時に行なうものであり、実行時には行ないません。
+</p>
+<h3 id="headline-9">
+公開マクロ
+</h3>
+<p>
+マクロは外部モジュールに公開できます。
+</p>
+<p>
+次のように pub を宣言することで、そのマクロを import 先で利用できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub macro _Hello() {
+   print( &#34;hello world&#34; );
+}</code></pre>
+</div>
+<h3 id="headline-10">
+少し実用的なマクロの例
+</h3>
+<p>
+次は少し実用的なマクロの例です。
+</p>
+<p>
+Google などが提供する REST API のパラメータやレスポンスなどで利用する JSON を、
+LuneScript で扱うには、
+REST API の JSON フォーマット毎にクラス化しておくと便利です。
+そのような時、何種類もある JSON 形式のデータを扱うクラスを
+手動で定義するのは非効率ですし、バグの元でもあります。
+</p>
+<p>
+そこで、 サンプルの JSON フォーマットを読み込んで、
+その JSON フォーマットを格納可能なクラスを定義するマクロを作成します。
+</p>
+<p>
+この例では、次の JSON ファイルを読み込み、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">{
+    &#34;val1&#34;: &#34;abc&#34;,
+    &#34;val2&#34;: 0
+}</code></pre>
+</div>
+<p>
+上記 JSON を扱うための次のクラスを定義するマクロです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Hoge {
+  pri let val1:str {pub};
+  pri let val2:int {pub};
+}</code></pre>
+</div>
+<p>
+次がマクロの具体例です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">macro _MkClass( name:str, path:str ) {
+   {
+      let mut memStatList:List&lt;stat&gt; = [];
+      if! let mut fileObj = io.open( path ) {
+         if! let txt = fileObj.read( &#34;*a&#34; ) {
+            let defMap = &#34;pub let val = %s;&#34; (txt);
+            let mod = _lnsLoad( &#34;json&#34;, defMap );
+            if! let jsonval = mod.val {
+               fn getType( val:stem ): str {
+                  switch type( val ) {
+                     case &#34;number&#34; {
+                        return &#34;int&#34;;
+                     }
+                     case &#34;string&#34; {
+                        return &#34;str&#34;;
+                     }
+                  }
+                  return &#34;stem&#34;;
+               }
+               forsort val, key in jsonval@@Map&lt;str,stem&gt; {
+                  memStatList.insert( `{
+                     pri let ,,,key : ,,,getType( val )~~ {pub};
+                  } );
+               }
+            }
+         }
+      }
+   }
+   class ,,,name {
+      ,,memStatList;
+   }
+}
+_MkClass( &#34;Hoge&#34;, &#34;hoge.js&#34; );
+
+let hoge = new Hoge( &#34;ABC&#34;, 100 );
+print( hoge.$val1, hoge.$val2 );</code></pre>
+</div>
+<p>
+このマクロは、ファイルから JSON を読み込み、
+その JSON 構造を格納するためのクラスを宣言します。
+</p>
+<p>
+クラス名はマクロの第一引数で指定します。
+</p>
+<p>
+このマクロは、次の処理を行ないます。
+</p>
+<ul>
+<li>
+<p>
+指定のファイルを開き、そのファイル内に定義されている JSON 文字列を読み込む。
+</p>
+</li>
+<li>
+<p>
+JSON 文字列 txt から、 &#34;pub let val = %s;&#34; (txt); で、 
+LuneScript のコードを生成する。
+</p>
+</li>
+<li>
+<p>
+_lnsLoad() を使って、生成した LuneScript のコードをロードする
+</p>
+</li>
+<li>
+<p>
+ロードしたモジュールから json の val を取り出し、 
+forsort で JSON の要素を列挙する
+</p>
+</li>
+<li>
+<p>
+列挙した要素を保持するメンバを宣言する <code>`{}</code> を生成し、memStatList に追加する
+</p>
+</li>
+<li>
+<p>
+name と memStatList を使ってクラスを宣言する。  
+</p>
+</li>
+</ul>
+<p>
+このサンプルでは処理を簡単にするために、
+メンバは int と str 型のデータとして扱います。
+リストなどはサポートしていません。
+</p>
+<h2 id="headline-11">
+まとめ
+</h2>
+<p>
+LuneScript は、関数と同じ感覚でマクロを定義することが出来ます。
+</p>
+<p>
+また、マクロを利用することで、
+さまざまな処理を定義できるようになります。
+</p>
+<p>
+次回は、 LuneScript を使って開発するプロジェクトの
+ビルド方法について説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/make/" title="ビルド 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - ビルド 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/branch/" title="一般分岐構文 編">Next - 一般分岐構文 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

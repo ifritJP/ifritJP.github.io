@@ -1,0 +1,2916 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lua/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://example.com/lua/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス"/>
+<meta name="twitter:description" content=""/>
+<meta itemprop="name" content="C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス">
+<meta itemprop="description" content=""></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</h1>
+<p>
+これは、C/C++ 言語のプログラマがこれだけ読めば Lua スクリプトを問題なく書けるようになることを目的にしたドキュメントです。
+</p>
+<p>
+Lua から C 言語の呼び出し、 C 言語から Lua の呼び出しについては次を参照してください。
+</p>
+<ul>
+<li>
+<p>
+C/C++ 言語プログラマのための Lua 入門リファレンス ( C インタフェース編 )
+</p>
+</li>
+</ul>
+<p>
+<a href="interface">interface</a>
+</p>
+<ul>
+<li>
+<p>
+C/C++ 言語プログラマのための Lua 入門リファレンス ( ポインタ編 )
+</p>
+</li>
+</ul>
+<p>
+<a href="pointer">pointer</a>
+</p>
+<p>
+このドキュメントは Lua 5.2, 5.3 をターゲットにしています。
+</p>
+<p>
+<strong>以降の記載について</strong>
+</p>
+<ul>
+<li>
+<p>
+<strong>特に明記しない限り、C 言語と記載した場合は C/C++ 言語の両方を意味します。</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>特に Lua や C 等の言語を明記しない限り、Lua の仕様の説明です。</strong>
+</p>
+</li>
+</ul>
+<p>
+このドキュメントは次の情報を元に作成しています。
+Lua で利用できる標準ライブラリの詳細は、次の公式 URL を参照してください。
+</p>
+<ul>
+<li>
+<p>
+<a href="http://www.lua.org/manual/5.3/manual.html">http://www.lua.org/manual/5.3/manual.html</a>
+</p>
+</li>
+<li>
+<p>
+<a href="http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html">http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html</a>
+</p>
+</li>
+</ul>
+<p>
+Lua によるオブジェクト指向継承方法については次のサイトを参考にさせていただきました。
+</p>
+<p>
+<del>&lt;http://www.geocities.jp/m_hiroi/light/lua06.html&gt;</del>
+2019/3 月末で geocities サービス停止
+</p>
+<p>
+Lua 初心者の方は、次の記事も是非確認してください。
+</p>
+<ul>
+<li>
+<p>
+Lua でやりがちなミス
+</p>
+</li>
+</ul>
+<p>
+<a href="anti-pattern">anti-pattern</a>
+</p>
+<h2 id="headline-1">
+トランスコンパイラ LuneScript
+</h2>
+<p>
+Lua の説明に入る前に、トランスコンパイラ LuneScript を紹介します。
+</p>
+<p>
+LuneScript は次の特徴を持ち、
+規模の大きい Lua スクリプトを作成する際の生産性を上げることが出来ます。
+</p>
+<ul>
+<li>
+<p>
+Lua と C の syntax を基調としているため、学習コストが低い。
+</p>
+</li>
+<li>
+<p>
+静的型付け言語であるため、型チェックにより単純なミスをコンパイル時に発見可能。
+</p>
+</li>
+<li>
+<p>
+型推論により、型宣言の手間を最小化。
+</p>
+</li>
+<li>
+<p>
+NULL 安全 (null safety)。
+</p>
+</li>
+<li>
+<p>
+generics <del>(一部のみ)</del> により、型情報を保ったままの処理が可能。
+</p>
+</li>
+<li>
+<p>
+言語の文法としてクラス定義を対応。
+</p>
+</li>
+<li>
+<p>
+マクロ により、ポリモーフィズム等の動的処理に頼らないデザインを実現可能。
+</p>
+</li>
+<li>
+<p>
+JSON と互換なデータ表現をサポート。
+</p>
+</li>
+<li>
+<p>
+トランスコンパイルした Lua コードは、外部ライブラリを前提とせずに単体で動作可能。
+</p>
+</li>
+<li>
+<p>
+トランスコンパイルした Lua コードは、LuneScript で書いた処理そのままが出力されるので、
+性能劣化がない。
+</p>
+</li>
+<li>
+<p>
+既存の Lua の外部モジュールを LuneScript から利用可能。
+</p>
+</li>
+<li>
+<p>
+LuneScript は Lua 上で動作し、Lua 標準モジュール以外を必要としないため、導入が簡単。
+</p>
+</li>
+<li>
+<p>
+<strong>Lua5.1</strong> , Lua5.2, 5.3 をサポート。  (追記: 12/18)
+</p>
+</li>
+<li>
+<p>
+LuneScript はセルフホスティングで開発している。
+</p>
+</li>
+<li>
+<p>
+emacs でのコード補完に対応
+</p>
+</li>
+<li>
+<p>
+glue コードの自動生成に対応
+</p>
+</li>
+</ul>
+<p>
+詳しくは、次の記事を参照してください。
+</p>
+<p>
+https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
+</p>
+<p>
+イマドキのプログラム言語での開発経験を持つエンジニアには、
+Lua で開発するよりも LuneScript で開発した方が馴染易い可能性があります。
+</p>
+<p>
+前置きはこの辺にして本題に戻ります。
+</p>
+<h2 id="headline-2">
+Lua の説明
+</h2>
+<p>
+以降で Lua の各特徴について説明します。
+</p>
+<h3 id="headline-3">
+Lua と C との差分概要
+</h3>
+<p>
+まず C 言語との差分概要をまとめると次のものが挙げられます。
+もちろん実際にはもっと多くのものがあります。
+</p>
+<ul>
+<li>
+<p>
+Native ではなく Lua VM 上で動作します。 (JIT が動作する実装もあります)
+</p>
+</li>
+<li>
+<p>
+コンパイル不要です。(事前にバイトコード化することもできます)
+</p>
+</li>
+<li>
+<p>
+数値は実数が基本です。(整数のビット演算も可能です)
+</p>
+</li>
+<li>
+<p>
+文の区切り記号は ; ではありません。 ( ; も使えます )
+</p>
+</li>
+<li>
+<p>
+main 関数は不要です。
+</p>
+</li>
+<li>
+<p>
+ポインタ型はありません。
+</p>
+</li>
+<li>
+<p>
+バイト配列は文字列として扱います。
+</p>
+</li>
+<li>
+<p>
+配列のインデックスは 1 からです。
+</p>
+</li>
+<li>
+<p>
+連想配列を持ちます。
+</p>
+</li>
+<li>
+<p>
+構造体、共用体はありません。(テーブルを構造体と似たような使い方ができます)
+</p>
+</li>
+<li>
+<p>
+ガーベジコレクション(GC)を搭載しています。
+</p>
+</li>
+<li>
+<p>
+戻り値に複数の値を返せます。
+</p>
+</li>
+<li>
+<p>
+コルーチンを使用できます。
+</p>
+</li>
+<li>
+<p>
+typedef はありません。
+</p>
+</li>
+<li>
+</li>
+<li>
+<p>
+言語仕様内にデバッグインタフェースを持ちます。
+</p>
+</li>
+</ul>
+<h3 id="headline-4">
+Lua の実行
+</h3>
+<p>
+Lua は、スクリプトを一旦 Lua VM 用のバイトコードに変換してから Lua VM 上で実行します。
+ただし、スクリプトからバイトコードへの変換処理は Lua の内部的に行なわれるため、
+ユーザが意識する必要はありません。
+</p>
+<p>
+C の様なコンパイル/リンク作業は不要です。
+</p>
+<p>
+なお、VM 上で動作するため Native よりも実行速度は遅くなります。
+</p>
+<h3 id="headline-5">
+ガーベジコレクション
+</h3>
+<p>
+Lua は、ガーベジコレクションを持っています。
+参照されなくなった値は、自動的に解放されます。
+</p>
+<p>
+C の様に、メモリの解放を意識して行なう必要はありません。
+ただし、不要になった値を参照していると解放されないので、
+不要になった値は参照しないようにする必要があります。
+例えば不要になった値は、その値を保持する変数に nil を上書きします。
+これにより参照を無くせます。
+ローカル変数であれば、明示的に nil を代入しなくともローカル変数のスコープが外れることでも同じです。
+</p>
+<p>
+なお、オブジェクトが参照されなくなったタイミングと、
+オブジェクトがガーベジコレクションで解放されるタイミングは一致しません。
+</p>
+<h3 id="headline-6">
+main 関数
+</h3>
+<p>
+Lua には、多くのスクリプト言語と同様に main 関数というものはありません。
+実行するファイルの先頭から順に実行されます。
+</p>
+<h3 id="headline-7">
+コメント
+</h3>
+<p>
+<code>--</code> 以降はコメントになります。 C の // と同じ扱いです。
+複数行をコメントにする場合は、 <code>--[[]]</code> を指定できます。
+C の <code>/* */</code> と似た扱いです。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">-- ここ以降はコメント</span>
+<span class="cm">--[[ここは
+</span><span class="cm">コメント]]</span></code></pre></div>
+</div>
+<p>
+<code>[[]]</code> は、後述する文字列と同じで [=[ ]=] のパターンが利用できます。
+</p>
+<p>
+文字列中のコメント開始、終了文字は、文字列として扱われます。
+</p>
+<h3 id="headline-8">
+セミコロン(;)
+</h3>
+<p>
+セミコロン(;) の意味が Lua と C で異なります。
+C では文の区切りとしてセミコロン(;)を使用しますが、
+Lua はセミコロン(;)そのものが「何もしない」文を示す【空文】となります。
+</p>
+<p>
+C と同じ感覚でセミコロン(;)を使用しても特に問題はありませんが、
+無意味に利用するのは控えましょう。
+</p>
+<h3 id="headline-9">
+値
+</h3>
+<p>
+Lua では、次の値を扱えます。
+</p>
+<ul>
+<li>
+<p>
+nil
+</p>
+</li>
+<li>
+<p>
+ブーリアン
+</p>
+</li>
+<li>
+<p>
+数値
+</p>
+</li>
+<li>
+<p>
+文字列
+</p>
+</li>
+<li>
+<p>
+関数
+</p>
+</li>
+<li>
+<p>
+ユーザーデータ
+</p>
+</li>
+<li>
+<p>
+スレッド
+</p>
+</li>
+<li>
+<p>
+テーブル 
+</p>
+<h4 id="headline-10">
+nil
+</h4>
+</li>
+</ul>
+<p>
+nil は他のどの値とも異なる特殊な値です。
+</p>
+<p>
+C で例えるなら NULL のようなものです。
+C の NULL と異なるのは、
+NULL は型がポインタであり、値が NULL であるのに対し、
+nil は型が nil であり、値も nil であることです。
+</p>
+<h4 id="headline-11">
+ブーリアン
+</h4>
+<p>
+true, false が定義されています。
+</p>
+<p>
+ただし、論理演算が true か false だけを返す訳ではありません。
+詳しくは後述します。
+</p>
+<h4 id="headline-12">
+数値
+</h4>
+<p>
+数値は全て符号付き実数です(Lua の環境によって整数の場合もある)。
+C では char, short, int, long などのバイト長の違いや、
+signed, unsigned の符号の有無の違いがありますが、
+Lua では符号付き実数のみです。
+</p>
+<p>
+実数ですが、整数ビット演算が利用可能です。
+</p>
+<p>
+リテラルは、次のように 10 進数と 16 進数で指定できます。
+</p>
+<ul>
+<li>
+<p>
+3
+</p>
+</li>
+<li>
+<p>
+345
+</p>
+</li>
+<li>
+<p>
+0xff
+</p>
+</li>
+<li>
+<p>
+0xBEBADA
+</p>
+</li>
+</ul>
+<p>
+また、実数は次のような指定が可能です。
+</p>
+<ul>
+<li>
+<p>
+3.0
+</p>
+</li>
+<li>
+<p>
+3.1416
+</p>
+</li>
+<li>
+<p>
+314.16e-2
+</p>
+</li>
+<li>
+<p>
+0.31416E1
+</p>
+</li>
+<li>
+<p>
+34e1
+</p>
+</li>
+<li>
+<p>
+0x0.1E
+</p>
+</li>
+<li>
+<p>
+0xA23p-4
+</p>
+</li>
+<li>
+<p>
+0X1.921FB54442D18P+1
+</p>
+</li>
+</ul>
+<h4 id="headline-13">
+文字列
+</h4>
+<p>
+Lua の文字列は、C とは異なり &#39;\0&#39; で終端されていません。
+なぜならば、Lua の文字列は全てのバイナリデータを格納できるためです。
+</p>
+<p>
+<em>終端文字があるということは、終端文字を複数持てないことと同義。</em>
+</p>
+<p>
+&#39;\0&#39; で終端されていない代わりに、文字列データそのものがサイズ情報を保持しています。
+サイズ情報には # でアクセスできます。
+</p>
+<p>
+例えば #&#34;123&#34; は 3 になります。
+</p>
+<p>
+なお、Lua の文字列には文字コードの概念はありません。
+単なるバイト列として扱われます。
+</p>
+<p>
+文字列は &#39; か &#34; で囲みます。
+&#39; で囲む場合 &#34; を文字列中に含められます。
+&#34; で囲む場合 &#39; を文字列中に含められます。
+</p>
+<p>
+文字列中には \xXX(Xは 16進数) や \ddd(Xは 10進数)で、
+0〜255までの任意の値を指定できます。
+</p>
+<p>
+さらに \u{XXX}(X は1桁以上の16進数) で、マルチバイト文字を指定できます。
+</p>
+<p>
+文字列中に改行を含ませるには、次の方法があります。
+</p>
+<ul>
+<li>
+<p>
+\n を利用する
+</p>
+</li>
+<li>
+<p>
+\ の直後に改行する
+</p>
+</li>
+<li>
+<p>
+<code>[[]]</code> を利用する
+</p>
+</li>
+</ul>
+<p>
+<code>[[]]</code> は [=[]=] [==[]==] [===[]===] のように = を入れられます。
+</p>
+<p>
+<code>[[]]</code> で囲まれた文字列は \n 等のエスケープはそのままの文字列となります。
+</p>
+<p>
+なお、 <code>[[]]</code> の <code>[[</code> 直後にある改行は無視されます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">str</span> <span class="o">=</span> <span class="s1">&#39;&#34;abc&#34;&#39;</span> <span class="c1">-- &#34;abc&#34;</span>
+<span class="n">str</span> <span class="o">=</span> <span class="s2">&#34;&#39;abc&#39;&#34;</span> <span class="c1">-- &#39;abc&#39;</span>
+<span class="n">str</span> <span class="o">=</span> <span class="s">[[
+</span><span class="s">&#34;&#39;abc&#39;&#34;
+</span><span class="s">]]</span> <span class="c1">-- &#34;&#39;abc&#39;&#34;\n</span>
+<span class="n">str</span> <span class="o">=</span> <span class="s">[=[[[abc]]]=]</span> <span class="c1">-- [[abc]]</span></code></pre></div>
+</div>
+<p>
+文字列 str の N 番目の文字コードを取得する場合は、string.byte( str, N ) です。
+N は 1 以上です。
+</p>
+<p>
+文字列は .. で連結できます。
+</p>
+<p>
+&#34;abc&#34; .. &#34;def&#34; は &#34;abcdef&#34; です。
+</p>
+<h4 id="headline-14">
+関数
+</h4>
+<p>
+Lua は関数自体を値として扱えます。
+ただし、C の関数ポインタのように他の型への型変換はできません。
+関数はあくまで関数です。
+</p>
+<h4 id="headline-15">
+ユーザーデータ
+</h4>
+<p>
+Lua は、主に C 言語をホストプログラムとして組込むことを想定した言語です。
+ホストプログラムと連携して動作する場合、
+ホストプログラムのデータを Lua の値にマッピングできない、
+あるいはマッピングするためのオーバーヘッドが大きくなることがあります。
+そのような場合に、ホストプログラムのデータを <strong>ユーザデータ</strong> として
+そのまま Lua に渡すことができます。
+</p>
+<p>
+ただし Lua からは、ユーザデータはユーザデータとしてしかアクセスできません。
+</p>
+<p>
+ユーザデータに何が格納されているか、直接 Lua スクリプトからアクセスできません。
+</p>
+<h4 id="headline-16">
+スレッド
+</h4>
+<p>
+ここでスレッドとは pthread 等で扱う OS の thread ではなく、Lua のコルーチンを指します。
+</p>
+<p>
+コルーチンは、プリエンプティブで処理を切り替える概念です。
+</p>
+<p>
+なお、Lua のコルーチンを複数作っても 1 つの OS の thread 上で動作します。
+</p>
+<h4 id="headline-17">
+テーブル
+</h4>
+<p>
+テーブルは、配列と STL の map が一緒になったようなデータです。
+テーブルには、nil 以外の全ての型のデータを格納できます。
+</p>
+<p>
+テーブルは、次のように {} で囲みます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">tblA</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&#34;1&#34;</span><span class="p">,</span> <span class="s2">&#34;2&#34;</span><span class="p">,</span> <span class="s2">&#34;3&#34;</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span> <span class="p">}</span>
+<span class="c1">-- tblA[1] == &#34;1&#34;; tblA[2] == &#34;2&#34;; tblA[3] == &#34;3&#34;; tblA[4] == 4; tblA[5] == 5;</span></code></pre></div>
+</div>
+<p>
+上記のテーブルの要素にアクセスする場合、インデックスは <strong>1</strong> からになります。
+C 言語では 0 からなので、気を付ける必要があります。
+</p>
+<p>
+また、次のように数値以外のキーを指定することもできます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">tblB</span> <span class="o">=</span> <span class="p">{</span> <span class="n">foo</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">bar</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span> <span class="s2">&#34;.hoge&#34;</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">3</span> <span class="p">}</span>
+<span class="c1">-- tblB.foo == &#34;1&#34;; tblB.bar == &#34;2&#34;; tblB[&#34;.hoge&#34;] == &#34;3&#34;;</span></code></pre></div>
+</div>
+<p>
+キーには nil(と NaN) 以外の全ての値を指定できます。
+</p>
+<p>
+数値以外のキーが指定されている場合、
+tblB.foo のようにキーのシンボルを指定して要素にアクセスできます。
+tblB[ &#34;foo&#34; ] としてもアクセス可能です。
+</p>
+<p>
+キーが . や = 等の文字を含んでいる場合は、
+[ &#34;.&#34; ] や [ &#34;=&#34; ]  のように指定することでアクセスできます。
+</p>
+<p>
+なお、テーブルで保持するデータの全てのキーが 1 から順に 1 ずつ増えている場合(自然数)、
+そのテーブルを <strong>シーケンス</strong> と呼びます。
+数値以外のキーや、数値であっても 1 ずつ増えてない場合は、 <strong>シーケンス</strong> とは言いません。
+</p>
+<p>
+シーケンスでないテーブルの # は要素数を示しません。
+</p>
+<p>
+任意のテーブルがシーケンスかどうかを判定する方法は提供されていません。
+</p>
+<p>
+上記の例で言うと、#tblA は 5 を返しますが、#tblB は 3 になりません。
+</p>
+<p>
+存在していないキーにアクセスすると、nil を返します。
+</p>
+<p>
+上記の例では、 tblB.xyz は nil になります。
+</p>
+<h5 id="headline-18">
+テーブルコンストラクタ
+</h5>
+<p>
+上記の様に {} を使用したテーブルの生成をテーブルコンストラクタと言います。
+</p>
+<p>
+このテーブルコンストタクタには、上記で説明した以外に一つ大きな特徴があります。
+</p>
+<p>
+その特徴とは、
+最終要素がキーを指定しない式で、
+その式の結果が関数呼び出しか可変長引数である場合、
+その式が返す全ての値をテーブルに追加する、ことです。
+</p>
+<p>
+なお、これは最終要素の場合のみ有効です。
+</p>
+<p>
+この特徴は、可変長引数を持つ関数や、ラッパー関数を作成する際に有効になります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>
+<span class="kr">end</span>
+<span class="p">{</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">func</span><span class="p">()</span> <span class="p">}</span> <span class="c1">-- { a, b, c, 1, 2, 3 }</span>
+<span class="p">{</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">func</span><span class="p">(),</span> <span class="n">d</span> <span class="p">}</span> <span class="c1">-- { a, b, c, 1, d }</span>
+<span class="p">{</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">func</span><span class="p">(),</span> <span class="kc">nil</span> <span class="p">}</span> <span class="c1">-- { a, b, c, 1 }</span></code></pre></div>
+</div>
+<h3 id="headline-19">
+型情報
+</h3>
+<p>
+type( value ) で、値 value の型情報を取得できます。
+型情報は次のいずれかの文字列になります。
+</p>
+<ul>
+<li>
+<p>
+&#34;nil&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;number&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;string&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;boolean&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;table&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;function&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;thread&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;userdata&#34; 
+</p>
+</li>
+</ul>
+<h3 id="headline-20">
+変数
+</h3>
+<p>
+Lua の変数は型を限定しません。
+どのような値でも格納できます。
+また、C89 のようにブロックの先頭に書く必要もありません。
+</p>
+<p>
+なお、値を代入する前の変数の値は nil となります。
+</p>
+<h4 id="headline-21">
+グローバル変数と、ローカル変数
+</h4>
+<p>
+変数にはグローバル変数とローカル変数があります。
+</p>
+<p>
+ローカル変数の宣言は local を使用します。
+local を使用しないとグローバル変数になります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">globalA</span> <span class="o">=</span> <span class="mi">10</span>       <span class="c1">-- global </span>
+<span class="kd">local</span> <span class="n">localA</span> <span class="o">=</span> <span class="mi">10</span>  <span class="c1">-- local</span></code></pre></div>
+</div>
+<p>
+ローカル変数のスコープは、ローカル変数宣言の次の文から有効で、
+ブロックの終端で終わります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>               <span class="c1">-- global value = 10</span>
+<span class="kr">do</span>
+  <span class="kd">local</span> <span class="n">value</span> <span class="o">=</span> <span class="n">value</span>    <span class="c1">-- local value = global valule(10)</span>
+  <span class="n">value</span> <span class="o">=</span> <span class="n">value</span> <span class="o">+</span> <span class="mi">1</span>      <span class="c1">-- local value = 10 + 1 = 11</span>
+  <span class="n">print</span><span class="p">(</span> <span class="n">value</span> <span class="p">)</span>         <span class="c1">-- local value: 11</span>
+<span class="kr">end</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">value</span> <span class="p">)</span>           <span class="c1">-- global valule: 10</span></code></pre></div>
+</div>
+<p>
+グローバル変数は、 _ENV テーブルに格納されます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">value</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="kr">if</span> <span class="n">value</span> <span class="o">==</span> <span class="n">_ENV.value</span> <span class="kr">then</span> <span class="c1">-- true</span>
+  <span class="n">print</span><span class="p">(</span> <span class="s2">&#34;equals&#34;</span> <span class="p">)</span>
+<span class="kr">end</span></code></pre></div>
+</div>
+<p>
+なお、C でグローバル変数の利用を控えることが推奨されているように、
+Lua でも特に理由がない限りローカル変数を使用するべきです。
+</p>
+<h4 id="headline-22">
+代入文
+</h4>
+<p>
+Lua の代入は、1つの文で複数の値を代入できます。
+</p>
+<p>
+例えば次の文は、3 つの値を代入する同じ処理です。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">value1</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">value2</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">value3</span> <span class="o">=</span> <span class="mi">3</span>
+
+<span class="n">value1</span><span class="p">,</span> <span class="n">value2</span><span class="p">,</span> <span class="n">value3</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span></code></pre></div>
+</div>
+<p>
+なお、代入先の変数に対して代入元の値の個数が足りない場合、
+足りない分は nil が代入されます。
+代入元の値が多い場合は無視されます。
+</p>
+<p>
+代入文でも、テーブルコンストラクタのように最終式が関数呼び出しか、
+可変長式の場合は、その値全てが展開されます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span>
+<span class="kr">end</span>
+<span class="n">value1</span><span class="p">,</span> <span class="n">value2</span><span class="p">,</span> <span class="n">value3</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">func</span><span class="p">()</span> <span class="c1">-- value1 = 0, value2 = 10, value2 = 20</span></code></pre></div>
+</div>
+<p>
+代入は、右辺の全ての値が評価され、その後それぞれの値が左辺に代入されます。
+</p>
+<p>
+例えば、X, Y の値を swap する場合、次のようにすることができます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">X</span><span class="p">,</span><span class="n">Y</span> <span class="o">=</span> <span class="n">Y</span><span class="p">,</span><span class="n">X</span></code></pre></div>
+</div>
+<p>
+なお、Lua の代入は、値を持ちません。
+よって、C の様な代入はできません。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">int</span> <span class="n">value1</span> <span class="o">=</span> <span class="n">value2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span></code></pre></div>
+</div>
+<h3 id="headline-23">
+制御文
+</h3>
+<p>
+Lua には、次の制御文があります。
+</p>
+<ul>
+<li>
+<p>
+if
+</p>
+</li>
+<li>
+<p>
+while
+</p>
+</li>
+<li>
+<p>
+repeat
+</p>
+</li>
+<li>
+<p>
+for
+</p>
+</li>
+</ul>
+<p>
+それぞれの条件式は、
+false と nil が偽と扱われ、それ以外が真となります。
+</p>
+<h4 id="headline-24">
+if 文
+</h4>
+<p>
+<strong>if</strong> exp <strong>then</strong> block {<strong>elseif</strong> exp <strong>then</strong> block} [ <strong>else</strong> block] <strong>end</strong>
+</p>
+<p>
+Lua の if は上記構文です。
+</p>
+<p>
+次が C との差分です。
+</p>
+<ul>
+<li>
+<p>
+条件式に () が不要
+</p>
+</li>
+<li>
+<p>
+必ず end が必要
+</p>
+</li>
+<li>
+<p>
+else if ではなく elseif がある  
+</p>
+</li>
+</ul>
+<h4 id="headline-25">
+while 文
+</h4>
+<p>
+<strong>while</strong> exp <strong>do</strong> block <strong>end</strong>
+</p>
+<p>
+Lua の while は上記構文です。
+</p>
+<p>
+次が C との差分です。
+</p>
+<ul>
+<li>
+<p>
+条件式に () が不要
+</p>
+</li>
+<li>
+<p>
+必ず end が必要
+</p>
+</li>
+</ul>
+<h4 id="headline-26">
+repeat 文
+</h4>
+<p>
+<strong>repeat</strong> block <strong>until</strong> exp
+</p>
+<p>
+Lua の repeat は上記構文です。
+</p>
+<p>
+until の exp が真になるまで、block を繰り返します。
+</p>
+<p>
+なお、exp では block で宣言したローカル変数にアクセスできます。
+</p>
+<h4 id="headline-27">
+for 文
+</h4>
+<p>
+for 文は 2 種類あります。
+</p>
+<h5 id="headline-28">
+<strong>for</strong> v <strong>=</strong> e1, e2 [, e3] <strong>do</strong> block <strong>end</strong>
+</h5>
+<p>
+これは、C の for 文と似ています。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="n">v</span><span class="p">;</span>
+<span class="k">for</span> <span class="p">(</span> <span class="n">v</span> <span class="o">=</span> <span class="n">e1</span><span class="p">;</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="n">e2</span><span class="p">;</span> <span class="n">v</span> <span class="o">+=</span> <span class="n">e3</span> <span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+しかし、次の点で大きく異なるため <strong>注意</strong> が必要です。
+</p>
+<ul>
+<li>
+<p>
+e1, e2, e3 は、ループ開始前の一度だけ評価される
+</p>
+</li>
+<li>
+<p>
+e3 を指定しない場合は 1 が使用される
+</p>
+</li>
+<li>
+<p>
+v のスコープは for 文内のみ
+</p>
+</li>
+</ul>
+<h5 id="headline-29">
+<strong>for</strong> v <strong>in</strong> exp <strong>do</strong> block <strong>end</strong>
+</h5>
+<p>
+これはイテレータを使用したループ制御です。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kr">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="kr">in</span> <span class="n">pairs</span><span class="p">(</span> <span class="n">tbl</span> <span class="p">)</span> <span class="kr">do</span>
+  <span class="n">print</span><span class="p">(</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="p">)</span>
+<span class="kr">end</span></code></pre></div>
+</div>
+<p>
+上記のようにテーブル tbl の要素を列挙するような場合に利用します。
+</p>
+<p>
+exp は、次の値を返す式である必要があります。
+</p>
+<p>
+local func, param, prev = exp
+</p>
+<p>
+ここで func は、次の値を返すイテレータ関数です。
+</p>
+<p>
+local next_1, next_2, …, next_n = func( param, prev )
+</p>
+<p>
+ここで next_1 〜 next_n は、イテレータ関数で列挙する値の 1 集合です。
+上の pairs の例では、 key, value がそれにあたります。
+n はイテレータ関数側によって定義します。
+イテレータ関数 func は、prev が nil の場合に列挙する先頭の値の集合を返す必要があります。
+for 文は、イテレータ関数 func が返す next_1 が nil の場合、ループを終了します。
+</p>
+<p>
+例えば 1, &#34;1&#34; : 2, &#34;2&#34; : 〜 : N, &#34;N&#34; を列挙する場合、次のように定義します。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">ite</span><span class="p">(</span> <span class="n">param</span><span class="p">,</span> <span class="n">prev</span> <span class="p">)</span>
+   <span class="kr">if</span> <span class="n">prev</span> <span class="o">==</span> <span class="n">param</span> <span class="kr">then</span>
+      <span class="kr">return</span> <span class="kc">nil</span>
+   <span class="kr">end</span>
+   <span class="kr">if</span> <span class="n">prev</span> <span class="o">==</span> <span class="kc">nil</span> <span class="kr">then</span>
+      <span class="n">prev</span> <span class="o">=</span> <span class="mi">0</span>
+   <span class="kr">end</span>
+   <span class="kd">local</span> <span class="n">next</span> <span class="o">=</span> <span class="n">prev</span> <span class="o">+</span> <span class="mi">1</span>
+   <span class="kr">return</span> <span class="n">next</span><span class="p">,</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%d&#34;</span><span class="p">,</span> <span class="n">next</span> <span class="p">)</span>
+<span class="kr">end</span>
+
+<span class="kr">for</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span>  <span class="kr">in</span> <span class="n">ite</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="kc">nil</span> <span class="kr">do</span>
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.format</span><span class="p">(</span> <span class="s1">&#39;%d &#34;%s&#34;&#39;</span><span class="p">,</span>  <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span> <span class="p">)</span> <span class="p">)</span> <span class="c1">-- 1, &#34;1&#34; : 2, &#34;2&#34; : 〜 : 10, &#34;10&#34;</span>
+<span class="kr">end</span></code></pre></div>
+</div>
+<h5 id="headline-30">
+pairs(), ipairs() 関数
+</h5>
+<p>
+pairs(), ipairs() 関数は、 for 文でテーブルの要素を列挙するために利用する関数です。
+</p>
+<p>
+pairs() と ipairs() の差分を注意して使用する必要があります。
+</p>
+<ul>
+<li>
+<p>
+<strong>pairs() は、テーブルの全要素を列挙する。</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>ipairs() は、シーケンスの要素のみを対象に列挙する。</strong>
+</p>
+</li>
+</ul>
+<h4 id="headline-31">
+break 文
+</h4>
+<p>
+Lua の break 文は、基本的に C 言語と同じです。
+</p>
+<p>
+break 文は、while, repeat, for 文のループを抜けます。
+</p>
+<p>
+ループが入れ子になっている場合は、最も内側のループを抜けます。
+</p>
+<h4 id="headline-32">
+continue 文
+</h4>
+<p>
+Lua には continue がありません。
+</p>
+<h3 id="headline-33">
+ブロック
+</h3>
+<p>
+C の制御文は、ブロック文として宣言しないと 1 文しか処理対象になりませんでしたが、
+Lua の制御文は必ずブロックを処理対象とし、終端に end を必要とします。
+</p>
+<p>
+よって、C の様に明示的にブロック文を使用することは滅多にありませんが、
+ブロック文を明示することもできます。
+</p>
+<p>
+ <strong>do</strong> block <strong>end</strong> 
+</p>
+<p>
+上記のように do end で囲んだ個所がブロックとなります。
+</p>
+<h3 id="headline-34">
+論理演算
+</h3>
+<p>
+論理演算は次の 3 つです。
+</p>
+<ul>
+<li>
+<p>
+not
+</p>
+</li>
+<li>
+<p>
+or
+</p>
+</li>
+<li>
+<p>
+and
+</p>
+</li>
+</ul>
+<p>
+真、偽の扱いは条件式と同じで、false と nil が偽で、それ以外が真です。
+</p>
+<h4 id="headline-35">
+not
+</h4>
+<p>
+not は真・偽を反転します。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="ow">not</span> <span class="kc">false</span> <span class="c1">-- true</span>
+<span class="ow">not</span> <span class="kc">nil</span> <span class="c1">-- true</span>
+<span class="ow">not</span> <span class="kc">true</span> <span class="c1">-- false</span>
+<span class="ow">not</span> <span class="mi">1</span> <span class="c1">-- false</span></code></pre></div>
+</div>
+<p>
+必ず true か false になります。
+</p>
+<h4 id="headline-36">
+or
+</h4>
+<p>
+or は真になるまで値を評価します。
+or の結果は、真になるまで最終的に評価した値です。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kc">nil</span> <span class="ow">or</span> <span class="kc">false</span> <span class="ow">or</span> <span class="mi">1</span> <span class="c1">-- 1</span>
+<span class="kc">nil</span> <span class="ow">or</span> <span class="mi">2</span> <span class="ow">or</span> <span class="mi">3</span> <span class="c1">-- 2</span>
+<span class="mi">4</span> <span class="ow">or</span> <span class="mi">5</span> <span class="c1">-- 4</span>
+<span class="kc">nil</span> <span class="ow">or</span> <span class="kc">false</span> <span class="c1">-- false</span></code></pre></div>
+</div>
+<h4 id="headline-37">
+and
+</h4>
+<p>
+and は、偽になるまで値を評価します。
+and の結果は、偽になるまで最終的に評価した値です。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="mi">1</span> <span class="ow">and</span> <span class="mi">2</span> <span class="ow">and</span> <span class="mi">3</span> <span class="ow">and</span> <span class="kc">nil</span> <span class="c1">-- nil</span>
+<span class="mi">1</span> <span class="ow">and</span> <span class="mi">2</span> <span class="ow">and</span> <span class="mi">3</span> <span class="c1">-- 3</span>
+<span class="mi">1</span> <span class="ow">and</span> <span class="kc">false</span> <span class="ow">and</span> <span class="mi">2</span> <span class="c1">-- false</span></code></pre></div>
+</div>
+<h3 id="headline-38">
+関係演算
+</h3>
+<p>
+関係演算は次のものを利用できます。
+~= 以外は C と同じです。
+</p>
+<ul>
+<li>
+<p>
+==
+</p>
+<ul>
+<li>
+<p>
+等しい
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+~=
+</p>
+<ul>
+<li>
+<p>
+等しくない
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+&lt;
+</p>
+<ul>
+<li>
+<p>
+より小さい
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>&gt;</code>
+</p>
+<ul>
+<li>
+<p>
+より大きい
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+&lt;=
+</p>
+<ul>
+<li>
+<p>
+小さいまたは等しい
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>&gt;=</code>
+</p>
+<ul>
+<li>
+<p>
+大きいまたは等しい
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-39">
+算術演算
+</h3>
+<p>
+算術演算は次のものを利用できます。
+除算と累乗以外は C と同じです。
+</p>
+<ul>
+<li>
+<p>
+<code>+</code>
+</p>
+<ul>
+<li>
+<p>
+加算
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>-</code>
+</p>
+<ul>
+<li>
+<p>
+減算
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>*</code>
+</p>
+<ul>
+<li>
+<p>
+乗算
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>/</code>
+</p>
+<ul>
+<li>
+<p>
+浮動小数点数除算
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>//</code>
+</p>
+<ul>
+<li>
+<p>
+切り捨て除算 <strong>5.2 は非サポート</strong>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>%</code>
+</p>
+<ul>
+<li>
+<p>
+剰余
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>^</code>
+</p>
+<ul>
+<li>
+<p>
+累乗
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>-</code>
+</p>
+<ul>
+<li>
+<p>
+単項マイナス
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-40">
+ビット演算
+</h3>
+<p>
+ビット演算を行なう場合、値は 32bit の整数に丸められてから演算が行なわれます。
+</p>
+<p>
+また、Lua のバージョン 5.2 と 5.3 とで、ビット演算の仕様が大きく代わります。
+</p>
+<ul>
+<li>
+<p>
+利用方法
+</p>
+<ul>
+<li>
+<p>
+5.2 では bit 演算用パッケージ bit32 の関数を利用する必要があります。
+</p>
+</li>
+<li>
+<p>
+5.3 では C と同様に bit 演算用の演算子を利用できます。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+右シフト
+</p>
+<ul>
+<li>
+<p>
+5.2 では算術シフトです。(最上位ビットがコピーされる)
+</p>
+</li>
+<li>
+<p>
+5.3 では論理シフトです。(最上位ビットには 0 が入る)
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-41">
+関数
+</h3>
+<p>
+C の関数は、必ず名前(シンボル)が紐付いていますが、   
+Lua の関数は名前に紐付いているとは限りません。
+</p>
+<p>
+C の関数は、関数ポインタを関数ポインタ型の変数に代入して、
+その変数から関数を呼び出すことができます。
+Lua の場合は、C の関数ポインタ変数から関数を実行するような使い方になります。
+</p>
+<p>
+Lua の関数を保持する変数は、単なる変数なので後から別の値(関数)を代入することが
+可能です。もちろん関数でない値を代入することも可能です。
+</p>
+<p>
+また、変数なのでグローバルと local があります。
+</p>
+<h4 id="headline-42">
+定義
+</h4>
+<p>
+次の定義方法があります。
+</p>
+<ul>
+<li>
+<p>
+name = <strong>function(</strong> args <strong>)</strong> block <strong>end</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>local</strong> name; name = <strong>function(</strong> args <strong>)</strong> block <strong>end</strong>
+</p>
+</li>
+</ul>
+<p>
+1 番目がグローバル関数で、 2 番目がローカル関数です。
+name が関数名、args は引数、block は関数の処理です。
+args は 0 個以上の変数です。
+また、args は関数内がスコープになるローカル変数となります。
+</p>
+<p>
+function() end が関数オブジェクトを返す式であることは分かると思います。
+その関数オブジェクトをグローバル変数に代入するか、ローカル変数に代入するかで、
+その関数がグローバル関数になるかローカル関数になるかが決まります。
+</p>
+<p>
+local 関数の場合、変数に代入する前に local 変数の宣言をしています。
+これは、再帰呼び出しを行なう際に、その関数自身を呼ぶことを保証するためです。
+</p>
+<p>
+なお、関数定義は次のようにも書けます。
+</p>
+<ul>
+<li>
+<p>
+<strong>function</strong> name <strong>(</strong> args <strong>)</strong> block <strong>end</strong>
+</p>
+</li>
+<li>
+<p>
+local <strong>function</strong> name <strong>(</strong> args <strong>)</strong> block <strong>end</strong>
+</p>
+</li>
+</ul>
+<p>
+これは上記と全く同じ意味を持ちます。
+</p>
+<p>
+特に理由がない限り、関数定義は後者の書式で書いた方が良いでしょう。
+</p>
+<h4 id="headline-43">
+関数呼び出し
+</h4>
+<p>
+関数オブジェクトに () を付けることによって関数が実行されます。
+() には、引数を与えます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">value</span> <span class="p">)</span>
+  <span class="kr">return</span> <span class="n">value</span> <span class="o">+</span> <span class="mi">1</span>
+<span class="kr">end</span>
+<span class="n">print</span><span class="p">(</span> <span class="s2">&#34;value = &#34;</span><span class="p">,</span> <span class="n">func</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span> <span class="c1">-- 2</span>
+<span class="n">print</span><span class="p">(</span> <span class="s2">&#34;value = &#34;</span><span class="p">,</span> <span class="p">(</span><span class="kr">function</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="kr">return</span> <span class="n">value</span> <span class="o">+</span> <span class="mi">2</span> <span class="kr">end</span><span class="p">)(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="c1">-- 3</span></code></pre></div>
+</div>
+<p>
+上記 5 行目のように、 <strong>function()</strong> body <strong>end</strong> で取得した関数オブジェクトに
+直接 () を付けても実行できます。
+</p>
+<p>
+与えた引数と関数オブジェクトで定義した引数に違いがある場合は、
+代入文で説明した通り足りない場合は nil を設定、多い場合は無視されます。
+</p>
+<p>
+このような動作になるため、C++ のオーバーロードの概念は Lua にはありません。
+</p>
+<h4 id="headline-44">
+可変長引数
+</h4>
+<p>
+Lua は、C の printf のような可変長の引数を持つ関数を定義することができます。
+</p>
+<p>
+<strong>function(</strong> … <strong>)</strong>
+</p>
+<p>
+上記のように引数の宣言部に … を記載することで、そこは可変長引数になります。
+</p>
+<p>
+可変長引数は、次のようにそのまま … を指定することで与えられた引数を表現できます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">log</span><span class="p">(</span> <span class="p">...</span> <span class="p">)</span>
+  <span class="kr">if</span> <span class="n">enableLogFlag</span> <span class="kr">then</span>
+    <span class="n">print</span><span class="p">(</span> <span class="p">...</span> <span class="p">)</span>
+  <span class="kr">end</span>
+<span class="kr">end</span>
+<span class="n">log</span><span class="p">(</span> <span class="s2">&#34;test&#34;</span><span class="p">,</span> <span class="s2">&#34;hoge&#34;</span> <span class="p">)</span> <span class="c1">-- print( &#34;test&#34;, &#34;hoge&#34; )</span></code></pre></div>
+</div>
+<p>
+return … で、可変長引数をそのまま返すこともできます。
+</p>
+<p>
+… に何が与えられているのかを調べたい場合は、
+{…} で、その可変長引数を要素に持つテーブルを生成できるので、
+テーブルを作成した後でそのテーブルに対して操作することで可変長引数の要素にアクセスできます。
+</p>
+<p>
+なお、これは上記のテーブルコンストラクタで説明した通り
+最終要素のみの特徴であるため、
+次の場合は可変長引数の先頭要素だけを持つテーブルが生成されます。
+</p>
+<p>
+{…,nil}
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">log</span><span class="p">(</span> <span class="p">...</span> <span class="p">)</span>
+  <span class="kd">local</span> <span class="n">val1</span> <span class="o">=</span> <span class="p">{...}</span>
+  <span class="n">print</span><span class="p">(</span> <span class="n">val1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">val1</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span> <span class="c1">-- &#34;test&#34; &#34;hoge&#34;</span>
+  <span class="kd">local</span> <span class="n">val2</span> <span class="o">=</span> <span class="p">{...,</span><span class="kc">nil</span><span class="p">}</span>
+  <span class="n">print</span><span class="p">(</span> <span class="n">val2</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">val2</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="p">)</span> <span class="c1">-- &#34;test&#34; nil</span>
+<span class="kr">end</span>
+<span class="n">log</span><span class="p">(</span> <span class="s2">&#34;test&#34;</span><span class="p">,</span> <span class="s2">&#34;hoge&#34;</span> <span class="p">)</span></code></pre></div>
+</div>
+<h4 id="headline-45">
+return
+</h4>
+<p>
+関数を終了し、戻り値を返します。
+</p>
+<p>
+なお、関数の戻り値も複数個返すことができます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">,</span> <span class="n">val3</span> <span class="o">=</span> <span class="n">func</span><span class="p">()</span> <span class="c1">-- val1 = 1, val2 = 2, val3 = 3</span></code></pre></div>
+</div>
+<h3 id="headline-46">
+オブジェクト指向プログラミング
+</h3>
+<p>
+Lua では、テーブルを利用することでオブジェクト指向プログラミングができます。
+</p>
+<p>
+ただし、C++ の private, protected のようなアクセス制御 <del>や、継承</del> はできません。
+</p>
+<h4 id="headline-47">
+定義
+</h4>
+<h5 id="headline-48">
+クラス定義
+</h5>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">classA</span> <span class="o">=</span> <span class="p">{</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="kr">function</span> <span class="nc">classA</span><span class="p">:</span><span class="nf">func</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="n">self.value</span>
+<span class="kr">end</span>
+<span class="n">classA</span><span class="p">:</span><span class="n">func</span><span class="p">()</span> <span class="c1">-- 0</span></code></pre></div>
+</div>
+<p>
+上記の定義で、classA に func メソッドを定義しています。
+</p>
+<p>
+ここで self は、func() を保持しているテーブルそのものを示します。
+C++ の this と同じです。
+</p>
+<p>
+メソッド、メンバは複数持てます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">classA</span> <span class="o">=</span> <span class="p">{</span> <span class="n">total</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">1</span> <span class="p">}</span>
+<span class="kr">function</span> <span class="nc">classA</span><span class="p">:</span><span class="nf">getTotal</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="n">self.total</span>
+<span class="kr">end</span>
+<span class="kr">function</span> <span class="nc">classA</span><span class="p">:</span><span class="nf">add</span><span class="p">()</span>
+  <span class="n">self.total</span> <span class="o">=</span> <span class="n">self.total</span> <span class="o">+</span> <span class="n">self.value</span>
+<span class="kr">end</span>
+<span class="kr">function</span> <span class="nc">classA</span><span class="p">:</span><span class="nf">setValue</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+  <span class="n">self.value</span> <span class="o">=</span> <span class="n">val</span>
+<span class="kr">end</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">classA</span><span class="p">:</span><span class="n">getTotal</span><span class="p">()</span> <span class="p">)</span> <span class="c1">-- 0</span>
+<span class="n">classA</span><span class="p">:</span><span class="n">add</span><span class="p">()</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">classA</span><span class="p">:</span><span class="n">getTotal</span><span class="p">()</span> <span class="p">)</span> <span class="c1">-- 1</span>
+<span class="n">classA</span><span class="p">:</span><span class="n">setValue</span><span class="p">(</span> <span class="mi">2</span> <span class="p">)</span>
+<span class="n">classA</span><span class="p">:</span><span class="n">add</span><span class="p">()</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">classA</span><span class="p">:</span><span class="n">getTotal</span><span class="p">()</span> <span class="p">)</span> <span class="c1">-- 3</span></code></pre></div>
+</div>
+<p>
+なお、メソッドは次のようにも記載できます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">classA</span> <span class="o">=</span> <span class="p">{</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="kr">function</span> <span class="nc">classA</span><span class="p">.</span><span class="nf">func</span><span class="p">(</span> <span class="n">self</span> <span class="p">)</span>
+  <span class="kr">return</span> <span class="n">self.value</span>
+<span class="kr">end</span>
+<span class="n">classA.func</span><span class="p">(</span> <span class="n">classA</span> <span class="p">)</span> <span class="c1">-- 0</span></code></pre></div>
+</div>
+<p>
+ちょっと違いが分かり難いですが、次の点が異なります。
+</p>
+<ul>
+<li>
+<pre class="example">
+ではなく . になっている
+</pre>
+</li>
+<li>
+<p>
+関数定義の引数に self が入っている
+</p>
+</li>
+<li>
+<p>
+メソッド呼び出しの引数に classA を指定している
+</p>
+</li>
+</ul>
+<p>
+<code>: を利用することで、Lua が上記の処理を行なっている、ということです。</code>
+</p>
+<p>
+なお、: を利用したメソッド定義は self が自動的に利用されますが、
+. を利用した関数定義では self の部分に何を使うかはユーザ次第です。
+ですが、self を使うのが混乱せずに良いでしょう。
+</p>
+<p>
+別の記載の方法として、次のようにもできます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">classA</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="n">get</span> <span class="o">=</span> <span class="kr">function</span><span class="p">(</span> <span class="n">self</span> <span class="p">)</span>
+     <span class="kr">return</span> <span class="n">self.value</span>
+  <span class="kr">end</span><span class="p">,</span>
+  <span class="n">set</span> <span class="o">=</span> <span class="kr">function</span><span class="p">(</span> <span class="n">self</span><span class="p">,</span> <span class="n">value</span> <span class="p">)</span>
+     <span class="n">self.value</span> <span class="o">=</span> <span class="n">value</span>
+  <span class="kr">end</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">classA</span><span class="p">:</span><span class="n">get</span><span class="p">()</span> <span class="p">)</span> <span class="c1">-- 0</span>
+<span class="n">classA.set</span><span class="p">(</span> <span class="n">classA</span><span class="p">,</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">classA.get</span><span class="p">(</span> <span class="n">classA</span> <span class="p">)</span> <span class="p">)</span> <span class="c1">-- 1</span></code></pre></div>
+</div>
+<p>
+これは、テーブルコンストラクタの中にメソッド定義を含めているだけです。
+なお、テーブルコンストラクタでは : を利用した定義はできません。
+</p>
+<h5 id="headline-49">
+継承
+</h5>
+<p>
+Lua でクラスの継承が可能です。
+継承の実現方法には複数の実装方法があります。
+今回紹介する方法は、あくまで 1 つのサンプルです。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kr">function</span> <span class="nf">DefClass</span><span class="p">(</span> <span class="n">SuperClass</span> <span class="p">)</span> <span class="c1">-- クラス定義用関数</span>
+   <span class="kd">local</span> <span class="n">NewClass</span> <span class="o">=</span> <span class="p">{}</span>
+   <span class="n">setmetatable</span><span class="p">(</span> <span class="n">NewClass</span><span class="p">,</span> <span class="p">{</span> <span class="n">__index</span> <span class="o">=</span> <span class="n">SuperClass</span> <span class="p">}</span> <span class="p">)</span>
+   <span class="kr">function</span> <span class="nc">NewClass</span><span class="p">:</span><span class="nf">super</span><span class="p">(</span> <span class="p">...</span> <span class="p">)</span>
+      <span class="kd">local</span> <span class="n">obj</span> <span class="o">=</span> <span class="p">{}</span>
+      <span class="kr">if</span> <span class="n">SuperClass</span> <span class="kr">then</span>
+	 <span class="n">obj</span> <span class="o">=</span> <span class="n">SuperClass</span><span class="p">:</span><span class="n">new</span><span class="p">(</span> <span class="p">...</span> <span class="p">)</span>
+      <span class="kr">end</span>
+      <span class="n">setmetatable</span><span class="p">(</span> <span class="n">obj</span><span class="p">,</span> <span class="p">{</span> <span class="n">__index</span> <span class="o">=</span> <span class="n">NewClass</span> <span class="p">}</span> <span class="p">)</span>
+      <span class="kr">return</span> <span class="n">obj</span>
+   <span class="kr">end</span>
+   <span class="kr">function</span> <span class="nc">NewClass</span><span class="p">:</span><span class="nf">new</span><span class="p">(</span> <span class="p">...</span> <span class="p">)</span>
+      <span class="kr">return</span> <span class="n">self</span><span class="p">:</span><span class="n">super</span><span class="p">(</span> <span class="p">...</span> <span class="p">)</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="n">NewClass</span>
+<span class="kr">end</span>
+
+<span class="kd">local</span> <span class="n">SuperClass</span> <span class="o">=</span> <span class="n">DefClass</span><span class="p">(</span> <span class="kc">nil</span> <span class="p">)</span> <span class="c1">-- クラス定義。 継承無し</span>
+<span class="kr">function</span> <span class="nc">SuperClass</span><span class="p">:</span><span class="nf">new</span><span class="p">(</span> <span class="n">value</span> <span class="p">)</span>
+  <span class="kd">local</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">self</span><span class="p">:</span><span class="n">super</span><span class="p">()</span> <span class="c1">-- 親クラスのインスタンス生成</span>
+  <span class="n">obj.valueA</span> <span class="o">=</span> <span class="n">value</span>
+  <span class="kr">return</span> <span class="n">obj</span>
+<span class="kr">end</span>
+<span class="kr">function</span> <span class="nc">SuperClass</span><span class="p">:</span><span class="nf">funcA</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="n">self.valueA</span>
+<span class="kr">end</span>
+
+<span class="kd">local</span> <span class="n">SubClass</span> <span class="o">=</span> <span class="n">DefClass</span><span class="p">(</span> <span class="n">SuperClass</span> <span class="p">)</span> <span class="c1">-- クラス定義。  SuperClass を継承。 コンストラクタはデフォルト。</span>
+<span class="kr">function</span> <span class="nc">SubClass</span><span class="p">:</span><span class="nf">funcB</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="n">self.valueA</span> <span class="o">+</span> <span class="mi">10</span>
+<span class="kr">end</span>
+
+<span class="kd">local</span> <span class="n">SubSubClass</span> <span class="o">=</span> <span class="n">DefClass</span><span class="p">(</span> <span class="n">SubClass</span> <span class="p">)</span> <span class="c1">-- クラス定義。 SubClass を継承</span>
+<span class="kr">function</span> <span class="nc">SubSubClass</span><span class="p">:</span><span class="nf">new</span><span class="p">(</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span> <span class="p">)</span>
+  <span class="kd">local</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">self</span><span class="p">:</span><span class="n">super</span><span class="p">(</span> <span class="n">value1</span> <span class="p">)</span> <span class="c1">-- 親クラスのインスタンス生成</span>
+  <span class="n">obj.valueC</span> <span class="o">=</span> <span class="n">value2</span>
+  <span class="kr">return</span> <span class="n">obj</span>
+<span class="kr">end</span>
+<span class="kr">function</span> <span class="nc">SubSubClass</span><span class="p">:</span><span class="nf">funcC</span><span class="p">()</span>
+  <span class="kr">return</span> <span class="n">self.valueC</span>
+<span class="kr">end</span>
+
+<span class="kd">local</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">SuperClass</span><span class="p">:</span><span class="n">new</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">obj</span><span class="p">:</span><span class="n">funcA</span><span class="p">(),</span> <span class="n">obj.funcB</span><span class="p">,</span> <span class="n">obj.funcC</span> <span class="p">)</span> <span class="c1">-- 1, nil, nil</span>
+<span class="n">obj</span> <span class="o">=</span> <span class="n">SubClass</span><span class="p">:</span><span class="n">new</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">obj</span><span class="p">:</span><span class="n">funcA</span><span class="p">(),</span> <span class="n">obj</span><span class="p">:</span><span class="n">funcB</span><span class="p">(),</span> <span class="n">obj.funcC</span><span class="p">)</span> <span class="c1">-- 1, 11, nil</span>
+<span class="n">obj</span> <span class="o">=</span> <span class="n">SubSubClass</span><span class="p">:</span><span class="n">new</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">obj</span><span class="p">:</span><span class="n">funcA</span><span class="p">(),</span> <span class="n">obj</span><span class="p">:</span><span class="n">funcB</span><span class="p">(),</span> <span class="n">obj</span><span class="p">:</span><span class="n">funcC</span><span class="p">()</span> <span class="p">)</span> <span class="c1">-- 1, 11, 2</span></code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+サンプル概要
+</p>
+</li>
+</ul>
+<p>
+これは SuperClass, SubClass, SubSubClass を定義するサンプルです。
+名前の通り、 SubSubClass は SubClass を継承しています。
+SubClass は SuperClass を継承しています。
+SuperClass は何も継承していません。
+</p>
+<ul>
+<li>
+<p>
+クラス定義用関数
+</p>
+</li>
+</ul>
+<p>
+まず 1〜16 行目は、クラス定義用の関数を定義しています。
+DefClass( SuperClass ) を利用することで 、
+SuperClass クラスを親クラスに持つ新しいクラスを定義することができます。
+なお、この関数で定義したクラスにコンストラクタを作成する場合、
+new フィールドに関数をセットする必要があります。
+コンストラクタ内では、super フィールドで親クラスのコンストラタを呼び出す必要があります。
+コンストラタは、クラスのメンバーを初期化し、クラスのインスタンステーブルを返します。
+デフォルトで、super を呼び出すだけのデフォルトコンストラクタが定義されます。
+</p>
+<ul>
+<li>
+<p>
+SuperClass の定義
+</p>
+</li>
+</ul>
+<p>
+18 行目は、 親クラスを持たない SuperClass を定義します。
+19〜26 行目で、 SuperClass のコンストラクタと、メソッド funcA を定義しています。
+</p>
+<ul>
+<li>
+<p>
+SubClass の定義
+</p>
+</li>
+</ul>
+<p>
+29 行目は、 SuperClass を親クラスに持つ SubClass を定義します。
+29〜31 行目で、 SubClassメソッド funcB を定義しています。
+SubClass は独自のコンストラクタを持たないクラスです。
+</p>
+<ul>
+<li>
+<p>
+SubSubClass の定義
+</p>
+</li>
+</ul>
+<p>
+33 行目は、 SubClass を親クラスに持つ SubSubClass を定義します。
+34〜41 行目で、 SubClass のコンストラクタと、メソッド funcC を定義しています。
+</p>
+<ul>
+<li>
+<p>
+インスタンス生成
+</p>
+</li>
+</ul>
+<p>
+43〜48 行目で SuperClass, SubClass, SubSubClass インスタンスを生成し、
+メソッドを実行しています。
+</p>
+<h3 id="headline-50">
+require と loadfile
+</h3>
+<p>
+C の場合 include で外部モジュールの関数を利用できるようになりますが、
+Lua では require あるいは load を利用します。
+</p>
+<p>
+多くの場合、require を利用します。
+</p>
+<h4 id="headline-51">
+require
+</h4>
+<p>
+require は、別のスクリプトで定義した機能を利用する際に使用します。
+</p>
+<ul>
+<li>
+<p>
+main.lua
+</p>
+</li>
+</ul>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">sub</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s1">&#39;foo.sub&#39;</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">sub</span><span class="p">:</span><span class="n">func</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="c1">-- 1</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">sub</span><span class="p">:</span><span class="n">func</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="c1">-- 2</span>
+<span class="kd">local</span> <span class="n">sub2</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s1">&#39;foo.sub&#39;</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">sub</span> <span class="o">==</span> <span class="n">sub2</span> <span class="p">)</span> <span class="c1">-- true</span></code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+foo/sub.lua 
+</p>
+</li>
+</ul>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">tbl</span> <span class="o">=</span> <span class="p">{</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="kr">function</span> <span class="nc">tbl</span><span class="p">:</span><span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+  <span class="n">self.value</span> <span class="o">=</span> <span class="n">self.value</span> <span class="o">+</span> <span class="n">val</span>
+  <span class="kr">return</span> <span class="n">self.value</span>
+<span class="kr">end</span>
+<span class="kr">return</span> <span class="n">tbl</span></code></pre></div>
+</div>
+<p>
+概念が似ているだけで、include とはそもそも動作が異なります。
+</p>
+<ul>
+<li>
+<p>
+require はファイル名ではなく、モジュール名で指定します。
+</p>
+<ul>
+<li>
+<p>
+モジュール名は拡張子を含みません。またパス区切りには / ではなく . を使用します。
+</p>
+</li>
+<li>
+<p>
+. や .. の相対パスは使えません。 (区切り文字が . なので、 . を使うと意味不明になる)
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+require は、指定されたモジュールをロードし、実行結果を返します。
+</p>
+</li>
+<li>
+<p>
+require した際に返される値は 1 つだけです。
+</p>
+</li>
+<li>
+<p>
+require( modname ) したモジュール結果は、package.loaded[ modname ] テーブルに格納されます。
+</p>
+</li>
+<li>
+<p>
+次に require( modname ) した時は、 package.loaded[ modname ] に格納している値を返します。
+</p>
+</li>
+<li>
+<p>
+もしも modname で指定したモジュールの内容が、前回 require したときと異なる内容になっていたとしても
+package.loaded[ modname ] にロードされている場合は新規にロードしなおしません。
+</p>
+</li>
+<li>
+<p>
+強制的にロードし直したい場合は、事前に package.loaded[ modname ] = nil とします。
+</p>
+</li>
+</ul>
+<p>
+モジュールの検索パスは、 package.path を利用します。
+</p>
+<h4 id="headline-52">
+loadfile
+</h4>
+<p>
+loadfile は指定したスクリプトをロードして、そのロードしたスクリプトを実行するための関数を返します。
+よって、loadfile が返した関数を実行するまで、指定したスクリプトは実行されません。
+</p>
+<p>
+require と loadfile とでは次の点で異なります。
+</p>
+<ul>
+<li>
+<p>
+スクリプトの実行タイミング
+</p>
+<ul>
+<li>
+<p>
+require は、 require() を処理したタイミングで実行します
+</p>
+</li>
+<li>
+<p>
+loadfile は、loadfile() が返す関数を実行したタイミングになります
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+2回目以降の処理
+</p>
+<ul>
+<li>
+<p>
+require は、2 回目以降実行した場合は前回と同じモノを返します
+</p>
+</li>
+<li>
+<p>
+loadfile は新しくオブジェクトを生成します
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+main.lua
+</p>
+</li>
+</ul>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">sub3func</span> <span class="o">=</span> <span class="n">loadfile</span><span class="p">(</span> <span class="s1">&#39;foo/sub.lua&#39;</span> <span class="p">)</span>
+<span class="kd">local</span> <span class="n">sub31</span> <span class="o">=</span> <span class="n">sub3func</span><span class="p">()</span>
+<span class="kd">local</span> <span class="n">sub32</span> <span class="o">=</span> <span class="n">sub3func</span><span class="p">()</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">sub31</span><span class="p">:</span><span class="n">func</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="c1">-- 1</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">sub32</span><span class="p">:</span><span class="n">func</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="c1">-- 1</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">sub31</span> <span class="o">==</span> <span class="n">sub32</span> <span class="p">)</span> <span class="c1">-- false</span></code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+foo/sub.lua 
+</p>
+</li>
+</ul>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">tbl</span> <span class="o">=</span> <span class="p">{</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span>
+<span class="kr">function</span> <span class="nc">tbl</span><span class="p">:</span><span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+  <span class="n">self.value</span> <span class="o">=</span> <span class="n">self.value</span> <span class="o">+</span> <span class="n">val</span>
+  <span class="kr">return</span> <span class="n">self.value</span>
+<span class="kr">end</span>
+<span class="kr">return</span> <span class="n">tbl</span></code></pre></div>
+</div>
+<p>
+loadfile は次のようにファイル名の他に、mode, env を指定できます。
+</p>
+<p>
+loadfile( filename, mode, end )
+</p>
+<ul>
+<li>
+<p>
+mode は、次を指定できます。デフォルトは &#34;bt&#34; です。
+</p>
+<ul>
+<li>
+<p>
+&#34;b&#34;: 対象ファイルをスクリプトファイルに限定
+</p>
+</li>
+<li>
+<p>
+&#34;t&#34;: 対象ファイルをバイトコード済みファイルに限定
+</p>
+</li>
+<li>
+<p>
+&#34;bt&#34;: 対象ファイルを限定しない
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+env は、グローバル変数の格納テーブルを指定します。デフォルトは _ENV です。
+</p>
+</li>
+</ul>
+<h4 id="headline-53">
+require と loadfile の使い分け
+</h4>
+<p>
+次の場合を除き、 require を使うべきです。
+</p>
+<ul>
+<li>
+<p>
+loadfile の mode, env 引数を指定する必要がある場合。
+</p>
+</li>
+<li>
+<p>
+スクリプトを再実行したい場合。
+</p>
+</li>
+</ul>
+<h3 id="headline-54">
+コルーチン
+</h3>
+<p>
+コルーチンは、値の受渡しが可能になった RTOS 等のプリエンプティブなタスク切り替え機構と考えると分かり易いです。
+</p>
+<p>
+coroutine.resume() と coroutine.yield() が、タスクの再開、一時停止にあたります。
+</p>
+<ul>
+<li>
+<p>
+coroutine.resume( crn, arg ) は、コルーチン crn の実行を再開します。
+</p>
+<ul>
+<li>
+<p>
+このとき、コルーチン crn は arg を受けとります。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+coroutine.yield(arg) は、実行中のコルーチンを suspend にし、coroutine.resume() 呼び出した元の処理に戻ります。
+</p>
+<ul>
+<li>
+<p>
+このとき、coroutine.resume() の戻り値として arg が返ります。
+</p>
+</li>
+<li>
+<p>
+ただし、coroutine.resume() の戻り値の第一戻り値は、指定のコルーチンの処理が続きがあるかどうかを最後まで実行したかどうかのフラグを返します。
+</p>
+<ul>
+<li>
+<p>
+true の場合、コルーチンの処理が続きます。
+</p>
+</li>
+<li>
+<p>
+false の場合、コルーチンの処理は全て終了しています。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+coroutine.resume() の戻り値が true の場合、コルーチンの処理は続きがあります。
+</p>
+<ul>
+<li>
+<p>
+この状態で 再度 coroutine.resume( crn, arg ) を実行することで、コルーチンの処理の続きから実行されます。
+</p>
+</li>
+<li>
+<p>
+resume の引数 arg は、coroutine.yield() の戻り値となります。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+コルーチンの処理が終了すると、最後の coroutine.resume() 呼び出し位置に戻ります。
+</p>
+<ul>
+<li>
+<p>
+このときの coroutine.resume() の戻り値は、第一戻り値が false で、第二以降の戻り値がコルーチンの戻り値になります。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+なお、 コルーチンを作るには coroutine.create( func ) を使用します。
+</p>
+<p>
+ <strong>コルーチンを生成しただけでは、コルーチンは動作しません。</strong>
+ <strong>coroutine.resume() で初めてコルーチンが実行されます。</strong>
+ <strong>初回の resume() で与えられた引数が、コルーチンの引数になります。</strong>
+ <strong>2回目以降の resume() で与えられた引数は、 coroutine.yield() の戻り値になります。</strong>
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">crn</span> <span class="o">=</span> <span class="n">coroutine.create</span><span class="p">(</span> <span class="kr">function</span><span class="p">(</span> <span class="n">value</span> <span class="p">)</span>
+      <span class="n">print</span><span class="p">(</span> <span class="s2">&#34;c1&#34;</span><span class="p">,</span> <span class="n">value</span> <span class="p">)</span>
+      <span class="n">print</span><span class="p">(</span> <span class="s2">&#34;c2&#34;</span><span class="p">,</span> <span class="n">coroutine.yield</span><span class="p">(</span> <span class="n">value</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span>
+      <span class="kr">return</span> <span class="n">value</span> <span class="o">+</span> <span class="mi">2</span> 
+<span class="kr">end</span><span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="s2">&#34;m1&#34;</span><span class="p">,</span> <span class="n">coroutine.resume</span><span class="p">(</span> <span class="n">crn</span><span class="p">,</span> <span class="mi">2</span> <span class="p">)</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="s2">&#34;m2&#34;</span><span class="p">,</span> <span class="n">coroutine.resume</span><span class="p">(</span> <span class="n">crn</span><span class="p">,</span> <span class="mi">3</span> <span class="p">)</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="s2">&#34;m3&#34;</span><span class="p">,</span> <span class="n">coroutine.resume</span><span class="p">(</span> <span class="n">crn</span><span class="p">,</span> <span class="mi">4</span> <span class="p">)</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+上の例の出力結果は次になります。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">c1	2
+m1	true	3
+c2	3
+m2	true	4
+m3	false	cannot resume dead coroutine</code></pre></div>
+</div>
+<p>
+coroutine.wrap() を使用してもコルーチンを生成できます。
+</p>
+<p>
+この場合 coroutine.create() と次の点で異なります。
+</p>
+<ul>
+<li>
+<p>
+coroutine.wrap() はコルーチンを返すのではなく、コルーチンを resume する関数 wfun() を返します。
+</p>
+</li>
+<li>
+<p>
+wfun( arg ) の引数 arg は、 resume の第二引数以降に与える引数になります。
+</p>
+</li>
+<li>
+<p>
+wfun() の戻り値は、コルーチンの続きの有無を示すフラグを含みません。
+</p>
+</li>
+<li>
+<p>
+wfun() は、コルーチンのエラーをキャッチしません。
+</p>
+</li>
+</ul>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">crn</span> <span class="o">=</span> <span class="n">coroutine.wrap</span><span class="p">(</span> <span class="kr">function</span><span class="p">(</span> <span class="n">value</span> <span class="p">)</span>
+      <span class="n">print</span><span class="p">(</span> <span class="s2">&#34;c1&#34;</span><span class="p">,</span> <span class="n">value</span> <span class="p">)</span>
+      <span class="n">print</span><span class="p">(</span> <span class="s2">&#34;c2&#34;</span><span class="p">,</span> <span class="n">coroutine.yield</span><span class="p">(</span> <span class="n">value</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span>
+      <span class="kr">return</span> <span class="n">value</span> <span class="o">+</span> <span class="mi">2</span> 
+<span class="kr">end</span><span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="s2">&#34;m1&#34;</span><span class="p">,</span> <span class="n">crn</span><span class="p">(</span> <span class="mi">2</span> <span class="p">)</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="s2">&#34;m2&#34;</span><span class="p">,</span> <span class="n">crn</span><span class="p">(</span> <span class="mi">3</span> <span class="p">)</span> <span class="p">)</span>
+<span class="c1">--print( &#34;m3&#34;, crn( 3 ) ) -- error</span></code></pre></div>
+</div>
+<p>
+上の例の出力結果は次になります。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">c1	2
+m1	3
+c2	3
+m2	4</code></pre></div>
+</div>
+<p>
+coroutine.wrap() を利用することで、for 文のサンプルとして挙げたイテレータ関数 ite を次のように書けます。
+コルーチンを使用することでスッキリ書けることが分かると思います。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">ite</span> <span class="o">=</span> <span class="n">coroutine.wrap</span><span class="p">(</span> <span class="kr">function</span> <span class="p">(</span> <span class="n">param</span><span class="p">,</span> <span class="n">prev</span> <span class="p">)</span>
+   <span class="kr">for</span> <span class="n">next</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">param</span> <span class="kr">do</span>
+     <span class="n">coroutine.yield</span><span class="p">(</span> <span class="n">next</span><span class="p">,</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%d&#34;</span><span class="p">,</span> <span class="n">next</span> <span class="p">)</span> <span class="p">)</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="kc">nil</span>
+<span class="kr">end</span>
+<span class="c1">-- 以下と同じ結果になる</span>
+<span class="c1">-- local function ite( param, prev )</span>
+<span class="c1">--    if prev == param then</span>
+<span class="c1">--       return nil</span>
+<span class="c1">--    end</span>
+<span class="c1">--    if prev == nil then</span>
+<span class="c1">--       prev = 0</span>
+<span class="c1">--    end</span>
+<span class="c1">--    local next = prev + 1</span>
+<span class="c1">--    return next, string.format( &#34;%d&#34;, next )</span>
+<span class="c1">-- end</span></code></pre></div>
+</div>
+<h3 id="headline-55">
+メタテーブル
+</h3>
+<p>
+メタテーブルとは、C++ の演算子オーバーロードのようなものです。
+</p>
+<p>
+メタテーブルを利用することで、値に対する処理をカスタマイズすることができます。
+メタテーブルを設定できる値は、型がユーザデータかテーブルのデータだけです。
+ただし、Lua スクリプトから設定できるのはテーブル型のデータのみです。
+ユーザデータ型のデータは、 C 側から設定可能です。
+</p>
+<p>
+setmetatable(table, metatable) で、指定のテーブルにメタテーブルを設定します。
+</p>
+<p>
+Lua でカスタマイズ可能な処理が行なわれる際に、メタテーブルに定義したメソッド(メタメソッド)が呼ばれます。
+</p>
+<p>
+例ば次のようにテーブル要素へのアクセスをカスタマイズすることができます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">meta</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="n">__index</span> <span class="o">=</span> <span class="kr">function</span><span class="p">(</span> <span class="n">tbl</span><span class="p">,</span> <span class="n">key</span> <span class="p">)</span>
+    <span class="kr">return</span> <span class="n">key</span>
+  <span class="kr">end</span>
+<span class="p">}</span>
+<span class="kd">local</span> <span class="n">tbl</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">tbl</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span> <span class="p">)</span> <span class="c1">-- nil</span>
+<span class="n">setmetatable</span><span class="p">(</span> <span class="n">tbl</span><span class="p">,</span> <span class="n">meta</span> <span class="p">)</span>
+<span class="n">print</span><span class="p">(</span> <span class="n">tbl</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span> <span class="p">)</span> <span class="c1">-- 1</span></code></pre></div>
+</div>
+<p>
+この例では、 tbl の要素を取得した際に、キーを返すように振舞をカスタマイズしています。
+(tbl の 1 の要素を取得すると、 1 が返る。)
+</p>
+<p>
+以降で、カスタマイズ可能な動作について説明します。
+</p>
+<h4 id="headline-56">
+二項演算
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( value1, value2 )
+</p>
+<p>
+次の二項演算をカスタマイズできます。
+</p>
+<ul>
+<li>
+<p>
+<code>__add</code>
+</p>
+<ul>
+<li>
+<p>
+<code>+</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__sub</code>
+</p>
+<ul>
+<li>
+<p>
+<code>-</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__mul</code>
+</p>
+<ul>
+<li>
+<p>
+<code>*</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__div</code>
+</p>
+<ul>
+<li>
+<p>
+<code>/</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__mod</code>
+</p>
+<ul>
+<li>
+<p>
+<code>%</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__pow</code>
+</p>
+<ul>
+<li>
+<p>
+<code>^</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__concat</code>
+</p>
+<ul>
+<li>
+<p>
+<code>..</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__idiv</code>
+</p>
+<ul>
+<li>
+<p>
+<code>//</code> (ver 5.3)
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+二項演算は、第一引数、第二引数の順で、該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+</p>
+<p>
+メタメソッドは演算結果を返します。
+</p>
+<h4 id="headline-57">
+ビット演算 (ver 5.3)
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( value1, value2 )
+</p>
+<ul>
+<li>
+<p>
+<code>__band</code>
+</p>
+<ul>
+<li>
+<p>
+<code>&amp;</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__bor</code>
+</p>
+<ul>
+<li>
+<p>
+<code>|</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__bxor</code>
+</p>
+<ul>
+<li>
+<p>
+~
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__bnot</code>
+</p>
+<ul>
+<li>
+<p>
+<code>^</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__shl</code>
+</p>
+<ul>
+<li>
+<p>
+<code>&lt;&lt;</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__shr</code>
+</p>
+<ul>
+<li>
+<p>
+<code>&gt;&gt;</code>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+ビット演算は、第一引数、第二引数のどちらかが整数でなく、かつ整数に変換不可能な値の場合に、
+第一引数、第二引数の順で、該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+</p>
+<p>
+メタメソッドは演算結果を返します。
+</p>
+<h4 id="headline-58">
+単項演算
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( value )
+</p>
+<p>
+次の単項演算をカスタマイズできます。
+</p>
+<ul>
+<li>
+<p>
+<code>__unm</code>
+</p>
+<ul>
+<li>
+<p>
+<code>-</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>__len</code>
+</p>
+<ul>
+<li>
+<p>
+<code>#</code>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+単項演算は、指定の値のメタテーブルが該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+</p>
+<p>
+メタメソッドは演算結果を返します。
+</p>
+<h4 id="headline-59">
+<code>__eq</code> ( == )
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( value1, value2 )
+</p>
+<p>
+<code>__eq</code> は、第一引数と第二引数が、該当のハンドラを定義しているかどうかを確認します。
+また、そのハンドラが同じハンドラである場合に限り、そのハンドラの処理を実行します。
+そうでない場合は、デフォルトの処理を行ないます。
+</p>
+<p>
+メタメソッドは条件が成り立つ時に true, 成り立たない時に false を返します。
+</p>
+<h4 id="headline-60">
+<code>__lt</code> ( &lt; ), <code>__le</code> ( &lt;= )
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( value1, value2 )
+</p>
+<p>
+<code>__lt</code> , <code>__le</code> は、第一引数、第二引数の順で、該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+</p>
+<p>
+メタメソッドは条件が成り立つ時に true, 成り立たない時に false を返します。
+</p>
+<p>
+ただし  <code>__le</code> の定義がない場合、a &lt;= b は not (b &lt; a) として <code>__lt</code> を確認します。
+</p>
+<h4 id="headline-61">
+<code>__index</code>
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( table, key )
+</p>
+<p>
+table[key] のデータにアクセスする際の動作をカスタマイズします。
+</p>
+<p>
+<code>__index</code> に設定されているのが関数だった場合、上記の関数として実行し戻り値を返します。
+関数ではなくテーブルだった場合、そのテーブルのキー key の要素を返します。
+</p>
+<p>
+なお、カスタマイズ可能なのは table に key のデータがない場合のみです。
+table に key のデータがある場合は、その値を返します。
+また、 <code>__index</code> に設定されているのが、関数ではなくテーブルだった場合、
+そのテーブルのキー key の要素を返します。
+</p>
+<p>
+メタデータをセットしているのがユーザデータ型の場合は、常に有効になります。
+</p>
+<p>
+メタメソッドは table の key に対する値を返します。
+</p>
+<h4 id="headline-62">
+<code>__newindex</code>
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( table, key, value )
+</p>
+<p>
+table[key] にデータを設定する際の動作をカスタマイズします。
+</p>
+<p>
+<code>__newindex</code> に設定されているのが関数だった場合、上記の関数として実行します。
+関数ではなくテーブルだった場合、そのテーブルのキー key に値 value を設定します。
+</p>
+<p>
+なお、カスタマイズ可能なのは table に key のデータがない場合のみです。
+</p>
+<p>
+table に key のデータがある場合は、指定の値がセットされます。
+</p>
+<p>
+メタデータをセットしているのがユーザデータ型の場合は、常に有効になります。
+</p>
+<h4 id="headline-63">
+<code>__call</code>
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( func, … )
+</p>
+<p>
+関数コールの動作をカスタマイズします。
+</p>
+<p>
+指定の値のメタテーブルが該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+</p>
+<p>
+メタメソッドは func の実行結果を返します。
+</p>
+<h4 id="headline-64">
+<code>__gc</code> ( == )
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( self )
+</p>
+<p>
+<code>__gc</code> は、そのメタメソッドを設定されている値が GC で解放される前に呼び出されます。
+</p>
+<h4 id="headline-65">
+<code>__tostring</code> ( == )
+</h4>
+<p>
+メタメソッドは次の引数を持ちます。
+</p>
+<p>
+function func( self )
+</p>
+<p>
+<code>__tostring</code> は、 string.format の &#34;%s&#34; 等で変換する際に呼出されます。
+</p>
+<p>
+メタメソッドは文字列を返します。 
+</p>
+<h3 id="headline-66">
+クロージャ
+</h3>
+<p>
+Lua はクロージャを使用できます。
+クロージャは、Lisp 等でも利用できる古くからある機能の一つですが、C++ では C++11 で取入れられた機能です。
+</p>
+<p>
+クロージャを利用することで、関数の引数、グルーバル変数以外で、関数の振舞いを変更することができます。
+</p>
+<p>
+例えば、C の qsort には次の関数ポインタを引数に与える必要があります。
+</p>
+<p>
+int (*compare)(const void * val1, const void * val2)
+</p>
+<p>
+この関数は、val1, val2 に格納されている値を比較して結果を返す関数です。
+</p>
+<p>
+ここで、もし要素の比較を行なうために次のようにもう一つの引数が必要だった場合、
+どうすれば qsort() を利用できるようになるでしょうか？
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">sampleCompare</span><span class="p">(</span><span class="k">const</span> <span class="kt">void</span> <span class="o">*</span> <span class="n">val1</span><span class="p">,</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span> <span class="n">val2</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">param</span> <span class="p">);</span></code></pre></div>
+</div>
+<p>
+方法としては、次の 2 つが考えられます。
+</p>
+<ul>
+<li>
+<p>
+param をグローバル変数 <code>g_param</code> に設定する
+</p>
+<ul>
+<li>
+<p>
+sampleCompareWrap( const void * val1, const void * val2 ) を作成。
+</p>
+<ul>
+<li>
+<p>
+この sampleCompareWrap() から sampleCompare( val1, val2, <code>g_param</code> ) を実行する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code>g_param</code> に値を設定する
+</p>
+</li>
+<li>
+<p>
+sampleCompareWrap() を qsort() に渡す
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+param を固定値にして sampleCompare() 実行するラッパー関数を用意する
+</p>
+<ul>
+<li>
+<p>
+sampleCompareWrapX( const void * val1, const void * val2 ) を作成。
+</p>
+<ul>
+<li>
+<p>
+この sampleCompareWrapX() から sampleCompare( val1, val2, PARAM ) を実行する。
+</p>
+</li>
+<li>
+<p>
+ここで PARAM は、param が取り得る値の 1 つです
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+param のパターン分 sampleCompareWrapX() を用意する。
+</p>
+</li>
+<li>
+<p>
+使用する param のパターンに合せて qsort() に与える sampleCompareWrapX() を変更する
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+どちらも、あまり良い方法とは言えません。
+</p>
+<p>
+このような時にクロージャを使用すると簡単に解決できます。
+</p>
+<p>
+Lua のクロージャを使うと次のようになります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">generateCompare</span><span class="p">(</span> <span class="n">param</span> <span class="p">)</span>
+  <span class="kr">return</span> <span class="kr">function</span><span class="p">(</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span> <span class="p">)</span> <span class="c1">-- ★</span>
+    <span class="kr">return</span> <span class="n">sampleCompare</span><span class="p">(</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span><span class="p">,</span> <span class="n">param</span> <span class="p">)</span>
+  <span class="kr">end</span>
+<span class="kr">end</span>
+<span class="n">qsort</span><span class="p">(</span> <span class="n">array</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">generateCompare</span><span class="p">(</span> <span class="n">param</span> <span class="p">)</span> <span class="p">)</span> <span class="c1">-- C の qsort() と同じインタフェースとする</span></code></pre></div>
+</div>
+<p>
+上記で説明している通り、クロージャを利用することで、関数の引数、グローバル変数を使わずに、
+上記の ★ マークの関数の振舞いを変更できます。
+</p>
+<p>
+クロージャで重要なことは、関数の処理内で、関数定義外部で宣言されているローカル変数を利用しているということです。
+ローカル変数は、宣言されると新しくインスタンスを生成します。
+そして Lua の値は、参照がなくなるまで解放されないようになっています。
+これにより、ローカル変数のスコープであるブロックの処理を抜けても、関数内で参照されているためインスタンスが解放されることなく残ることになります。
+</p>
+<h3 id="headline-67">
+デバッグインタフェース
+</h3>
+<p>
+Lua は、自分自身をデバッグするためのインタフェースを持ちます。
+これを利用することで、例えばスタックトレースを動的に取得することができます。
+また、この機能を利用することでリモードデバッガ等を実現できます。
+</p>
+<h2 id="headline-68">
+C/C++ 言語プログラマのためのサポートツール
+</h2>
+<p>
+Lua には直接関係ありませんが、
+C/C++ 言語プログラマのためのサポートツールとして、lctags を開発しています。
+</p>
+<p>
+この lctags は、
+いわゆるタグジャンプをサポートするソースコードタグシステムです。
+lctags を利用することで、
+従来ツールで課題だった構造体のメンバを認識した
+タグジャンプが出来ない問題を解決できます。
+他にも、コールグラフの表示など多くの機能に対応しています。
+</p>
+<p>
+是非、次の記事を御一読下さい。
+</p>
+<p>
+https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156
+</p>
+<p>
+<strong>ちなみにこの lctags は、 Lua で開発しています。</strong>
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/" title=""><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - </a>
+<a class="nav nav-next" href="https://example.com/lua/interface/" title="C インタフェース編">Next - C インタフェース編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class="parent active"><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

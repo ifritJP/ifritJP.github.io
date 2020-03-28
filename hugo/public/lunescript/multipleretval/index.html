@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>多値の戻り値 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/multipleretval/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="多値の戻り値" />
+<meta property="og:description" content="LuneScript は、多値の関数戻り値に対応しています。 例えば、次のように関数は複数の値を返せます。 fn func(): int,int { return 1, 2; } print( func() ); // 1 2 上記サンプルでは、 func() は 1 と 2" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/multipleretval/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="多値の戻り値"/>
+<meta name="twitter:description" content="LuneScript は、多値の関数戻り値に対応しています。 例えば、次のように関数は複数の値を返せます。 fn func(): int,int { return 1, 2; } print( func() ); // 1 2 上記サンプルでは、 func() は 1 と 2"/>
+<meta itemprop="name" content="多値の戻り値">
+<meta itemprop="description" content="LuneScript は、多値の関数戻り値に対応しています。 例えば、次のように関数は複数の値を返せます。 fn func(): int,int { return 1, 2; } print( func() ); // 1 2 上記サンプルでは、 func() は 1 と 2">
+
+<meta itemprop="wordCount" content="1438">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>多値の戻り値</h1>
+
+<p>
+LuneScript は、多値の関数戻り値に対応しています。
+</p>
+<p>
+例えば、次のように関数は複数の値を返せます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func(): int,int {
+   return 1, 2;
+}
+print( func() );  // 1 2</code></pre>
+</div>
+<p>
+上記サンプルでは、 func() は 1 と 2 を返します。
+この多値の戻り値を、そのまま print() の引数として渡しています。
+</p>
+<p>
+多値の戻り値は非常に便利ですが、戻り値が多値である言語はまだまだ少ないです。
+また、戻り値の 2 番目以降の値は、オプション的な意味合いのケースが多いです。
+</p>
+<p>
+そのため、2 番目以降の戻り値の存在を忘れがちです。
+</p>
+<p>
+これによって、不具合が発生することがあります。
+</p>
+<h2 id="headline-1">
+多値の戻り値による不具合
+</h2>
+<p>
+次のコードは LuneScript ではなく、 <strong>Lua</strong> のコードです。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func1</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func2</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="p">(</span><span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">))</span> <span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="n">func1</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 66</span>
+<span class="n">func2</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 97</span></code></pre></div>
+</div>
+<p>
+この func1() と func2() は、同じ引数 &#34;abcb&#34; を与えているのに異なる結果を出力します。
+何故そうなるか分かるでしょうか？
+</p>
+<p>
+ちなみに <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> は、
+文字列 txt 内の &#34;b&#34; を &#34;B&#34; に変換した文字列を返す Lua の標準ライブラリで、
+<code>string.byte()</code> は、 指定の文字列に含まれる値を返す標準ライブラリです。
+</p>
+<p>
+それでは問の答です。
+</p>
+<p>
+func1() は string.byte に <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> の
+戻り値そのままを渡しているのに対し、
+func2() は <code>()</code> で括った <code>(txt:gsub( &#34;b&#34;, &#34;B&#34; ))</code> を渡しています。
+</p>
+<p>
+これにより、
+func1() は string.byte() に <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> の多値の値をそのまま渡しているのに対し、
+func2() は string.byte() に <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> の多値の先頭の値である文字列だけを渡しています。
+</p>
+<p>
+<code>string.byte()</code> は、 第2引数が渡された場合、
+第2引数が指定するインデックスの文字の値を返します。
+一方、第2引数が省略された場合、先頭の文字の値を返します。
+</p>
+<p>
+そして、 <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> は多値を返す関数です。
+具体的には、変換後の文字列 str と何箇所変換したか int を返します。
+</p>
+<p>
+<code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> が変換した文字列を返す関数であることは、
+多くの人が認識していることだと思います。
+一方で、この関数が多値を返す関数だと認識している人はどの程度いるでしょうか？
+</p>
+<p>
+また、認識していたとして、それが不具合につながるということに即座に気付く人は
+どれほどいるでしょうか？
+</p>
+<p>
+本来 <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> の変換後の文字列だけを引数として使用したいのに、
+意図せずに渡された多値の戻り値によって、関数動作が変ってしまうことがあります。
+</p>
+<p>
+つまり、本来は func2() のように <code>()</code> を使って多値の先頭だけ使わなければならない時に、
+func1() のようにそのまま多値を使ってしまうことがあるのです。
+</p>
+<p>
+ここで冒頭で書いたことを思い出してください。
+</p>
+<ul>
+<li>
+<p>
+<code>多値の戻り値は非常に便利ですが、戻り値が多値である言語はまだまだ少ないです。</code>
+</p>
+</li>
+<li>
+<p>
+<code>また、戻り値の 2 番目以降の値は、オプション的な意味合いのケースが多いです。</code>
+</p>
+</li>
+<li>
+<p>
+<code>そのため、2 番目以降の戻り値の存在を忘れがちです。</code>
+</p>
+</li>
+</ul>
+<p>
+多値の戻り値は便利ですが、このようなリスクもあるんです。
+</p>
+<h2 id="headline-2">
+LuneScript の場合
+</h2>
+<p>
+LuneScript では、このように問題を避けるため多値の戻り値を扱う際、
+明示することにしました。
+なお、明示しない場合は warning となります。
+</p>
+<p>
+ただ、多値を利用する際に明示するのは、それはそれで面倒です。
+</p>
+<p>
+そこで、明示が必要なケースとして、次のケースに限定します。
+</p>
+<p>
+多値の戻り値の利用先が
+</p>
+<ul>
+<li>
+<p>
+関数の引数で、なおかつその引数が省略可能な場合
+</p>
+</li>
+<li>
+<p>
+return に指定する値で、なおかつその値が省略可能な場合
+</p>
+</li>
+</ul>
+<p>
+つまり、 let など直接変数に値を代入するような場合は、明示は不要です。
+わざわざ値を代入する変数を用意しているということ自体が、
+多値の第二引数以降を使用すると明示しているのと同様だと考えたためです。
+</p>
+<h2 id="headline-3">
+明示方法
+</h2>
+<p>
+具体的な明示方法は次になります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func1(): int,int {
+   return 1, 2;
+}
+fn func2( val1:int, val2:int!) {
+   print( val1, val2 );
+}
+
+func2( func1()** );</code></pre>
+</div>
+<p>
+上記 <code>func1()**</code> のように、関数コールの後に <code>**</code> を付加することで、
+その関数コールの多値を使用していることを明示します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/variable/" title="変数 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 変数 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/tutorial2.setup/" title="導入編">Next - 導入編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

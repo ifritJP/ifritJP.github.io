@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Lua バージョン間のクロスコンパイル - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/crosscompile/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Lua バージョン間のクロスコンパイル" />
+<meta property="og:description" content="今回は少し予定を変更して、LuneScript のクロスコンパイルについて説明します。 クロスコンパイル ここでいう「クロスコンパイル」とは、 Lua の" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/crosscompile/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="Lua バージョン間のクロスコンパイル"/>
+<meta name="twitter:description" content="今回は少し予定を変更して、LuneScript のクロスコンパイルについて説明します。 クロスコンパイル ここでいう「クロスコンパイル」とは、 Lua の"/>
+<meta itemprop="name" content="Lua バージョン間のクロスコンパイル">
+<meta itemprop="description" content="今回は少し予定を変更して、LuneScript のクロスコンパイルについて説明します。 クロスコンパイル ここでいう「クロスコンパイル」とは、 Lua の">
+
+<meta itemprop="wordCount" content="1200">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Lua バージョン間のクロスコンパイル</h1>
+
+<p>
+今回は少し予定を変更して、LuneScript のクロスコンパイルについて説明します。
+</p>
+<h2 id="headline-1">
+クロスコンパイル
+</h2>
+<p>
+ここでいう「クロスコンパイル」とは、
+Lua のバージョン間の「クロスコンパイル」という意味です。
+</p>
+<p>
+LuneScript は、Lua へのトランスコンパイルを行なう際、
+LuneScript を実行している Lua のバージョンに合せたトランスコンパイルを行ないます。
+</p>
+<p>
+例えば、次のような制御を行ないます。
+</p>
+<ul>
+<li>
+<p>
+Lua5.2 で実行している場合、ビット演算は bit32 ライブラリを利用する。
+</p>
+</li>
+<li>
+<p>
+Lua5.3 で実行している場合、ビット演算は Lua の組込み演算子を利用する。
+</p>
+</li>
+</ul>
+<p>
+クロスコンパイルは、出力する Lua のコードを、
+LuneScript を実行している Lua のバージョンではなく、
+指定の Lua バージョンにトランスコンパイルします。
+</p>
+<p>
+これにより、次のようなことが可能になります。
+</p>
+<p>
+  「LuneScript は Lua5.3 で実行し、トランスコンパイル先は Lua5.1 にする」
+</p>
+<h3 id="headline-2">
+使用方法  
+</h3>
+<p>
+使用方法は、次のように -ol オプションでバージョンを指定するだけです。
+</p>
+<div class="src src-sh">
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ lnsc src.lns lua -ol <span class="m">51</span></code></pre></div>
+</div>
+<p>
+上記の例は src.lns を lua5.1 用にトランスコンパイルし、
+結果を stdout に出力します。
+</p>
+<p>
+-ol オプションに指定する値は、次の通りです。
+</p>
+<table>
+<thead>
+<tr>
+<th class="align-right">オプション</th>
+<th>バージョン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="align-right">51</td>
+<td>Lua5.1</td>
+</tr>
+<tr>
+<td class="align-right">52</td>
+<td>Lua5.2</td>
+</tr>
+<tr>
+<td class="align-right">53</td>
+<td>Lua5.3</td>
+</tr>
+</tbody>
+</table>
+<p>
+-ol オプションは、 save, lua で指定可能です。
+</p>
+<h2 id="headline-3">
+LuneScript の Lua5.1 対応
+</h2>
+<p>
+これまで LuneScript は、実行に Lua5.2, Lua5.3 が必要でしたが、
+上記クロスコンパイル対応によって、 Lua5.1 でも実行できるようになりました。
+</p>
+<p>
+LuneScript は、それ自体を LuneScript で開発するセルフホスティングであるため、
+LuneScript 自体をクロスコンパイルすることで Lua5.1 対応しました。
+</p>
+<p>
+LuneScript で開発することにより、「生産性を上げる」ということ以外にも、
+「Lua のバージョン違いを <strong>ある程度</strong> 吸収できる」というメリットがあります。
+</p>
+<p>
+ただし、吸収できるのはあくまでも <strong>ある程度</strong> です。
+</p>
+<p>
+Lua5.1 は、次節で説明する制限があります。
+</p>
+<h3 id="headline-4">
+Lua5.1 の制限
+</h3>
+<p>
+LuneScript を Lua5.1 にトランスコンパイルする場合、次の制限があります。
+</p>
+<p>
+<em>LuneScript の制限というよりは、 Lua5.1 の制限とも言えますが。。</em>
+</p>
+<ul>
+<li>
+<p>
+クラスのデストラクタが使用できない。
+</p>
+</li>
+<li>
+<p>
+ビット演算が使用できない。  
+</p>
+</li>
+<li>
+<p>
+find() などの文字クラスに %g が利用できない。
+</p>
+</li>
+<li>
+<p>
+string.format() の書式に %s, %q を指定した場合、
+文字列以外を指定できない。
+</p>
+</li>
+</ul>
+<p>
+上記において、デストラクタ、ビット演算に関しては、
+コンパイル時にエラー出力しますが、
+%g, %s, %q に関しては、コンパイル時にエラーを出力しませんので注意が必要です。
+</p>
+<p>
+ただし、 %s, %q に関しては、次のパターンではトランスコンパイル時に、
+tostring() を付加することでエラーしないように回避しています。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">print( string.format( &#34;%d,%s,%s,%s&#34;,  1, 1.0, {}, [] ) );</code></pre>
+</div>
+<p>
+上記のように、リテラルな文字列を使った format 書式は、
+%s とそれに対応するデータの型を見て、
+str でなければ次のように tostring() を付加します。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">print</span><span class="p">(</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%d,%s,%s,%s&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">tostring</span><span class="p">(</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">tostring</span><span class="p">(</span> <span class="p">{}),</span> <span class="n">tostring</span><span class="p">(</span> <span class="p">{})</span> <span class="p">)</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+この変換が可能なのは、リテラル文字列を利用している時だけです。
+</p>
+<p>
+例えば、次の場合は変換できません。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let formatTxt = &#34;%d,%s,%s,%s&#34;;
+print( string.format( formatTxt,  1, 1.0, {}, [] ) );</code></pre>
+</div>
+<h2 id="headline-5">
+まとめ
+</h2>
+<p>
+LuneScript は、 Lua のバージョン間のクロスコンパイルをサポートします。
+</p>
+<p>
+これにより Lua5.1, Lua5.2, Lua5.3 での、実行をサポートします。
+</p>
+<p>
+ただし、 Lua5.1 には制限があります。
+</p>
+<p>
+次回はクラスについて説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/introduce3/" title="Lua のトランスコンパイラ LuneScript の紹介 3"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Lua のトランスコンパイラ LuneScript の紹介 3</a>
+<a class="nav nav-next" href="https://example.com/lunescript/classmapping/" title="mapping 編">Next - mapping 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class="active"><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

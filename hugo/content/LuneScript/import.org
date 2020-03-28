@@ -1,0 +1,201 @@
+#+TITLE: import/provide 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript のモジュール管理について説明します。
+
+* モジュール
+
+LuneScript のモジュール管理は、基本的に Lua と同じです。
+
+Lua との違いを、次に挙げます。
+
+- 特に宣言しない場合、ファイルそれぞれが 1 つのモジュールとなる。
+- ファイル名の拡張子は .lns で、 .lns を除いた名前がモジュール名となる。
+- init.lns は非サポート。
+- LuneScript の組込みキーワード(class 等)のファイル名は非サポート。
+  
+念のため、LuneScript と Lua のモジュール管理の共通部分を説明します。
+
+- パッケージの検索パスは package.path に格納されているパス情報によって制御される。
+- モジュール名は . で区切り、サブディレクトリを表わす。
+- 相互参照モジュールをサポートしない。
+
+
+例えば、ファイル hoge/test.lns のモジュール名は hoge.test になります。
+
+上記から分かるように、ディレクトリ名、ファイル名(拡張子以外)に
+. を含めることは出来ません。
+
+
+LuneScript のソースは、特に何も宣言しなくても 1 つのモジュールとなります。
+
+例えば、次のような Test.lns は関数 func を持つモジュールとなります。
+
+#+NAME: Test.lns
+#+BEGIN_SRC lns
+// Test.lns
+fn func(): str, str {
+   return __mod__, __func__;
+}
+#+END_SRC
+
+ただし、モジュール内の情報を外部に公開するには、 pub 宣言が必要です。
+
+具体的には、次のように pub を宣言する必要があります。
+
+#+NAME: Test.lns
+#+BEGIN_SRC lns
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+#+END_SRC
+
+これによって、このモジュールの func() 関数が外部から利用できるようになります。
+
+* import
+
+import は、外部モジュールの利用を宣言します。
+
+import は、モジュールの先頭に宣言してください。
+
+*(2019/6/24) 関数内部でも宣言できるように対応しました。*
+
+
+上記 Test.lns を利用するには、次の様にします。
+
+#+BEGIN_SRC lns
+import Test;
+
+print( Test.func() ); // @Test   Test.func
+#+END_SRC
+
+上記の例では、 Test.func() で Test モジュール内の func() を呼び出しています。
+
+このように import することで、
+外部モジュールが pub 宣言しているシンボルにアクセス出来ます。
+
+
+なお、work/Test.lns を import する場合は、次のようになります。
+
+#+BEGIN_SRC lns
+import work.Test;
+
+print( Test.func() ); // work.Test	Test.func
+#+END_SRC
+
+上記例から分かるように、import したモジュールにアクセスするには、
+そのモジュール名の最後の . 以降の名前を使用します。
+上記例の場合、 work.Test を import しているので、シンボル Test でアクセスします。
+
+なお、複数モジュールを import する時に、
+アクセス名が同じになる場合は(例えば foo.bar と hoge.bar を import する場合)、
+次に説明する as を利用してください。
+
+** import as
+
+import as は、 import 後のアクセス名を指定します。
+
+例えば、上記の work.Test を import as で foo とすると、次のようになります。
+
+#+BEGIN_SRC lns
+import work.Test as foo;
+
+print( foo.func() ); // work.Test	Test.func
+#+END_SRC
+
+
+* LuneScript でトランスコンパイルしたモジュールを Lua から require() する
+
+LuneScript は、Lua のトランスコンパイラです。
+つまり、 LuneScript で書いたモジュールは、
+Lua から require() して使用することが出来ます。
+
+この場合、 LuneScript で書いたモジュールは、必ずテーブルとなります。
+
+例えば、上記 Test.lns のトランスコンパイル後の Lua ソースは、次のようになります。
+
+#+BEGIN_SRC lua
+--work/Test.lns
+local _moduleObj = {}
+local __mod__ = 'work.Test'
+if not _lune then
+   _lune = {}
+end
+local function func(  )
+   local __func__ = 'Test.func'
+
+   return __mod__, __func__
+end
+_moduleObj.func = func
+return _moduleObj
+#+END_SRC
+
+上記のソースを見ると分かりますが、
+Lua からこのソースを require() すると、_moduleObj が得られることになります。
+
+一方で、 Lua の require() は任意の値を返すこと出来ます。
+そして、この動作を期待される場合があります。
+
+つまり、LuneScript でトランスコンパイルした Lua モジュールは、
+テーブル以外のオブジェクトが得られることを期待した Lua から、
+直接 require して使用することが出来ないことになります。
+
+このような Lua モジュールとの互換を可能にする仕組みが、 provide です。
+
+* provide
+
+provide は、既存の Lua モジュールとの互換性を提供するものです。
+
+*Lua モジュールとの互換性が不要な場合の使用は避けてください。*
+
+次に provide の例を示します。
+
+#+BEGIN_SRC lns
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+
+provide func;
+#+END_SRC
+
+上記例は、 provide に 関数 func() を与えています。
+
+これによって、この Test.lns モジュールのトランスコンパイル結果は、
+次のようになります。
+
+#+BEGIN_SRC lns
+--work/Test.lns
+local __mod__ = 'work.Test'
+if not _lune then
+   _lune = {}
+end
+local function func(  )
+   local __func__ = 'Test.func'
+
+   return __mod__, __func__
+end
+return func
+#+END_SRC
+
+上記から分かるように、 Lua からこのモジュールを require() すると、
+関数 func が得られます。
+
+このように provide を利用すると、
+既存の Lua モジュールとの互換性のあるモジュールを生成することが出来ます。
+
+なお、 provide に指定できるのは *シンボルだけ* です。
+プリミティブな値を指定することは出来ません。
+
+* まとめ
+
+LuneScript は、簡単にモジュールを作成でき、既存の Lua モジュールとの互換性もあります。
+
+
+次回は、 LuneScript から既存の Lua  モジュールを利用する方法について説明します。

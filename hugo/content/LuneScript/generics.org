@@ -1,0 +1,380 @@
+#+TITLE: generics 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+ここでは、 LuneScript がサポートする Generics について説明します。
+
+LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、
+ユーザ定義の関数やクラスでも Generics をサポートしました。
+
+* 関数
+
+関数の Generics は次のように宣言します。
+
+#+BEGIN_SRC lns
+fn func<T>( val:T ) : Set<T> {
+   return (@ val);
+}
+#+END_SRC
+
+上記サンプルを見ればだいたい理解できると思いますが、
+関数宣言する際に 関数名 + ~<仮型パラメータ>~ で宣言します。
+
+ここで func<T>() は、引数の値を持つ Set<T> を生成する関数です。
+
+
+仮型パラメータは、複数指定することができます。
+
+#+BEGIN_SRC lns
+fn func<T1,T2>( val1:T1, val2:T2 ) : Set<T1>, List<T2> {
+   return (@ val1), [ val2 ];
+}
+#+END_SRC
+
+
+* nilable, mutable
+
+仮型パラメータは、通常の型と同じく nilable や mutable の概念を持ちます。
+
+これにより、次のような処理を書けます。
+
+#+BEGIN_SRC lsn
+fn func1<T>( val:T ) : T {
+   return val;
+}
+fn func2<T>( val:T ) : &T {
+   return val;
+}
+fn func3<T>( val:T ) : T! {
+   return val;
+}
+let mut test1 = func1( [ 1, 2 ] );
+test1.insert( 1 );
+let mut test2 = func2( [ 1, 2 ] );
+test2.insert( 1 ); // error test2 is not mutable
+let mut test3 = func3( [ 1, 2 ] );
+test3.insert( 1 ); // error test3 is nilable
+#+END_SRC
+
+- func1 は、引数をそのままの型 T で返します。
+- func2 は、引数を immutable 型 &T で返します。
+- func3 は、引数を nilable 型 T! で返します。
+
+これにより、 test1.insert() は可能ですが、
+test2, test3 はコンパイルエラーとなります。
+
+
+なお、ここで気を付けなければならないことは、
+仮型パラメータを使用する時は nilable や mutable を利用できますが、
+仮型パラメータ名を宣言するときは使用できません。
+つまり、次のような ~func1<T!>~ はエラーとなります。
+
+#+BEGIN_SRC lns
+fn func1<T!>( val:T ) : T {
+   return val;
+}
+#+END_SRC
+
+また、仮型パラメータに nilable は利用できません。
+つまり、次の場合エラーします。
+
+#+BEGIN_SRC lns
+fn func1<T>( val:T ) : T {
+   return val;
+}
+let val:int! = 1;
+print( func1( val ) ); // error type mismatch
+#+END_SRC
+
+この例では、 func1( val ) によって int! が func1() に与えられますが、
+~func1<T>(val:T)~ の val は T であり、
+仮型パラメータは nilable を利用できないためエラーとなります。
+
+このような処理を行ないたい場合は、次のように宣言します。
+
+#+BEGIN_SRC lns
+fn func1<T>( val:T! ) : T {
+   return unwrap val;
+}
+let val:int! = 1;
+print( func1( val ) ); // ok
+#+END_SRC
+
+つまり、 ~fn func1<T>( val:T! )~ とすることで、
+func1() の引数が nilable であることを宣言します。
+
+しかし、nilable の値を扱えないと不便なこともあります。
+そのような場合に備えて Nilable<T> を用意しています。
+
+これについては、後日別途説明します。
+
+** サンプル
+
+Generics を利用すると、次のような処理が書けます。
+
+#+BEGIN_SRC lns
+fn func<T>( val:T ) : Set<T> {
+   return (@ val);
+}
+foreach val in func( "foo" ) {
+   print( val .. "bar" );  // foobar
+}
+foreach val in func( 1 ) {
+   print( val + 100 );  // 101
+}
+#+END_SRC
+
+func( "foo" ) は、 (@ "foo" ) の Set<str> を生成し、
+func( 1 ) は、 (@ 1 ) の Set<int> を生成します。
+
+上記を見ると分かる通り、コールした引数に応じて型パラメータを決定しています。
+
+*** 効果
+
+Generics ではなく、stem を利用することで次のように似たような処理を記載できます。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) : Set<stem> {
+   return (@ val);
+}
+foreach val in func( "foo" ) {
+   print( val@@str .. "bar" );
+}
+foreach val in func( 1 ) {
+   print( val@@int + 100 );
+}
+#+END_SRC
+
+しかしこの場合、 str や int などの型情報が stem に丸められてしまいます。
+stem に丸められてしまうので ~@@str~ や ~@@int~ のキャストが必要になります。
+
+キャストするのは不便ですし、なによりも非常に危険です。
+
+Generics を利用することで、キャストを使わずに安全にアクセスできます。
+
+
+* クラス
+
+クラスの Generics は次のように宣言します。
+
+#+BEGIN_SRC lns
+class Test<T> {
+   let val:T;
+   pub fn func() : List<T> {
+      return [ self.val ];
+   }
+}
+#+END_SRC
+
+クラスの場合、クラス宣言の名前を指定する際に仮型パラメータを指定します。
+
+なお、クラス宣言の外にメソッドを宣言する場合、
+次のように仮型パラメータの宣言は不要です。
+
+#+BEGIN_SRC lns
+pub fn Test.func2() : Set<T> {
+   return (@ self.val );
+}
+#+END_SRC
+
+Generics クラスのインスタンスは次のように生成します。
+
+#+BEGIN_SRC lns
+let test = new Test<str>( "abc" );
+#+END_SRC
+
+なお、コンストラクタの引数に全ての仮パラメータを使用している場合、
+次のように実型パラメータを省略することも可能です。
+#+BEGIN_SRC lns
+let test = new Test( "abc" );
+#+END_SRC
+
+* メソッド
+
+メソッドは、クラスの仮型パラメータと、メソッドの仮型パラメータを両方持てます。
+
+次のサンプルは Test.func() メソッドは、
+クラスの仮型パラメータ T と、メソッドの仮型パラメータ T2 を持っています。
+
+#+BEGIN_SRC lns
+class Test<T> {
+   let val:T;
+   pub fn func<T2>(val:T2) : Map<T,T2> {
+      return { self.val: val };
+   }
+}
+let test = new Test( "abc");
+foreach val, key in test.func( 1 ) {
+   print( key .. "xyz", val + 10 );
+}
+foreach val, key in test.func( "ABC" ) {
+   print( key .. "xyz", val .. "XYZ" );
+}
+#+END_SRC
+
+* 型パラメータの制約
+
+実型パラメータには、 nil 以外の全ての型を指定できます。
+
+このため、 Generics なクラスや関数内で仮型パラメータ型の値に対する処理は
+~==~ や =~== などの型に依存しない演算に限られます。
+
+これだと、Generics 内の処理で効果的な処理を書けません。
+
+そこで、型パラメータの制約を利用します。
+
+** サンプル
+
+次は、型パラメータ制約のサンプルです。
+
+ここでは、 ~class Test<T:Val>~ と宣言することで、
+Test クラスの仮型パラメータは Val クラスに限られます。
+
+これにより、 Test.sub() メソッド内で val の値に対し、
+Val クラスのメソッド func() をコールできるようになります。
+
+#+BEGIN_SRC lns
+abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test<T:Val> {
+   let val:T;
+   pub fn sub() {
+      print( "this is " .. self.val.func() );
+   }
+}
+#+END_SRC
+
+次は、この Test クラスを使ったサンプルです。
+
+#+BEGIN_SRC lns
+abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test<T:Val> {
+   let val:T;
+   pub fn sub() {
+      print( "this is " .. self.val.func() );
+   }
+}
+
+class Val1 extend Val {
+   pub override fn func(): str {
+      return "val1";
+   }
+}
+
+class Val2 extend Val {
+   pub override fn func(): str {
+      return  "val2";
+   }
+}
+
+fn func( test:Test ) {
+   test.sub();
+}
+
+func( new Test( new Val1() ) );  // this is val1
+func( new Test( new Val2() ) );  // this is val2
+#+END_SRC
+
+このサンプルの構成は次になります。
+
+- Val1, Val2 クラスは、Val クラスを継承したクラス
+- func() 関数は Test 型の引数 test を持ち、 test.sub() メソッドをコール。
+- ~new Test( new Val1() )~, ~new Test( new Val2() )~ によって、
+  Val1 と Val2 の実型パラメータの Test 型のインスタンスを生成し func() 関数をコール
+  
+これにより、 Val1.func(), Val2.func() がコールされ
+~this is val1~, ~this is val2~ が 出力される。
+
+なお、 ~Test<T:Val>~ の T は Val である必要があるので、
+例えば ~new Test<"abc">~ のような指定はエラーになります。
+
+なぜならば "abc" は str 型であり、 str 型は Val 型ではないからです。
+
+
+ちなみに仮型パラメータの制約の syntax は class の extend と同じです。
+
+つまり次のようになります。
+
+#+BEGIN_SRC lns
+class Hoge<T:SuperClass(IF,...)> {
+}
+#+END_SRC
+
+ここで SuperClass はクラスで、IF はインタフェースです。
+
+SuperClass, IF は、それぞれ省略可能です。
+
+* generics クラスの Mapping
+
+LuneScript は、
+クラスのインスタンスを Map オブジェクトに変換する Mapping 機能を持ちます。
+
+Mapping に関しては、次の記事を参照してください。
+
+https://qiita.com/dwarfJP/items/070a3d31c57903cb6933
+
+あるクラスを Mapping するには、
+そのクラスが Mapping インタフェースを extend する必要があります。
+
+次は簡単な例です。
+
+#+BEGIN_SRC lns
+class Test<T> extend (Mapping) {
+   let txt:str;
+   pub fn func( val:T ) {
+      print( self.txt, val );
+   }
+}
+
+let test = new Test<int>( "hoge" );
+let map = test._toMap();
+if! let test2 = Test<int>._fromMap( map ) {
+   test2.func( 1 );
+}
+#+END_SRC
+
+Test<T> クラスは Mapping を extend しています。
+これにより、Test<T> クラスは Mapping 可能になります。
+
+上記の場合は、 Generics でない通常のクラスの場合と何も変りません。
+これは、仮型パラメータ型のメンバに持たないためです。
+
+次のように仮型パラメータ型のメンバを持った場合は、エラーになります。
+
+#+BEGIN_SRC lns
+class Test<T> extend (Mapping) {
+   let txt:T;
+}
+#+END_SRC
+
+なぜならば、あるクラスが Mapping を extend するには、
+そのクラスが保持する全てのメンバが Mapping 可能でなければならないのに対し、
+メンバ txt の型である仮型パラメータ T は、nilable 以外の全ての型になり得るからです。
+
+これを回避するには、
+メンバの型として使用する仮型パラメータに Mapping の制約を設定します。
+
+
+具体的には次の通り ~Test<T:(Mapping)>~ とします。
+
+#+BEGIN_SRC lns
+class Test<T:(Mapping)> extend (Mapping) {
+   let val:T {pub};
+}
+
+let test = new Test( "abc" );
+let map = test._toMap();
+if! let test2 = Test<str>._fromMap( map ) {
+   print( test2.$val .. "xyz" );
+}
+#+END_SRC
+
+これにより、 Generics クラスが Mapping 可能になります。
+

@@ -1,0 +1,193 @@
+#+TITLE: 導入編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は、 LuneScript の導入方法についての紹介です。
+
+* LuneScript の導入方法
+
+LuneScript は Lua のトランスコンパイラです。
+また、LuneScript 自体も Lua のスクリプトとして動作します。
+
+よって、 LuneScript には Lua の実行環境が必要です。
+
+なお、 LuneScript が対応している Lua のバージョンは *5.1*, 5.2, 5.3 です。
+
+ただし Lua 5.1 で利用する場合、幾つかの制限があります。
+具体的な制限の内容については、別の記事で説明します。
+
+追記: 12/10 (*Lua 5.1* 対応について)
+
+システムにデフォルトでインストールされている Lua のバージョンは、
+多くの場合 5.1 系です。
+
+次のコマンドでインストールされている Lua のバージョンを確認してください。
+
+#+BEGIN_SRC txt
+$ lua -v 
+#+END_SRC
+
+** Lua の導入
+
+Lua は次の URL からダウンロードできます。
+
+http://www.lua.org/download.html
+
+Linux であれば、パッケージ管理で簡単に導入できますが、
+Lua のバージョンには注意してください。
+
+例えば ubuntu 等の apt 系のパッケージ管理では、次のコマンドで導入できます。
+
+#+BEGIN_SRC sh
+$ sudo apt install lua5.3
+#+END_SRC
+
+*** Windows の場合
+
+Windows では、cygwin 版 Lua が必要です。
+
+トランスコンパイル後の Lua コードは、 cygwin 版でなくとも動作します。
+
+しかし、LuneScript 自体は linux 環境を想定しているため cygwin が必要になります。
+
+必ず cygwin 版 Lua を用意してください。
+
+Windows Subsystem for Linux で動作するかどうかは、後程確認します。
+
+** LuneScript の導入
+
+前述している通り、LuneScript は Lua のスクリプトとして動作します。
+
+Lua のモジュール管理は非常に単純で、
+Lua が管理するモジュールディレクトリにファイルを置くだけです。
+
+LuneScript のモジュールは、github に公開しています。
+
+https://github.com/ifritJP/LuneScript
+
+
+手動でファイルコピーすることでもセットアップできますが、
+以降では LuneScript の setup.lua を使ったセットアップ方法について説明します。
+
+
+手動でファイルコピーする方法は、 Lua のモジュール管理を熟知していないと難しいです。
+
+*** LuneScript の導入方法
+
+LuneScript の setup.lua を実行します。
+
+手順は次の通りです。
+
+#+BEGIN_SRC sh
+$ git clone https://github.com/ifritJP/LuneScript.git
+$ cd LuneScript/src
+$ lua5.3 setup.lua -d
+$ sudo make install
+#+END_SRC
+
+これにより、 LuneScript がモジュールディレクトリにインストールされます。
+
+LuneScript をインストールする Lua のモジュールディレクトリを指定したい場合、
+~lua5.3 setup.lua -d~ の -d を外して実行してください。
+
+
+*** Lua が管理するモジュールディレクトリ
+
+Lua が管理するモジュールディレクトリは次のコマンドで確認できます。
+
+#+BEGIN_SRC sh
+$ lua5.3 -e 'print( package.path )'
+#+END_SRC
+
+上記コマンドの結果は、次のようになります。 (環境によって異なります)
+
+#+BEGIN_SRC sh
+/usr/local/share/lua/5.3/?.lua;/usr/local/share/lua/5.3/?/init.lua;/usr/local/lib/lua/5.3/?.lua;/usr/local/lib/lua/5.3/?/init.lua;/usr/share/lua/5.3/?.lua;/usr/share/lua/5.3/?/init.lua;./?.lua;./?/init.lua
+#+END_SRC
+
+これを ; で区切ると次になります。
+
+- /usr/local/share/lua/5.3/?.lua
+- /usr/local/share/lua/5.3/?/init.lua
+- /usr/local/lib/lua/5.3/?.lua
+- /usr/local/lib/lua/5.3/?/init.lua
+- /usr/share/lua/5.3/?.lua
+- /usr/share/lua/5.3/?/init.lua
+- ./?.lua
+- ./?/init.lua
+
+細かい説明は省きますが、
+次のディレクトリが Lua が管理するモジュールディレクトリになります。
+
+- /usr/local/share/lua/5.3
+- /usr/local/lib/lua/5.3
+- /usr/share/lua/5.3
+- ./
+  
+*ディレクトリは環境によって異なります。*
+  
+  
+環境変数によってもモジュールディレクトリを指定することは出来ますが、
+ここでの説明は割愛します。
+  
+* emacs の設定
+
+LuneScript は、emacs で開発するための emacs lisp を提供しています。
+  
+次の設定をしてください。
+
+#+BEGIN_SRC lisp
+  (add-to-list 'load-path "my-lune-path")  ;;; clone した LuneScript のパスを指定
+  (setq lns-lua-command "/usr/local/bin/lua")  ;;; lua のパス
+  (require 'lns-conf)
+  (require 'lns-flymake)
+  (require 'lns-auto-complete)
+  (require 'lns-helm)
+#+END_SRC
+
+これにより、次が利用できます。
+
+- .lns ファイルのインデント、色付け
+- flymake による構文チェック
+- auto-complete による補完
+
+構文チェックは flymake と flycheck をサポートしています。
+flycheck を利用したい場合 lns-flymake ではなく、 lns-flycheck を require してください。
+
+auto-complete, flycheck, flymake は、別途 M-x package-install してください。
+
+
+** プロジェクトファイル
+
+emacs で LuneScript を扱う場合、プロジェクトファイルを作成する必要があります。
+
+プロジェクトファイルといっても、次の内容を持つ lune.js ファイルをプロジェクトの
+トップディレクトリに置くだけです。
+
+#+BEGIN_SRC js
+{}
+#+END_SRC
+
+このファイルを置いたディレクトリが、モジュールの起点ディレクトリとなります。
+
+例えば次のようなディレクトリ構成の場合、
+
+#+BEGIN_SRC txt
+foo/
+foo/lune.js
+foo/bar/
+foo/bar/mod1.lns
+#+END_SRC
+
+bar.mod1 が、mod1.lns のモジュールパスとなります。
+
+* まとめ
+
+Lua のモジュール管理は非常に単純なため、簡単に導入ができます。  
+
+
+次回は LuneScript による Hello World について紹介します。

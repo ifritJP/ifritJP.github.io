@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>キャスト 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/cast/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="キャスト 編" />
+<meta property="og:description" content="LuneScript は、 3 つのタイプのキャストを提供します。 @@ @@@ @@= @@ @@ は、変換元の値の型を実行時にチェックせずに強制的に型変換します。 let val1:stem = 1; let val2:int = val1@@int; 次のよう" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/cast/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="キャスト 編"/>
+<meta name="twitter:description" content="LuneScript は、 3 つのタイプのキャストを提供します。 @@ @@@ @@= @@ @@ は、変換元の値の型を実行時にチェックせずに強制的に型変換します。 let val1:stem = 1; let val2:int = val1@@int; 次のよう"/>
+<meta itemprop="name" content="キャスト 編">
+<meta itemprop="description" content="LuneScript は、 3 つのタイプのキャストを提供します。 @@ @@@ @@= @@ @@ は、変換元の値の型を実行時にチェックせずに強制的に型変換します。 let val1:stem = 1; let val2:int = val1@@int; 次のよう">
+
+<meta itemprop="wordCount" content="1128">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>キャスト 編</h1>
+
+<p>
+LuneScript は、 3 つのタイプのキャストを提供します。
+</p>
+<ul>
+<li>
+<p>
+<code>@@</code>
+</p>
+</li>
+<li>
+<p>
+<code>@@@</code>
+</p>
+</li>
+<li>
+<p>
+<code>@@=</code>
+</p>
+<h2 id="headline-1">
+<code>@@</code>  
+</h2>
+</li>
+</ul>
+<p>
+<code>@@</code> は、変換元の値の型を実行時にチェックせずに強制的に型変換します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val1:stem = 1;
+let val2:int = val1@@int;</code></pre>
+</div>
+<p>
+次のような本来変換できない値も強制的なキャストを行なえてしまいます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val1:stem = 1;
+let val2:str[] = val1@@str[];
+print( #val2 ); // runtime error</code></pre>
+</div>
+<p>
+上記は、 int 型の値 1 を stem 型の val1 に代入し、
+それを str リスト型の val2 にキャストしています。
+つまり、int 型を str リストにキャストしてしまっています。
+この val2 に対してアクセスすると、 <strong>実行時エラー</strong> となります。
+</p>
+<p>
+なお、 暗黙的に型変換が行なえるものを @@ で明示的にキャストすると、 
+warning となります。
+</p>
+<p>
+例えば次のサンプルの <code>func( &#34;abc&#34;@@stem )</code>  は、
+文字列 &#34;abc&#34; から stem への変換は明示キャスト不要で変換可能なため
+warning が出力されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) {
+}
+func( &#34;abc&#34;@@stem );</code></pre>
+</div>
+<p>
+また、明らかに不正な型変換はコンパイルエラーとなります。
+</p>
+<p>
+例えば次の場合、 <code>1@@str</code> は int から str に変換していますが、
+この型変換は出来ないためコンパイルエラーとなります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val = &#34;abc&#34;@@int;  // error
+let val2 = 1@@str;  // error</code></pre>
+</div>
+<p>
+クラス型への <code class="verbatim">@@</code> キャストは warning 出力します。
+</p>
+<p>
+<code class="verbatim">@@</code> は、 nilable から非 nilable へのキャストは出来ません。
+</p>
+<p>
+クラス型へのキャストは <code>@@@</code> か <code>@@=</code> を使用してください。
+</p>
+<h2 id="headline-2">
+<code>@@@</code>
+</h2>
+<p>
+<code>@@@</code> は、動的に変換元の型をチェックして型変換します。
+</p>
+<p>
+次は <code>@@@</code> の例です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) {
+   if! val@@@int {
+      print( &#34;int:%d&#34; ( _exp ) );
+   }
+   if! val@@@str {
+      print( &#34;str:%s&#34; ( _exp ) );
+   }
+}
+func( 1 ); // int:1
+func( &#34;abc&#34; ); // str:abc</code></pre>
+</div>
+<p>
+<code>val@@@int</code> は、 val の型をチェックし int 型ならば変換し、
+int 型でなければ nil を返します。
+また、 <code>val@@@str</code> は val の型をチェックし str 型ならば変換し、
+str 型でなければ nil を返します。
+</p>
+<p>
+これにより、
+<code>func( 1 )</code> は int:1 を出力し、
+<code>func( &#34;abc&#34; )</code> は str:abc を出力します。
+</p>
+<p>
+<code class="verbatim">@@@</code> は、 キャスト元が nilable でもキャスト可能です。
+</p>
+<h3 id="headline-3">
+<code>@@@</code> の制限 1
+</h3>
+<p>
+なお、小数点以下を持たない real 型の値は、
+@@@ によって int と real どちらにもキャストが成功します。
+</p>
+<p>
+本来の仕様では、
+小数点以下を持たない real 型の値を int の @@@@ キャストは失敗するべきですが、
+これは現状の制限です。
+</p>
+<p>
+将来の動作は変更になる可能性があります。
+</p>
+<p>
+例えば次の <code>func( 1 )</code> は <code>int:1</code> , <code>real:1</code> を出力し、
+<code>func( 2.5 )</code> は <code>real:2.5</code> を出力します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) {
+   if! val@@@int {
+      print( &#34;int:%d&#34; ( _exp ) );
+   }
+   if! val@@@real {
+      print( &#34;real:%g&#34; ( _exp ) );
+   }
+}
+func( 1.0 );
+func( 2.5 );</code></pre>
+</div>
+<h3 id="headline-4">
+<code>@@@</code> の制限 2
+</h3>
+<p>
+@@@ が利用できるのは、 int/real/str/class/interface だけです。
+</p>
+<p>
+enum などは利用できません。
+</p>
+<p>
+また、 class でも generics は利用できません。
+</p>
+<h2 id="headline-5">
+<code>@@=</code>
+</h2>
+<p>
+<code>@@=</code> は、メソッドを持たないクラスを変換する際に利用します。
+メソッドを持つクラスや、クラス以外を指定した場合はコンパイルエラーします。
+</p>
+<p>
+なお、 <code>@@=</code> も変換元の値をチェックせずに強制的に型変換を行ないます。
+</p>
+<p>
+<code>@@=</code> は、型チェックに時間がかかるような場合に限り使用するべきです。
+</p>
+<h2 id="headline-6">
+まとめ
+</h2>
+<p>
+int、 real 間の変換以外は、出来るだけキャストは避けるべきです。
+generics や、 alge などを利用することで
+型を保ったまま汎用処理を作成できます。
+</p>
+<p>
+キャストを利用するにしても、 <code>@@@</code> を利用し、
+<code>@@</code> や <code>@@=</code> の利用は必要最低限になるように設計してください。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/interface/" title="インタフェース 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - インタフェース 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/classadvertise/" title="クラス advertise 編">Next - クラス advertise 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

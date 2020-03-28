@@ -1,0 +1,114 @@
+#+TITLE: クラス override 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、メソッドの override をサポートします。
+
+* メソッドの override
+
+クラスのメソッドは全て override 可能です。
+
+むしろ、現在は override を抑制することができません。
+
+メソッドの override の例を次に示します。
+
+#+BEGIN_SRC lns
+class Super {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+class Sub extend Super {
+   pub override fn func() {
+      print( __func__ );
+   }
+}
+fn test( obj:Super ) {
+   obj.func();
+}
+test( new Super() ); // Super.func
+test( new Sub() ); // Sub.func
+#+END_SRC
+
+ここで、 Sub クラスは Super クラスの func メソッドを override しています。
+
+override する Sub クラス側のメソッドは、
+override キーワードで明示する必要があります。
+
+* 親クラスのメソッド呼び出し
+
+override しているサブクラスから、親クラスのメソッドをコールするには、
+super() を使用します。
+
+次に super() の例を示します。
+
+#+BEGIN_SRC lns
+class Super {
+   pub fn func(): int {
+      return 1;
+   }
+}
+class Sub extend Super {
+   pub override fn func(): int {
+      return 10 + super();
+   }
+}
+fn test( obj:Super ) {
+   print( obj.func() );
+}
+test( new Sub() ); // 11
+#+END_SRC
+
+この例では、 Super クラスの func() メソッドを Sub クラスで override しています。
+そして、 Sub クラスの func() から super() を使用して、
+Super クラスの func() メソッドを呼び出しています。
+
+* abstract
+
+実体を持たない abstract メソッドを定義できます。
+
+次に abstract の例を示します。
+
+#+BEGIN_SRC lns
+abstract class Super {
+   pub abstract fn func(): int;
+}
+class Sub extend Super {
+   pub override fn func(): int {
+      return 10;
+   }
+}
+fn test( obj:Super ) {
+   print( obj.func() );
+}
+test( new Sub() );
+#+END_SRC
+
+この例で、 func() メソッドは実体を持たない abstract メソッドです。
+
+なお、 abstract メソッドを持つクラスは abstract クラスとして宣言する必要があります。
+
+abstract メソッドの実体は、 継承したクラスで定義されます。
+もしも、親クラスの全ての abstract メソッドを継承したクラスで override しないと、
+その継承したクラスは abstract として宣言する必要があります。
+
+abstract クラスは、それ単体ではインスタンスを生成できなくなります。
+
+
+* まとめ
+
+LuneScript のメソッド override/abstract の仕様は次の通りです。
+
+- 全てのメソッドは override 出来る
+- override するクラスは、 override を明示する必要がある
+- override しているメソッドから、 override 元のメソッドをコールするには super() を利用する。
+- 実体の持たない abstract メソッドを宣言できる
+- abstract メソッドを持つクラスは abstract クラスとなる
+- abstract メソッドは、サブクラスで override しなければならない
+- abstract クラスは、単体ではインスタンスを生成できない
+
+次回は、 class の advertise について説明します。

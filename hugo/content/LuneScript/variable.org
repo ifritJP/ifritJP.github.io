@@ -1,0 +1,406 @@
+#+TITLE: 変数 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の変数について説明します。
+
+* 変数
+
+LuneScript は静的型付け言語であり、変数は型を持ちます。
+
+変数は、次のように let で宣言します。
+
+#+BEGIN_SRC lns
+let val:int = 1;
+#+END_SRC
+
+上記の例は、初期値として int の 1 を持つ変数 val を宣言しています。
+
+変数名の後には、型を指定します。
+
+
+なお、初期値が int の 1 ではなく、
+real の 1.0 をセットすると、型が違うためコンパイルエラーになります。
+
+#+BEGIN_SRC lns
+let val:int = 1.0;  // error
+#+END_SRC
+
++また、現在は変数宣言には初期値が必須です。+
+
++これは、未初期化変数へのアクセスを防ぐためです。+
++将来的には、変数が値を保持しているかどうかをフロー解析で判断できるようにして、
+初期値不要にすることを考えています。+
+
+変数宣言時の初期化は必須ではなくなりました。
+
+なお、初期化していない変数にアクセスした場合、コンパイルエラーになります。
+詳しくは後述します。
+
+また、変数宣言時に初期化しない場合でも、型推論は可能です。
+
+** 型推論
+
+LuneScript は型推論をサポートしています。
+
+変数にセットする初期値から、その変数の型を決定できます。
+これによって、次のように型を指定せずに変数を宣言できます。
+
+#+BEGIN_SRC lns
+let val1 = 1; // int 
+let val2 = 1.0; // real
+let val3 = "abc"; // str
+#+END_SRC
+
+この場合、 val1 は int, val2 は real, val3 は str であるとして処理します。
+
+
+型を明示する必要があるのは、次の場合などです。
+
+- nilable 型の変数の初期値に nil を設定する
+- リスト型や、マップ型の変数の初期値にリテラルな値を設定する
+- スーパークラスの型の変数の初期値に、サブクラスのインスタンスを設定する
+  
+** 変数の初期化
+
+初期化していない変数にアクセスすると、コンパイルエラーになります。
+
+#+BEGIN_SRC lns
+{
+   let val;
+   print( "%s" ( val ) ); // error
+}
+#+END_SRC
+
+上記の print() では、未初期化の val にアクセスしていますが、
+ここでコンパイルエラーになります。
+
+*** フロー解析
+
+変数初期化は、フローを解析して行ないます。
+    
+例えば次の場合、エラーになります。
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   if flag {
+     val = 1;
+   }
+   print( val ); // error
+}
+#+END_SRC
+
+これは、 flag が true の場合は val が初期化されますが、
+false の場合は val が初期化されないためです。
+
+次のように、アクセスする前に全てのケースで初期化をする必要があります。
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   if flag {
+     val = 1;
+   }
+   else {
+     val = 2;
+   }
+   print( val ); // ok
+}
+#+END_SRC
+
+なおこの処理は、 val に対する初期化であり、
+val に対する書き換えではないため、
+後述する mut 宣言の必要はありません。
+
+
+
+ちなみに次のような少し複雑な場合も、フローを解析します。
+
+#+BEGIN_SRC lns
+fn func( kind:int )
+{
+   let val;
+   if kind < 10 {
+      if kind > 0 {
+         val = 1;
+      }
+      else {
+         if kind == 0 {
+            val = 2;
+         }
+         elseif kind == 1 {
+            val = 3;
+         }
+         // ※ 
+      }
+   }
+   else {
+      val = 4;
+   }
+   print( val ); // error
+}
+#+END_SRC
+
+少し分かり難いと思いますが、
+上記 ※ の位置で else の時に val が抜けているため、エラーとなります。
+
+
+なお、次の場合も print( val ) の箇所でエラーになります。 
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   fn sub() {
+      print( val ); // error
+   }
+   val = 1;
+   sub();
+}
+#+END_SRC
+
+本来は sub() を実行する時には val が初期化されるので、
+エラーになるべきではないですが、これは現在の仕様です。
+
+*** 型推論
+
+変数宣言時に初期化しない場合も、型推論は可能です。
+
+ただし、型推論はフロー解析で最初に代入された型が使用されます。
+
+例えば次の場合は、
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   if flag {
+      val = 1;
+   }
+   else {
+      val = 1.0; // error
+   }
+}
+#+END_SRC
+
+最初の ~val = 1~ で val は int 型になります。
+そして、次の ~val = 1.0~ の時には、
+int 型の val に real の 1.0 を代入しようとしているため、
+エラーとなります。
+
+
+上記のような場合は、次のように変数宣言時に型を宣言することで、
+エラーを回避できます。
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val:stem; // stem 型を宣言
+   if flag {
+      val = 1;
+   }
+   else {
+      val = "a";
+   }
+   print( val );
+}
+#+END_SRC
+
+stem 以外にも、型を宣言しなければならないケースはあります。
+例えばスーパークラスの型の変数を利用したい場合や、
+nilable 型の変数を利用したい場合などがあります。
+
+
+** shadowing
+
+LuneScript では、 同名の変数宣言を禁止しています。
+
+ここで同名とは、同一スコープ内での同名ではなく、
+アクセス可能なスコープ内での同名を指します。
+
+具体的には、次の変数宣言はエラーとなります。
+
+#+BEGIN_SRC lns
+{
+   let val = 1;
+   {
+      let val = 1;  // error
+   }
+}
+#+END_SRC
+
+この仕様は賛否別れると思いますが、安全側に振ってこの仕様にしています。
+
+** アクセス制御
+
+宣言した変数は、ローカル変数として処理されます。
+
+外部のモジュールに公開したい場合は、次のように pub を付加して宣言します。
+
+#+BEGIN_SRC lns
+pub let val = 1;
+#+END_SRC
+
+外部公開されている変数にアクセスする場合、次のように import を使用します。
+
+#+BEGIN_SRC lns
+import SubModule;
+print( SubModule.val );
+#+END_SRC
+
+ここで、
+SubModule は ~pub let val = 1;~ が宣言されている LuneScript のモジュール(SubModule.lns)です。
+
+SubModule.val で、そのモジュール内で公開されているシンボルにアクセスします。
+
+変数を外部モジュールに公開する方法としては pub が基本ですが、
+もう一つ global を使うことも出来ます。
+
+#+BEGIN_SRC lns
+pub let val1 = 1;
+global let val2 = 2;
+#+END_SRC
+
+pub と global の違いは、 名前空間の違いです。
+
+次の例を見ると分かり易いと思いますが、
+これは上記 val1, val2 を外部からアクセスしているサンプルです。
+
+#+BEGIN_SRC lns
+import SubModule;
+print( SubModule.val1 );
+print( val2 );
+#+END_SRC
+
+val1 は、 SubModule.val1 として SubModule の名前空間内の変数としてアクセスしますが、
+val2 は、最上位の名前空間の変数としてアクセスします。
+
+LuneScript だけでシステムを開発する際は、 
+global を利用することはまず無いと思います(というか global の使用を避けるべきです)が、
+他の Lua モジュールと連携して処理する際は、
+global を使用せざるを得ないこともあると思います。
+
+そのような互換性を保つことを目的として、 global をサポートしています。
+
+なお global の制約として、次があります。
+
+ *「global 宣言した変数は、 その変数を宣言したモジュールを import した時に有効になる。」*
+
+例えば次の例では val2 は、 SubModule になんの関係もなく存在しているように見えますが、
+
+#+BEGIN_SRC lns
+import SubModule;
+print( SubModule.val1 );
+print( val2 );
+#+END_SRC
+
+次の場合 SubModule を import していないため、val2 は存在しないのでエラーとなります。
+
+#+BEGIN_SRC lns
+print( val2 );
+#+END_SRC
+
+
+また外部公開する変数には、次の制約があります。
+
+ *「外部公開する変数は、スクリプトの最上位のスコープに宣言しなければならない」*
+
+例えば、次の val2 は最上位のスコープではないためエラーとなります。
+
+#+BEGIN_SRC lns
+pub let val = 1;
+{
+   pub let val2 = 1; // error
+}
+#+END_SRC
+
+** mutable
+
+宣言した変数は、変更禁止の変数として扱います。
+
+例えば、次の ~val = 2~ はエラーとなります。
+
+#+BEGIN_SRC lns
+let val = 1;
+val = 2; // error
+#+END_SRC
+
+可変な変数(mutable)とする場合、次のように mut で宣言します。
+
+#+BEGIN_SRC lns
+let mut val = 1;
+val = 2;
+#+END_SRC
+
+** 複数宣言
+
+LuneScript は、 Lua と同じで関数の戻り値に複数の値を返せます。
+
+この戻り値を変数宣言の初期値とするには、次のように宣言します。
+
+#+BEGIN_SRC lns
+let val1, val2 = func();
+let mut val3, mut val4 = func();
+#+END_SRC
+
+mut は各変数名の前に宣言します。
+
+** 特殊シンボル
+
+次のシンボルは、特殊な値を保持します。
+
+| シンボル | 値           |
+|----------+--------------|
+| ~__mod__~ | モジュール名 |
+| ~__func__~ | 現在の関数名 |
+| ~__line__~ | 現在の行番号 |
+
+なお、 ~__mod__~, ~__func__~ が展開する名前の書式は、
+*将来変更する可能性* があります。
+
+* 型変換(キャスト)
+
+nil 以外の全ての値は、 stem 型の変数に代入できます。
+
+これには、暗黙的な型変換が行なわれています。
+
+#+BEGIN_SRC lns
+let mut val:stem = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+#+END_SRC
+
+一方、 stem 型の値から異なる型への代入はエラーします。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:int = val1; // error
+#+END_SRC
+
+明示的な型変換が必要な場合は、次の記事を参照してください。
+
+https://qiita.com/dwarfJP/items/635f9bbd8dde7d8e076e
+
+** まとめ
+
+LuneScript の変数には、次の要素を取り入れています。
+
+- 型推論
+- アクセス制御
+- mutable
+- 複数宣言
+
+Lua を静的片付けで扱う際に必要となる、最低限の機能を満しているつもりです。
+
+
+次回は、 LuneScript の分岐制御について説明します。

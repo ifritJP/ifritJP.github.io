@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>トランスコンパイラ LuneScript で Lua の開発をもっと楽に!! - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://example.com/lunescript/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!"/>
+<meta name="twitter:description" content=""/>
+<meta itemprop="name" content="トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!">
+<meta itemprop="description" content=""></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</h1>
+<p>
+<strong>2018/12/29 全面的に更新しました。</strong>
+</p>
+<p>
+Lua は非常にコンパクトな言語でありながら、高い潜在能力を持つ言語です。
+</p>
+<p>
+プログラムに組み込まれる言語としては、
+最も使い易い言語の一つと言っても良いと思います。
+</p>
+<p>
+ただ「プログラムに組み込まれる言語としては使い易い」とはいえ、
+イマドキの言語と比べると、いろいろと気になるところがあるのも事実です。
+</p>
+<p>
+一方で、Lua をイマドキの言語に近づけるための機能進化は、
+「コンパクト」という Lua の大きな特徴の一つとトレードオフになる可能性があります。
+</p>
+<p>
+そこで、 Lua 自体には手を加えずに、
+Lua の気になる箇所をカバー出来るトランスコンパイラ LuneScript を紹介します。
+</p>
+<h2 id="headline-1">
+LuneScript とは
+</h2>
+<p>
+LuneScript とは、前述の通り Lua の気になる点をカバーする言語で、
+LuneScript で開発したコードを Lua のコードに変換することが可能な
+トランスコンパイラです。
+</p>
+<p>
+LuneScript は、次の特徴を持ちます。
+</p>
+<ul>
+<li>
+<p>
+Lua と C の syntax を基調としているため、学習コストが低い。
+</p>
+</li>
+<li>
+<p>
+静的型付け言語であるため、型チェックにより単純なミスをコンパイル時に発見可能。
+</p>
+</li>
+<li>
+<p>
+型推論により、型宣言の手間を最小化。
+</p>
+</li>
+<li>
+<p>
+NULL 安全 (null safety)。
+</p>
+</li>
+<li>
+<p>
+generics により、型情報を保ったままの処理が可能。
+</p>
+</li>
+<li>
+<p>
+言語の文法としてクラス定義を対応。
+</p>
+</li>
+<li>
+<p>
+マクロ により、ポリモーフィズム等の動的処理に頼らないデザインを実現可能。
+</p>
+</li>
+<li>
+<p>
+JSON と互換なデータ表現をサポート。
+</p>
+</li>
+<li>
+<p>
+トランスコンパイルした Lua コードは、外部ライブラリを前提とせずに単体で動作可能。
+</p>
+</li>
+<li>
+<p>
+トランスコンパイルした Lua コードは、LuneScript で書いた処理そのままが出力されるので、
+性能劣化がない。
+</p>
+</li>
+<li>
+<p>
+既存の Lua の外部モジュールを LuneScript から利用可能。
+</p>
+</li>
+<li>
+<p>
+LuneScript は Lua 上で動作し、Lua 標準モジュール以外を必要としないため、導入が簡単。
+</p>
+</li>
+<li>
+<p>
+<strong>Lua5.1</strong>, Lua5.2, 5.3 をサポート。 (追記: 12/18)
+</p>
+<ul>
+<li>
+<p>
+Lua5.1 については次を参照してください。
+</p>
+</li>
+<li>
+<p>
+<a href="./crosscompile">./crosscompile</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+LuneScript はセルフホスティングで開発している。
+</p>
+</li>
+<li>
+<p>
+emacs でのコード補完に対応
+</p>
+</li>
+<li>
+<p>
+glue コードの自動生成に対応
+</p>
+</li>
+</ul>
+<h2 id="headline-2">
+LuneScript の使用方法
+</h2>
+<p>
+LuneScript は github で開発しています。
+</p>
+<p>
+https://github.com/ifritJP/LuneScript
+</p>
+<p>
+導入方法は次を参照してください。
+</p>
+<ul>
+<li>
+<p>
+導入編
+</p>
+<ul>
+<li>
+<p>
+<a href="./tutorial2.setup">./tutorial2.setup</a>
+</p>
+</li>
+</ul>
+<h3 id="headline-3">
+コマンド
+</h3>
+</li>
+</ul>
+<p>
+LuneScript を導入すると、lnsc コマンドがインストールされます。
+</p>
+<p>
+lnsc コマンドの使用方法については、次の記事を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+Hello world
+</p>
+<ul>
+<li>
+<p>
+<a href="./tutorial3.hello">./tutorial3.hello</a>
+</p>
+</li>
+</ul>
+<h3 id="headline-4">
+Lua バージョン間のクロスコンパイル
+</h3>
+</li>
+</ul>
+<p>
+LuneScript は Lua のバージョン間クロスコンパイルをサポートします。
+次の記事を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+Lua バージョン間のクロスコンパイル
+</p>
+<ul>
+<li>
+<p>
+<a href="./crosscompile">./crosscompile</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="headline-5">
+LuneScript の仕様
+</h2>
+<p>
+ここでは LuneScript の仕様について説明します。
+</p>
+<p>
+補足記事は、ここにリンクを追加していきます。
+</p>
+<ul>
+<li>
+<p>
+Lua のトランスコンパイラ LuneScript の紹介 2 
+</p>
+<ul>
+<li>
+<p>
+subfile, module, nil 条件演算子 の紹介
+</p>
+</li>
+<li>
+<p>
+<a href="introduce2">introduce2</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Lua のトランスコンパイラ LuneScript のイマドキな開発環境でもっと楽しよう
+</p>
+<ul>
+<li>
+<p>
+補完、syntax チェック、subfile の検索
+</p>
+</li>
+<li>
+<p>
+<a href="completion">completion</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-6">
+値と型
+</h3>
+<p>
+LuneScript で扱う値と型については次の記事を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+値編
+</p>
+<ul>
+<li>
+<p>
+<a href="value">value</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+enum 編
+</p>
+<ul>
+<li>
+<p>
+<a href="enum">enum</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-7">
+コメント
+</h3>
+<p>
+コメントは C++ スタイルを採用。
+一行コメント <code>//</code> 、 複数行コメント <code>/* */</code> を指定可能。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// 行末までコメント
+/* ここから〜
+ここまでコメント*/</code></pre>
+</div>
+<h3 id="headline-8">
+演算子
+</h3>
+<p>
+原則的に、演算子 は Lua と同じものを利用する。
+</p>
+<p>
+Lua5.3 の //(切り捨て除算) は、1行コメントとなるので注意すること。
+</p>
+<p>
+なお LuneScript では、整数同士の / は自動的に切り捨て除算となる。
+</p>
+<h3 id="headline-9">
+変数宣言
+</h3>
+<p>
+LuneScript の変数については次の記事を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+変数 編
+</p>
+<ul>
+<li>
+<p>
+<a href="variable">variable</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-10">
+一般制御文
+</h3>
+<p>
+LuneScript の制御文については次を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+一般分岐
+</p>
+<ul>
+<li>
+<p>
+<a href="branch">branch</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+繰り返し構文 編
+</p>
+<ul>
+<li>
+<p>
+<a href="loop">loop</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-11">
+関数宣言
+</h3>
+<p>
+LuneScript の関数については、次を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+関数 編
+</p>
+<ul>
+<li>
+<p>
+<a href="func">func</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-12">
+nilable
+</h3>
+<p>
+LuneScript は nil 安全 (NULL 安全) な言語です。
+</p>
+<p>
+LuneScript の nil 安全を実現する nilable については、
+次を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+nilable 編
+</p>
+<ul>
+<li>
+<p>
+<a href="nilable">nilable</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-13">
+クラス
+</h3>
+<p>
+LuneScript はオブジェクト指向プログラミングのためのクラスをサポートします。
+</p>
+<p>
+LuneScript のクラスは、次の制約を持ちます。
+</p>
+<ul>
+<li>
+<p>
+多重継承はサポートしない。
+</p>
+</li>
+<li>
+<p>
+<del>generics はサポートしない。</del>
+</p>
+</li>
+<li>
+<p>
+全てがオーバーライド可能なメソッドとなる。
+</p>
+<ul>
+<li>
+<p>
+オーバーライドの抑制はできない。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+継承間で引数の異なる同名メソッドは定義できない。
+</p>
+<ul>
+<li>
+<p>
+ただし、コンストラクタは例外で同じ名前( __init )。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+次の記事を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+クラス 基本 編
+</p>
+<ul>
+<li>
+<p>
+<a href="class1">class1</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+accessor 編
+</p>
+<ul>
+<li>
+<p>
+<a href="class2accessor">class2accessor</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+クラス 継承 編
+</p>
+<ul>
+<li>
+<p>
+<a href="classinherit">classinherit</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+クラス advertise 編
+</p>
+<ul>
+<li>
+<p>
+<a href="classadvertise">classadvertise</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+クラス override 編
+</p>
+<ul>
+<li>
+<p>
+<a href="classoverride">classoverride</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+インタフェース 編
+</p>
+<ul>
+<li>
+<p>
+<a href="interface">interface</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="headline-14">
+プロトタイプ宣言
+</h4>
+<p>
+LuneScript は、スクリプトの上から順に解析する。
+</p>
+<p>
+スクリプトで参照するシンボルは、事前に定義されている必要がある。
+例えばクラス TEST 型の変数を宣言するには、事前にクラス TEST を定義する必要がある。
+</p>
+<p>
+また、交互に参照するクラスを定義するには、
+どちらかをプロトタイプ宣言する必要がある。
+</p>
+<p>
+次は、 ClassA, ClassB がそれぞれを参照する時の例である。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Super {
+}
+pub proto class ClassB extend Super;
+class ClassA {
+  let val: ClassB;
+}
+pub class ClassB extend Super{
+  let val: ClassA;
+}</code></pre>
+</div>
+<p>
+proto は上記のように宣言する。
+</p>
+<p>
+プロトタイプ宣言と実際の定義において、
+pub や extend など同じものを宣言しなければならない。
+</p>
+<h3 id="headline-15">
+Mapping
+</h3>
+<p>
+LuneScript のクラスインスタンスは、
+Map オブジェクトとの相互変換が可能である。
+</p>
+<p>
+これを Mapping と呼ぶ。
+</p>
+<p>
+Mapping については次を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+mapping 編
+</p>
+<ul>
+<li>
+<p>
+<a href="classmapping">classmapping</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-16">
+Generics
+</h3>
+<p>
+LuneScript は Generics をサポートします。
+</p>
+<p>
+詳しくは次を参照してください。
+</p>
+<ul>
+<li>
+<p>
+generics 編
+</p>
+<ul>
+<li>
+<p>
+<a href="generics">generics</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-17">
+nil 条件演算子
+</h3>
+<p>
+nilable の値を簡単に扱う方法として、 nil 条件演算子をサポートしています。
+</p>
+<ul>
+<li>
+<p>
+nil 条件演算子 編
+</p>
+<ul>
+<li>
+<p>
+<a href="nilcond">nilcond</a>   
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-18">
+モジュール
+</h3>
+<p>
+LuneScript のモジュール管理については、次を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+import/provide 編  
+</p>
+<ul>
+<li>
+<p>
+<a href="import">import</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+require/module 編    
+</p>
+<ul>
+<li>
+<p>
+<a href="require">require</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="headline-19">
+ビルド
+</h2>
+<p>
+LuneScript を使用したプロジェクトをビルドする方法については、次を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+ビルド 編
+</p>
+<ul>
+<li>
+<p>
+<a href="make">make</a>  
+</p>
+</li>
+</ul>
+<h3 id="headline-20">
+_lune.lua モジュール
+</h3>
+</li>
+</ul>
+<p>
+前述している通り LuneScript で Lua へトランスコンパイルしたファイルは、
+Lua コマンドでそのまま実行できます。
+この時、外部モジュールを必要としません。
+</p>
+<p>
+これは、トランスコンパイルした Lua コード内に、
+処理に必要なコードを全て含めていることを示します。
+</p>
+<p>
+例えば次の処理コードをトランスコンパイルすると、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func( val:int! ):int {
+   return 1 + unwrap val default 0;
+}</code></pre>
+</div>
+<p>
+Lua コードは次のようにだいぶ長くなります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--mini.lns</span>
+<span class="kd">local</span> <span class="n">_moduleObj</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;mini&#39;</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_ENV._lune</span> <span class="kr">then</span>
+   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kr">end</span>
+<span class="kr">function</span> <span class="nc">_lune</span><span class="p">.</span><span class="nf">unwrap</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+   <span class="kr">if</span> <span class="n">val</span> <span class="o">==</span> <span class="kc">nil</span> <span class="kr">then</span>
+      <span class="n">__luneScript</span><span class="p">:</span><span class="n">error</span><span class="p">(</span> <span class="s1">&#39;unwrap val is nil&#39;</span> <span class="p">)</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="n">val</span>
+<span class="kr">end</span> 
+<span class="kr">function</span> <span class="nc">_lune</span><span class="p">.</span><span class="nf">unwrapDefault</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="n">defval</span> <span class="p">)</span>
+   <span class="kr">if</span> <span class="n">val</span> <span class="o">==</span> <span class="kc">nil</span> <span class="kr">then</span>
+      <span class="kr">return</span> <span class="n">defval</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="n">val</span>
+<span class="kr">end</span>
+
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+   <span class="kr">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">_lune.unwrapDefault</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="kr">end</span>
+
+<span class="kr">return</span> <span class="n">_moduleObj</span></code></pre></div>
+</div>
+<p>
+この 4 〜 18 行目が unwrap に必要な処理となります。
+なお、このコードは全ての Lua ファイルに出力されます。
+</p>
+<p>
+このコード自体は共通処理であるため、
+トランスコンパイルする際に <strong>-r</strong> オプションを指定することで、
+別モジュールとして require して共通処理をまとめることができます。
+</p>
+<p>
+具体的には次のように -r オプションを指定します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua lune/base/base.lua -r src.lns save</code></pre></div>
+</div>
+<p>
+この -r オプションを指定した場合、上記のコードは次のように変換され、
+かなりスッキリします。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--mini.lns</span>
+<span class="kd">local</span> <span class="n">_moduleObj</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;mini&#39;</span>
+<span class="n">_lune</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s2">&#34;lune.base._lune&#34;</span> <span class="p">)</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+   <span class="kr">return</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">_lune.unwrapDefault</span><span class="p">(</span> <span class="n">val</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="kr">end</span>
+
+<span class="kr">return</span> <span class="n">_moduleObj</span></code></pre></div>
+</div>
+<p>
+なお、require( &#34;lune.base._lune&#34; ) が挿入されるため、
+このモジュールがロード出来るようにセットしておく必要があります。
+トランスコンパイラが動作する環境であれば意識する必要はありませんが、
+変換後の Lua ソースをどこか別の環境で実行するような場合は注意が必要です。
+</p>
+<h3 id="headline-21">
+マクロ
+</h3>
+<p>
+LuneScript は簡易的なマクロを採用する。
+</p>
+<h4 id="headline-22">
+マクロの意義
+</h4>
+<p>
+マクロは通常の関数と比べて幾つかの制限がある。
+またマクロで行なえう処理は、オブジェクト指向を駆使することで実現できることが多い。
+</p>
+<p>
+では、マクロを使う意義は何か？
+</p>
+<p>
+それは、「マクロを使うことで静的に動作が確定する」ことである。
+</p>
+<p>
+同じ処理をオブジェクト指向で実現した場合、動的な処理となってしまう。
+一方、マクロで実現すれば、静的な処理となる。
+</p>
+<p>
+これの何が嬉しいのか？
+</p>
+<p>
+それは、静的型付け言語が動的型付け言語よりも優れている点と同じである。
+</p>
+<p>
+静的に決まる情報を静的に処理することで、静的に解析できる。
+</p>
+<p>
+例えば、オブジェクト指向の関数オーバーライドの大部分は、
+マクロを利用することで静的に解決することができる。
+動的な関数オーバーライドではなく、静的な関数呼び出しにすることで、
+ソースコードを追い易くなる。
+</p>
+<p>
+無闇にマクロを多用するは良くないが、
+安易に関数オーバーライドなどの動的処理にするのも理想ではない。
+</p>
+<p>
+動的処理とマクロは適宜使い訳が必要である。
+</p>
+<h4 id="headline-23">
+マクロ定義
+</h4>
+<p>
+マクロ定義については次の記事を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+マクロ 編
+</p>
+<ul>
+<li>
+<p>
+<a href="macro">macro</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lua/pointer/" title="ポインタ編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - ポインタ編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/class2accessor/" title="accessor 編">Next - accessor 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent active"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

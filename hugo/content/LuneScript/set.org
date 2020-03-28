@@ -1,0 +1,117 @@
+#+TITLE: Set 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+ここでは LuneScript の値の集合 Set の扱いについて説明します。
+
+* Set と Map の違い
+
+Set は値の集合を管理し、 Map は値と値の紐付けを管理します。
+
+どちらも Lua に変換した場合、テーブルとして管理するため、
+Map よりも Set を使った方が実行速度やメモリ面で優位ということはありません。
+
+Map ではなく Set を使うことで、次の効果があります。
+
+- データの用途が明確になる
+- 無駄に Map の value を扱う必要がない
+- リテラルな値が書き易い
+
+次の点において Set と Map は同じです。  
+
+- 格納する値の順序を保持しません。
+- nilable は格納できません。  
+
+* Set のコンストラクタ
+
+Set は次のように書くことでデータを生成します。
+
+#+BEGIN_SRC lns
+let obj = (@ 1, 2, 3, 4 ); // 1 2 3 4
+#+END_SRC
+
+これは、1,2,3,4 のデータを保持する Set です。
+
+Set は ~(@ )~ で値を括ります。
+
+なお、上記処理は型推論により型宣言を省略していますが、
+省略しない場合は次のように書きます。
+
+#+BEGIN_SRC lns
+let obj:Set<int> = (@ 1, 2, 3, 4 ); // 1 2 3 4
+#+END_SRC
+
+~Set<int>~ は、要素が int である Set を宣言します。
+
+空の Set を使用する場合は、型推論できないため型を明示する必要があります。
+
+#+BEGIN_SRC lns
+let obj:Set<int> = (@);
+#+END_SRC
+
+* Set の操作
+
+次の操作をサポートします。
+
+- 追加 add()
+- 削除 del()
+- 有無確認 has()
+- 要素数取得 len()  
+- 複製 clone()  
+
+Set への値の追加、削除は次のように行ないます。
+
+#+BEGIN_SRC lns
+let mut obj = (@ 1, 2, 3, 4 );
+obj.add( 0 );  // 0 1 2 3 4
+obj.del( 2 );  // 0 1 3 4
+#+END_SRC
+
+Set で管理する値の有無確認は、次のように行ないます。
+
+#+BEGIN_SRC lns
+let obj = (@ 1, 2, 3, 4 );
+print( obj.has( 0 ) );  // false
+print( obj.has( 1 ) );  // true
+#+END_SRC
+
+Set は、len() メソッドで要素の数を取得できます。
+ただし、 len() メソッドは要素を列挙して数を計算するため、計算量はサイズに比例します。
+
+#+BEGIN_SRC lns
+let mut obj = (@ 1, 2, 3, 4 );
+print( obj.len() );
+#+END_SRC
+
+同じ Set を生成するには clone() を使用します。
+
+#+BEGIN_SRC lns
+let obj = (@ 1, 2, 3, 4 );
+let obj2 = obj.clone();
+#+END_SRC
+
+* Set 間の操作
+
+次の操作をサポートします。
+
+- 合成  or()
+  - 二つの集合の和を残す
+- 共通  and()
+  - 二つの集合の共通部分を残す
+- 差分  sub()
+  - 現在の集合から引数の集合と共通しない部分を残す
+
+なお、この操作は対象の Set の内容を書き変えます。
+
+#+BEGIN_SRC lns
+let set1 = (@  1, 2, 3 );
+let set2 = (@  2, 3, 4 );
+let set3 = set1.clone().or(set2);   // 1 2 3 4
+let set4 = set1.clone().and(set2);  // 2 3 
+let set5 = set1.clone().sub(set2);  // 1
+#+END_SRC
+

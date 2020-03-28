@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Set 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/set/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Set 編" />
+<meta property="og:description" content="ここでは LuneScript の値の集合 Set の扱いについて説明します。 Set と Map の違い Set は値の集合を管理し、 Map は値と値の紐付けを管理します。 どちらも Lua に変換した場合、" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/set/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="Set 編"/>
+<meta name="twitter:description" content="ここでは LuneScript の値の集合 Set の扱いについて説明します。 Set と Map の違い Set は値の集合を管理し、 Map は値と値の紐付けを管理します。 どちらも Lua に変換した場合、"/>
+<meta itemprop="name" content="Set 編">
+<meta itemprop="description" content="ここでは LuneScript の値の集合 Set の扱いについて説明します。 Set と Map の違い Set は値の集合を管理し、 Map は値と値の紐付けを管理します。 どちらも Lua に変換した場合、">
+
+<meta itemprop="wordCount" content="795">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Set 編</h1>
+
+<p>
+ここでは LuneScript の値の集合 Set の扱いについて説明します。
+</p>
+<h2 id="headline-1">
+Set と Map の違い
+</h2>
+<p>
+Set は値の集合を管理し、 Map は値と値の紐付けを管理します。
+</p>
+<p>
+どちらも Lua に変換した場合、テーブルとして管理するため、
+Map よりも Set を使った方が実行速度やメモリ面で優位ということはありません。
+</p>
+<p>
+Map ではなく Set を使うことで、次の効果があります。
+</p>
+<ul>
+<li>
+<p>
+データの用途が明確になる
+</p>
+</li>
+<li>
+<p>
+無駄に Map の value を扱う必要がない
+</p>
+</li>
+<li>
+<p>
+リテラルな値が書き易い
+</p>
+</li>
+</ul>
+<p>
+次の点において Set と Map は同じです。  
+</p>
+<ul>
+<li>
+<p>
+格納する値の順序を保持しません。
+</p>
+</li>
+<li>
+<p>
+nilable は格納できません。  
+</p>
+</li>
+</ul>
+<h2 id="headline-2">
+Set のコンストラクタ
+</h2>
+<p>
+Set は次のように書くことでデータを生成します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let obj = (@ 1, 2, 3, 4 ); // 1 2 3 4</code></pre>
+</div>
+<p>
+これは、1,2,3,4 のデータを保持する Set です。
+</p>
+<p>
+Set は <code>(@ )</code> で値を括ります。
+</p>
+<p>
+なお、上記処理は型推論により型宣言を省略していますが、
+省略しない場合は次のように書きます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let obj:Set&lt;int&gt; = (@ 1, 2, 3, 4 ); // 1 2 3 4</code></pre>
+</div>
+<p>
+<code>Set&lt;int&gt;</code> は、要素が int である Set を宣言します。
+</p>
+<p>
+空の Set を使用する場合は、型推論できないため型を明示する必要があります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let obj:Set&lt;int&gt; = (@);</code></pre>
+</div>
+<h2 id="headline-3">
+Set の操作
+</h2>
+<p>
+次の操作をサポートします。
+</p>
+<ul>
+<li>
+<p>
+追加 add()
+</p>
+</li>
+<li>
+<p>
+削除 del()
+</p>
+</li>
+<li>
+<p>
+有無確認 has()
+</p>
+</li>
+<li>
+<p>
+要素数取得 len()  
+</p>
+</li>
+<li>
+<p>
+複製 clone()  
+</p>
+</li>
+</ul>
+<p>
+Set への値の追加、削除は次のように行ないます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut obj = (@ 1, 2, 3, 4 );
+obj.add( 0 );  // 0 1 2 3 4
+obj.del( 2 );  // 0 1 3 4</code></pre>
+</div>
+<p>
+Set で管理する値の有無確認は、次のように行ないます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let obj = (@ 1, 2, 3, 4 );
+print( obj.has( 0 ) );  // false
+print( obj.has( 1 ) );  // true</code></pre>
+</div>
+<p>
+Set は、len() メソッドで要素の数を取得できます。
+ただし、 len() メソッドは要素を列挙して数を計算するため、計算量はサイズに比例します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut obj = (@ 1, 2, 3, 4 );
+print( obj.len() );</code></pre>
+</div>
+<p>
+同じ Set を生成するには clone() を使用します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let obj = (@ 1, 2, 3, 4 );
+let obj2 = obj.clone();</code></pre>
+</div>
+<h2 id="headline-4">
+Set 間の操作
+</h2>
+<p>
+次の操作をサポートします。
+</p>
+<ul>
+<li>
+<p>
+合成  or()
+</p>
+<ul>
+<li>
+<p>
+二つの集合の和を残す
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+共通  and()
+</p>
+<ul>
+<li>
+<p>
+二つの集合の共通部分を残す
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+差分  sub()
+</p>
+<ul>
+<li>
+<p>
+現在の集合から引数の集合と共通しない部分を残す
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+なお、この操作は対象の Set の内容を書き変えます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let set1 = (@  1, 2, 3 );
+let set2 = (@  2, 3, 4 );
+let set3 = set1.clone().or(set2);   // 1 2 3 4
+let set4 = set1.clone().and(set2);  // 2 3 
+let set5 = set1.clone().sub(set2);  // 1</code></pre>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/require/" title="require/module 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - require/module 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/tutorial1/" title="はじめに">Next - はじめに <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

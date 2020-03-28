@@ -1,0 +1,1515 @@
+#+TITLE: C/C++ 言語プログラマのための Lua 入門リファレンス
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+
+これは、C/C++ 言語のプログラマがこれだけ読めば Lua スクリプトを問題なく書けるようになることを目的にしたドキュメントです。
+
+
+Lua から C 言語の呼び出し、 C 言語から Lua の呼び出しについては次を参照してください。
+
+- C/C++ 言語プログラマのための Lua 入門リファレンス ( C インタフェース編 )
+[[interface]]
+
+- C/C++ 言語プログラマのための Lua 入門リファレンス ( ポインタ編 )
+[[pointer]]
+
+このドキュメントは Lua 5.2, 5.3 をターゲットにしています。
+
+*以降の記載について*
+- *特に明記しない限り、C 言語と記載した場合は C/C++ 言語の両方を意味します。*
+- *特に Lua や C 等の言語を明記しない限り、Lua の仕様の説明です。*
+
+このドキュメントは次の情報を元に作成しています。
+Lua で利用できる標準ライブラリの詳細は、次の公式 URL を参照してください。
+
+- http://www.lua.org/manual/5.3/manual.html
+- http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html
+
+Lua によるオブジェクト指向継承方法については次のサイトを参考にさせていただきました。
+
++<http://www.geocities.jp/m_hiroi/light/lua06.html>+
+2019/3 月末で geocities サービス停止
+
+Lua 初心者の方は、次の記事も是非確認してください。
+
+- Lua でやりがちなミス
+
+[[anti-pattern]]
+
+
+
+* トランスコンパイラ LuneScript
+
+Lua の説明に入る前に、トランスコンパイラ LuneScript を紹介します。
+
+LuneScript は次の特徴を持ち、
+規模の大きい Lua スクリプトを作成する際の生産性を上げることが出来ます。
+
+- Lua と C の syntax を基調としているため、学習コストが低い。
+- 静的型付け言語であるため、型チェックにより単純なミスをコンパイル時に発見可能。
+- 型推論により、型宣言の手間を最小化。
+- NULL 安全 (null safety)。
+- generics +(一部のみ)+ により、型情報を保ったままの処理が可能。
+- 言語の文法としてクラス定義を対応。
+- マクロ により、ポリモーフィズム等の動的処理に頼らないデザインを実現可能。
+- JSON と互換なデータ表現をサポート。
+- トランスコンパイルした Lua コードは、外部ライブラリを前提とせずに単体で動作可能。
+- トランスコンパイルした Lua コードは、LuneScript で書いた処理そのままが出力されるので、
+  性能劣化がない。
+- 既存の Lua の外部モジュールを LuneScript から利用可能。
+- LuneScript は Lua 上で動作し、Lua 標準モジュール以外を必要としないため、導入が簡単。
+- *Lua5.1* , Lua5.2, 5.3 をサポート。  (追記: 12/18)
+- LuneScript はセルフホスティングで開発している。
+- emacs でのコード補完に対応
+- glue コードの自動生成に対応
+
+詳しくは、次の記事を参照してください。
+
+https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
+
+イマドキのプログラム言語での開発経験を持つエンジニアには、
+Lua で開発するよりも LuneScript で開発した方が馴染易い可能性があります。
+
+
+前置きはこの辺にして本題に戻ります。
+
+*  Lua の説明
+
+以降で Lua の各特徴について説明します。
+
+** Lua と C との差分概要
+
+まず C 言語との差分概要をまとめると次のものが挙げられます。
+もちろん実際にはもっと多くのものがあります。
+
+- Native ではなく Lua VM 上で動作します。 (JIT が動作する実装もあります)
+- コンパイル不要です。(事前にバイトコード化することもできます)
+- 数値は実数が基本です。(整数のビット演算も可能です)
+- 文の区切り記号は ; ではありません。 ( ; も使えます )
+- main 関数は不要です。
+- ポインタ型はありません。
+- バイト配列は文字列として扱います。
+- 配列のインデックスは 1 からです。
+- 連想配列を持ちます。
+- 構造体、共用体はありません。(テーブルを構造体と似たような使い方ができます)
+- ガーベジコレクション(GC)を搭載しています。
+- 戻り値に複数の値を返せます。
+- コルーチンを使用できます。
+- typedef はありません。
+- #define 等のプリプロセッサはありません。  
+- 言語仕様内にデバッグインタフェースを持ちます。
+ 
+** Lua の実行
+
+Lua は、スクリプトを一旦 Lua VM 用のバイトコードに変換してから Lua VM 上で実行します。
+ただし、スクリプトからバイトコードへの変換処理は Lua の内部的に行なわれるため、
+ユーザが意識する必要はありません。
+
+C の様なコンパイル/リンク作業は不要です。
+
+なお、VM 上で動作するため Native よりも実行速度は遅くなります。
+
+** ガーベジコレクション
+
+Lua は、ガーベジコレクションを持っています。
+参照されなくなった値は、自動的に解放されます。
+
+C の様に、メモリの解放を意識して行なう必要はありません。
+ただし、不要になった値を参照していると解放されないので、
+不要になった値は参照しないようにする必要があります。
+例えば不要になった値は、その値を保持する変数に nil を上書きします。
+これにより参照を無くせます。
+ローカル変数であれば、明示的に nil を代入しなくともローカル変数のスコープが外れることでも同じです。
+
+なお、オブジェクトが参照されなくなったタイミングと、
+オブジェクトがガーベジコレクションで解放されるタイミングは一致しません。
+
+** main 関数
+
+Lua には、多くのスクリプト言語と同様に main 関数というものはありません。
+実行するファイルの先頭から順に実行されます。
+
+** コメント
+
+~--~ 以降はコメントになります。 C の // と同じ扱いです。
+複数行をコメントにする場合は、 ~--[[]]~ を指定できます。
+C の ~/* */~ と似た扱いです。
+
+
+#+BEGIN_SRC lua
+-- ここ以降はコメント
+--[[ここは
+コメント]]
+#+END_SRC
+
+~[[]]~ は、後述する文字列と同じで [=[ ]=] のパターンが利用できます。
+
+文字列中のコメント開始、終了文字は、文字列として扱われます。
+
+** セミコロン(;)
+
+セミコロン(;) の意味が Lua と C で異なります。
+C では文の区切りとしてセミコロン(;)を使用しますが、
+Lua はセミコロン(;)そのものが「何もしない」文を示す【空文】となります。
+
+C と同じ感覚でセミコロン(;)を使用しても特に問題はありませんが、
+無意味に利用するのは控えましょう。
+
+
+** 値
+
+Lua では、次の値を扱えます。
+
+- nil
+- ブーリアン
+- 数値
+- 文字列
+- 関数
+- ユーザーデータ
+- スレッド
+- テーブル 
+
+*** nil
+
+nil は他のどの値とも異なる特殊な値です。
+
+C で例えるなら NULL のようなものです。
+C の NULL と異なるのは、
+NULL は型がポインタであり、値が NULL であるのに対し、
+nil は型が nil であり、値も nil であることです。
+
+*** ブーリアン
+
+true, false が定義されています。
+
+ただし、論理演算が true か false だけを返す訳ではありません。
+詳しくは後述します。
+
+*** 数値
+
+数値は全て符号付き実数です(Lua の環境によって整数の場合もある)。
+C では char, short, int, long などのバイト長の違いや、
+signed, unsigned の符号の有無の違いがありますが、
+Lua では符号付き実数のみです。
+
+実数ですが、整数ビット演算が利用可能です。
+
+リテラルは、次のように 10 進数と 16 進数で指定できます。
+
+- 3
+- 345
+- 0xff
+- 0xBEBADA
+
+また、実数は次のような指定が可能です。
+
+- 3.0
+- 3.1416
+- 314.16e-2
+- 0.31416E1
+- 34e1
+- 0x0.1E
+- 0xA23p-4
+- 0X1.921FB54442D18P+1
+
+
+*** 文字列
+
+Lua の文字列は、C とは異なり '\0' で終端されていません。
+なぜならば、Lua の文字列は全てのバイナリデータを格納できるためです。
+
+/終端文字があるということは、終端文字を複数持てないことと同義。/
+ 
+'\0' で終端されていない代わりに、文字列データそのものがサイズ情報を保持しています。
+サイズ情報には # でアクセスできます。
+
+例えば #"123" は 3 になります。
+
+なお、Lua の文字列には文字コードの概念はありません。
+単なるバイト列として扱われます。
+
+文字列は ' か " で囲みます。
+' で囲む場合 " を文字列中に含められます。
+" で囲む場合 ' を文字列中に含められます。
+
+文字列中には \xXX(Xは 16進数) や \ddd(Xは 10進数)で、
+0〜255までの任意の値を指定できます。
+
+さらに \u{XXX}(X は1桁以上の16進数) で、マルチバイト文字を指定できます。
+
+文字列中に改行を含ませるには、次の方法があります。
+- \n を利用する
+- \ の直後に改行する
+- ~[[]]~ を利用する
+
+~[[]]~ は [=[]=] [==[]==] [===[]===] のように = を入れられます。
+
+~[[]]~ で囲まれた文字列は \n 等のエスケープはそのままの文字列となります。
+
+なお、 ~[[]]~ の ~[[~ 直後にある改行は無視されます。
+
+
+#+BEGIN_SRC lua
+str = '"abc"' -- "abc"
+str = "'abc'" -- 'abc'
+str = [[
+"'abc'"
+]] -- "'abc'"\n
+str = [=[[[abc]]]=] -- [[abc]]
+#+END_SRC
+
+
+文字列 str の N 番目の文字コードを取得する場合は、string.byte( str, N ) です。
+N は 1 以上です。
+
+文字列は .. で連結できます。
+
+"abc" .. "def" は "abcdef" です。
+
+
+*** 関数
+
+Lua は関数自体を値として扱えます。
+ただし、C の関数ポインタのように他の型への型変換はできません。
+関数はあくまで関数です。
+
+*** ユーザーデータ
+
+Lua は、主に C 言語をホストプログラムとして組込むことを想定した言語です。
+ホストプログラムと連携して動作する場合、
+ホストプログラムのデータを Lua の値にマッピングできない、
+あるいはマッピングするためのオーバーヘッドが大きくなることがあります。
+そのような場合に、ホストプログラムのデータを *ユーザデータ* として
+そのまま Lua に渡すことができます。
+
+ただし Lua からは、ユーザデータはユーザデータとしてしかアクセスできません。
+
+ユーザデータに何が格納されているか、直接 Lua スクリプトからアクセスできません。
+
+*** スレッド
+
+ここでスレッドとは pthread 等で扱う OS の thread ではなく、Lua のコルーチンを指します。
+
+コルーチンは、プリエンプティブで処理を切り替える概念です。
+
+なお、Lua のコルーチンを複数作っても 1 つの OS の thread 上で動作します。
+
+*** テーブル
+
+テーブルは、配列と STL の map が一緒になったようなデータです。
+テーブルには、nil 以外の全ての型のデータを格納できます。
+
+テーブルは、次のように {} で囲みます。
+
+#+BEGIN_SRC lua
+tblA = { "1", "2", "3", 4, [5] = 5 }
+-- tblA[1] == "1"; tblA[2] == "2"; tblA[3] == "3"; tblA[4] == 4; tblA[5] == 5;
+#+END_SRC
+
+上記のテーブルの要素にアクセスする場合、インデックスは *1* からになります。
+C 言語では 0 からなので、気を付ける必要があります。
+
+
+また、次のように数値以外のキーを指定することもできます。
+
+#+BEGIN_SRC lua
+tblB = { foo = 1, bar = 2, [ ".hoge" ] = 3 }
+-- tblB.foo == "1"; tblB.bar == "2"; tblB[".hoge"] == "3";
+#+END_SRC
+
+キーには nil(と NaN) 以外の全ての値を指定できます。
+
+数値以外のキーが指定されている場合、
+tblB.foo のようにキーのシンボルを指定して要素にアクセスできます。
+tblB[ "foo" ] としてもアクセス可能です。
+
+キーが . や = 等の文字を含んでいる場合は、
+[ "." ] や [ "=" ]  のように指定することでアクセスできます。
+
+なお、テーブルで保持するデータの全てのキーが 1 から順に 1 ずつ増えている場合(自然数)、
+そのテーブルを *シーケンス* と呼びます。
+数値以外のキーや、数値であっても 1 ずつ増えてない場合は、 *シーケンス* とは言いません。
+
+#table で、そのテーブルの要素数を返しますが、これはシーケンスの要素数を返します。
+シーケンスでないテーブルの # は要素数を示しません。
+
+任意のテーブルがシーケンスかどうかを判定する方法は提供されていません。
+# pairs で全ての要素を列挙して確認する必要があります。
+
+上記の例で言うと、#tblA は 5 を返しますが、#tblB は 3 になりません。
+
+存在していないキーにアクセスすると、nil を返します。
+
+上記の例では、 tblB.xyz は nil になります。
+
+**** テーブルコンストラクタ
+
+上記の様に {} を使用したテーブルの生成をテーブルコンストラクタと言います。
+
+このテーブルコンストタクタには、上記で説明した以外に一つ大きな特徴があります。
+
+その特徴とは、
+最終要素がキーを指定しない式で、
+その式の結果が関数呼び出しか可変長引数である場合、
+その式が返す全ての値をテーブルに追加する、ことです。
+
+なお、これは最終要素の場合のみ有効です。
+
+この特徴は、可変長引数を持つ関数や、ラッパー関数を作成する際に有効になります。
+
+#+BEGIN_SRC lua
+local function func()
+  return 1, 2, 3
+end
+{ a, b, c, func() } -- { a, b, c, 1, 2, 3 }
+{ a, b, c, func(), d } -- { a, b, c, 1, d }
+{ a, b, c, func(), nil } -- { a, b, c, 1 }
+#+END_SRC
+
+** 型情報
+
+type( value ) で、値 value の型情報を取得できます。
+型情報は次のいずれかの文字列になります。
+
+- "nil"
+- "number"
+- "string"
+- "boolean"
+- "table"
+- "function"
+- "thread"
+- "userdata" 
+
+
+** 変数
+
+Lua の変数は型を限定しません。
+どのような値でも格納できます。
+また、C89 のようにブロックの先頭に書く必要もありません。
+
+なお、値を代入する前の変数の値は nil となります。
+
+*** グローバル変数と、ローカル変数
+
+変数にはグローバル変数とローカル変数があります。
+
+ローカル変数の宣言は local を使用します。
+local を使用しないとグローバル変数になります。
+
+#+BEGIN_SRC lua
+globalA = 10       -- global 
+local localA = 10  -- local
+#+END_SRC
+
+ローカル変数のスコープは、ローカル変数宣言の次の文から有効で、
+ブロックの終端で終わります。
+
+#+BEGIN_SRC lua
+value = 10               -- global value = 10
+do
+  local value = value    -- local value = global valule(10)
+  value = value + 1      -- local value = 10 + 1 = 11
+  print( value )         -- local value: 11
+end
+print( value )           -- global valule: 10
+#+END_SRC
+
+グローバル変数は、 _ENV テーブルに格納されます。
+
+#+BEGIN_SRC lua
+value = 10
+if value == _ENV.value then -- true
+  print( "equals" )
+end
+#+END_SRC
+
+なお、C でグローバル変数の利用を控えることが推奨されているように、
+Lua でも特に理由がない限りローカル変数を使用するべきです。
+
+*** 代入文
+
+Lua の代入は、1つの文で複数の値を代入できます。
+
+例えば次の文は、3 つの値を代入する同じ処理です。
+
+#+BEGIN_SRC lua
+value1 = 1
+value2 = 2
+value3 = 3
+
+value1, value2, value3 = 1, 2, 3
+#+END_SRC
+
+なお、代入先の変数に対して代入元の値の個数が足りない場合、
+足りない分は nil が代入されます。
+代入元の値が多い場合は無視されます。
+
+代入文でも、テーブルコンストラクタのように最終式が関数呼び出しか、
+可変長式の場合は、その値全てが展開されます。
+
+#+BEGIN_SRC lua
+local function func()
+  return 10, 20
+end
+value1, value2, value3 = 0, func() -- value1 = 0, value2 = 10, value2 = 20
+#+END_SRC
+
+
+代入は、右辺の全ての値が評価され、その後それぞれの値が左辺に代入されます。
+
+例えば、X, Y の値を swap する場合、次のようにすることができます。
+
+#+BEGIN_SRC lua
+X,Y = Y,X
+#+END_SRC
+
+
+なお、Lua の代入は、値を持ちません。
+よって、C の様な代入はできません。
+
+#+BEGIN_SRC lua
+int value1 = value2 = 0;
+#+END_SRC
+
+
+** 制御文
+
+Lua には、次の制御文があります。
+   
+- if
+- while
+- repeat
+- for
+
+それぞれの条件式は、
+false と nil が偽と扱われ、それ以外が真となります。
+
+*** if 文
+
+*if* exp *then* block {*elseif* exp *then* block} [ *else* block] *end*
+
+Lua の if は上記構文です。
+
+次が C との差分です。
+- 条件式に () が不要
+- 必ず end が必要
+- else if ではなく elseif がある  
+
+*** while 文
+    
+*while* exp *do* block *end*
+
+Lua の while は上記構文です。
+
+次が C との差分です。
+- 条件式に () が不要
+- 必ず end が必要
+
+*** repeat 文
+
+*repeat* block *until* exp
+
+Lua の repeat は上記構文です。
+
+until の exp が真になるまで、block を繰り返します。
+
+なお、exp では block で宣言したローカル変数にアクセスできます。
+   
+*** for 文
+
+for 文は 2 種類あります。
+    
+**** *for* v *=* e1, e2 [, e3] *do* block *end*
+
+これは、C の for 文と似ています。
+
+#+BEGIN_SRC C
+int v;
+for ( v = e1; v <= e2; v += e3 ) {
+}
+#+END_SRC
+
+しかし、次の点で大きく異なるため *注意* が必要です。
+
+- e1, e2, e3 は、ループ開始前の一度だけ評価される
+- e3 を指定しない場合は 1 が使用される
+- v のスコープは for 文内のみ
+
+**** *for* v *in* exp *do* block *end*
+     
+これはイテレータを使用したループ制御です。
+
+#+BEGIN_SRC lua
+for key, value in pairs( tbl ) do
+  print( key, value )
+end
+#+END_SRC
+
+上記のようにテーブル tbl の要素を列挙するような場合に利用します。
+
+exp は、次の値を返す式である必要があります。
+
+local func, param, prev = exp
+
+ここで func は、次の値を返すイテレータ関数です。
+
+local next_1, next_2, ..., next_n = func( param, prev )
+
+ここで next_1 〜 next_n は、イテレータ関数で列挙する値の 1 集合です。
+上の pairs の例では、 key, value がそれにあたります。
+n はイテレータ関数側によって定義します。
+イテレータ関数 func は、prev が nil の場合に列挙する先頭の値の集合を返す必要があります。
+for 文は、イテレータ関数 func が返す next_1 が nil の場合、ループを終了します。
+
+例えば 1, "1" : 2, "2" : 〜 : N, "N" を列挙する場合、次のように定義します。
+
+#+BEGIN_SRC lua
+local function ite( param, prev )
+   if prev == param then
+      return nil
+   end
+   if prev == nil then
+      prev = 0
+   end
+   local next = prev + 1
+   return next, string.format( "%d", next )
+end
+
+for value1, value2  in ite, 10, nil do
+   print( string.format( '%d "%s"',  value1, value2 ) ) -- 1, "1" : 2, "2" : 〜 : 10, "10"
+end
+#+END_SRC
+
+**** pairs(), ipairs() 関数
+
+pairs(), ipairs() 関数は、 for 文でテーブルの要素を列挙するために利用する関数です。
+
+pairs() と ipairs() の差分を注意して使用する必要があります。
+
+- *pairs() は、テーブルの全要素を列挙する。*
+- *ipairs() は、シーケンスの要素のみを対象に列挙する。*
+
+     
+*** break 文
+
+Lua の break 文は、基本的に C 言語と同じです。
+    
+break 文は、while, repeat, for 文のループを抜けます。
+
+ループが入れ子になっている場合は、最も内側のループを抜けます。
+
+*** continue 文
+
+Lua には continue がありません。
+
+
+** ブロック
+C の制御文は、ブロック文として宣言しないと 1 文しか処理対象になりませんでしたが、
+Lua の制御文は必ずブロックを処理対象とし、終端に end を必要とします。
+
+よって、C の様に明示的にブロック文を使用することは滅多にありませんが、
+ブロック文を明示することもできます。
+
+ *do* block *end* 
+
+上記のように do end で囲んだ個所がブロックとなります。
+
+** 論理演算
+
+論理演算は次の 3 つです。
+
+- not
+- or
+- and
+
+真、偽の扱いは条件式と同じで、false と nil が偽で、それ以外が真です。
+
+*** not
+
+not は真・偽を反転します。
+
+#+BEGIN_SRC lua
+not false -- true
+not nil -- true
+not true -- false
+not 1 -- false
+#+END_SRC
+
+必ず true か false になります。
+
+*** or
+
+or は真になるまで値を評価します。
+or の結果は、真になるまで最終的に評価した値です。
+
+#+BEGIN_SRC lua
+nil or false or 1 -- 1
+nil or 2 or 3 -- 2
+4 or 5 -- 4
+nil or false -- false
+#+END_SRC
+
+*** and
+
+and は、偽になるまで値を評価します。
+and の結果は、偽になるまで最終的に評価した値です。
+
+#+BEGIN_SRC lua
+1 and 2 and 3 and nil -- nil
+1 and 2 and 3 -- 3
+1 and false and 2 -- false
+#+END_SRC
+
+** 関係演算
+関係演算は次のものを利用できます。
+~= 以外は C と同じです。
+
+- ==
+  - 等しい
+- ~=
+  -  等しくない
+- <
+  - より小さい
+- ~>~
+  - より大きい
+- <=
+  - 小さいまたは等しい
+- ~>=~
+  - 大きいまたは等しい
+
+** 算術演算
+
+算術演算は次のものを利用できます。
+除算と累乗以外は C と同じです。
+
+- ~+~
+  - 加算
+- ~-~
+  - 減算
+- ~*~
+  - 乗算
+- ~/~
+  - 浮動小数点数除算
+- ~//~
+  - 切り捨て除算 *5.2 は非サポート*
+- ~%~
+  - 剰余
+- ~^~
+  - 累乗
+- ~-~
+  - 単項マイナス
+
+
+** ビット演算
+
+ビット演算を行なう場合、値は 32bit の整数に丸められてから演算が行なわれます。
+
+また、Lua のバージョン 5.2 と 5.3 とで、ビット演算の仕様が大きく代わります。
+
+- 利用方法
+  - 5.2 では bit 演算用パッケージ bit32 の関数を利用する必要があります。
+  - 5.3 では C と同様に bit 演算用の演算子を利用できます。
+- 右シフト
+  - 5.2 では算術シフトです。(最上位ビットがコピーされる)
+  - 5.3 では論理シフトです。(最上位ビットには 0 が入る)
+
+
+** 関数
+
+C の関数は、必ず名前(シンボル)が紐付いていますが、   
+Lua の関数は名前に紐付いているとは限りません。
+
+C の関数は、関数ポインタを関数ポインタ型の変数に代入して、
+その変数から関数を呼び出すことができます。
+Lua の場合は、C の関数ポインタ変数から関数を実行するような使い方になります。
+
+Lua の関数を保持する変数は、単なる変数なので後から別の値(関数)を代入することが
+可能です。もちろん関数でない値を代入することも可能です。
+
+また、変数なのでグローバルと local があります。
+
+*** 定義
+
+次の定義方法があります。
+
+- name = *function(* args *)* block *end*
+- *local* name; name = *function(* args *)* block *end*
+
+1 番目がグローバル関数で、 2 番目がローカル関数です。
+name が関数名、args は引数、block は関数の処理です。
+args は 0 個以上の変数です。
+また、args は関数内がスコープになるローカル変数となります。
+
+function() end が関数オブジェクトを返す式であることは分かると思います。
+その関数オブジェクトをグローバル変数に代入するか、ローカル変数に代入するかで、
+その関数がグローバル関数になるかローカル関数になるかが決まります。
+
+local 関数の場合、変数に代入する前に local 変数の宣言をしています。
+これは、再帰呼び出しを行なう際に、その関数自身を呼ぶことを保証するためです。
+
+なお、関数定義は次のようにも書けます。
+
+- *function* name *(* args *)* block *end*
+- local *function* name *(* args *)* block *end*
+
+これは上記と全く同じ意味を持ちます。
+
+特に理由がない限り、関数定義は後者の書式で書いた方が良いでしょう。
+
+*** 関数呼び出し
+
+関数オブジェクトに () を付けることによって関数が実行されます。
+() には、引数を与えます。
+
+#+BEGIN_SRC lua
+local function func( value )
+  return value + 1
+end
+print( "value = ", func( 1 ) ) -- 2
+print( "value = ", (function(value) return value + 2 end)(1) ) -- 3
+#+END_SRC
+
+上記 5 行目のように、 *function()* body *end* で取得した関数オブジェクトに
+直接 () を付けても実行できます。
+
+与えた引数と関数オブジェクトで定義した引数に違いがある場合は、
+代入文で説明した通り足りない場合は nil を設定、多い場合は無視されます。
+
+このような動作になるため、C++ のオーバーロードの概念は Lua にはありません。
+
+*** 可変長引数
+
+Lua は、C の printf のような可変長の引数を持つ関数を定義することができます。
+
+*function(* ... *)*
+
+上記のように引数の宣言部に ... を記載することで、そこは可変長引数になります。
+
+可変長引数は、次のようにそのまま ... を指定することで与えられた引数を表現できます。
+
+#+BEGIN_SRC lua
+local function log( ... )
+  if enableLogFlag then
+    print( ... )
+  end
+end
+log( "test", "hoge" ) -- print( "test", "hoge" )
+#+END_SRC
+
+return ... で、可変長引数をそのまま返すこともできます。
+
+... に何が与えられているのかを調べたい場合は、
+{...} で、その可変長引数を要素に持つテーブルを生成できるので、
+テーブルを作成した後でそのテーブルに対して操作することで可変長引数の要素にアクセスできます。
+
+なお、これは上記のテーブルコンストラクタで説明した通り
+最終要素のみの特徴であるため、
+次の場合は可変長引数の先頭要素だけを持つテーブルが生成されます。
+
+{...,nil}
+
+#+BEGIN_SRC lua
+local function log( ... )
+  local val1 = {...}
+  print( val1[1], val1[2] ) -- "test" "hoge"
+  local val2 = {...,nil}
+  print( val2[1], val2[2] ) -- "test" nil
+end
+log( "test", "hoge" )
+#+END_SRC
+
+*** return
+
+関数を終了し、戻り値を返します。
+
+なお、関数の戻り値も複数個返すことができます。
+
+#+BEGIN_SRC lua
+local function func()
+  return 1, 2, 3
+end
+local val1, val2, val3 = func() -- val1 = 1, val2 = 2, val3 = 3
+#+END_SRC
+
+
+** オブジェクト指向プログラミング
+
+Lua では、テーブルを利用することでオブジェクト指向プログラミングができます。
+
+ただし、C++ の private, protected のようなアクセス制御 +や、継承+ はできません。
+
+
+*** 定義
+
+**** クラス定義
+    
+#+BEGIN_SRC lua
+local classA = { value = 0 }
+function classA:func()
+  return self.value
+end
+classA:func() -- 0
+#+END_SRC
+
+上記の定義で、classA に func メソッドを定義しています。
+
+ここで self は、func() を保持しているテーブルそのものを示します。
+C++ の this と同じです。
+
+メソッド、メンバは複数持てます。
+
+#+BEGIN_SRC lua
+local classA = { total = 0, value = 1 }
+function classA:getTotal()
+  return self.total
+end
+function classA:add()
+  self.total = self.total + self.value
+end
+function classA:setValue( val )
+  self.value = val
+end
+print( classA:getTotal() ) -- 0
+classA:add()
+print( classA:getTotal() ) -- 1
+classA:setValue( 2 )
+classA:add()
+print( classA:getTotal() ) -- 3
+#+END_SRC
+
+なお、メソッドは次のようにも記載できます。
+
+#+BEGIN_SRC lua
+local classA = { value = 0 }
+function classA.func( self )
+  return self.value
+end
+classA.func( classA ) -- 0
+#+END_SRC
+
+ちょっと違いが分かり難いですが、次の点が異なります。
+
+- : ではなく . になっている
+- 関数定義の引数に self が入っている
+- メソッド呼び出しの引数に classA を指定している
+
+~: を利用することで、Lua が上記の処理を行なっている、ということです。~
+
+なお、: を利用したメソッド定義は self が自動的に利用されますが、
+. を利用した関数定義では self の部分に何を使うかはユーザ次第です。
+ですが、self を使うのが混乱せずに良いでしょう。
+
+
+別の記載の方法として、次のようにもできます。
+
+#+BEGIN_SRC lua
+local classA = {
+  value = 0,
+  get = function( self )
+     return self.value
+  end,
+  set = function( self, value )
+     self.value = value
+  end,
+}
+print( classA:get() ) -- 0
+classA.set( classA, 1 )
+print( classA.get( classA ) ) -- 1
+#+END_SRC
+
+これは、テーブルコンストラクタの中にメソッド定義を含めているだけです。
+なお、テーブルコンストラクタでは : を利用した定義はできません。
+
+**** 継承
+
+Lua でクラスの継承が可能です。
+継承の実現方法には複数の実装方法があります。
+今回紹介する方法は、あくまで 1 つのサンプルです。
+
+#+BEGIN_SRC lua -n
+function DefClass( SuperClass ) -- クラス定義用関数
+   local NewClass = {}
+   setmetatable( NewClass, { __index = SuperClass } )
+   function NewClass:super( ... )
+      local obj = {}
+      if SuperClass then
+	 obj = SuperClass:new( ... )
+      end
+      setmetatable( obj, { __index = NewClass } )
+      return obj
+   end
+   function NewClass:new( ... )
+      return self:super( ... )
+   end
+   return NewClass
+end
+
+local SuperClass = DefClass( nil ) -- クラス定義。 継承無し
+function SuperClass:new( value )
+  local obj = self:super() -- 親クラスのインスタンス生成
+  obj.valueA = value
+  return obj
+end
+function SuperClass:funcA()
+  return self.valueA
+end
+
+local SubClass = DefClass( SuperClass ) -- クラス定義。  SuperClass を継承。 コンストラクタはデフォルト。
+function SubClass:funcB()
+  return self.valueA + 10
+end
+
+local SubSubClass = DefClass( SubClass ) -- クラス定義。 SubClass を継承
+function SubSubClass:new( value1, value2 )
+  local obj = self:super( value1 ) -- 親クラスのインスタンス生成
+  obj.valueC = value2
+  return obj
+end
+function SubSubClass:funcC()
+  return self.valueC
+end
+
+local obj = SuperClass:new( 1 )
+print( obj:funcA(), obj.funcB, obj.funcC ) -- 1, nil, nil
+obj = SubClass:new( 1 )
+print( obj:funcA(), obj:funcB(), obj.funcC) -- 1, 11, nil
+obj = SubSubClass:new( 1, 2 )
+print( obj:funcA(), obj:funcB(), obj:funcC() ) -- 1, 11, 2
+#+END_SRC
+
+- サンプル概要
+
+これは SuperClass, SubClass, SubSubClass を定義するサンプルです。
+名前の通り、 SubSubClass は SubClass を継承しています。
+SubClass は SuperClass を継承しています。
+SuperClass は何も継承していません。
+
+- クラス定義用関数
+
+まず 1〜16 行目は、クラス定義用の関数を定義しています。
+DefClass( SuperClass ) を利用することで 、
+SuperClass クラスを親クラスに持つ新しいクラスを定義することができます。
+なお、この関数で定義したクラスにコンストラクタを作成する場合、
+new フィールドに関数をセットする必要があります。
+コンストラクタ内では、super フィールドで親クラスのコンストラタを呼び出す必要があります。
+コンストラタは、クラスのメンバーを初期化し、クラスのインスタンステーブルを返します。
+デフォルトで、super を呼び出すだけのデフォルトコンストラクタが定義されます。
+
+- SuperClass の定義
+
+18 行目は、 親クラスを持たない SuperClass を定義します。
+19〜26 行目で、 SuperClass のコンストラクタと、メソッド funcA を定義しています。
+
+- SubClass の定義
+
+29 行目は、 SuperClass を親クラスに持つ SubClass を定義します。
+29〜31 行目で、 SubClassメソッド funcB を定義しています。
+SubClass は独自のコンストラクタを持たないクラスです。
+
+- SubSubClass の定義
+
+33 行目は、 SubClass を親クラスに持つ SubSubClass を定義します。
+34〜41 行目で、 SubClass のコンストラクタと、メソッド funcC を定義しています。
+
+- インスタンス生成
+
+43〜48 行目で SuperClass, SubClass, SubSubClass インスタンスを生成し、
+メソッドを実行しています。
+
+
+** require と loadfile
+
+C の場合 include で外部モジュールの関数を利用できるようになりますが、
+Lua では require あるいは load を利用します。
+
+多くの場合、require を利用します。
+   
+*** require
+    
+require は、別のスクリプトで定義した機能を利用する際に使用します。
+
+- main.lua
+#+BEGIN_SRC lua
+local sub = require( 'foo.sub' )
+print( sub:func(1) ) -- 1
+print( sub:func(1) ) -- 2
+local sub2 = require( 'foo.sub' )
+print( sub == sub2 ) -- true
+#+END_SRC
+
+- foo/sub.lua 
+#+BEGIN_SRC lua
+local tbl = { value = 0 }
+function tbl:func( val )
+  self.value = self.value + val
+  return self.value
+end
+return tbl
+#+END_SRC
+
+
+概念が似ているだけで、include とはそもそも動作が異なります。
+
++ require はファイル名ではなく、モジュール名で指定します。
+  + モジュール名は拡張子を含みません。またパス区切りには / ではなく . を使用します。
+  + . や .. の相対パスは使えません。 (区切り文字が . なので、 . を使うと意味不明になる)
++ require は、指定されたモジュールをロードし、実行結果を返します。
++ require した際に返される値は 1 つだけです。
++ require( modname ) したモジュール結果は、package.loaded[ modname ] テーブルに格納されます。
++ 次に require( modname ) した時は、 package.loaded[ modname ] に格納している値を返します。
++ もしも modname で指定したモジュールの内容が、前回 require したときと異なる内容になっていたとしても
+  package.loaded[ modname ] にロードされている場合は新規にロードしなおしません。
++ 強制的にロードし直したい場合は、事前に package.loaded[ modname ] = nil とします。
+
+モジュールの検索パスは、 package.path を利用します。
+
+
+*** loadfile
+
+loadfile は指定したスクリプトをロードして、そのロードしたスクリプトを実行するための関数を返します。
+よって、loadfile が返した関数を実行するまで、指定したスクリプトは実行されません。
+
+require と loadfile とでは次の点で異なります。
+
++ スクリプトの実行タイミング
+  + require は、 require() を処理したタイミングで実行します
+  + loadfile は、loadfile() が返す関数を実行したタイミングになります
++ 2回目以降の処理
+  + require は、2 回目以降実行した場合は前回と同じモノを返します
+  + loadfile は新しくオブジェクトを生成します
+
+- main.lua
+#+BEGIN_SRC lua
+local sub3func = loadfile( 'foo/sub.lua' )
+local sub31 = sub3func()
+local sub32 = sub3func()
+print( sub31:func(1) ) -- 1
+print( sub32:func(1) ) -- 1
+print( sub31 == sub32 ) -- false
+#+END_SRC
+
+- foo/sub.lua 
+#+BEGIN_SRC lua
+local tbl = { value = 0 }
+function tbl:func( val )
+  self.value = self.value + val
+  return self.value
+end
+return tbl
+#+END_SRC
+
+
+loadfile は次のようにファイル名の他に、mode, env を指定できます。
+
+loadfile( filename, mode, end )
+
+- mode は、次を指定できます。デフォルトは "bt" です。
+  - "b": 対象ファイルをスクリプトファイルに限定
+  - "t": 対象ファイルをバイトコード済みファイルに限定
+  - "bt": 対象ファイルを限定しない
+- env は、グローバル変数の格納テーブルを指定します。デフォルトは _ENV です。
+
+*** require と loadfile の使い分け
+
+次の場合を除き、 require を使うべきです。
+
+- loadfile の mode, env 引数を指定する必要がある場合。
+- スクリプトを再実行したい場合。
+
+
+** コルーチン
+
+コルーチンは、値の受渡しが可能になった RTOS 等のプリエンプティブなタスク切り替え機構と考えると分かり易いです。
+
+coroutine.resume() と coroutine.yield() が、タスクの再開、一時停止にあたります。
+
+- coroutine.resume( crn, arg ) は、コルーチン crn の実行を再開します。
+  - このとき、コルーチン crn は arg を受けとります。
+- coroutine.yield(arg) は、実行中のコルーチンを suspend にし、coroutine.resume() 呼び出した元の処理に戻ります。
+  - このとき、coroutine.resume() の戻り値として arg が返ります。
+  - ただし、coroutine.resume() の戻り値の第一戻り値は、指定のコルーチンの処理が続きがあるかどうかを最後まで実行したかどうかのフラグを返します。
+    - true の場合、コルーチンの処理が続きます。
+    - false の場合、コルーチンの処理は全て終了しています。
+- coroutine.resume() の戻り値が true の場合、コルーチンの処理は続きがあります。
+  - この状態で 再度 coroutine.resume( crn, arg ) を実行することで、コルーチンの処理の続きから実行されます。
+  - resume の引数 arg は、coroutine.yield() の戻り値となります。
+- コルーチンの処理が終了すると、最後の coroutine.resume() 呼び出し位置に戻ります。
+  - このときの coroutine.resume() の戻り値は、第一戻り値が false で、第二以降の戻り値がコルーチンの戻り値になります。
+
+なお、 コルーチンを作るには coroutine.create( func ) を使用します。
+
+ *コルーチンを生成しただけでは、コルーチンは動作しません。*
+ *coroutine.resume() で初めてコルーチンが実行されます。*
+ *初回の resume() で与えられた引数が、コルーチンの引数になります。*
+ *2回目以降の resume() で与えられた引数は、 coroutine.yield() の戻り値になります。*
+
+
+#+BEGIN_SRC lua
+local crn = coroutine.create( function( value )
+      print( "c1", value )
+      print( "c2", coroutine.yield( value + 1 ) )
+      return value + 2 
+end)
+print( "m1", coroutine.resume( crn, 2 ) )
+print( "m2", coroutine.resume( crn, 3 ) )
+print( "m3", coroutine.resume( crn, 4 ) )
+#+END_SRC
+
+上の例の出力結果は次になります。
+
+#+BEGIN_SRC txt
+c1	2
+m1	true	3
+c2	3
+m2	true	4
+m3	false	cannot resume dead coroutine
+#+END_SRC
+
+coroutine.wrap() を使用してもコルーチンを生成できます。
+
+この場合 coroutine.create() と次の点で異なります。
+
+- coroutine.wrap() はコルーチンを返すのではなく、コルーチンを resume する関数 wfun() を返します。
+- wfun( arg ) の引数 arg は、 resume の第二引数以降に与える引数になります。
+- wfun() の戻り値は、コルーチンの続きの有無を示すフラグを含みません。
+- wfun() は、コルーチンのエラーをキャッチしません。
+
+#+BEGIN_SRC lua
+crn = coroutine.wrap( function( value )
+      print( "c1", value )
+      print( "c2", coroutine.yield( value + 1 ) )
+      return value + 2 
+end)
+print( "m1", crn( 2 ) )
+print( "m2", crn( 3 ) )
+--print( "m3", crn( 3 ) ) -- error
+#+END_SRC
+
+上の例の出力結果は次になります。
+
+#+BEGIN_SRC txt
+c1	2
+m1	3
+c2	3
+m2	4
+#+END_SRC
+
+coroutine.wrap() を利用することで、for 文のサンプルとして挙げたイテレータ関数 ite を次のように書けます。
+コルーチンを使用することでスッキリ書けることが分かると思います。
+
+#+BEGIN_SRC lua
+local ite = coroutine.wrap( function ( param, prev )
+   for next = 1, param do
+     coroutine.yield( next, string.format( "%d", next ) )
+   end
+   return nil
+end
+-- 以下と同じ結果になる
+-- local function ite( param, prev )
+--    if prev == param then
+--       return nil
+--    end
+--    if prev == nil then
+--       prev = 0
+--    end
+--    local next = prev + 1
+--    return next, string.format( "%d", next )
+-- end
+#+END_SRC
+
+
+** メタテーブル
+
+メタテーブルとは、C++ の演算子オーバーロードのようなものです。
+
+メタテーブルを利用することで、値に対する処理をカスタマイズすることができます。
+メタテーブルを設定できる値は、型がユーザデータかテーブルのデータだけです。
+ただし、Lua スクリプトから設定できるのはテーブル型のデータのみです。
+ユーザデータ型のデータは、 C 側から設定可能です。
+
+setmetatable(table, metatable) で、指定のテーブルにメタテーブルを設定します。
+
+Lua でカスタマイズ可能な処理が行なわれる際に、メタテーブルに定義したメソッド(メタメソッド)が呼ばれます。
+
+例ば次のようにテーブル要素へのアクセスをカスタマイズすることができます。
+
+#+BEGIN_SRC lua
+local meta = {
+  __index = function( tbl, key )
+    return key
+  end
+}
+local tbl = {}
+print( tbl[ 1 ] ) -- nil
+setmetatable( tbl, meta )
+print( tbl[ 1 ] ) -- 1
+#+END_SRC
+
+この例では、 tbl の要素を取得した際に、キーを返すように振舞をカスタマイズしています。
+(tbl の 1 の要素を取得すると、 1 が返る。)
+
+
+以降で、カスタマイズ可能な動作について説明します。
+
+
+*** 二項演算
+
+メタメソッドは次の引数を持ちます。
+    
+function func( value1, value2 )
+    
+次の二項演算をカスタマイズできます。
+
++ ~__add~
+  + ~+~
++ ~__sub~
+  + ~-~
++ ~__mul~
+  + ~*~
++ ~__div~
+  + ~/~
++ ~__mod~
+  + ~%~
++ ~__pow~
+  + ~^~
++ ~__concat~
+  + ~..~
++ ~__idiv~
+  + ~//~ (ver 5.3)
+
+二項演算は、第一引数、第二引数の順で、該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+
+メタメソッドは演算結果を返します。
+
+*** ビット演算 (ver 5.3)
+
+メタメソッドは次の引数を持ちます。
+    
+function func( value1, value2 )
+    
+- ~__band~
+  - ~&~
+- ~__bor~
+  - ~|~
+- ~__bxor~
+  - ~
+- ~__bnot~
+  - ~^~
+- ~__shl~
+  - ~<<~
+- ~__shr~
+  - ~>>~
+
+ビット演算は、第一引数、第二引数のどちらかが整数でなく、かつ整数に変換不可能な値の場合に、
+第一引数、第二引数の順で、該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+
+メタメソッドは演算結果を返します。
+    
+*** 単項演算
+
+メタメソッドは次の引数を持ちます。
+
+function func( value )
+
+次の単項演算をカスタマイズできます。
+    
+- ~__unm~
+  - ~-~
+- ~__len~
+  - ~#~
+
+単項演算は、指定の値のメタテーブルが該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+
+メタメソッドは演算結果を返します。
+
+
+*** ~__eq~ ( == )
+
+メタメソッドは次の引数を持ちます。
+
+function func( value1, value2 )
+    
+~__eq~ は、第一引数と第二引数が、該当のハンドラを定義しているかどうかを確認します。
+また、そのハンドラが同じハンドラである場合に限り、そのハンドラの処理を実行します。
+そうでない場合は、デフォルトの処理を行ないます。
+
+メタメソッドは条件が成り立つ時に true, 成り立たない時に false を返します。
+
+*** ~__lt~ ( < ), ~__le~ ( <= )
+
+メタメソッドは次の引数を持ちます。
+
+function func( value1, value2 )
+
+~__lt~ , ~__le~ は、第一引数、第二引数の順で、該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+
+メタメソッドは条件が成り立つ時に true, 成り立たない時に false を返します。
+
+ただし  ~__le~ の定義がない場合、a <= b は not (b < a) として ~__lt~ を確認します。
+
+*** ~__index~
+
+メタメソッドは次の引数を持ちます。
+    
+function func( table, key )
+    
+table[key] のデータにアクセスする際の動作をカスタマイズします。
+
+~__index~ に設定されているのが関数だった場合、上記の関数として実行し戻り値を返します。
+関数ではなくテーブルだった場合、そのテーブルのキー key の要素を返します。
+
+なお、カスタマイズ可能なのは table に key のデータがない場合のみです。
+table に key のデータがある場合は、その値を返します。
+また、 ~__index~ に設定されているのが、関数ではなくテーブルだった場合、
+そのテーブルのキー key の要素を返します。
+
+メタデータをセットしているのがユーザデータ型の場合は、常に有効になります。
+
+メタメソッドは table の key に対する値を返します。
+
+
+*** ~__newindex~
+
+メタメソッドは次の引数を持ちます。
+    
+function func( table, key, value )
+    
+table[key] にデータを設定する際の動作をカスタマイズします。
+
+~__newindex~ に設定されているのが関数だった場合、上記の関数として実行します。
+関数ではなくテーブルだった場合、そのテーブルのキー key に値 value を設定します。
+
+なお、カスタマイズ可能なのは table に key のデータがない場合のみです。
+
+table に key のデータがある場合は、指定の値がセットされます。
+
+メタデータをセットしているのがユーザデータ型の場合は、常に有効になります。
+
+
+*** ~__call~
+
+メタメソッドは次の引数を持ちます。
+    
+function func( func, ... )
+    
+関数コールの動作をカスタマイズします。
+
+指定の値のメタテーブルが該当のハンドラを定義しているかどうかを確認します。
+ハンドラを定義している場合、そのハンドラの処理を実行します。
+定義していない場合は、デフォルトの処理を行ないます。
+
+メタメソッドは func の実行結果を返します。
+
+*** ~__gc~ ( == )
+
+メタメソッドは次の引数を持ちます。
+
+function func( self )
+    
+~__gc~ は、そのメタメソッドを設定されている値が GC で解放される前に呼び出されます。
+
+*** ~__tostring~ ( == )
+
+メタメソッドは次の引数を持ちます。
+
+function func( self )
+    
+~__tostring~ は、 string.format の "%s" 等で変換する際に呼出されます。
+
+メタメソッドは文字列を返します。 
+
+** クロージャ
+
+Lua はクロージャを使用できます。
+クロージャは、Lisp 等でも利用できる古くからある機能の一つですが、C++ では C++11 で取入れられた機能です。
+
+クロージャを利用することで、関数の引数、グルーバル変数以外で、関数の振舞いを変更することができます。
+
+例えば、C の qsort には次の関数ポインタを引数に与える必要があります。
+
+int (*compare)(const void * val1, const void * val2)
+
+この関数は、val1, val2 に格納されている値を比較して結果を返す関数です。
+
+ここで、もし要素の比較を行なうために次のようにもう一つの引数が必要だった場合、
+どうすれば qsort() を利用できるようになるでしょうか？
+
+#+BEGIN_SRC c
+int sampleCompare(const void * val1, const void * val2, const int param );
+#+END_SRC
+
+方法としては、次の 2 つが考えられます。
+
+- param をグローバル変数 ~g_param~ に設定する
+  - sampleCompareWrap( const void * val1, const void * val2 ) を作成。
+    - この sampleCompareWrap() から sampleCompare( val1, val2, ~g_param~ ) を実行する。
+  - ~g_param~ に値を設定する
+  - sampleCompareWrap() を qsort() に渡す
+- param を固定値にして sampleCompare() 実行するラッパー関数を用意する
+  - sampleCompareWrapX( const void * val1, const void * val2 ) を作成。
+    - この sampleCompareWrapX() から sampleCompare( val1, val2, PARAM ) を実行する。
+    - ここで PARAM は、param が取り得る値の 1 つです
+  - param のパターン分 sampleCompareWrapX() を用意する。
+  - 使用する param のパターンに合せて qsort() に与える sampleCompareWrapX() を変更する
+
+どちらも、あまり良い方法とは言えません。
+
+このような時にクロージャを使用すると簡単に解決できます。
+
+Lua のクロージャを使うと次のようになります。
+
+#+BEGIN_SRC lua
+local function generateCompare( param )
+  return function( val1, val2 ) -- ★
+    return sampleCompare( val1, val2, param )
+  end
+end
+qsort( array, 1, 1, generateCompare( param ) ) -- C の qsort() と同じインタフェースとする
+#+END_SRC
+
+上記で説明している通り、クロージャを利用することで、関数の引数、グローバル変数を使わずに、
+上記の ★ マークの関数の振舞いを変更できます。
+
+クロージャで重要なことは、関数の処理内で、関数定義外部で宣言されているローカル変数を利用しているということです。
+ローカル変数は、宣言されると新しくインスタンスを生成します。
+そして Lua の値は、参照がなくなるまで解放されないようになっています。
+これにより、ローカル変数のスコープであるブロックの処理を抜けても、関数内で参照されているためインスタンスが解放されることなく残ることになります。
+
+
+** デバッグインタフェース
+
+Lua は、自分自身をデバッグするためのインタフェースを持ちます。
+これを利用することで、例えばスタックトレースを動的に取得することができます。
+また、この機能を利用することでリモードデバッガ等を実現できます。
+
+
+* C/C++ 言語プログラマのためのサポートツール
+
+Lua には直接関係ありませんが、
+C/C++ 言語プログラマのためのサポートツールとして、lctags を開発しています。
+
+この lctags は、
+いわゆるタグジャンプをサポートするソースコードタグシステムです。
+lctags を利用することで、
+従来ツールで課題だった構造体のメンバを認識した
+タグジャンプが出来ない問題を解決できます。
+他にも、コールグラフの表示など多くの機能に対応しています。
+
+是非、次の記事を御一読下さい。
+
+https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156
+
+
+*ちなみにこの lctags は、 Lua で開発しています。*
+

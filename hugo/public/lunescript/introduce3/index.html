@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Lua のトランスコンパイラ LuneScript の紹介 3 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/introduce3/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Lua のトランスコンパイラ LuneScript の紹介 3" />
+<meta property="og:description" content="ここの情報は古くなっています。 LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/introduce3/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="Lua のトランスコンパイラ LuneScript の紹介 3"/>
+<meta name="twitter:description" content="ここの情報は古くなっています。 LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発"/>
+<meta itemprop="name" content="Lua のトランスコンパイラ LuneScript の紹介 3">
+<meta itemprop="description" content="ここの情報は古くなっています。 LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発">
+
+<meta itemprop="wordCount" content="1681">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Lua のトランスコンパイラ LuneScript の紹介 3</h1>
+
+<p>
+<strong>ここの情報は古くなっています。</strong>
+</p>
+<p>
+LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。
+</p>
+<p>
+LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。
+</p>
+<p>
+この記事は <a href="https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf">https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf</a> の続きです。
+</p>
+<p>
+上記の記事で紹介出来なかった機能について説明します。
+</p>
+<h2 id="headline-1">
+provide
+</h2>
+<p>
+LuneScript では 1 スクリプトファイル が 1 モジュールであり、
+1 つのスクリプトファイル内に宣言した複数のクラスや関数をまとめて
+1 つのモジュールを作成する。
+</p>
+<p>
+例えば次のスクリプトでは、 val 変数と func() 関数を宣言している。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// sub.lns
+pub let val:int = 1;
+pub fn func():int {
+  return 1;
+}</code></pre>
+</div>
+<p>
+このモジュールを import して利用する際は、
+次のように sub.val, val.func() としてモジュールのフィールドにアクセスする。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// main.lns
+import sub;
+print( sub.val, sub.func() );</code></pre>
+</div>
+<p>
+これは、スクリプトファイル内で 1 つの関数だけを宣言した場合でも同じである。
+</p>
+<p>
+一方、Lua のモジュールは何の値を返してもよい。
+例えば、モジュールが整数値を返すことも出来る。
+</p>
+<p>
+provide は、 LuneScript のモジュールと
+Lua のモジュールの互換性を確保するために利用する。
+</p>
+<p>
+つまり、 provide を利用することで、
+LuneScript モジュールで関数やクラスを返すことが出来る。
+</p>
+<h3 id="headline-2">
+使用方法
+</h3>
+<p>
+provide は次のように使用する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// sub.lns
+let val:int = 1;
+pub fn func():int {
+  return 1;
+}
+provide func;</code></pre>
+</div>
+<p>
+この例では、 sub モジュールは func を返す。
+</p>
+<p>
+この sub モジュールを利用する場合、次のように import した sub が関数となる。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// main.lns
+import sub;
+print( sub() );</code></pre>
+</div>
+<h3 id="headline-3">
+制限
+</h3>
+<p>
+provide は次の制限をもつ
+</p>
+<ul>
+<li>
+<p>
+provide で指定できるのは 1 つのシンボルのみ。 
+</p>
+<ul>
+<li>
+<p>
+プリミティブな値を指定することは出来ない。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+provide を指定した場合は、当然 pub 指定できるのは 1 つのシンボルに限られる。
+</p>
+</li>
+<li>
+<p>
+provide は、スクリプトの末尾に宣言しなければならない。
+</p>
+</li>
+</ul>
+<h2 id="headline-4">
+enum
+</h2>
+<p>
+LuneScript は enum を扱える。
+</p>
+<h3 id="headline-5">
+宣言方法
+</h3>
+<p>
+enum は次のように宣言する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1,
+  val2,
+  val3,
+  val4,
+}
+
+let val = EnumVal.val1;</code></pre>
+</div>
+<p>
+この例では EnumVal という enum 型を宣言し、
+EnumVal には val1 〜 val4 までの値を保持する。
+</p>
+<p>
+宣言した enum 値を使用する場合は EnumVal.val1 のようにアクセスする。
+</p>
+<p>
+アクセス制御として pub を指定可能。
+</p>
+<h3 id="headline-6">
+enum 値の型
+</h3>
+<p>
+宣言時に &#39;=&#39; で値を設定することで、 enum 値を設定できる。
+</p>
+<p>
+&#39;=&#39; を省略すると、enum 値は 0 から始まる int 型となる。
+</p>
+<p>
+enum が保持できる型は int, real, str のいずれかで、
+1 つの enum に複数の型を混在させることは出来ない。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum testEnum {
+   val1,
+   val2,
+   val3 = 1.0 // error: multiple type
+}
+
+enum testEnum2 {
+   val1 = 1.0,
+   val2,
+   val3 = 1, // error: multiple type
+}
+
+enum testEnum3 {
+   val1 = &#34;1&#34;,
+   val2,  // error: illegal type
+   val3 = 1, // error: multiple type
+}
+
+enum testEnum4 {
+   val1,
+   val2
+}</code></pre>
+</div>
+<p>
+int, real は、 enum 値は 1 ずつ増加する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1 = 10,	// 10
+  val2,		// 11
+  val3 = 20,	// 20
+  val4,		// 21
+  val5,		// 22
+}</code></pre>
+</div>
+<p>
+enum 値は、式を書ける。
+ただし式はプリミティブな値でなければならない。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1 = 10,		// 10
+  val2 = val + 1,	// 11
+}</code></pre>
+</div>
+<h3 id="headline-7">
+enum 値の演算
+</h3>
+<p>
+enum 値は、enum 値の型と演算できる。
+</p>
+<p>
+例えば次の場合、EnumVal.val4 + 10 は 13 となる。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1,
+  val2,
+  val3,
+  val4,
+}
+
+print( EnumVal.val4 + 10 ); // 13</code></pre>
+</div>
+<h3 id="headline-8">
+enum 値の名前
+</h3>
+<p>
+enum 値から動的に名前を取得することが出来る。
+</p>
+<p>
+例えば次の場合、 <code>print( val, val.$_txt )</code> は 0, Enumval.val1 を出力する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1,
+  val2,
+  val3,
+  val4,
+}
+
+let val = EnumVal.val1;
+print( val, val.$_txt ); // 0, Enumval.val1</code></pre>
+</div>
+<h3 id="headline-9">
+enum 値への変換
+</h3>
+<p>
+enum 値は int real, str のいずれかの値を持つ。
+</p>
+<p>
+enum 値は、それらの型の変数に代入できる。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1,
+  val2,
+  val3,
+  val4,
+}
+let val:int = EnumVal.val1;</code></pre>
+</div>
+<p>
+一方で、int real, str の値を enum 型の変数に代入することは出来ない。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1,
+  val2,
+  val3,
+  val4,
+}
+let val:EnumVal = 1; // error</code></pre>
+</div>
+<p>
+int real, str の値を、対応する enum 型に変換するには _from() メソッドを使用する。
+</p>
+<p>
+次の例は、 <code>EnumVal._from(0)</code> を使って、
+0 から対応する EnumVal.val1 に変換し、EnumVal 型の変数 val に設定している。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+  val1,
+  val2,
+  val3,
+  val4,
+}
+let val:EnumVal = unwrap EnumVal._from( 0 );
+print( val.$_txt );  // EnumVal.val1;</code></pre>
+</div>
+<p>
+ここで _from() メソッドの戻り値は EnumVal! 型となるので、
+EnumVal にするため unwrap している。
+_from() メソッドは、指定の引数に一致する enum 値が存在する場合はその enum 値を返すが、
+一致する enum 値が無い場合は nil を返す。
+</p>
+<h3 id="headline-10">
+名前の省略
+</h3>
+<p>
+LuneScript では enum 値にアクセスする際、
+swift と同じ形式で名前を省略することが可能です。
+</p>
+<p>
+例えば次のような場合、 switch の条件に enum 値を指定しています。
+この時の case は EnumVal.val1 ではなく .val1 で enum 値を利用できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
+   val1,
+   val2,
+   val3,
+   val4,
+}
+fn func( val:EnumVal ) {
+   switch ( val ) {
+      case .val1, .val2 {
+      } 
+      case .val3, .val4 {
+      } 
+   }
+}</code></pre>
+</div>
+<p>
+この方法が利用可能なのは、次の箇所です。
+</p>
+<ul>
+<li>
+<p>
+関数コール時の引数指定
+</p>
+</li>
+<li>
+<p>
+変数への代入
+</p>
+</li>
+<li>
+<p>
+switch-case
+</p>
+</li>
+<li>
+<p>
+return
+</p>
+</li>
+<li>
+<p>
+2項演算
+</p>
+</li>
+<li>
+<p>
+Map のキー
+</p>
+</li>
+</ul>
+<h3 id="headline-11">
+enum 値のリスト
+</h3>
+<p>
+get__allList() を使用することで、
+enum 型の全 enum 値を要素に持つリストを取得することができます。
+</p>
+<p>
+例えば次のコードでは、 EnumVal の全 enum 値の文字列表現を出力します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum EnumVal {
+   val1,
+   val2,
+   val3,
+   val4,
+}
+foreach val in EnumVal.$_allList {
+   print( val.$_txt );
+}</code></pre>
+</div>
+<p>
+このコードの出力結果は次になります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">EnumVal.val1
+EnumVal.val2
+EnumVal.val3
+EnumVal.val4</code></pre>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/introduce2/" title="Lua のトランスコンパイラ LuneScript の紹介 2"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Lua のトランスコンパイラ LuneScript の紹介 2</a>
+<a class="nav nav-next" href="https://example.com/lunescript/crosscompile/" title="Lua バージョン間のクロスコンパイル">Next - Lua バージョン間のクロスコンパイル <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class="active"><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

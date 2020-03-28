@@ -1,0 +1,288 @@
+#+TITLE: 関数 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は、 LuneScript の関数について説明します。
+
+* 関数定義
+LuneScript の関数は次のように定義します。
+
+#+BEGIN_SRC lns
+fn add_sub( val1:int, val2:int ): int, int {
+   return val1 + val2, val1 - val2;
+}
+print( add_sub( 1, 2 ) ); // 3, -1
+#+END_SRC
+
+上記の例は、次の関数を定義しています。
+
+| 定義         |         |
+|--------------+---------|
+| 関数名       | add_sub |
+| 第一引数名   | val1    |
+| 第一引数型   | int     |
+| 第二引数名   | val2    |
+| 第二引数型   | int     |
+| 第一戻り値型 | int     |
+| 第二戻り値型 | int     | 
+
+LuneScript は、戻り値を複数返せます。
+
+*** 戻り値
+
+関数の戻り値は return 文を使用します。
+
+関数は、複数の値を返せます。
+
+多値の戻り値については次を参照してください。
+
+[[../multipleretval]]
+
+
+* 処理が戻らない関数
+
+関数によっては、処理を戻さないものがあります。
+
+次に例を示します。
+   
+#+BEGIN_SRC lns
+fn func(): __ {
+   while true {
+   }
+}
+func();
+print( 1 ); // error
+#+END_SRC
+
+この例では、 func() は無限ループです。
+よって、 func() は処理を返さないことになります。
+
+これを明示するため、 func() の戻り値の型は ~__~ となっています。
+~__~ は、処理を戻さない関数であることを示します。
+
+これによって、 func() の次の print() 文が処理されないことが分かり、
+エラーとなります。
+
+なお、 戻り値型を ~__~ とした関数は、
+処理を戻さないようにしなければなりません。
+
+例えば次のように break すると、ループを抜けてしまうため、
+func() から処理が戻ってきます。
+このような場合は、エラーとなります。
+
+#+BEGIN_SRC lns
+fn func(val:int): __ {
+   while true {
+      if val == 1 {
+         break;
+      }
+   }
+}
+#+END_SRC
+
+* 可変長引数、戻り値
+
+可変長引数、戻り値を利用できます。
+
+詳細は次の記事を参照してください。
+
+[[../arg]]
+
+* 定義場所
+
+関数は、 statement が書ける場所であればどこでも定義可能です。
+具体的には次のようにブロック内に定義できます。
+
+#+BEGIN_SRC lns
+fn sub():int {
+   let mut val = 0;
+   {
+      {
+         fn func(): int {
+            return 1;
+         }
+         val = val + func();
+      }
+      fn func(): int {
+         return 2;
+      }
+      val = val + func();
+   }
+   fn func(): int {
+      return 3;
+   }
+   return val + func();
+}
+print( sub() ); // 6
+#+END_SRC
+
+スコープが異なれば、同名関数を定義できます。
+
+* 公開関数
+
+関数も変数と同様、pub を使って外部公開できます。
+  
+#+BEGIN_SRC lns
+pub fn func(): int {
+   return 1;
+}
+#+END_SRC
+
+pub を指定することで、外部からアクセス可能な関数となります。
+
+global も利用できます。
+
+#+BEGIN_SRC lns
+global fn func(): int {
+   return 1;
+}
+#+END_SRC
+
+関数の global 宣言には、 変数の global 宣言と同じ制約があります。
+
+ *「global 宣言した関数は、 その関数を宣言したモジュールを import した時に有効になる。」*
+
+関数の外部公開には、次の制約があります。
+
+ *「外部公開する関数は、スクリプトの最上位のスコープに宣言しなければならない」*
+
+* form 型
+
+LuneScript は、関数オブジェクトを値として扱うことが出来ます。
+関数オブジェクトの汎用的な型として *form* を利用できます。
+
+次に form の使用例を示します。
+
+#+BEGIN_SRC lns
+fn test() {
+   print( "hoge" );
+}
+fn sub( func:form ) {
+  func();
+}
+sub( test ); // hoge
+#+END_SRC
+
+この例は、次の構成となります。
+
+- 関数 test を定義
+- 関数 sub は form 型の引数を持つ
+- 引数として test を指定して sub を実行
+  
+これによって、 sub 内で test が実行され、 hoge が出力されます。
+
+なお、 form 型は次の関数として扱います。
+
+#+BEGIN_SRC lns
+fn func(...):... {}
+#+END_SRC
+
+** form 型に代入可能な関数型
+
+上記の通り、form は ~fn func(...):... {}~ と同義です。
+
+また、 =...= は 0 個以上の =stem!= を表わします。
+
+つまり、 stem! 型の引数を持つ関数が form 型に代入可能になり、
+非 stem! 型の引数を持つ関数は代入不可能になります。
+
+もしも代入できてしまうと、
+次の func2( nil ) のコールは func( nil ) をコールすることになり、
+不正動作となってしまいます。
+
+#+BEGIN_SRC lns
+fn func( val:int ) {
+   print( val + 1 );
+}
+let func2:form = func;
+func2( nil );
+#+END_SRC
+
+代入可能なケースと、代入不可能なケースの例を次に示します。
+
+#+BEGIN_SRC lns
+let form1:form = fn ( val1:stem! ) { };
+let form2:form = fn ( val1:stem ) { };  // error
+let form3:form = fn ( val1:stem!, val2:stem! ) { };
+let form4:form = fn ( val1:stem!, val2:stem ) { }; // error
+#+END_SRC
+
+上記の form1, form3 は代入可能で、form2, form4 は代入不可能です。
+
+
+** form 宣言
+
+上記の通り、form で扱える関数の型は一部だけです。
+
+form で扱えない関数を扱うには、次のように form 宣言をします。
+
+#+BEGIN_SRC lns
+form funcform( val:int ):int;
+fn sub( func:funcform ) {
+   print( func( 1 ) + 1 );
+}
+sub( fn ( val:int ):int { return val + 1; } ); // 3
+#+END_SRC
+
+この例では、 funcform を form 宣言しています。
+
+form 宣言によって funcform は、引数に int 型の val を持ち、
+戻り値に int 型を持つ関数型となります。
+
+* anonymous 関数
+
+anonymous 関数は、名前を持たない関数を定義します。
+
+次は anonymous 関数の例です。
+
+#+BEGIN_SRC lns
+fn sub( func:form ) {
+  func( 1 );
+}
+sub( fn ( val:int! ) { print( val ); } );  // 1
+#+END_SRC
+
+この例では、 anonymous 関数 ~fn ( val:int ) { print( val ); }~ を定義しています。
+
+この anonymous 関数を sub() の引数に渡すことで、
+sub() 内で anonymous 関数が実行されます。
+
+anonymous 関数宣言は式です。
+
+* 関数呼び出し
+
+関数オブジェクトに ~()~ を付けることで、その関数が実行されます。
+
+関数の仮引数と実引数の型は一致しなければなりません。
+なお、省略した実引数は nil として扱います。
+もし省略した実引数に対応する仮引数が nilable でなかった場合、エラーとなります。
+
+** 引数の省略  
+
+引数の省略については次の記事を確認してください。
+
+[[../defaultarg]]
+
+
+* 関数の制限
+
+LuneScript の関数は、引数の違いによるオーバーロードはできません。
+
+* まとめ
+
+LuneScript の関数をまとめると、
+
+- fn で宣言する
+- 複数の戻り値を持てる
+- 可変長の引数、戻り値をもてる
+- pub, global で外部モジュールに関数を公開する
+- 関数オブジェクトの型は、form 型と form 宣言を使用する
+- anonymous 関数がある
+- 省略した実引数には nil が入る
+- 関数オーバーロードはない
+  
+次回は nilable について説明します。

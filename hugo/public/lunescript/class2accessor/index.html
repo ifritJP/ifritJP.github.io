@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>accessor 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/class2accessor/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="accessor 編" />
+<meta property="og:description" content="今回はメンバの accessor について説明します。 accessor メンバの accessor (get,set) を簡単に作成できます。 次に例を示します。 class Test { pri let val1:int; pri let mut val2:int {pub,pub}; pri let val3:int {pub}; } let mut test = new Test( 1, 2, 3" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/class2accessor/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="accessor 編"/>
+<meta name="twitter:description" content="今回はメンバの accessor について説明します。 accessor メンバの accessor (get,set) を簡単に作成できます。 次に例を示します。 class Test { pri let val1:int; pri let mut val2:int {pub,pub}; pri let val3:int {pub}; } let mut test = new Test( 1, 2, 3"/>
+<meta itemprop="name" content="accessor 編">
+<meta itemprop="description" content="今回はメンバの accessor について説明します。 accessor メンバの accessor (get,set) を簡単に作成できます。 次に例を示します。 class Test { pri let val1:int; pri let mut val2:int {pub,pub}; pri let val3:int {pub}; } let mut test = new Test( 1, 2, 3">
+
+<meta itemprop="wordCount" content="1261">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>accessor 編</h1>
+
+<p>
+今回はメンバの accessor について説明します。
+</p>
+<h2 id="headline-1">
+accessor
+</h2>
+<p>
+メンバの accessor (get,set) を簡単に作成できます。
+</p>
+<p>
+次に例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   pri let val1:int;
+   pri let mut val2:int {pub,pub};
+   pri let val3:int {pub};
+}
+let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3
+test.set_val2( 10 );
+print( test.$val2, test.$val3 );  // 10 3</code></pre>
+</div>
+<p>
+上記例で val2 の定義は、 <code>pri let val2:int {pub,pub};</code> としています。
+</p>
+<p>
+この <code>{pub,pub}</code> は、 val2 の accessor を定義しています。
+これは、 getter, setter のアクセス制御を指定します。
+この指定によって、次のメソッドが内部的に作成されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn Test.get_val2(): int {
+   return self.val2;
+}
+pub fn Test.set_val2( val:int ) {
+   self.val2 = val;
+}</code></pre>
+</div>
+<p>
+getter にアクセスする場合、 $ を使って次のようにアクセスします。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3</code></pre>
+</div>
+<p>
+<code>test.$val2</code> は、 <code>test.get_val2()</code> のシンタックスシュガーです。
+</p>
+<p>
+上記の通り、
+accessor は「getter のアクセス制御」、「setter のアクセス制御」の順で宣言します。
+</p>
+<p>
+setter が不要な場合、「setter のアクセス制御」を省略します。
+</p>
+<p>
+なお、getter が不要で setter が必要な場合は、次のように宣言します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   pri let mut val1:int {non,pub};
+}</code></pre>
+</div>
+<p>
+この機能は、 setter を自動で生成しつつ、 getter をカスタマイズする時などに利用できます。
+</p>
+<p>
+LuneScript の accessor は、普通のメソッドです。
+C# のプロパティのような別のものではありません。
+</p>
+<h2 id="headline-2">
+getter の戻り値型
+</h2>
+<p>
+getter の戻り値型は、通常そのメンバの型と一致します。
+</p>
+<p>
+例えば次の Test のメンバ list の getter は、 <code class="verbatim">List&lt;int&gt;</code> 型の戻り値を返します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   pri let mut list:List&lt;int&gt; {pub};
+}
+let test = new Test( [] );
+foreach val in test.$list { 
+   print( val );
+}</code></pre>
+</div>
+<p>
+ここで、 <code class="verbatim">List&lt;int&gt;</code> 型は mutable な型であるので、
+外部操作でメンバ list の値を変更できることになります。
+</p>
+<p>
+しかし、外部操作での参照は許可しても変更を許可したくない場面が多くあります。
+</p>
+<p>
+そのような時、 getter の戻り値型を制御することが出来ます。
+制限する方法は次の 2 つあります。
+</p>
+<ul>
+<li>
+<p>
+immutable な型として返す
+</p>
+</li>
+<li>
+<p>
+super クラスや interface の型として返す
+</p>
+<h3 id="headline-3">
+immutable な型として返す
+</h3>
+</li>
+</ul>
+<p>
+getter を次のように宣言することで、
+mutable なメンバを immutable として返す getter を作成できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   pri let mut list:List&lt;int&gt; {pub&amp;};
+}</code></pre>
+</div>
+<p>
+この例では <code class="verbatim">pub&amp;</code> としています。
+getterの「アクセス制御」に <strong>&amp;</strong> を付加することで、その戻り値型は immutable になります。
+</p>
+<h3 id="headline-4">
+super クラスや interface の型として返す
+</h3>
+<p>
+getter を次のように宣言することで、
+メンバの型そのものではなく、 super クラスや interface の型として返すことが出来ます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Val {
+}
+class ValSub extend Val {
+}
+
+class Test {
+   pri let val1:ValSub {pub};
+   pri let val2:ValSub {pub:Val};
+}
+let test = new Test( new ValSub(), new ValSub() );
+let val1 = test.$val1;
+let val2 = test.$val2;</code></pre>
+</div>
+<p>
+ここで、 <code class="verbatim">Test.val1</code> の getter は <strong>pub</strong> ですが、
+Test.val2 の getter は <strong>pub:Val</strong> としています。
+</p>
+<p>
+これにより <code class="verbatim">test.$val1</code> は <code class="verbatim">ValSub</code> 型を返しますが、 <code class="verbatim">test.$val2</code> は Sub 型を返します。
+</p>
+<h2 id="headline-5">
+accessor のカスタマイズ
+</h2>
+<p>
+LuneScript の accessor は、 C# のプロパティのようなカスタマイズ機能
+(単純な setter/getter ではない処理を実装する機能)は用意していません。
+</p>
+<p>
+なぜならば、 LuneScript の accessor は、単なるメソッド宣言の簡略化機能であり、
+C# のプロパティのような「別物」ではないので、
+もしも独自処理を行なう accessor が必要ならばその処理を自分で作成すれば良いためです。
+</p>
+<p>
+なお、 独自の getter を定義した場合も $ は利用できます。
+</p>
+<p>
+$val は、get_val() のシンタックスシュガーで、accessor 専用ということではありません。
+</p>
+<h2 id="headline-6">
+まとめ
+</h2>
+<p>
+LuneScript の accessor は次の仕様です。
+</p>
+<ul>
+<li>
+<p>
+メンバ宣言と同時に宣言出来る
+</p>
+</li>
+<li>
+<p>
+getter, setter の順に宣言する
+</p>
+</li>
+<li>
+<p>
+getter にアクセスする場合、 メンバ名の前に $ を付加する。
+</p>
+</li>
+<li>
+<p>
+accessor は簡易メソッド定義であり、メソッドと異なる概念ではない。
+</p>
+</li>
+</ul>
+<p>
+次回は継承を説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/" title="トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+<a class="nav nav-next" href="https://example.com/lunescript/box/" title="Box 編">Next - Box 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class="active"><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

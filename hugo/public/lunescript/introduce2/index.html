@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Lua のトランスコンパイラ LuneScript の紹介 2 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/introduce2/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Lua のトランスコンパイラ LuneScript の紹介 2" />
+<meta property="og:description" content="LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。 subfile クラスの処理が大き" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/introduce2/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="Lua のトランスコンパイラ LuneScript の紹介 2"/>
+<meta name="twitter:description" content="LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。 subfile クラスの処理が大き"/>
+<meta itemprop="name" content="Lua のトランスコンパイラ LuneScript の紹介 2">
+<meta itemprop="description" content="LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。 subfile クラスの処理が大き">
+
+<meta itemprop="wordCount" content="2335">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Lua のトランスコンパイラ LuneScript の紹介 2</h1>
+
+<p>
+LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。
+</p>
+<p>
+LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。
+</p>
+<h2 id="headline-1">
+subfile
+</h2>
+<p>
+クラスの処理が大きくなると、それに伴ないファイルが肥大化する。
+</p>
+<p>
+ファイルの肥大化に良いことはないため、
+このような場合はクラスの責務を細分化し、
+それぞれのクラス毎にファイルを分けるのが一般的なリファクタリングである。
+</p>
+<p>
+しかし、綺麗に責務を分割できない場合や、
+分割すると他のモジュールに与える影響が大きくなってしまう事もよくある。
+このようにクラス分割による対応が出来ない場合の代替手段として、
+サブファイル化を行なう。
+</p>
+<p>
+サブファイル化は、
+本来 1 つのファイルで構成するモジュールを複数のファイルに分割することである。
+</p>
+<p>
+LuneScript は、原則 1 モジュール = 1 ファイルであるが、
+サブファイル化した場合は、1 モジュール = 複数ファイルとなる。
+</p>
+<p>
+サブファイルを利用するには、利用する側で次のように宣言する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">subfile use foo.bar.sub;</code></pre>
+</div>
+<p>
+また、サブファイル側では次のように宣言する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">subfile owner foo.bar.main;</code></pre>
+</div>
+<p>
+これにより、
+指定したモジュール(上記の例では foo.bar.sub)をサブファイルとして扱う。
+</p>
+<p>
+モジュールの宣言は、スクリプトの先頭で行なう必要がある。
+ただし、コメントは除く。
+</p>
+<p>
+subfile use は、1 つのファイル内で複数宣言できる。
+subfile owner は、一つだけ宣言できる。
+つまり、1 つのファイルは複数のサブファイルを持てるが、
+1つのサブファイルは1つのオーナからしか利用できない。
+</p>
+<p>
+subfile use を複数宣言した場合、宣言した順でサブファイルを処理する。
+</p>
+<p>
+サブファイルは C の #include と基本的には同じと考えて良いが、
+次の点で #include と異なる。
+</p>
+<ul>
+<li>
+<p>
+LuneScript ではファイルの最終位置に展開する。
+</p>
+</li>
+<li>
+<p>
+サブファイルは、 statement として完結している必要がある。
+</p>
+<ul>
+<li>
+</li>
+</ul>
+</li>
+<li>
+<p>
+サブファイルに対するメインファイルは 1 つでなければならない。
+</p>
+</li>
+<li>
+<p>
+サブファイルから、さらにサブファイルを利用することはできない。
+</p>
+</li>
+</ul>
+<p>
+例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
+subfile use sub1;
+subfile use sub2;
+
+pub let val = 1;
+//------ sub1.lns -------
+subfile owner main;
+
+pub let val1 = 1;
+//------ sub2.lns -------
+subfile owner main;
+
+pub let val2 = 1;</code></pre>
+</div>
+<p>
+main.lns は次のスクリプトと等価である。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
+pub let val = 1;
+pub let val1 = 1;
+pub let val2 = 1;</code></pre>
+</div>
+<h2 id="headline-2">
+module
+</h2>
+<p>
+Lua の外部モジュールは require で利用できる。
+しかし require の結果は stem 型であり、
+stem 型のまま LuneScript で扱うのは使い勝手が悪い。
+</p>
+<p>
+module は、外部モジュールの型を定義する。
+</p>
+<p>
+詳しくは次の記事を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+トランスコンパイラ LuneScript 入門 - require/module 編
+</p>
+<ul>
+<li>
+<p>
+<a href="../require">../require</a>
+</p>
+</li>
+</ul>
+<h3 id="headline-3">
+glue コード自動生成
+</h3>
+</li>
+</ul>
+<p>
+Lua の外部モジュールには、次の 2 つのケースがある。
+</p>
+<ul>
+<li>
+<p>
+Lua スクリプトで構成されるケース
+</p>
+</li>
+<li>
+<p>
+C 等の Native Library を利用するケース
+</p>
+</li>
+</ul>
+<p>
+Lua から Native Library を利用するには、
+Lua 用のインタフェースを持つ glue が必要である。
+</p>
+<p>
+LuneScript は、この glue を自動生成する機能を持つ。
+</p>
+<p>
+LuneScript の glue 自動生成機能は、
+swig に代表される C/C++ 等のソースから Lua の glue を自動生成する機能ではなく、
+LuneScript で module 宣言したモジュールの glue コードを自動生成する機能である。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">swig:		C/C++ ==&gt; glue
+LuneScript:	Lns   ==&gt; glue</code></pre></div>
+</div>
+<h4 id="headline-4">
+使用方法
+</h4>
+<p>
+glue を生成するには、 module 定義時に glue キーワードを指定する。
+</p>
+<p>
+次は、 test.ext モジュールの glue を生成するサンプルである。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">module External require &#34;test.ext&#34; glue &#39;hoge_&#39; {
+   pub static fn create( val:int ): External;
+   pub fn add( val:int ):int;
+}
+
+let obj = External.create( 1 );
+print( obj.add( 10 ) ); // 11</code></pre>
+</div>
+<p>
+ここで指定した &#34;test.ext&#34; と &#39;hoge_&#39; は、 glue を生成する際に利用される。
+</p>
+<p>
+このソースから glue コードを生成するには、次のコマンドを実行する。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua lune/base/base.lua src.lns glue [dir]</code></pre></div>
+</div>
+<p>
+ここで、 src.lns は入力元のソースで、 dir は出力先のディレクトリのパスを指定する。
+</p>
+<p>
+このコマンドによって、次の 2 つの glue コードが生成される。
+</p>
+<ul>
+<li>
+<p>
+test_ext_glue.c
+</p>
+</li>
+<li>
+<p>
+test_ext_glue.h  
+</p>
+</li>
+</ul>
+<p>
+test_ext_glue.c は、次の内容を持つ。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&#34;test_ext_glue.h&#34;</span><span class="cp">
+</span><span class="cp"></span><span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+<span class="k">static</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">s_full_class_name</span> <span class="o">=</span> <span class="s">&#34;test_ext&#34;</span><span class="p">;</span>
+<span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">s_lua_func_info</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="p">{</span> <span class="s">&#34;create&#34;</span><span class="p">,</span> <span class="n">lns_glue_create</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span> <span class="p">}</span>
+<span class="p">};</span>
+<span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">s_lua_method_info</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="p">{</span> <span class="s">&#34;add&#34;</span><span class="p">,</span> <span class="n">lns_glue_add</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span> <span class="p">}</span>
+<span class="p">};</span>
+<span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_get_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">index</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="n">luaL_checkudata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">s_full_class_name</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">lns_glue_setupObjMethod</span><span class="p">(</span>
+    <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">pName</span><span class="p">,</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="o">*</span> <span class="n">pReg</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">luaL_newmetatable</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="n">pName</span> <span class="p">);</span>
+    <span class="n">lua_pushvalue</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+    <span class="n">lua_setfield</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#34;__index&#34;</span><span class="p">);</span>
+
+<span class="cp">#if LUA_VERSION_NUM &gt;= 502
+</span><span class="cp"></span>    <span class="n">luaL_setfuncs</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="n">pReg</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+    <span class="n">lua_pop</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="cp">#else
+</span><span class="cp"></span>    <span class="n">luaL_register</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">pReg</span> <span class="p">);</span>
+
+    <span class="n">lua_pop</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="cp">#endif
+</span><span class="cp"></span><span class="p">}</span>
+
+<span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_new_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">size</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">void</span> <span class="o">*</span> <span class="n">pBuf</span> <span class="o">=</span> <span class="n">lua_newuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size</span> <span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="n">pBuf</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+<span class="cp">#if LUA_VERSION_NUM &gt;= 502
+</span><span class="cp"></span>    <span class="n">luaL_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span> <span class="p">);</span>
+<span class="cp">#else
+</span><span class="cp"></span>    <span class="n">luaL_getmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span> <span class="p">);</span>
+    <span class="n">lua_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span> <span class="p">);</span>
+<span class="cp">#endif
+</span><span class="cp"></span>
+    <span class="k">return</span> <span class="n">pBuf</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">luaopen_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">lns_glue_setupObjMethod</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span><span class="p">,</span> <span class="n">s_lua_method_info</span> <span class="p">);</span>
+
+<span class="cp">#if LUA_VERSION_NUM &gt;= 502
+</span><span class="cp"></span>    <span class="n">luaL_newlib</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_lua_func_info</span> <span class="p">);</span>
+<span class="cp">#else
+</span><span class="cp"></span>    <span class="n">luaL_register</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span><span class="p">,</span> <span class="n">s_lua_func_info</span> <span class="p">);</span>
+<span class="cp">#endif
+</span><span class="cp"></span>    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">){</span>
+  <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">val</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">2</span> <span class="p">);</span>
+  <span class="k">return</span> <span class="n">hoge_add</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">){</span>
+  <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">val</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+  <span class="k">return</span> <span class="n">hoge_create</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+この test_ext_glue.c は、
+LuneScript で定義している create() と add() のメソッドを Lua に登録するコードである。
+</p>
+<p>
+LuneScript で定義している create() と add() に対応する関数は、
+lns_glue_create() と lns_glue_add() が対応している。
+</p>
+<p>
+なお、この関数はそれぞれ hoge_create() と hoge_add() をコールしている。
+この <strong>hoge_</strong> は、 LuneScript のコード上で指定した glue の文字列が利用される。
+</p>
+<p>
+test_ext_glue.h は次の内容を持つ。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;lauxlib.h&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">int</span> <span class="nf">luaopen_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_get_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">index</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_new_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">size</span> <span class="p">);</span></code></pre></div>
+</div>
+<p>
+ここで、hoge_create() と hoge_add() は次の型となっている。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span></code></pre></div>
+</div>
+<p>
+第一引数の lua_State * と戻り値の int は、
+Lua の glue インタフェースと同じ意味を持つ。
+</p>
+<p>
+第二引数の int は、 LuneScript で定義しているメソッドの引数が入る。
+これは、 LuneScript で自動生成している test_ext_glue.c が
+Lua のスタックから値を取り出して値を設定している。
+</p>
+<p>
+Lua の glue では、関数引数を得るため API をコールする必要があるが、
+LuneScript で glue を生成した場合は、
+glue コード内で関数引数を得る API を実行している。
+これにより、 ユーザは関数引数を得る API をコールする必要はない。
+</p>
+<p>
+ただし、LuneScript 側で定義しているメソッドの引数の型が
+int(int!), real(real!), str(str!) 型以外だった場合、
+LuneScript で生成する glue では対応できないため、
+別途ユーザ側での対応が必要である。
+</p>
+<p>
+また glue の戻り値については、
+ユーザ側で Lua の glue インタフェースと同じ制御を行なう必要がある。
+</p>
+<p>
+hoge_create() と hoge_add() を別途定義することで、
+test.ext モジュールが完成する。
+</p>
+<p>
+例えば次のように定義する(glue.c)。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// glue.c
+</span><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;test_ext_glue.h&gt;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">glue_t</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">hoge_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">glue_t</span> <span class="o">*</span> <span class="n">pGlue</span> <span class="o">=</span> <span class="p">(</span><span class="n">glue_t</span><span class="o">*</span><span class="p">)</span><span class="n">lns_glue_new_test_ext</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span> <span class="n">glue_t</span> <span class="p">)</span> <span class="p">);</span>
+    <span class="n">pGlue</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">hoge_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">glue_t</span> <span class="o">*</span> <span class="n">pGlue</span> <span class="o">=</span> <span class="n">lns_glue_get_test_ext</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+    <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="n">pGlue</span><span class="o">-&gt;</span><span class="n">val</span> <span class="p">);</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+ちなみにビルドは次のように行なう。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ gcc -std=c99 -fPIC -shared -o test/ext.so glue.c test_ext_glue.c</code></pre></div>
+</div>
+<h2 id="headline-5">
+nil 条件演算子
+</h2>
+<p>
+nil 条件演算子 については、次を参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+トランスコンパイラ LuneScript 入門 - nil 条件演算子 編
+</p>
+<ul>
+<li>
+<p>
+<a href="../nilcond">../nilcond</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/import/" title="import/provide 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - import/provide 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/introduce3/" title="Lua のトランスコンパイラ LuneScript の紹介 3">Next - Lua のトランスコンパイラ LuneScript の紹介 3 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

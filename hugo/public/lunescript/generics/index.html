@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>generics 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/generics/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="generics 編" />
+<meta property="og:description" content="ここでは、 LuneScript がサポートする Generics について説明します。 LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、 ユーザ定義の関数やクラスでも Generics をサ" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/generics/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="generics 編"/>
+<meta name="twitter:description" content="ここでは、 LuneScript がサポートする Generics について説明します。 LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、 ユーザ定義の関数やクラスでも Generics をサ"/>
+<meta itemprop="name" content="generics 編">
+<meta itemprop="description" content="ここでは、 LuneScript がサポートする Generics について説明します。 LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、 ユーザ定義の関数やクラスでも Generics をサ">
+
+<meta itemprop="wordCount" content="2687">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>generics 編</h1>
+
+<p>
+ここでは、 LuneScript がサポートする Generics について説明します。
+</p>
+<p>
+LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、
+ユーザ定義の関数やクラスでも Generics をサポートしました。
+</p>
+<h2 id="headline-1">
+関数
+</h2>
+<p>
+関数の Generics は次のように宣言します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
+   return (@ val);
+}</code></pre>
+</div>
+<p>
+上記サンプルを見ればだいたい理解できると思いますが、
+関数宣言する際に 関数名 + <code>&lt;仮型パラメータ&gt;</code> で宣言します。
+</p>
+<p>
+ここで func&lt;T&gt;() は、引数の値を持つ Set&lt;T&gt; を生成する関数です。
+</p>
+<p>
+仮型パラメータは、複数指定することができます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func&lt;T1,T2&gt;( val1:T1, val2:T2 ) : Set&lt;T1&gt;, List&lt;T2&gt; {
+   return (@ val1), [ val2 ];
+}</code></pre>
+</div>
+<h2 id="headline-2">
+nilable, mutable
+</h2>
+<p>
+仮型パラメータは、通常の型と同じく nilable や mutable の概念を持ちます。
+</p>
+<p>
+これにより、次のような処理を書けます。
+</p>
+<div class="src src-lsn">
+<pre><code class="language-lsn" data-lang="lsn">fn func1&lt;T&gt;( val:T ) : T {
+   return val;
+}
+fn func2&lt;T&gt;( val:T ) : &amp;T {
+   return val;
+}
+fn func3&lt;T&gt;( val:T ) : T! {
+   return val;
+}
+let mut test1 = func1( [ 1, 2 ] );
+test1.insert( 1 );
+let mut test2 = func2( [ 1, 2 ] );
+test2.insert( 1 ); // error test2 is not mutable
+let mut test3 = func3( [ 1, 2 ] );
+test3.insert( 1 ); // error test3 is nilable</code></pre>
+</div>
+<ul>
+<li>
+<p>
+func1 は、引数をそのままの型 T で返します。
+</p>
+</li>
+<li>
+<p>
+func2 は、引数を immutable 型 &amp;T で返します。
+</p>
+</li>
+<li>
+<p>
+func3 は、引数を nilable 型 T! で返します。
+</p>
+</li>
+</ul>
+<p>
+これにより、 test1.insert() は可能ですが、
+test2, test3 はコンパイルエラーとなります。
+</p>
+<p>
+なお、ここで気を付けなければならないことは、
+仮型パラメータを使用する時は nilable や mutable を利用できますが、
+仮型パラメータ名を宣言するときは使用できません。
+つまり、次のような <code>func1&lt;T!&gt;</code> はエラーとなります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func1&lt;T!&gt;( val:T ) : T {
+   return val;
+}</code></pre>
+</div>
+<p>
+また、仮型パラメータに nilable は利用できません。
+つまり、次の場合エラーします。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func1&lt;T&gt;( val:T ) : T {
+   return val;
+}
+let val:int! = 1;
+print( func1( val ) ); // error type mismatch</code></pre>
+</div>
+<p>
+この例では、 func1( val ) によって int! が func1() に与えられますが、
+<code>func1&lt;T&gt;(val:T)</code> の val は T であり、
+仮型パラメータは nilable を利用できないためエラーとなります。
+</p>
+<p>
+このような処理を行ないたい場合は、次のように宣言します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func1&lt;T&gt;( val:T! ) : T {
+   return unwrap val;
+}
+let val:int! = 1;
+print( func1( val ) ); // ok</code></pre>
+</div>
+<p>
+つまり、 <code>fn func1&lt;T&gt;( val:T! )</code> とすることで、
+func1() の引数が nilable であることを宣言します。
+</p>
+<p>
+しかし、nilable の値を扱えないと不便なこともあります。
+そのような場合に備えて Nilable&lt;T&gt; を用意しています。
+</p>
+<p>
+これについては、後日別途説明します。
+</p>
+<h3 id="headline-3">
+サンプル
+</h3>
+<p>
+Generics を利用すると、次のような処理が書けます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
+   return (@ val);
+}
+foreach val in func( &#34;foo&#34; ) {
+   print( val .. &#34;bar&#34; );  // foobar
+}
+foreach val in func( 1 ) {
+   print( val + 100 );  // 101
+}</code></pre>
+</div>
+<p>
+func( &#34;foo&#34; ) は、 (@ &#34;foo&#34; ) の Set&lt;str&gt; を生成し、
+func( 1 ) は、 (@ 1 ) の Set&lt;int&gt; を生成します。
+</p>
+<p>
+上記を見ると分かる通り、コールした引数に応じて型パラメータを決定しています。
+</p>
+<h4 id="headline-4">
+効果
+</h4>
+<p>
+Generics ではなく、stem を利用することで次のように似たような処理を記載できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) : Set&lt;stem&gt; {
+   return (@ val);
+}
+foreach val in func( &#34;foo&#34; ) {
+   print( val@@str .. &#34;bar&#34; );
+}
+foreach val in func( 1 ) {
+   print( val@@int + 100 );
+}</code></pre>
+</div>
+<p>
+しかしこの場合、 str や int などの型情報が stem に丸められてしまいます。
+stem に丸められてしまうので <code>@@str</code> や <code>@@int</code> のキャストが必要になります。
+</p>
+<p>
+キャストするのは不便ですし、なによりも非常に危険です。
+</p>
+<p>
+Generics を利用することで、キャストを使わずに安全にアクセスできます。
+</p>
+<h2 id="headline-5">
+クラス
+</h2>
+<p>
+クラスの Generics は次のように宣言します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; {
+   let val:T;
+   pub fn func() : List&lt;T&gt; {
+      return [ self.val ];
+   }
+}</code></pre>
+</div>
+<p>
+クラスの場合、クラス宣言の名前を指定する際に仮型パラメータを指定します。
+</p>
+<p>
+なお、クラス宣言の外にメソッドを宣言する場合、
+次のように仮型パラメータの宣言は不要です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn Test.func2() : Set&lt;T&gt; {
+   return (@ self.val );
+}</code></pre>
+</div>
+<p>
+Generics クラスのインスタンスは次のように生成します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let test = new Test&lt;str&gt;( &#34;abc&#34; );</code></pre>
+</div>
+<p>
+なお、コンストラクタの引数に全ての仮パラメータを使用している場合、
+次のように実型パラメータを省略することも可能です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let test = new Test( &#34;abc&#34; );</code></pre>
+</div>
+<h2 id="headline-6">
+メソッド
+</h2>
+<p>
+メソッドは、クラスの仮型パラメータと、メソッドの仮型パラメータを両方持てます。
+</p>
+<p>
+次のサンプルは Test.func() メソッドは、
+クラスの仮型パラメータ T と、メソッドの仮型パラメータ T2 を持っています。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; {
+   let val:T;
+   pub fn func&lt;T2&gt;(val:T2) : Map&lt;T,T2&gt; {
+      return { self.val: val };
+   }
+}
+let test = new Test( &#34;abc&#34;);
+foreach val, key in test.func( 1 ) {
+   print( key .. &#34;xyz&#34;, val + 10 );
+}
+foreach val, key in test.func( &#34;ABC&#34; ) {
+   print( key .. &#34;xyz&#34;, val .. &#34;XYZ&#34; );
+}</code></pre>
+</div>
+<h2 id="headline-7">
+型パラメータの制約
+</h2>
+<p>
+実型パラメータには、 nil 以外の全ての型を指定できます。
+</p>
+<p>
+このため、 Generics なクラスや関数内で仮型パラメータ型の値に対する処理は
+<code>==</code> や <code class="verbatim">~=</code> などの型に依存しない演算に限られます。
+</p>
+<p>
+これだと、Generics 内の処理で効果的な処理を書けません。
+</p>
+<p>
+そこで、型パラメータの制約を利用します。
+</p>
+<h3 id="headline-8">
+サンプル
+</h3>
+<p>
+次は、型パラメータ制約のサンプルです。
+</p>
+<p>
+ここでは、 <code>class Test&lt;T:Val&gt;</code> と宣言することで、
+Test クラスの仮型パラメータは Val クラスに限られます。
+</p>
+<p>
+これにより、 Test.sub() メソッド内で val の値に対し、
+Val クラスのメソッド func() をコールできるようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test&lt;T:Val&gt; {
+   let val:T;
+   pub fn sub() {
+      print( &#34;this is &#34; .. self.val.func() );
+   }
+}</code></pre>
+</div>
+<p>
+次は、この Test クラスを使ったサンプルです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test&lt;T:Val&gt; {
+   let val:T;
+   pub fn sub() {
+      print( &#34;this is &#34; .. self.val.func() );
+   }
+}
+
+class Val1 extend Val {
+   pub override fn func(): str {
+      return &#34;val1&#34;;
+   }
+}
+
+class Val2 extend Val {
+   pub override fn func(): str {
+      return  &#34;val2&#34;;
+   }
+}
+
+fn func( test:Test ) {
+   test.sub();
+}
+
+func( new Test( new Val1() ) );  // this is val1
+func( new Test( new Val2() ) );  // this is val2</code></pre>
+</div>
+<p>
+このサンプルの構成は次になります。
+</p>
+<ul>
+<li>
+<p>
+Val1, Val2 クラスは、Val クラスを継承したクラス
+</p>
+</li>
+<li>
+<p>
+func() 関数は Test 型の引数 test を持ち、 test.sub() メソッドをコール。
+</p>
+</li>
+<li>
+<p>
+<code>new Test( new Val1() )</code>, <code>new Test( new Val2() )</code> によって、
+Val1 と Val2 の実型パラメータの Test 型のインスタンスを生成し func() 関数をコール
+</p>
+</li>
+</ul>
+<p>
+これにより、 Val1.func(), Val2.func() がコールされ
+<code>this is val1</code>, <code>this is val2</code> が 出力される。
+</p>
+<p>
+なお、 <code>Test&lt;T:Val&gt;</code> の T は Val である必要があるので、
+例えば <code>new Test&lt;&#34;abc&#34;&gt;</code> のような指定はエラーになります。
+</p>
+<p>
+なぜならば &#34;abc&#34; は str 型であり、 str 型は Val 型ではないからです。
+</p>
+<p>
+ちなみに仮型パラメータの制約の syntax は class の extend と同じです。
+</p>
+<p>
+つまり次のようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Hoge&lt;T:SuperClass(IF,...)&gt; {
+}</code></pre>
+</div>
+<p>
+ここで SuperClass はクラスで、IF はインタフェースです。
+</p>
+<p>
+SuperClass, IF は、それぞれ省略可能です。
+</p>
+<h2 id="headline-9">
+generics クラスの Mapping
+</h2>
+<p>
+LuneScript は、
+クラスのインスタンスを Map オブジェクトに変換する Mapping 機能を持ちます。
+</p>
+<p>
+Mapping に関しては、次の記事を参照してください。
+</p>
+<p>
+https://qiita.com/dwarfJP/items/070a3d31c57903cb6933
+</p>
+<p>
+あるクラスを Mapping するには、
+そのクラスが Mapping インタフェースを extend する必要があります。
+</p>
+<p>
+次は簡単な例です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; extend (Mapping) {
+   let txt:str;
+   pub fn func( val:T ) {
+      print( self.txt, val );
+   }
+}
+
+let test = new Test&lt;int&gt;( &#34;hoge&#34; );
+let map = test._toMap();
+if! let test2 = Test&lt;int&gt;._fromMap( map ) {
+   test2.func( 1 );
+}</code></pre>
+</div>
+<p>
+Test&lt;T&gt; クラスは Mapping を extend しています。
+これにより、Test&lt;T&gt; クラスは Mapping 可能になります。
+</p>
+<p>
+上記の場合は、 Generics でない通常のクラスの場合と何も変りません。
+これは、仮型パラメータ型のメンバに持たないためです。
+</p>
+<p>
+次のように仮型パラメータ型のメンバを持った場合は、エラーになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; extend (Mapping) {
+   let txt:T;
+}</code></pre>
+</div>
+<p>
+なぜならば、あるクラスが Mapping を extend するには、
+そのクラスが保持する全てのメンバが Mapping 可能でなければならないのに対し、
+メンバ txt の型である仮型パラメータ T は、nilable 以外の全ての型になり得るからです。
+</p>
+<p>
+これを回避するには、
+メンバの型として使用する仮型パラメータに Mapping の制約を設定します。
+</p>
+<p>
+具体的には次の通り <code>Test&lt;T:(Mapping)&gt;</code> とします。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test&lt;T:(Mapping)&gt; extend (Mapping) {
+   let val:T {pub};
+}
+
+let test = new Test( &#34;abc&#34; );
+let map = test._toMap();
+if! let test2 = Test&lt;str&gt;._fromMap( map ) {
+   print( test2.$val .. &#34;xyz&#34; );
+}</code></pre>
+</div>
+<p>
+これにより、 Generics クラスが Mapping 可能になります。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/enum/" title="enum 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - enum 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/tutorial3.hello/" title="Hello world">Next - Hello world <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

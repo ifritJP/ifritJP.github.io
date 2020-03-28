@@ -1,0 +1,203 @@
+#+TITLE: 繰り返し構文 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の繰り返し構文について説明します。
+
+* 構文一覧
+
+LuneScript は、次の繰り返し構文をサポートします。
+
+- while
+- repeat
+- for
+- apply
+- foreach
+- forsort  
+
+** while, repeat
+
+while, repeat は次のように利用します。
+
+#+BEGIN_SRC lns
+let mut val = 1;
+while val < 10 {
+   val = val + 1;
+}
+print( val ); // 10
+repeat {
+   let mut endFlag = false;
+   val = val + 1;
+   if val >= 20 {
+      endFlag = true;
+   }
+} endFlag;
+print( val ); // 20
+#+END_SRC
+
+while は式が成立している間、ブロックを処理し、
+repeat は式が不成立の間、ブロックを処理します。
+
+repeat の式では、ブロック内部のスコープの変数を利用できます。
+
+** 無限ループ
+
+無限ループを利用する場合、 while true {} を使用してください。
+ここで true はプリミティブな値である必要があります。
+
+例えば次のようにプリミティブな値ではなく、
+変数を使用している場合は無限ループとは扱いません。
+
+#+BEGIN_SRC lns
+let flag = true;
+while flag {
+}
+#+END_SRC
+
+無限ループと見做されないことに何の問題があるかというと、
+意図したフロー解析ができなくなる、ということです。
+
+例えば次のような場合、
+LuneScript では無限ループの後の print() 文は処理されないということを判定します。
+
+#+BEGIN_SRC lns
+while true {
+}
+print( "hoge" );
+#+END_SRC
+
+しかし、上記の true がプリミティブな値でない場合、
+無限ループではないと判断し、 print() 文は処理される可能性があるものとします。
+
+処理されないはずのものが処理されるものとして判定されてしまうと、
+本来コンパイルエラーとなるものがエラーにならず、コードの不具合を見逃す可能性があります。
+
+必ず無限ループには、プリミティブな true を使用してください。
+
+なお、 repeat {} false も無限ループとしては扱っていません。
+
+
+Rust のように無限ループ専用の命令を用意する方が良いかとも思いましたが、
+現状はこの仕様となっています。
+
+** for
+
+次のように利用します。
+
+#+BEGIN_SRC lns
+for count = 1, 10, 1 {
+  print( count );
+}
+#+END_SRC
+
+基本的に Lua と同じ仕様です。
+上記の例では count を 1 から 10 まで 1 ずつインクリメントしてブロックを処理します。
+
+注意が必要なのは、 1, 10, 1 という値は、
+for 開始時に一度だけ評価されるということです。
+
+つまり、次のようなことをやると、期待と異なる動作になります。
+
+#+BEGIN_SRC lns
+let mut addVal = 1;
+for count = 1, 10, addVal {
+  addVal = addVal + 1;
+  print( count );
+}
+#+END_SRC
+
+なお、インクリメントする値を省略した場合は 1 が利用されます。
+
+** apply
+
+apply は、Lua の for in との互換用命令です。
+
+次のように利用します。
+
+#+BEGIN_SRC lns
+apply txt of string.gmatch( modulePath, '[^%.]+' ) {
+   print( txt );
+}
+#+END_SRC
+
+なお、 ~apply val of exp {}~ の exp に与える式は、関数呼び出しでなければなりません。
+これは現状の制限です。
+
+** foreach
+
+foreach は、リスト、配列、マップの要素を列挙する関数です。
+
+次のように利用します。
+
+#+BEGIN_SRC lns
+foreach val, index in [ 1, 2, 3 ] {
+   print( index, val );
+}
+foreach val, index in [@ 10, 20, 30 ] {
+   print( index, val );
+}
+foreach val, key in { "a":100, "b":200, "c":300 } {
+   print( key, val );
+}
+foreach val in (@ 1, 2, 3 ) {
+   print( val );
+}
+#+END_SRC
+
+*Set は 値のみ列挙します*
+
+なお リスト、配列の index, マップの key は、次のように省略することができます。
+
+#+BEGIN_SRC lns
+foreach val in [ 1, 2, 3 ] {
+   print( val );
+}
+foreach val in [@ 10, 20, 30 ] {
+   print( val );
+}
+foreach val in { "a":100, "b":200, "c":300 } {
+   print( val );
+}
+#+END_SRC
+
+** forsort
+
+Set, Map を foreach で要素を列挙した場合、要素の列挙順は不定となります。
+
+forsort は、 Set, Map の要素を列挙する際に、キーでソート(昇順)した順で列挙します。
+
+#+BEGIN_SRC lns
+forsort val, key in { "b":200, "c":300, "a":100 } {
+   print( key, val );
+}
+forsort val in (@ 2, 4, 1, 0 ) {
+   print( val );
+}
+#+END_SRC
+
+Map の forsort は key を省略できます。
+
+#+BEGIN_SRC lns
+forsort val in { "b":200, "c":300, "a":100 } {
+   print( val );
+}
+#+END_SRC
+
+** break
+
+break は、一番内側にある繰り返し制御文を抜けます。
+
+continue はありません。
+   
+
+* まとめ
+
+LuneScript の一般制御構文は、基本的に Lua と同じです。
+
+主な違いは、リスト等を処理する foreach, forsort を追加していることです。
+
+次回は関数を説明します。

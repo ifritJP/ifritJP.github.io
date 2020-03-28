@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>enum 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/enum/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="enum 編" />
+<meta property="og:description" content="今回は、 LuneScript の enum 値について説明します。 enum LuneScript の enum は、値の集合に名前を付けて管理することが出来ます。 enum として扱える値の型は次の通りです。 int real str 1 つ" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/enum/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="enum 編"/>
+<meta name="twitter:description" content="今回は、 LuneScript の enum 値について説明します。 enum LuneScript の enum は、値の集合に名前を付けて管理することが出来ます。 enum として扱える値の型は次の通りです。 int real str 1 つ"/>
+<meta itemprop="name" content="enum 編">
+<meta itemprop="description" content="今回は、 LuneScript の enum 値について説明します。 enum LuneScript の enum は、値の集合に名前を付けて管理することが出来ます。 enum として扱える値の型は次の通りです。 int real str 1 つ">
+
+<meta itemprop="wordCount" content="1748">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>enum 編</h1>
+
+<p>
+今回は、 LuneScript の enum 値について説明します。
+</p>
+<h2 id="headline-1">
+enum
+</h2>
+<p>
+LuneScript の enum は、値の集合に名前を付けて管理することが出来ます。
+</p>
+<p>
+enum として扱える値の型は次の通りです。
+</p>
+<ul>
+<li>
+<p>
+int
+</p>
+</li>
+<li>
+<p>
+real
+</p>
+</li>
+<li>
+<p>
+str  
+</p>
+</li>
+</ul>
+<p>
+1 つの enum の値域は、複数の値から定義できますが、
+値の型は統一する必要があります。
+</p>
+<p>
+つまり、 int の値を持つ enum は、 real や str の値は定義できません。
+</p>
+<h3 id="headline-2">
+定義方法
+</h3>
+<p>
+enum は次のように定義します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 );  // 0, 1, 2</code></pre>
+</div>
+<p>
+この例では、 val0, val1, val2 を定義し、それぞれ 0, 1, 2 となります。
+</p>
+<p>
+enum の値を指定する場合は、次のように定義します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0 = 10,
+  val1,
+  val2 = 20,
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 ); // 10, 11, 20</code></pre>
+</div>
+<p>
+enum の値を省略した場合、次に従って値を assign します。
+</p>
+<ul>
+<li>
+<p>
+直前の enum 値に 1 を加算した値を assign する。
+</p>
+</li>
+<li>
+<p>
+先頭の enum 値は 0 
+</p>
+</li>
+</ul>
+<p>
+なお、 enum 値に文字列を assign する場合、値を省略することは出来ません。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0 = &#34;abc&#34;,
+  val1 = &#34;def&#34;,
+  val2 = &#34;ghi&#34;,
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 ); // abc def ghi</code></pre>
+</div>
+<p>
+enum 値に設定する値には、式を指定出来ます。
+ただし、この式はプリミティブな値だけを使用している必要があります。
+</p>
+<p>
+例えば次のような場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func(): int {
+  return 100;
+}
+enum TestEnum {
+  val0,
+  val1 = val0 + 10,  // 10
+  val2 = func(),     // error
+}</code></pre>
+</div>
+<p>
+<code>val = val0 + 10</code> は、プリミティブな値を利用しているため指定可能ですが、
+<code>val2 = func()</code> は、プリミティブな値ではないためエラーとなります。
+</p>
+<h3 id="headline-3">
+使用方法
+</h3>
+<p>
+定義した enum は、次のように型として利用できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+print( func( TestEnum.val1 ) ); // 101</code></pre>
+</div>
+<p>
+ここで func() の引数 val は TestEnum 型です。
+これにより、 func() の引数 val は単なる int ではなく、
+値域が制限された int とすることが出来ます。
+</p>
+<p>
+enum 値を指定する場合は、
+<code>TestEnum.val</code> のように <code>enum 型シンボル.enum 値シンボル</code> となります。
+</p>
+<h3 id="headline-4">
+省略指定
+</h3>
+<p>
+基本的に enum 値を指定するには、
+<code>enum 型シンボル.enum 値シンボル</code> となりますが、
+代入先の型が enum 型であることが分っている場合、
+<code>enum 型シンボル</code> を省略することが出来ます。
+</p>
+<p>
+例えば次の場合、 func() の引数は TestEnum 型であることが分っているので、
+TestEnum.val1 ではなく、 .val1 として指定できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+print( func( .val1 ) ); // 101</code></pre>
+</div>
+<p>
+なお、 外部モジュールで定義されている enum 型を省略指定する場合、
+その外部モジュールを import している必要があります。
+</p>
+<p>
+import については後日説明します。
+</p>
+<h3 id="headline-5">
+enum 値の変換
+</h3>
+<p>
+enum 値は、enum 値として以外に、定義した値としても利用できます。
+</p>
+<p>
+これは上の例の val + 100 を見ると分かると思いますが、
+val は TestEnum で定義した enum 値ですが、それは 0, 1, 2 のいずれかでもあります。
+(上の例では val1 を渡しているので 1 になる)。
+よって <code>val + 100</code> は、 1 + 100 となり結果的に 101 となります。
+</p>
+<p>
+一方で次の例を見てください。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( val ); // error</code></pre>
+</div>
+<p>
+この例の <code>func( val )</code> はエラーとなります。
+</p>
+<p>
+この場合 val は 1 で、 TestEnum において val1 が 1 となりますが、
+val の型が int であり、 TestEnum とは型が異なるためエラーとなります。
+</p>
+<p>
+enum 値に assign している型の値から、
+対応する enum 値に変換するには、次のように _from() 関数を利用します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( unwrap TestEnum._from( val ) );</code></pre>
+</div>
+<p>
+ここで <code>func( unwrap TestEnum._from( val ) )</code> は、
+TestEnum._from() によって val に対応する TestEnum の enum 値 TestEnum.val1 を取得し、
+それを func() に渡しています。
+</p>
+<p>
+unwrap については後日説明します。
+</p>
+<h3 id="headline-6">
+enum 値名
+</h3>
+<p>
+enum 値はシンボルに値を assign します。
+</p>
+<p>
+enum 値は $_txt によって、このシンボル名を動的に取得できます。
+</p>
+<p>
+例えば次の場合、TestEnum.val1 が出力されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ) {
+   print( val.$_txt ); 
+}
+func( .val1 ); // TestEnum.val1</code></pre>
+</div>
+<p>
+$_txt によって、 enum 値のシンボル名を取得しています。
+</p>
+<p>
+$ については後述しますが、関数呼び出しのシンタックスシュガーです。
+</p>
+<h4 id="headline-7">
+$_txt の注意点
+</h4>
+<p>
+$_txt には次の注意点があります。
+</p>
+<p>
+<strong>「同値の enum 値が複数存在する場合、 $_txt がどの enum 値のシンボル名を返すか未定義」</strong>
+</p>
+<p>
+例えば次の場合、print() が TestEnum.val1, TestEnum.val2 のどれを出力するかは未定義です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1 = 10,
+  val2 = 10,
+}
+fn func( val:TestEnum ) {
+   print( val.$_txt ); 
+}
+func( .val1 ); // TestEnum.???</code></pre>
+</div>
+<h3 id="headline-8">
+全 enum 値リスト
+</h3>
+<p>
+$_allList で、enum が定義している全 enum のリストを取得できます。
+</p>
+<p>
+例えば次のコードの場合、 
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+foreach val in TestEnum.$_allList {
+   print( val.$_txt );
+}</code></pre>
+</div>
+<p>
+次を出力します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">TestEnum.val0
+TestEnum.val1
+TestEnum.val2</code></pre></div>
+</div>
+<h2 id="headline-9">
+代数的データ型
+</h2>
+<p>
+enum 型は、 int, real, str のいずれかの値をグルーピングして、値域を制限できますが、
+一方、代数的データ型は enum 型をより一般的にしたもので、
+int, real, str に限らず全ての型をグルーピングすることが出来ます。
+</p>
+<p>
+詳しくは次の記事で説明しています。
+</p>
+<p>
+https://qiita.com/dwarfJP/private/a0b7bbbdfdfe3cc53f05
+</p>
+<h2 id="headline-10">
+まとめ
+</h2>
+<p>
+enum を利用することで、値域を簡単に定義することが出来、
+enum を楽に扱うイマドキな手段を提供しています。
+</p>
+<p>
+次回は、変数について説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/box/" title="Box 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Box 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/generics/" title="generics 編">Next - generics 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

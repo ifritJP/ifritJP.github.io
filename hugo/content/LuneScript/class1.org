@@ -1,0 +1,614 @@
+#+TITLE: クラス 基本 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、クラスによるオブジェクト指向プログラミングをサポートします。
+
+* クラスの仕様
+
+LuneScript のクラスは、次をサポートします。
+
+- アクセス制御  
+- accessor
+- 継承
+- abstract
+- override
+- advertise
+- Mapping
+- interface  
+
+今回は基本的なクラス定義を説明します。
+
+* 最小のクラス定義
+
+最小のクラス定義は次のように行ないます。
+
+#+BEGIN_SRC lns
+class Test {
+}
+#+END_SRC
+
+これは Test というクラスを定義しています。
+
++なお、クラス定義は最上位のスコープで行なう必要があります。+
+
+*(2019/6/24) 関数内でもクラス定義できるように対応しました。
+ただし、外部公開可能なクラスは最上位のスコープで宣言する必要があります。*
+
+** 外部公開
+
+クラスを外部モジュールに公開するには、
+次のように pub を付加します。
+
+#+BEGIN_SRC lns
+pub class Test {
+}
+#+END_SRC
+
+* インスタンス生成
+
+クラスのインスタンス生成は、次のように new 演算子を使用します。
+
+#+BEGIN_SRC lsn
+class Test {
+}
+let test = new Test();
+#+END_SRC
+
+* メソッド定義
+
+メソッド定義は、ほぼ関数定義と同じです。
+
+#+BEGIN_SRC lns
+class Test {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+let test = new Test();
+test.func();  // Test.func
+#+END_SRC
+
+なお、メソッドは form 型にはセットできません。
+
+例えば、次の ~sub( test.func )~ はエラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+fn sub( foo:form ) {
+   foo();
+}
+
+let test = new Test();
+sub( test.func );  // error
+#+END_SRC
+
+これをエラーしないようにするには、
+次のように anonymous 関数を作成して sub() に渡します。
+
+#+BEGIN_SRC lns
+class Test {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+fn sub( foo:form ) {
+   foo();
+}
+
+let test = new Test();
+sub( fn() { test.func(); } );
+#+END_SRC
+
+
+** アクセス制御
+
+アクセス制御は次の 3 つです。
+
+| 種別  | 意味                   |
+|-------+------------------------|
+| pub   | 外部公開               |
+| local | 同一モジュール内に公開 |
+| pro   | サブクラスに公開       |
+| pri   | 非公開                 |
+
+指定しない場合、デフォルトは pri です。
+
+
+** self シンボル
+
+メソッド内では、 self シンボルを利用できます。
+
+self シンボルは、自分自身のインスタンスを表します。
+
+次の例では、公開メソッドの sub から、
+非公開メソッドの func() を self 使用してコールしています。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func() {
+      print( __func__ );
+   }
+   pub fn sub() {
+      self.func();
+   }
+}
+let test = new Test();
+test.sub();  // Test.func
+#+END_SRC
+
+** 分離定義
+
+メソッドは、クラス定義と分離して定義することが出来ます。
+
+先ほどのメソッド定義は、次のようにも書けます。
+
+#+BEGIN_SRC lns
+class Test {
+}
+pub fn Test.func() {
+   print( __func__ );
+}
+let test = new Test();
+test.func();  // Test.func
+#+END_SRC
+
+ただし、別モジュールで定義しているクラスのメソッドを、
+import しているモジュール内で定義することは出来ません。
+
+** プロトタイプ宣言
+
+メソッド定義は、クラス定義内に型だけを宣言し、実定義を分離することもできます。
+
+次の例では、 func() をプロトタイプ宣言し、実定義を分離しています。
+
+func() をプロトタイプ宣言することで、sub() 内で func() のコールが可能になります。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func();
+   pub fn sub() {
+      self.func();
+   }
+}
+pub fn Test.func() {
+   print( __func__ );
+}
+let test = new Test();
+test.sub();  // Test.func
+#+END_SRC
+
+当然、プロトタイプ宣言と実定義のメソッドの型は、一致させる必要があります。
+
+   
+** クラスメソッド定義
+
+通常のメソッドはインスタンスに紐付いているためインスタンスがないと実行できませんが、
+クラスに紐付いたクラスメソッドはインスタンスがなくても実行できます。
+
+クラスメソッドの定義は、メソッド定義に static を付加するだけです。
+
+#+BEGIN_SRC lns
+class Test {
+   pub static fn sfunc() {
+      print( __func__ );
+   }
+}
+Test.sfunc(); // Test.sfunc
+#+END_SRC
+
+* メンバ定義
+
+メンバ定義は、ほぼ変数定義と同じですが、次の違いがあります。
+
+- 初期値の設定が出来ない
+- アクセス制御が追加
+- accessor 指定が可能
+
+
+次にメンバ定義の例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pri let val3:int;
+   pub fn func() {
+      print( self.val1, self.val2, self.val3 );
+   }
+
+}
+let test = new Test( 1, 2, 3 );
+test.func(); // 1 2 3 
+#+END_SRC
+
+クラス Test は、 val1, val2, val3 をメンバに持ちます。
+
+val1 の定義は ~pri let val1:int;~ となっています。
+
+これは、 これは通常の変数宣言に pri が付いただけなので問題ないと思います。
+
+pri はアクセス制御で、意味はメソッド定義と同じです。
+
+* mutable
+
+メンバ、メソッドにも mutable と immutable があります。
+
+メソッドの mutable と immutable の違いは次の通りです。
+
+- mutable なメソッドは、メンバを変更可能なメソッド
+- immutable なメソッドは、メンバを変更不可能なメソッド
+
+  
+次に mutable なメンバ、メソッドの例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val1:int;
+   pri let val2:int;
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+   pub fn add( val:int ) mut {
+      self.val1 = self.val1 + val;
+   }
+}
+let mut test = new Test( 1, 2 );
+test.func(); // 1 2
+test.add( 10 );
+test.func(); // 11 2
+#+END_SRC
+
+この例では、val1 が mutable で val2 が immutable です。
+また func() が immutable で、 add() が mutable です。
+
+mutable なメソッドは、引数宣言後に *mut* を宣言します。
+
+
+mutable のメソッド add() は、 メンバ val1 に値をセットしています。
+これはエラーせずにビルド可能です。
+
+では、次のように メソッド add() の mut 宣言を外した場合はどうなるかというと。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val1:int;
+   pri let val2:int;
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+   pub fn add( val:int ) {
+      self.val1 = self.val1 + val;  // error
+   }
+}
+#+END_SRC
+
+上記の例は、エラーとなります。
+
+mutable でないメソッド内からメンバを変更しようとした場合、エラーします。
+
+
+次の場合もエラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int;
+   pub fn increment() mut {
+      self.val = self.val + 1;
+   }
+   pub fn func() {
+      self.increment(); // error
+   }
+}
+#+END_SRC
+
+上記の例では、 func() から increment() をコールしていますが、
+immutable なメソッドから mutable なメソッドのコールは出来ません。
+
+
+* allmut メンバ
+
+前述の通り、 あるクラスのメンバが mutable であっても、
+そのクラスのインスタンスが immutable である場合、
+そのメンバは immutable となります。
+
+次の例では、 func() メソッド内から mutable なメンバ val にアクセスしていますが、
+func() メソッドは immutable であるため val もまた immutable となり、エラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int;
+   pub fn func() {
+      self.val = self.val + 1;  // error
+   }
+}
+#+END_SRC
+
+mutablity は、意図しないタイミングでの値の変化を防止するために必要な概念です。
+一方で、 immutable なメソッドからはいかなるメンバも変更できない、
+というのは非常に厳しいルールです。
+
+このルールが適応されてしまうと、
+例えば次のような場合、設計が難しくなってしまいます。
+
+- キーに紐付けて、読み取り専用データを管理するクラス Data を考える
+- Data クラスには、引数にキーを与えると、紐付けられたデータを返すメソッド get() を定義する
+- 管理する全てのデータを登録した Data インスタンスは、不要な変更を防ぐため immutable とする
+
+これは一般的な考え型だと思います。
+
+そして、開発が進んでから次の仕様を追加するとします。
+
+- 上記 get() メソッドの処理を高速化するため、
+  直前の引数キーと、そのキーに紐付けされたデータをキャッシュする
+  
+この「直前の引数キーと、そのキーに紐付けされたデータをキャッシュする」という処理は、
+データを書き換えることになります。
+つまり、 immutable ではなく mutable である必要があります。
+
+一方で、既に Data インスタンスは多くの箇所で immutable として宣言されています。
+つまり、キャッシュすることが出来ません。
+
+このような場合に利用するのが allmut です。
+allmut は、メンバの mutablity を宣言し、
+インスタンスの mutablity とは独立して常に mutable となります。
+
+次に allmut のサンプルを示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let allmut val:int;
+   pub fn func() {
+      self.val = self.val + 1;  // ok
+   }
+}
+#+END_SRC
+
+このように ~pri let allmut val:int;~  と宣言することで、
+val は常に mutable となります。
+これにより、 immutable なメソッド func() から、
+val を書き換えることが可能となります。
+
+
+
+
+* コンストラクタ定義
+
+コンストラクタは __init で定義できます。
+
+コンストラクタは、メソッド定義と次の点で異なります。
+
+- コンストラクタ名は __init でなければならない。
+- 戻り値の型を指定できない。
+- コンストラクタの定義は、全メンバ定義の後にしなければならない。
+- コンストラクタは、全メンバを初期化しなければならない。
+  - nilable 型のメンバを明示的に初期化しない場合、 初期値 nil となります。
+- コンストラクタ内の処理で全メンバを初期化してからでなければ、
+  そのクラスで定義するメソッドにアクセスできない。
+  - ただし static メソッド、 super クラスのメソッドにはアクセス可能。
+  - また、コンストラクタ内ので定義した関数オブジェクトからはメソッドにアクセス可能。
+- コンストラクタ内からは、プロトタイプ宣言しただけのメソッドはコールできない。
+- コンストラクタ内で return できない。
+
+次にコンストラクタの例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pub fn __init() {
+      self.val1 = 0;
+      self.val2 = 0;
+   }
+}
+let test = new Test();
+#+END_SRC
+
+なお、コンストラクタでは immutable なメンバにも初期値を設定可能です。
+
+** コンストラクタの引数
+
+コンストラクタは引数を持てます。
+この引数は、new 演算子によって与えられます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pub fn __init( val1:int, val2:int ) {
+      self.val1 = val1 + 10;
+      self.val2 = val2 + 10;
+   }
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+}
+let test = new Test( 1, 2 );
+test.func(); // 11 12
+#+END_SRC
+
+** デフォルトコンストラクタ
+
+コンストラクタを定義しない場合、
+自動的に全メンバを設定するコンストラクタが生成されます。
+このコンストラクタをデフォルトコンストラクタと言います。
+
+デフォルトコンストラクタは、全メンバを設定するための引数を持ちます。
+引数の順番は、クラスのメンバの宣言順です。
+
+次のクラス宣言には、コンストラクタが宣言されていないため、
+デフォルトコンストラクタが内部的に生成されます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+}
+#+END_SRC
+
+そのデフォルトコンストラクタは、次のように定義されます。
+
+#+BEGIN_SRC lns
+   pub fn __init( val1:int, val2:int ) {
+      self.val1 = val1;
+      self.val2 = val2;
+   }
+#+END_SRC
+
+デフォルトコンストラクタのアクセス制御は pub です。
+
+*** 派生クラスのデフォルトコンストラクタ
+
+派生クラスのデフォルトコンストラクタは、旧形式と現形式の 2 種類あります。
+
+**** 現形式
+     
+次のような派生クラス Sub の現形式デフォルトコンストラクタは、
+
+#+BEGIN_SRC lns
+class Test {
+   pro let val:int;
+}
+class Sub extend Test {
+   let val2:int;
+   pub fn func() {
+      print( self.val, self.val2 );
+   }
+}
+let sub = new Sub( 1, 2 );
+sub.func(); // 1, 2
+#+END_SRC
+
+上記の ~new Sub( 1, 2 )~ ように、
+super クラスのコンストラクタの引数 + 派生クラスの全メンバになります。
+
+**** 旧形式
+
+次のような派生クラス Sub の旧形式デフォルトコンストラクタは、
+     
+#+BEGIN_SRC lns
+class Test {
+   pro let val:int!;
+}
+class Sub extend Test {
+   let val2:int;
+   _lune_control default__init_old;
+   pub fn func() {
+      print( self.val, self.val2 );
+   }
+}
+let sub = new Sub( 2 );
+sub.func(); // nil, 2
+#+END_SRC     
+
+上記の ~new Sub( 2 )~ ように、
+派生クラスの全メンバになります。
+
+なお旧形式では、 super クラスの全ての引数は nilable でなければならないです。
+また、 ~_lune_control default__init_old;~ で旧形式のデフォルトコンストラクタを
+使用することを宣言する必要があります。
+この宣言は、全メンバを宣言した後に宣言する必要があります。
+
+
+*** デフォルトコンストラクタの明示
+
+デフォルトコンストラクタは、
+コンストラクタを定義しないと内部的に生成されます。
+
+しかしこの振舞いは、次のような処理を書いた時に問題になります。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int {pub};
+   pub static fn create(): Test {
+      return new Test( 1 );  // error
+   }
+}
+#+END_SRC
+
+上記は、 create() メソッド内で Test クラスのインスタンスを生成していますが、
+コンストラクタの宣言がないとしてエラーします。
+
+本来ならば、コンストラクタの定義がないのでデフォルトコンストラクタが
+生成されるのですが、
+デフォルトコンストラクタを定義するタイミングは、クラス定義終了時に行なうため、
+クラス定義内の create() メソッドでは、コンストラクタがありません。
+
+このような場合、明示的にデフォルトコンストラクタを使用することを宣言します。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int {pub};
+   _lune_control default__init;
+   pub static fn create(): Test {
+      return new Test( 1 );
+   }
+}
+#+END_SRC
+
+~_lune_control default__init;~ を宣言すると、
+デフォルトコンストラクタの使用を明示でき、
+このタイミングでデフォルトコンストラクタが生成されます。
+
+なお ~_lune_control default__init;~ は、通常のコンストラクタと同じように、
+全メンバの後に宣言する必要があります。
+    
+
+* クラスメンバ
+
+メソッドにクラスメソッドがあるように、メンバにもクラスメンバがあります。
+
+クラスメンバの定義も static を付けるだけです。
+
+クラスメンバの初期化は __init ブロックで行ないます。
+
+次はクラスメンバ定義の例です。
+
+#+BEGIN_SRC lns
+class Test {
+   pri static let val1:int;
+   pri static let val2:int;
+
+   __init {
+      Test.val1 = 1;
+      Test.val2 = 1;
+   }
+}
+#+END_SRC
+
+__init ブロックは、次の制限があります。
+
+- __init ブロックの定義は、全クラスメンバ定義の後にしなければならない。
+  - nilable 型のメンバを明示的に初期化しない場合、 初期値 nil となります。
+- __init ブロックは、全メンバを初期化しなければならない。
+- __init ブロック内で return できない。
+- __init ブロックからクラスメソッドをコールできるが、コールするクラスメソッドは、 
+  __init ブロックより前に宣言しなければならない。
+
+
+* まとめ
+
+LuneScript のクラス定義は、次をサポートします。
+
+- キーワード class でクラスを定義する
+- インスタンス生成は new
+- アクセス制御可能  
+- self シンボルで自分自身にアクセス
+- クラス定義とメソッド定義を分離可能
+- プロトタイプ宣言
+- static でクラスメソッド、クラスメンバ
+- コンストラクタは __init
+- コンストラクタを作成しない場合はデフォルトコンストラクタが作られる
+
+
+次回は、 accessor の生成方法について説明します。

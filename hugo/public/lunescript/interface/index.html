@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>インタフェース 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/interface/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="インタフェース 編" />
+<meta property="og:description" content="LuneScript は、クラスの多重継承をサポートしない代わりに、 インタフェースをサポートします。 インタフェース Java や C# を使用していればお馴染だと思いますが、 イ" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/interface/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="インタフェース 編"/>
+<meta name="twitter:description" content="LuneScript は、クラスの多重継承をサポートしない代わりに、 インタフェースをサポートします。 インタフェース Java や C# を使用していればお馴染だと思いますが、 イ"/>
+<meta itemprop="name" content="インタフェース 編">
+<meta itemprop="description" content="LuneScript は、クラスの多重継承をサポートしない代わりに、 インタフェースをサポートします。 インタフェース Java や C# を使用していればお馴染だと思いますが、 イ">
+
+<meta itemprop="wordCount" content="678">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>インタフェース 編</h1>
+
+<p>
+LuneScript は、クラスの多重継承をサポートしない代わりに、
+インタフェースをサポートします。
+</p>
+<h2 id="headline-1">
+インタフェース
+</h2>
+<p>
+Java や C# を使用していればお馴染だと思いますが、
+インタフェースは機能が制限されたクラスと考えて問題ないです。
+</p>
+<p>
+具体的には、インタフェースは、クラスと次の違いがあります。
+</p>
+<ul>
+<li>
+<p>
+宣言は class ではなく interface。
+</p>
+</li>
+<li>
+<p>
+メンバが持てない。
+</p>
+</li>
+<li>
+<p>
+メソッドは全て abstract。 よってインタフェース単体ではインスタンスを生成できない。
+</p>
+</li>
+<li>
+<p>
+インタフェースを実装するクラスは、extend に () を付ける
+</p>
+</li>
+<li>
+<p>
+クラスは複数のインタフェースを実装できる
+</p>
+</li>
+<li>
+<p>
+イタフェースを実装するクラスのメソッドには override を付けない。
+</p>
+</li>
+</ul>
+<p>
+次にインタフェースの例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">interface IF {
+   pub fn func();
+}
+class Test extend (IF) {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+fn sub( obj:IF ) {
+   obj.func();
+}
+sub( new Test() ); // Test.func</code></pre>
+</div>
+<p>
+この例では、インタフェース IF を定義しています。
+</p>
+<p>
+次に 2 つのインタフェースを実装するクラスの例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">interface IF1 {
+   pub fn func1();
+}
+interface IF2 {
+   pub fn func2();
+}
+class Test extend (IF1,IF2) {
+   pub fn func1() {
+      print( __func__ );
+   }
+   pub fn func2() {
+      print( __func__ );
+   }
+}
+fn sub( obj1:IF1, obj2:IF2 ) {
+   obj1.func1();
+   obj2.func2();
+}
+let mut test = new Test();
+sub( test, test ); // Test.func Test.func2</code></pre>
+</div>
+<p>
+複数のインタフェースを実装する場合、 extend の後に () の中に続けて宣言します。
+</p>
+<p>
+ちなみに、複数のインタフェースを実装する場合の制限として、
+次のように実装するインタフェース内に、
+同名で異なる型のメソッドがある場合、エラーとなります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">interface IF1 {
+   pub fn func():int;
+}
+interface IF2 {
+   pub fn func():str;
+}
+class Test extend (IF1,IF2) { // mismatch IF1.func, IF2.func
+}</code></pre>
+</div>
+<p>
+なお、現在のインタフェースの仕様として、メソッドのデフォルト処理はサポートしていません。
+</p>
+<h2 id="headline-2">
+まとめ
+</h2>
+<p>
+LuneScript は、クラスの多重継承をサポートしない代わりに、
+インタフェースをサポートします。
+</p>
+<p>
+次回は、Mapping について説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/completion/" title="イマドキな開発環境でもっと楽しよう"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - イマドキな開発環境でもっと楽しよう</a>
+<a class="nav nav-next" href="https://example.com/lunescript/cast/" title="キャスト 編">Next - キャスト 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class="active"><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

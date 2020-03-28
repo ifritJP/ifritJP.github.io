@@ -1,0 +1,473 @@
+#+TITLE: マクロ 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript のマクロについて説明します。
+
+* マクロ
+
+LuneScript は、マクロを対応します。
+
+もしかしたら、
+最近は *マクロ* というよりも *メタプログラミング* と言った方が
+意味が通り易いのかもしれません。
+
+「マクロとは何か」を説明するには、
+関数との違いを説明すると分かりやすいと思います。
+
+*関数* は、ある処理をまとめたものです。
+一方、 *マクロ* は、複数の関数定義自体をまとめて定義することが出来ます。
+もちろん *マクロ* として定義できるのは、
+関数定義だけでなく、ほとんど全ての処理を定義できます。
+
+マクロで一番メジャーなプログラミング言語と言えば Lisp だと思いますが、
+LuneScript のマクロは Lisp ほど高機能ではありません。
+しかし、 C 言語のマクロほど限定的でもありません。
+
+** 簡単なマクロの例
+
+次に簡単なマクロの例を示します。
+
+#+BEGIN_SRC lns
+macro _Hello() {
+   print( "hello world" );
+}
+_Hello(); // hello world
+#+END_SRC
+
+これは hello world を表示するマクロ _Hello です。
+
+マクロ定義は macro キーワードを使用します。
+
+この例は、関数定義を使用した場合と全く変わらないマクロであり、
+マクロとして定義する意味はありません。
+
+しかし、「関数定義と同じ感覚でマクロを定義できる」、
+ということを伝えるには良い例だと言えます。
+
+マクロを搭載するプログラム言語では、
+マクロ定義には、一般の関数定義などとは違い、
+特殊な処理が必要なことが多いです。
+
+それによって、「マクロは何か難しそう」と心のハードルが上ってしまいます。
+
+しかし LuneScript では、
+上記の hello world のサンプルのように、
+ほとんど一般の関数定義と変わらない感覚でマクロ定義を行なえます。
+
+
+ただ、上記の例のようなマクロの書き方では、
+意味のあるマクロは定義できません。
+
+以降では、意味のあるマクロを定義する方法を説明します。
+
+** マクロの例
+
+少し実用的なマクロの例を次に示します。
+
+このマクロは、次の仕様となります。
+
+- int の値を返す関数を定義するマクロ _Test
+- 関数で返す int 値は、マクロの引数で与える
+- 定義する関数の名前は、 int の値によって決定する
+- 具体的には 1 を返す関数名は func1 とする
+
+次が具体的なマクロのコードです。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      let name = "func%d"(val);
+   }
+   fn ,,,name(): int {
+      return ,,val;
+   }
+}
+
+_Test( 1 );
+_Test( 10 );
+
+print( func1(), func10() ); // 1  10
+#+END_SRC
+
+マクロを展開する場合、関数コールとほとんど同じです。
+
+この場合 _Test( 1 ), _Test( 10 ) がマクロ展開です。
+_Test( 1 ), _Test( 10 ) によって、次が展開されます。
+
+#+BEGIN_SRC lns
+// Test( 1 )
+fn func1():int {
+   return 1;
+}
+// Test( 10 )
+fn func10():int {
+   return 10;
+}
+#+END_SRC
+
+これにより関数 func1(), func10() が定義されるので、
+~print( func1(), func10() )~ は 1 10 が出力されます。
+
+このマクロについて、以降で説明します。
+
+
+** マクロの書き方
+
+マクロの定義の syntax は次になります。
+
+#+BEGIN_SRC lns
+macro name( arg ) {
+   {
+      macro-statement
+   }
+   expand-statement
+}
+#+END_SRC
+
+キーワード macro で開始し、 次にマクロ名 name 、引数 arg と続きます。
+マクロ名 name は、 _ で始まる必要があります。
+逆にマクロ以外のシンボル名は、 _ 以外で始まる必要があります。
+引数の数に制限はありません。
+
+次に macro-statement ブロックと、 expand-statement が続きます。
+
+マクロの定義方法を理解するには、
+expand-statement を先に理解した方が分かり易いので、
+macro-statement ブロックの説明の前に、expand-statement を説明します。
+
+*** expand-statement
+
+expand-statement は、マクロを展開した後のコードを書きます。
+
+_Test マクロの例では、 次の部分が expand-statement です。
+
+#+BEGIN_SRC lns
+   fn ,,,name(): int {
+      return ,,val;
+   }
+#+END_SRC
+
+これによって、関数定義が展開されます。
+
+この expand-statement では、マクロ専用の演算子が利用できます。
+,, がその演算子です。
+
+利用可能な演算子には、次があります。
+
+- ,,,,
+- ,,,
+- ,,
+
+,,,, は、直後に続く *変数* を評価して得られた *シンボル* を *文字列に変換* する演算子です。
+
+,,, は、直後に続く *変数* を評価して得られた *文字列* を *シンボルに変換* する演算子です。
+
+,, は、直後に続く *変数* を展開する演算子です。
+
+つまり、上記例では ,,,name は name 変数内の文字列をシンボルに変換し、
+,,val は val 変数を展開することで、
+~_Test( 1 )~ マクロは、次が展開されます。
+
+#+BEGIN_SRC lns
+fn func1():int {
+   return 1;
+}
+#+END_SRC
+
+expand-statement には、次の制限を満せば、いかなるコードも書くことが出来ます。
+
+  *expand-statement は、文でなければならない。*
+
+つまり expand-statement は、式や、不完全なトークンの一部などの、
+文として成立しないものでなければ、どのようなコードも書けます。
+
+また、expand-statement には複数の文を書くことも出来ます。
+
+*** macro-statement
+
+macro-statement ブロックには、 expand-statement で利用する変数を定義します。
+expand-statement で利用する変数は、
+macro-statement ブロックの最上位のスコープで宣言する必要があります。
+
+_Test マクロの例では、次が macro-statement です。
+
+#+BEGIN_SRC lns
+   {
+      let name = "func%d"(val);
+   }
+#+END_SRC
+
+ここでは、変数 name を定義しています。
+name の初期値として、 "func%d" (val) をセットしています。
+
+
+macro-statement 内では、LuneScript の全ての機能を利用できます。
+具体的には、macro-statement 内で関数定義なども行なえます。
+
+例えば、 _Test マクロは次のようにも書けます。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      fn funcname(): str {
+         return "func%d"(val);
+      }
+      let name = funcname();
+   }
+   fn ,,,name(): int {
+      return ,,val;
+   }
+}
+#+END_SRC
+
+この例では、 macro-statement で funcname() 関数を宣言し、
+その結果を name 変数に代入しています。
+
+なお macro-statement で利用可能な関数は、LuneScript の標準関数のみです。
+同じソース内で定義している関数でも、その関数がマクロ外で定義している場合、
+macro-statement から使用することは出来ません。
+
+
+macro-statement は、expand-statement と同じようにマクロ専用演算子を利用できます。
+
+具体的には、次の演算子を利用できます。
+
+- ,,,,
+- ,,,
+- ,,
+- ~`{}~
+- ~~  
+
+「,,,,」 「,,,」 「,,」 は、 expand-statement とほぼ同じです。
+expand-statement との違いは、
+expand-statement では直後に続く *変数* を処理対象にしていたのに対し、
+macro-statement では直後に続く *式* を処理対象にします。
+
+~`{}~ は、 ~`{}~ 内で書いたステートメントを、そのまま値とすることが出来ます。
+
+例えば、 上記 _Test マクロは ~`{}~ を使って次のようにも書けます。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      let defstat = `{
+         fn ,,,"func%d"(val)~~():int {
+            return ,,val;
+         }
+      };
+   }
+   ,,defstat;
+}
+
+_Test( 1 );
+_Test( 10 );
+
+print( func1(), func10() ); // 1  10
+#+END_SRC
+
+ここでは、 ~`{}~ を使って関数定義そのものを変数 defstat に格納し、
+defstat を expand-statement で展開しています。
+
+この defstat の初期化部分を抜き出すと、次のようになります。
+
+#+BEGIN_SRC lns
+      let defstat = `{
+         fn ,,,"func%d"(val)~~():int {
+            return ,,val;
+         }
+      };
+#+END_SRC
+
+ここで、 *~~* を使用しているのが分かります。
+
+*~~* は、 ,,, などの演算子の式の区切りを指定するものです。
+上記では、"func%d"(val) の後に ~~ を利用しています。
+これは、,,, 演算子を適応する式が "func%d"(val) までで、
+その後の () はマクロ展開するステートメントの一部であることを示しています。
+
+~~ を指定しないと、
+"func%d"(val) で生成した文字列に () を付けていることになり、
+構文エラーとなります。
+
+
+~`{}~ は、その他の値と同じようにリストやマップに格納できます。
+なお、 ~`{}~ の型は stat となります。stat はマクロ内でのみ有効です。
+
+次に ~`{}~ のリストの例を示します。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      let mut statList:List<stat> = [];
+      for count = 1, val {
+         statList.insert(
+            `{          
+               fn ,,,"func%d"(count)~~():int {
+                  return ,,count;
+               }
+            } );
+      }
+   }
+   ,,statList;
+}
+
+_Test( 5 );
+
+print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5
+#+END_SRC
+
+この例では、 ~`{}~ のリスト statList に関数定義を複数格納し、
+それを展開することで、複数の関数定義(func1 〜 func5)を行なっています。
+
+
+
+なお macro-statement ブロックは、必須ではありません。
+macro-statement ブロックを省略する場合、次のように {} ごと省略します。
+
+#+BEGIN_SRC lns
+macro name( arg ) {
+   expand-statement
+}
+#+END_SRC
+
+*** macro-statement で利用できる関数
+
+macro-statement では、次の関数が利用できます。
+
+- fn _lnsLoad( name:str, code:str ): stem;
+  
+この関数は、code で指定した LuneScript のコードをロードし、
+そのモジュールを返します。
+
+*** マクロ展開
+
+マクロを展開する方法は、関数コールとほとんど同じです。
+ただし、マクロの引数にはリテラルな値しか与えられません。
+
+マクロ展開はビルド時に行なうものであり、実行時には行ないません。
+
+** 公開マクロ
+
+マクロは外部モジュールに公開できます。
+
+次のように pub を宣言することで、そのマクロを import 先で利用できます。
+
+#+BEGIN_SRC lns
+pub macro _Hello() {
+   print( "hello world" );
+}
+#+END_SRC
+
+
+** 少し実用的なマクロの例
+
+次は少し実用的なマクロの例です。
+
+
+Google などが提供する REST API のパラメータやレスポンスなどで利用する JSON を、
+LuneScript で扱うには、
+REST API の JSON フォーマット毎にクラス化しておくと便利です。
+そのような時、何種類もある JSON 形式のデータを扱うクラスを
+手動で定義するのは非効率ですし、バグの元でもあります。
+
+そこで、 サンプルの JSON フォーマットを読み込んで、
+その JSON フォーマットを格納可能なクラスを定義するマクロを作成します。
+
+この例では、次の JSON ファイルを読み込み、
+
+#+NAME: hoge.js
+#+BEGIN_SRC lns
+{
+    "val1": "abc",
+    "val2": 0
+}
+#+END_SRC
+
+上記 JSON を扱うための次のクラスを定義するマクロです。
+
+#+BEGIN_SRC lns
+class Hoge {
+  pri let val1:str {pub};
+  pri let val2:int {pub};
+}
+#+END_SRC
+
+
+次がマクロの具体例です。
+
+
+#+BEGIN_SRC lns
+macro _MkClass( name:str, path:str ) {
+   {
+      let mut memStatList:List<stat> = [];
+      if! let mut fileObj = io.open( path ) {
+         if! let txt = fileObj.read( "*a" ) {
+            let defMap = "pub let val = %s;" (txt);
+            let mod = _lnsLoad( "json", defMap );
+            if! let jsonval = mod.val {
+               fn getType( val:stem ): str {
+                  switch type( val ) {
+                     case "number" {
+                        return "int";
+                     }
+                     case "string" {
+                        return "str";
+                     }
+                  }
+                  return "stem";
+               }
+               forsort val, key in jsonval@@Map<str,stem> {
+                  memStatList.insert( `{
+                     pri let ,,,key : ,,,getType( val )~~ {pub};
+                  } );
+               }
+            }
+         }
+      }
+   }
+   class ,,,name {
+      ,,memStatList;
+   }
+}
+_MkClass( "Hoge", "hoge.js" );
+
+let hoge = new Hoge( "ABC", 100 );
+print( hoge.$val1, hoge.$val2 );
+#+END_SRC
+
+このマクロは、ファイルから JSON を読み込み、
+その JSON 構造を格納するためのクラスを宣言します。
+
+クラス名はマクロの第一引数で指定します。
+
+このマクロは、次の処理を行ないます。
+
+- 指定のファイルを開き、そのファイル内に定義されている JSON 文字列を読み込む。
+- JSON 文字列 txt から、 "pub let val = %s;" (txt); で、 
+  LuneScript のコードを生成する。
+- _lnsLoad() を使って、生成した LuneScript のコードをロードする
+- ロードしたモジュールから json の val を取り出し、 
+  forsort で JSON の要素を列挙する
+- 列挙した要素を保持するメンバを宣言する ~`{}~ を生成し、memStatList に追加する
+- name と memStatList を使ってクラスを宣言する。  
+
+このサンプルでは処理を簡単にするために、
+メンバは int と str 型のデータとして扱います。
+リストなどはサポートしていません。
+
+* まとめ
+
+LuneScript は、関数と同じ感覚でマクロを定義することが出来ます。
+
+また、マクロを利用することで、
+さまざまな処理を定義できるようになります。
+
+
+
+次回は、 LuneScript を使って開発するプロジェクトの
+ビルド方法について説明します。

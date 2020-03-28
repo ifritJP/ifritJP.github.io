@@ -1,0 +1,425 @@
+#+TITLE: C インタフェース詳細編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+
+これは、 Lua から C の関数をコールしたときの振舞の詳細を説明するドキュメントです。
+
+Lua と C のインタフェースを書くのが目的の場合は次の内容だけで十分ですが、
+さらに詳細を知りたい方向けの情報です。
+
+最低限、次の記事の内容を全て理解していることが前提です。
+
+- C インタフェース編
+  - [[../interface]]
+
+Lua 5.2, 5.3 をターゲットにしています。
+
+Lua の内部動作ですので、バージョンによっては動作が異なる可能性があります。
+
+*** Lua から C 関数をコール
+
+例として、次の関数のコール処理について説明します。
+
+#+BEGIN_SRC c
+static int lib_func( lua_State * pLua ) {
+  int arg1 = luaL_checkinteger( pLua, 1 ); // 引数 1 の取得
+  int arg2 = luaL_checkinteger( pLua, 2 ); // 引数 2 の取得
+  lua_pushinteger( pLua, arg1 + 1 ); // 戻り値 1 設定
+  lua_pushinteger( pLua, arg2 + 2 ); // 戻り値 2 設定
+  return 2; // 戻り値 2 個
+}
+#+END_SRC
+
+この関数は、指定された 2 つの引数にそれぞれ +1 した値を返す関数です。
+
+
+- func() 関数をスタックに Push
+- 引数 10, 20を スタックに Push
+- func を実行する
+
+このとき、func () 関数からスタックを見ると次のようになります。
+
+| インデックス | 値 |
+|--------------+----|
+| 2 (-1)       | 20 |
+| 1 (-2)       | 10 |
+
+インデックス 1 に 第 1 引数、インデックス 2 に 第 2 引数が格納されています。
+インデックスをマイナス値で指定する場合は、それぞれ -2, -1 です。
+
+func() は、インデックス 1、インデックス 2 から第 1 引数、インデックス 2 に 第 2 引数を取得し、それぞれ + 1, + 2 します。
+その後、計算結果 11, 22 をスタックに Push します。
+
+このときのスタックは次のようになります。
+
+| インデックス | 値 |
+|--------------+----|
+| 4 (-1)       | 22 |
+| 3 (-2)       | 11 |
+| 2 (-3)       | 20 |
+| 1 (-4)       | 10 |
+
+Lua は、引数の次のインデックス 3 以降の値を戻り値として処理し、処理後にスタックを解放します。
+
+*** Lua VM と C のインタフェース
+
+#+BEGIN_SRC c
+int func( lua_State * pLua )
+#+END_SRC
+
+*Lua VM から C の関数をコールする場合、C のインタフェースは必ず上記の型である必要があります。*
+C の関数名は任意です。
+
+ここで ~lua_State~ は、Lua VM の状態を管理する構造体です。
+C の関数は、 ~lua_State~ 構造体へのポインタを Lua から提供されている C 関数の引数に渡すことで、Lua VM にアクセスできます。
+
+*また、Lua VM に関数の戻り値を返す場合は、Lua VM のスタックに値を Push する必要があります。*
+*この C 関数の戻り値は int 型のデータですが、この値はスタックに Push した値の個数を示すものです。*
+Lua に返すデータそのものではないことに注意してください。
+
+
+** Lua から C の関数をコールする
+
+*** モジュールの検索
+
+Lua は require( modname ) で外部モジュールの機能を取り込んで、利用することができます。
+
+
+ここで require は指定された外部モジュールを検索する際、次のように処理を行ないます。
+
+- 次のローダーを使って、 modname のロードを試みます。
+  - preload
+  - Lua
+  - C
+- この ローダーに modname を渡し、そのモジュール名に合致するモジュールをロードさせます。
+  - preload
+    - package.preload[ modname ] の値を参照し、値が関数であった場合その関数を返します。
+      - package.preload を編集しても、ローダーの変更はできません。
+      - Lua から参照できるように提供されています。
+  - lua
+    - package.path に格納されているパスを利用して Lua スクリプトを loadfile します。
+  - C
+    - package.path に格納されているパスを利用して C モジュールをロードします。
+    - 見つかったモジュールから関数名が "~luaopen_%s~", modname の関数をロードします。
+    - C モジュール関数のロード方法は OS や Lua をホストしている環境によって異なります。
+- 上記処理を preload, lua, C の順に行ない、modname モジュールがロードできるまで繰り返します。
+- ロードした関数に対し、 modname を渡して実行します。
+- 実行結果を require の戻り値とします。
+
+C の関数は、上記で示すように preload, Lua の次に検索されロードされます。
+
+*** require からコールされる C 関数
+
+上記で示した様に、関数名が "~luaopen_%s~", modname 関数がロードされコールされます。
+例えば require( 'hoge' ) とした場合 hoge モジュールの ~luaopen_hoge()~ がロードされ実行されます。
+
+ここで、 ~luaopen_hoge()~ も、上記で説明した通り次の型で定義する必要があります。
+
+#+BEGIN_SRC c
+int luaopen_hoge( lua_State * pLua )
+#+END_SRC
+
+この関数が Lua VM のスタックに Push した値が、 require の戻り値になります。
+
+例えば、フィールド(func1,func2)に関数を格納するテーブルを Push することで、Lua の標準ライブラリのように複数の関数を提供することができます。
+
+#+BEGIN_SRC lua
+local lib = require( 'module' )
+lib.func1()
+lib.func2()
+#+END_SRC
+
+
+**** 関数をフィールドに持つテーブルを返す
+
+関数をフィールドに持つテーブルを返すには、次のように処理します。
+
+#+BEGIN_SRC c
+static int lib_func1( lua_State * pLua );
+static int lib_func2( lua_State * pLua );
+static const luaL_Reg lib[] = {
+  {"func1", lib_func1},
+  {"func2", lib_func2},
+  {NULL, NULL}
+}
+int luaopen_hoge( lua_State * pLua )
+{
+  luaL_newlib( pLua, lib );
+  return 1;
+}
+#+END_SRC
+
+ここで、 ~luaL_newlib()~ は引数で与えた ~luaL_Reg~ 配列の関数をフィールドに持つテーブルを生成しスタックを Push します。
+~luaL_Reg~ は、Lua 側の関数名と C 側の関数の紐付けます。
+~luaL_Reg~ 配列は、{NULL, NULL} で終端する必要があります。
+
+
+*** 引数取得と戻り値設定
+
+前述した通り Lua の関数コールは、引数をスタックに Push してから関数を実行します。
+また、関数の戻り値はスタックに Push します。
+
+#+BEGIN_SRC lua
+local function func( arg1, arg2 )
+  return arg1 + 1, arg2 + 2
+end
+local value1, value2 = func( 10, 20 )
+#+END_SRC
+
+例えば上記の Lua の func 関数を C で書く場合、次のようになります。
+
+#+BEGIN_SRC c
+static int lib_func( lua_State * pLua ) {
+  int arg1 = luaL_checkinteger( pLua, 1 ); // 引数 1 の取得
+  int arg2 = luaL_checkinteger( pLua, 2 ); // 引数 2 の取得
+  lua_pushinteger( pLua, arg1 + 1 ); // 戻り値 1 設定
+  lua_pushinteger( pLua, arg2 + 2 ); // 戻り値 2 設定
+  return 2; // 戻り値 2 個
+}
+#+END_SRC
+
+引数の取得、戻り値の設定は、値の型毎にアクセス関数が提供されています。
+
+
+** ユーザデータ
+
+C から Lua へ値を返すには、Lua が扱える次のいずれかの値に変換する必要があります。
+
+- nil
+- ブーリアン
+- 数値
+- 文字列
+- 関数
+- ユーザーデータ
+- スレッド
+- テーブル 
+
+では、ここで一つ質問です。
+Lua の io.open() は file オブジェクトを返しますが、file オブジェクトの型は上記のどれになるでしょうか？
+
+答はユーザデータです。
+技術的にはテーブルでも実現不可能ではありませんが、ユーザデータで実装されています。
+
+Lua は private や protected などの概念がありませんが、ユーザデータを利用することで Lua からは直にアクセスさせたくないデータを実現できます。
+
+
+*** ユーザデータの生成方法
+
+ユーザデータは Lua から生成することはできません。
+必ず C で生成する必要があります。
+
+C でユーザデータを生成するには、次の関数を実行します。
+
+#+BEGIN_SRC c
+void * lua_newuserdata( lua_State * pLua, size_t size );
+#+END_SRC
+
+使い方は malloc() と似ています。
+ただし、malloc() は free() で解放するのに対し、 ~lua_newuserdata()~ で生成した領域は GC によって解放されます。
+
+なお ~lua_newuserdata()~ は、ユーザデータを生成しスタックに Push します。
+
+Lua は、C から受け取ったユーザデータ内に何が格納されているかアクセスする関数を標準では提供していません。
+ユーザデータにアクセスする関数を、ユーザデータを生成した C 側で用意する必要があります。
+
+例えば Lua の file オブジェクトは、ファイルハンドルのユーザデータにアクセスするための ~file:read()~ や ~file:close()~ などのメソッドを提供しています。
+
+なお、ユーザデータはメタデータを設定することが出来ます。
+
+Lua の file オブジェクトは、メタデータを利用して ~file:read()~ や ~file:close()~ などのメソッドを提供しています。
+
+ユーザデータにメタデータを設定することによって、C 側のデータを Lua からオブジェクト指向でアクセスすることが出来ます。
+
+
+*** ユーザデータのサンプル
+
+Lua の file オブジェクトの実装方法を参考に、ユーザデータの使用方法を説明していきます。
+
+Lua の file オブジェクトのユーザデータは、次の構造体を生成しています。
+
+#+BEGIN_SRC c
+typedef struct luaL_Stream {
+  FILE *f;
+  lua_CFunction closef;
+} luaL_Stream;
+typedef luaL_Stream LStream;
+#+END_SRC
+
+ここで f は、アクセス対象のファイルハンドルです。
+closef は、 ~file:close()~ 時に実行する関数ポインタです。
+io.open(), io.popen() で ~file:close()~ 処理が異なるため、関数ポインタで切り替えられるようにしています。
+
+
+この構造体のユーザデータを生成し、メタデータを設定します。
+
+#+BEGIN_SRC c
+static LStream *newprefile (lua_State *L) {
+  LStream *p = (LStream *)lua_newuserdata(L, sizeof(LStream));
+  p->closef = NULL;
+  luaL_setmetatable(L, LUA_FILEHANDLE);
+  return p;
+}
+#+END_SRC
+
+ここで ~luaL_setmetatable(L, LUA_FILEHANDLE)~ は、スタックトップのデータにメタテーブル ~LUA_FILEHANDLE~ をセットします。
+
+ちなみに ~LUA_FILEHANDLE~ は文字列 "FILE*" です。
+
+メタテーブル ~LUA_FILEHANDLE~ は、次のように事前に生成しておきます。
+
+#+BEGIN_SRC c
+static void createmeta (lua_State *L) {
+  luaL_newmetatable(L, LUA_FILEHANDLE);
+  lua_pushvalue(L, -1);
+  lua_setfield(L, -2, "__index");
+  luaL_setfuncs(L, flib, 0);
+  lua_pop(L, 1);
+}
+#+END_SRC
+
+まず ~luaL_newmetatable(L, LUA_FILEHANDLE)~ で空のメタテーブル ~LUA_FILEHANDLE~ を生成します。
+次に ~__index~ フィールドに自分自身をセットします。
+これは LStream ユーザデータから、このメタテーブルで定義している関数にアクセスできるようにするためです。
+具体的に言うと ~file:close()~ を実現できるようにしています。
+次に ~luaL_setfuncs(L, flib, 0)~ で、このメタテーブルのフィールドにメソッドを定義します。
+ここで flib は、次のように定義されています。
+
+#+BEGIN_SRC c
+static const luaL_Reg flib[] = {
+  {"close", io_close},
+  {"flush", f_flush},
+  {"lines", f_lines},
+  {"read", f_read},
+  {"seek", f_seek},
+  {"setvbuf", f_setvbuf},
+  {"write", f_write},
+  {"__gc", f_gc},
+  {"__tostring", f_tostring},
+  {NULL, NULL}
+};
+#+END_SRC
+
+最後の ~luaL_pop()~ は、スタックを元の状態に戻すために実行しています。
+
+なお、 上記 flib で重要なものがあります。
+それは ~__gc~ です。
+
+~__gc~ は、 GC によって値を解放する前に呼び出されます。
+
+file オブジェクトの場合は、 ~f_gc()~ で close 処理を行なっています。
+これにより、ファイルの close 漏れを防止しています。
+
+
+
+*** ユーザデータの種類
+
+ユーザデータには、次の 2 種類あります。
+
+- フルユーザデータ
+  - ~luaL_newmetatable()~ で生成するユーザデータ
+- ライトユーザデータ
+  - ~lua_pushlightuserdata()~ で Push するユーザデータ
+
+フルユーザデータにはメタテーブルを設定できますが、
+ライトユーザデータにはメタテーブルを設定できません。
+
+また、ライトユーザデータは GC の対象になりません。
+
+これらの特徴から、ライトユーザデータは Lua がリソース管理しないデータで、フルユーザデータは Lua がリソース管理するデータであると言えるます。
+
+
+なお、上記 2 種類のユーザデータは Lua 内部では異なるタイプとして扱いますが、
+Lua スクリプトからは同じ "userdata" 型として扱われます。
+
+C からは、上記 2 種類のユーザデータを別々の型として扱えますが、型名を取得する関数 ~lua_typename()~ はどちらも同じ "userdata" になります。
+
+
+** C から Lua の関数をコールする
+
+前述している通り、関数コールはスタック操作をしています。
+これと同じことを C から行なえば良いだけです。
+
+具体的には次の手順になります。
+
+- 関数オブジェクトを Push
+- 引数を Push
+- 関数を実行
+
+例えば print( "a" ) を C からコールする場合は、次のようになります。
+
+#+BEGIN_SRC c
+  lua_getglobal( pLua, "print" );
+  lua_pushstring( pLua, "a" );
+  lua_call( pLua, 1, 0 );
+#+END_SRC
+
+ここで ~lua_getglobal( pLua, "print" )~ は、グローバル変数 print に格納されている値を Push します。
+~lua_pushstring( pLua, "a" )~ は、文字列 "a" を Push します。
+最後に ~lua_call( pLua, 1, 0 )~ で、 print( "a" ) を実行します。
+ここで 第２引数は print 関数に渡す引数の数を指定し、第３引数は print 関数の戻り値の数を指定します。
+第３引数が  ~LUA_MULTRET~ の場合、関数の戻り値の数を制限しません。
+
+基本はこれだけです。
+
+発展形として、 ~lua_call()~ のバリエーションがあります。
+
+- ~lua_callk()~
+  - コールした関数内で yield を実行する場合、この関数を使用します。
+- ~lua_pcall()~
+  - コールした関数内でエラーが発生した場合、それをキャッチします。
+  - エラーしたかどうかは戻り値に返します。
+  - ~lua_call()~ は、コールした関数内でエラーが発生した場合キャッチしません。
+- ~lua_pcallk()~
+  - コールした関数内で yield を実行できるようにした ~lua_pcall()~ と等価です。
+
+** 注意点
+
+C インタフェースを作成する上で注意すべき点を挙げます。   
+
+*** ~lua_tolstring()~ の ver 5.2 と 5.3 の差分
+
+- ver 5.2    
+  - 指定インデックスの値(文字列か数値)を文字列に変換した結果を返します。
+  - このとき、指定インデックスに格納されている値そのものを文字列に変換した値に書き換えます。
+- ver 5.3
+  - 指定インデックスの値(文字列か数値)を文字列に変換した結果を返します。
+  - このとき、変換した結果をスタックに push します。
+  - このとき、指定インデックスに格納されている値は元のままです。
+
+ver 5.2 の仕様は、かなり危険な動作なので仕様変換するのも分からなくはないですが、
+かなり厄介な仕様変更です。
+
+*** ~lua_next()~ 中のキーに対する ~lua_tolstring()~
+
+リファレンスにも記載がありますが、 ~lua_next()~ 中のキーに対する ~lua_tolstring()~ は危険です。
+ver 5.2 のでは、値が数値だった場合その値そのものを文字列に変換してしまいます。
+~lua_next()~ では、キーを次の列挙の情報に利用するので、
+文字列に変換されてしまうとマトモに列挙することができなくなってしまいます。
+
+*** ~luaL_Buffer~ への add 処理
+
+~luaL_Buffer~ への add 処理 ( ~luaL_addstring~ 等)は注意が必要です。
+add 処理で ~luaL_Buffer~ の内部バッファを拡張する場合、add 処理内でスタックにユーザデータを積みます。
+これにより、スタックが変更になります。
+~luaL_pushresult()~ を実行すると、 add 処理で Push でしたユーザデータは Pop され、
+最終結果の文字列が Push されます。
+
+このような処理であるため、例えば次のような処理を書くと、スタックの状態が保証されません。
+
+#+BEGIN_SRC c
+  luaL_addstring( &buffer, "a" );
+  lua_pushstring( pLua, "b" );
+  luaL_addstring( &buffer, "c" );
+  lua_pushstring( pLua, "d" );
+  luaL_pushresult( pLua, &buffer );
+#+END_SRC
+
+上記処理を見ると、このときのスタックは次のようになることを期待していると思います。
+
+| インデックス | 値   |
+|--------------+------|
+| 3 (-1)       | "ac" |
+| 2 (-2)       | "d"  |
+| 1 (-3)       | "b"  |
+
+しかし、実際にはどうなるか保証されません。

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>値編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/value/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="値編" />
+<meta property="og:description" content="今回は、 LuneScript で扱える値について説明します。 値の型 LuneScript で扱える値の型と、トランスコンパイラ後の Lua の値との対応表を示します。 LuneScript Lua 用途 LuneScript での定義方法 nil," />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/value/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="値編"/>
+<meta name="twitter:description" content="今回は、 LuneScript で扱える値について説明します。 値の型 LuneScript で扱える値の型と、トランスコンパイラ後の Lua の値との対応表を示します。 LuneScript Lua 用途 LuneScript での定義方法 nil,"/>
+<meta itemprop="name" content="値編">
+<meta itemprop="description" content="今回は、 LuneScript で扱える値について説明します。 値の型 LuneScript で扱える値の型と、トランスコンパイラ後の Lua の値との対応表を示します。 LuneScript Lua 用途 LuneScript での定義方法 nil,">
+
+<meta itemprop="wordCount" content="2754">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>値編</h1>
+
+<p>
+今回は、 LuneScript で扱える値について説明します。
+</p>
+<h2 id="headline-1">
+値の型
+</h2>
+<p>
+LuneScript で扱える値の型と、トランスコンパイラ後の Lua の値との対応表を示します。
+</p>
+<table>
+<thead>
+<tr>
+<th>LuneScript</th>
+<th>Lua</th>
+<th>用途</th>
+<th>LuneScript での定義方法</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>nil, null</td>
+<td>nil</td>
+<td>nil</td>
+<td>nil</td>
+</tr>
+<tr>
+<td>int</td>
+<td>数値</td>
+<td>整数</td>
+<td>0 1 2 3 ?A 0x10 -100</td>
+</tr>
+<tr>
+<td>real</td>
+<td>数値</td>
+<td>実数</td>
+<td>0.0 1.0 0.001</td>
+</tr>
+<tr>
+<td>str</td>
+<td>文字列</td>
+<td>文字列, バイナリデータ</td>
+<td>&#34;abc&#34; &#39;def&#39;  ```hij```</td>
+</tr>
+<tr>
+<td>bool</td>
+<td>真偽値</td>
+<td>真偽値</td>
+<td>true false</td>
+</tr>
+<tr>
+<td>List</td>
+<td>テーブル</td>
+<td>リスト</td>
+<td>[1, 2, 3 ]</td>
+</tr>
+<tr>
+<td>Array</td>
+<td>テーブル</td>
+<td>配列(固定長)</td>
+<td>[@ 1, 2, 3 ]</td>
+</tr>
+<tr>
+<td>Map</td>
+<td>テーブル</td>
+<td>マップ</td>
+<td>{ &#34;A&#34;:1, &#34;BC&#34;: 100 }</td>
+</tr>
+<tr>
+<td>Set</td>
+<td>テーブル</td>
+<td>セット</td>
+<td>(@ 1, 2, 3)</td>
+</tr>
+<tr>
+<td>class</td>
+<td>テーブル</td>
+<td>クラス</td>
+<td>class Test {}</td>
+</tr>
+<tr>
+<td>interface</td>
+<td>テーブル</td>
+<td>インタフェース</td>
+<td>interface Test {}</td>
+</tr>
+<tr>
+<td>fn</td>
+<td>function</td>
+<td>関数</td>
+<td>fn func() {}</td>
+</tr>
+<tr>
+<td>enum</td>
+<td>数値、文字列</td>
+<td>enum</td>
+<td>enum Test { }</td>
+</tr>
+<tr>
+<td>stem</td>
+<td>値</td>
+<td>nil 以外の全ての値を保持可能な型</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>
+<strong>2019/3</strong> Set 追加。
+</p>
+<p>
+上記の通り、 LuneScript では Lua の値を細分化してそれぞれを個別の型として扱います。
+</p>
+<p>
+細分化の意図は、 Lua の次の仕様を改善することです。
+</p>
+<ul>
+<li>
+<p>
+Lua の数値は全て実数であり、
+慣れていないと数値が実数であることによる不具合が生じる。
+例えば <code>10/3</code> の Lua の計算結果は、3 ではなく 3.3333 となる。
+</p>
+</li>
+<li>
+<p>
+Lua のテーブルは、全てのキーが自然数となる <strong>シーケンス</strong> と、
+キーが自然数とならない <strong>非シーケンス</strong> に分かれる。
+</p>
+<ul>
+<li>
+<p>
+この違いによって、テーブル内のデータを列挙する際の関数が 
+ipairs と pairs に分かれており、使い分けが必要になる。
+</p>
+<ul>
+<li>
+<p>
+pairs だけを使っていれば問題ないとも言えるが。。。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+テーブルのサイズを取得する <code>#</code> 演算子は、シーケンスのサイズを返すものであり、
+非シーケンスのサイズを返さないため、紛らわしい。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-2">
+nil
+</h3>
+<p>
+nil は、 Lua の nil と同じです。
+</p>
+<p>
+LuneScript では null も利用できます。
+</p>
+<p>
+null は nil の alias です。
+</p>
+<p>
+null のサポートにより、 LuneScript で JSON をそのまま扱うことができます。
+</p>
+<h3 id="headline-3">
+整数、 実数
+</h3>
+<p>
+LuneScript は、整数と実数を分けて扱います。
+</p>
+<p>
+これにより 10/3 は 3 となり、 10/3.0 は 3.3333… となります。
+</p>
+<h4 id="headline-4">
+数値リテラル
+</h4>
+<p>
+数値リテラルは C89 ライクなものを採用します。
+</p>
+<ul>
+<li>
+<p>
+整数は 10 進数と 16 進数表現をサポート
+</p>
+</li>
+<li>
+<p>
+実数は 10 進数と e による指数表現。
+</p>
+</li>
+</ul>
+<h4 id="headline-5">
+文字
+</h4>
+<p>
+LuneScript は、
+<code>?</code> を使用することで <code>?</code> に続く文字のコードを、
+int 型のプリミティブな値として扱えます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">print( ?a ) // 97  (0x61)</code></pre>
+</div>
+<p>
+なお、 &#39; や &#34; の文字のコードを得る場合、
+?\&#39; のように \ でエスケープする必要があります。
+</p>
+<h4 id="headline-6">
+四則演算
+</h4>
+<p>
+数値の四則演算は Lua と同じものを採用します。
+</p>
+<p>
+2項演算の結果は次の通り型が変わります。
+</p>
+<ul>
+<li>
+<p>
+int と int の演算結果は int になる。
+</p>
+</li>
+<li>
+<p>
+real と real の演算結果は real になる。
+</p>
+</li>
+<li>
+<p>
+int と real の演算結果は real になる。
+</p>
+</li>
+</ul>
+<p>
+ただし、 int と int の演算結果が int の範囲外になった場合、
+実行時の内部的な値としては real になりますが、LuneScript 上の型は int のままです。
+演算結果を int に丸めるには、 <code>@@int</code> でキャストする必要があります。
+</p>
+<h4 id="headline-7">
+ビット演算
+</h4>
+<p>
+ビット演算をサポートします。
+Lua5.1 では使用できません。
+</p>
+<p>
+ビット長は Lua5.2 では 32bit となります。
+Lua5.3 のビット長は、環境に依存します。
+</p>
+<ul>
+<li>
+<p>
+論理積 (&amp;)
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">1 &amp; 3 == 1</code></pre>
+</div>
+<ul>
+<li>
+<p>
+論理和  (|)
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">1 | 2 == 3</code></pre>
+</div>
+<ul>
+<li>
+<p>
+排他的論理和 (~)
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">1 ~ 3 == 2</code></pre>
+</div>
+<ul>
+<li>
+<p>
+論理シフト(左) (|&lt;&lt;)
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">1 |&lt;&lt; 2 == 4</code></pre>
+</div>
+<ul>
+<li>
+<p>
+論理シフト(右) (|&gt;&gt;)
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">0x10 |&gt;&gt; 2 == 4</code></pre>
+</div>
+<ul>
+<li>
+<p>
+ビット反転 (~)
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">~2 == 0xfffffffd</code></pre>
+</div>
+<h3 id="headline-8">
+文字列
+</h3>
+<p>
+&#34; か &#39; で囲むと文字列になります。
+&#34;&#34; 内では &#39; が使用でき、 &#39;&#39; 内では &#34; が使用できます。
+</p>
+<p>
+なお、 &#34;&#34;, &#39;&#39; は改行を含めることはできません。
+改行を含める場合は &#34;\n&#34; とします。
+</p>
+<p>
+\n を使用せずに複数行の文字列を定義するには ``` を使用します。
+`````` 内の \n は、改行ではなくそのまま \n として文字列になります。
+</p>
+<p>
+文字列内の特定位置の文字を取得するには、 [N] を使用します。
+ここで指定する N は、文字列先頭が 1 を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let txt = &#34;abc&#34;;
+print( txt[ 2 ] );  // 98</code></pre>
+</div>
+<p>
+N が文字列長を越えた場合の動作は、 <strong>未定義</strong> です。
+</p>
+<h3 id="headline-9">
+真偽値(bool)
+</h3>
+<p>
+true, false をもちます。    
+</p>
+<h3 id="headline-10">
+リスト
+</h3>
+<p>
+リストは値を追加、削除可能な型です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list:List&lt;int&gt; = [];
+list.insert( 1 ); // [ 1 ]
+list.insert( 2 ); // [ 1, 2 ]
+list.insert( 3 ); // [ 1, 2, 3 ]
+list.remove(); // [ 1, 2 ]
+print( list[1] ) // 1</code></pre>
+</div>
+<p>
+リストの要素には [index] でアクセスします。
+リストの先頭の index は 1 です。
+リストの範囲外をアクセスした場合の動作は <strong>未定義</strong> です。
+</p>
+<p>
+リストの長さを取得するのは <code>#</code> です。
+例えば <code>#list</code> は、 リスト型の変数 list の長さを取得します。
+</p>
+<p>
+値の追加は Lua と同じで insert(), 削除は remove() です。
+</p>
+<h3 id="headline-11">
+Map   
+</h3>
+<p>
+Map のリテラルは JSON フォーマットを拡張したフォーマットです。
+</p>
+<p>
+次のように JSON フォーマットを扱えます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let map = {
+   &#34;val1&#34;: 1,
+   &#34;val2&#34;: 2,
+   &#34;val3&#34;: 3
+};
+print( map.val1, map.val2, map.val3 ); // 1 2 3</code></pre>
+</div>
+<p>
+次の点で JSON と違います。
+</p>
+<ul>
+<li>
+<p>
+キーと値に nil 以外の全ての値を使用できる
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut test:Map&lt;int,int&gt; = {};
+let map = {
+   1: &#34;val1&#34;,
+   2.0: &#34;val2&#34;,
+   test: &#34;val3&#34;
+};
+print( map[ 1 ], map[ 2.0 ], map[ test ] ); // val1 val2 val3</code></pre>
+</div>
+<p>
+また、 null を nil の alias としているため、
+JSON そのものを扱うことが出来ます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut map:Map&lt;str,int&gt; = {};
+map[ &#34;abc&#34; ] = 1;
+map.xyz = 10;</code></pre>
+</div>
+<p>
+Map の要素には [key] でアクセスします。
+key の型が str の場合、 .key としてもアクセスできます。
+</p>
+<p>
+例えば、次の [ &#34;abc&#34; ] と .abc は同じ要素にアクセスするため、
+次の例の print は true を出力します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">print( map[ &#34;abc&#34; ] == map.abc ); // true</code></pre>
+</div>
+<p>
+なお、マップに対して <code>#</code> 演算子は使用できません。
+</p>
+<h4 id="headline-12">
+Map の注意
+</h4>
+<p>
+Map を扱う際、次を注意してください。
+</p>
+<ul>
+<li>
+<p>
+マップのキーは、 int と real を区別することが出来ません。
+</p>
+</li>
+</ul>
+<p>
+具体的には、下記の例で <code>map[1]</code> と <code>map[1.0]</code> が、何を返すかは <strong>未定義</strong> です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let map = {
+   1: &#34;val1&#34;,
+   1.0: &#34;val2&#34;,
+};
+print( map[ 1 ], map[ 1.0 ] );</code></pre>
+</div>
+<p>
+これは Lua 仕様由来の制限です。
+</p>
+<ul>
+<li>
+<p>
+キーに int, real, str 以外を使用した場合の、キーの同値判定
+</p>
+</li>
+</ul>
+<p>
+次の例において、 list1, list2 はどちらも int の 1 を要素に持つリストです。
+この list1 をキーとして、 &#34;aaa&#34; を map に登録します。
+</p>
+<p>
+そして、 list1, list2 をキーとして、 map から値を取得すると、
+その結果は aaa と nil となります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut map:Map&lt;&amp;List&lt;int&gt;,str&gt; = {};
+let list1 = [ 1 ];
+let list2 = [ 1 ];
+map[ list1 ] = &#34;aaa&#34;;
+print( map[ list1 ], map[ list2 ] );  // aaa nil</code></pre>
+</div>
+<p>
+これは、 list1 と list2 が異なるキーとして判定されるためです。
+</p>
+<p>
+int, real, str 以外を map のキーに使用した場合、
+そのキーが等しいかどうかは、同じオブジェクトである必要があります。
+</p>
+<h3 id="headline-13">
+Set
+</h3>
+<p>
+値の集合を扱います。
+</p>
+<p>
+詳しくは次の記事を参照してください。
+</p>
+<h3 id="headline-14">
+generics
+</h3>
+<p>
+List, Array, Map は generics 対応しています。
+</p>
+<p>
+例えば、そえぞれ次のように宣言します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let list:List&lt;int&gt; = [];  // int を要素に持つリスト
+let array:Array&lt;real&gt; = [@];  // real を要素に持つ配列
+let map:Map&lt;str,int&gt; = {}; // str をキー、int を値に持つマップ</code></pre>
+</div>
+<h3 id="headline-15">
+リスト、マップコンストラクタの型
+</h3>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let list = [ 1, 2, 3 ];
+let map = { &#34;A&#34;: 10, &#34;B&#34;: 11, &#34;C&#34;: 12 };</code></pre>
+</div>
+<p>
+リスト、マップは、上記のようにリテラルを宣言できます。
+この時生成される リスト、マップの型は、 構成する値によって決まります。
+</p>
+<p>
+マップコンストラクタで利用されるキー、あるいは値が全て同じ型なら、
+マップのキー、値の型は、そのキー、値の型になります。
+いずれかが異なれば stem 型になります。
+</p>
+<p>
+具体的には、次のようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let list1 = [ 1, 2, 3 ];			// int[]
+let list2 = [ &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ];			// str[]
+let list3 = [ &#39;a&#39;, 1, &#39;c&#39; ];			// stem[]
+let map1 = { &#34;A&#34;: 10, &#34;B&#34;: 11, &#34;C&#34;: 12 };	// Map&lt;str,int&gt;
+let map2 = { &#34;A&#34;: 10, &#34;B&#34;: 11, &#34;C&#34;: 12 };	// Map&lt;str,int&gt;
+let map3 = { &#34;a&#34;: &#39;z&#39;, &#34;b&#34;: &#39;y&#39;, &#34;c&#34;: &#39;x&#39; };	// Map&lt;str,str&gt;
+let map4 = { &#34;a&#34;: 1, &#34;b&#34;: &#39;Z&#39; };		// Map&lt;str,stem&gt;</code></pre>
+</div>
+<h3 id="headline-16">
+enum
+</h3>
+<p>
+LuneScript は enum に対応しています。
+</p>
+<p>
+詳細は明日の記事を参照してください。
+</p>
+<h3 id="headline-17">
+stem
+</h3>
+<p>
+stem は、nil 以外の全ての値を保持できる型です。
+</p>
+<p>
+LuneScript は、静的型付け言語であり、
+想定する型と異なる値を与えらた場合はコンパイルエラーします。
+</p>
+<p>
+対して stem 型は、nil 以外の全ての型を扱える型なので、
+nil 以外のどのような値を与えられてもコンパイルエラーしません。
+</p>
+<p>
+stem! は nil を含む全ての値を扱える型です。
+Lua の変数そのものと考えて問題ありません。
+</p>
+<h3 id="headline-18">
+form
+</h3>
+<p>
+form は関数オブジェクトを扱う型です。
+</p>
+<p>
+関数については後述します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/branch/" title="一般分岐構文 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 一般分岐構文 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/arg/" title="可変長引数、戻り値 編">Next - 可変長引数、戻り値 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

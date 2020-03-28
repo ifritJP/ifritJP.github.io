@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>match 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/match/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="match 編" />
+<meta property="og:description" content="LuneScript は、代数的データ型とパターンマッチをサポートします。 代数的データ型 (alge型) enum 型は、 int, real, str のいずれかの値をグルーピングして、値域を制限" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/match/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="match 編"/>
+<meta name="twitter:description" content="LuneScript は、代数的データ型とパターンマッチをサポートします。 代数的データ型 (alge型) enum 型は、 int, real, str のいずれかの値をグルーピングして、値域を制限"/>
+<meta itemprop="name" content="match 編">
+<meta itemprop="description" content="LuneScript は、代数的データ型とパターンマッチをサポートします。 代数的データ型 (alge型) enum 型は、 int, real, str のいずれかの値をグルーピングして、値域を制限">
+
+<meta itemprop="wordCount" content="1748">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>match 編</h1>
+
+<p>
+LuneScript は、代数的データ型とパターンマッチをサポートします。
+</p>
+<h2 id="headline-1">
+代数的データ型 (alge型)
+</h2>
+<p>
+enum 型は、 int, real, str のいずれかの値をグルーピングして、値域を制限できます。
+</p>
+<p>
+一方、代数的データ型は enum 型をより一般的にしたもので、
+int, real, str に限らず全ての型をグルーピングすることが出来ます。
+</p>
+<p>
+代数的データ型は alge キーワードで宣言します。
+</p>
+<p>
+次に例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Hoge {
+   pri let val:int {pub};
+}
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( num:int, txt:str ),
+}</code></pre>
+</div>
+<p>
+この例では、 alge 型 Test を宣言しています。
+</p>
+<p>
+Test は、 Val1 〜 Val5 までの値域を持ちます。
+また、 Val1 〜 Val5 はそれぞれ次のパラメータを持ちます。
+</p>
+<table>
+<thead>
+<tr>
+<th>値</th>
+<th>パラメータ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Val1</td>
+<td>なし</td>
+</tr>
+<tr>
+<td>Val2</td>
+<td>int</td>
+</tr>
+<tr>
+<td>Val3</td>
+<td>str</td>
+</tr>
+<tr>
+<td>Val4</td>
+<td>Hoge</td>
+</tr>
+<tr>
+<td>Val5</td>
+<td>int, str</td>
+</tr>
+</tbody>
+</table>
+<p>
+パラメータの型に制限はありません。
+この例の場合、 Val4 は Hoge クラス型をパラメータに持ちます。
+</p>
+<p>
+パラメータの個数も制限はありません。
+この例の場合、 Val5 は int と str をパラメータに持ちます。
+</p>
+<p>
+パラメータには、型だけ指定する方法と、名前と型を指定する方法があります。
+この例の場合、 Val2 から Val4 は型だけ指定し、 Val5 はパラメータ名と型を指定しています。
+パラメータ名は、そのパラメータの意味を明瞭にする効果があるだけです。
+</p>
+<p>
+この alge 型の値を使用する場合、次のように書きます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let val1 = Test.Val1;
+let val2 = Test.Val2( 1 );
+let val3 = Test.Val3( &#34;abc&#34; );
+let val4 = Test.Val4( new Hoge( 100 ) );
+let val5 = Test.Val5( 10, &#34;xyz&#34; );</code></pre>
+</div>
+<p>
+それぞれの意味は次になります。
+</p>
+<ul>
+<li>
+<p>
+val1 は Test.Val1
+</p>
+</li>
+<li>
+<p>
+val2 は 1 をパラメータに持つ Test.Val2
+</p>
+</li>
+<li>
+<p>
+val3 は &#34;abc&#34; をパラメータに持つ Test.Val3 
+</p>
+</li>
+<li>
+<p>
+val4 は new Hoge( 100 ) をパラメータに持つ Test.Val4
+</p>
+</li>
+<li>
+<p>
+val5 は 10, &#34;xyz&#34; をパラメータに持つ Test.Val5
+</p>
+</li>
+</ul>
+<h2 id="headline-2">
+match
+</h2>
+<p>
+enum 型は、次のように元の値と同じように使用できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( unwrap TestEnum._from( val ) );</code></pre>
+</div>
+<p>
+この例では、 関数 func() 内で TestEnum 型の値 + 100 をしていますが、
+これは TestEnum 型が int の数値としても利用できることを示しています。
+</p>
+<p>
+一方で alge 型の値は、特別な処理が必要です。
+その処理が match です。
+</p>
+<p>
+次に match の例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Hoge {
+   pri let val:int {pub};
+}
+
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( int, str ),
+}
+
+fn func( test:Test ) {
+   match test {
+      case .Val1 {
+         print( test.$_txt );
+      }
+      case .Val2( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val3( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val4( x ) {
+         print( test.$_txt, x.$val );
+      }
+      case .Val5( x, y ) {
+         print( test.$_txt, x, y );
+      }
+   }
+}
+
+func( Test.Val1 ); // Test.Val1
+func( Test.Val2( 1 ) ); // Test.Val2 1
+func( Test.Val3( &#34;abc&#34; ) ); // Test.Val3 abc
+func( Test.Val4( new Hoge( 100 ) ) ); // Test.Val4  100
+func( Test.Val5( 10, &#34;xyz&#34; ) ); // Test.Val5 10 xyz</code></pre>
+</div>
+<p>
+この例では、 func() 関数内で match を実行しています。
+</p>
+<p>
+case で Val1 〜 Val5 で分岐しています。
+また Val2 〜 Val5 は、それぞれパラメータを受け取る変数を宣言しています。
+</p>
+<p>
+例えば func( Test.Val2( 1 ) ) は、 <code>Test.Val2( 1 )</code> を func() に渡しています。
+ここで func() 内の match の <code>case .Val2( x )</code> にマッチします。
+そして、 x には 1 がセットされ、 <code>print( test.$_txt, x )</code> が実行されます。
+</p>
+<p>
+ここで <code>test.$_txt</code> は、 値域の Val2 を示す &#34;Test.Val2&#34; の文字列が展開されます。
+</p>
+<h2 id="headline-3">
+alge 型の省略表記
+</h2>
+<p>
+alge 型も enum 型と同じように省略表記を利用できます。
+</p>
+<p>
+次のような alge 型の Test と、その Test を引数に持つ関数があった場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   print( test );
+}</code></pre>
+</div>
+<p>
+func() をコールする際、次のように Test を省略可能です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">func( .Val1 );
+func( .Val2 );
+func( .Val3( 10 ) );</code></pre>
+</div>
+<p>
+なお、 外部モジュールで定義されている alge 型を省略指定する場合、
+その外部モジュールを import している必要があります。
+</p>
+<h2 id="headline-4">
+alge型 の比較
+</h2>
+<p>
+パラメータを持たない単純な alge 型の値は、次のように比較することが出来ます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   if test == .Val1 {
+      print( &#34;Val1&#34; );
+   }
+   elseif test == .Val2 {
+      print( &#34;Val2&#34; );
+   }
+   elseif test == .Val3(1) {  // error
+      print( &#34;Val3&#34; );
+   }
+   else {
+      print( &#34;no&#34; );
+   }
+}
+func( .Val1 ); // Val1
+func( .Val2 ); // Val2</code></pre>
+</div>
+<p>
+なお、パラメータを持つ値 (上記の場合 Val3) は、
+同じパラメータを与えても異なる値になるため注意が必要です。
+ちなみに、上記の <code>test == .Val3(1)</code> はエラーとなります。
+なぜならば、この式の結果は必ず「false」となるため、
+コンパイルエラーとすることで、実行時に意図しない結果になることを防ぎます。
+</p>
+<h2 id="headline-5">
+alge の使用例
+</h2>
+<p>
+alge を使うと JSON 構造を次のように書くことが出来ます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">alge JsonVal {
+   JNull,
+   JBool(bool),
+   JInt(int),
+   JReal(real),
+   JStr(str),
+   JArray(List&lt;JsonVal&gt;),
+   JObj(Map&lt;str,JsonVal&gt;),
+}
+fn dumpJson( stream:oStream, jval:JsonVal ) {
+   match jval {
+      case .JNull {
+         stream.write( &#34;null&#34; );
+      }
+      case .JBool( val ) {
+         stream.write( &#34;%s&#34; (val) );
+      }     
+      case .JInt( val ) {
+         stream.write( &#34;%d&#34; (val ) );
+      }        
+      case .JReal( val ) {
+         stream.write( &#34;%g&#34; (val ) );
+      }        
+      case .JStr( val ) {
+         stream.write( &#39;&#34;%s&#34;&#39; (val ) );
+      }        
+      case .JArray( list ) {
+         stream.write( &#34;[&#34; );
+         foreach val, index in list {
+            if index &gt; 1 {
+               stream.write( &#34;,&#34; );
+            }
+            dumpJson( stream, val );
+         }
+         stream.write( &#34;]&#34; );
+      }        
+      case .JObj( map ) {
+         stream.write( &#34;{&#34; );
+         let mut cont = false;
+         foreach val, key in map {
+            if cont {
+               stream.write( &#39;,&#39; );
+            }
+            else {
+               cont = true;
+            }
+            stream.write( &#39;&#34;%s&#34;:&#39; (key) );
+            dumpJson( stream, val );
+         }
+         stream.write( &#34;}&#34; );
+      }
+   }
+}
+dumpJson( io.stdout,
+          JsonVal.JObj( { &#34;foo&#34;: JsonVal.JInt( 1 ),
+                          &#34;bar&#34;: JsonVal.JStr( &#34;abc&#34; ) } ) );</code></pre>
+</div>
+<p>
+alge を使用せずにキャストや継承などを利用すれば同じことは出来ます。
+しかし、キャストはもちろん、継承にも欠点があります。
+</p>
+<p>
+alge も万能ではありませんが、
+幾つかの場面ではキャストや継承を使用するよりも、
+より良い選択肢になると思います。
+</p>
+<p>
+次回はインタフェースを説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/classmapping/" title="mapping 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - mapping 編</a>
+<a class="nav nav-next" href="https://example.com/lunescript/nilcond/" title="nil 条件演算子 編">Next - nil 条件演算子 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class="active"><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

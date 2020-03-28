@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>import/provide 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/import/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="import/provide 編" />
+<meta property="og:description" content="今回は LuneScript のモジュール管理について説明します。 モジュール LuneScript のモジュール管理は、基本的に Lua と同じです。 Lua との違いを、次に挙げます。 特に宣言しない" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/import/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="import/provide 編"/>
+<meta name="twitter:description" content="今回は LuneScript のモジュール管理について説明します。 モジュール LuneScript のモジュール管理は、基本的に Lua と同じです。 Lua との違いを、次に挙げます。 特に宣言しない"/>
+<meta itemprop="name" content="import/provide 編">
+<meta itemprop="description" content="今回は LuneScript のモジュール管理について説明します。 モジュール LuneScript のモジュール管理は、基本的に Lua と同じです。 Lua との違いを、次に挙げます。 特に宣言しない">
+
+<meta itemprop="wordCount" content="1699">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>import/provide 編</h1>
+
+<p>
+今回は LuneScript のモジュール管理について説明します。
+</p>
+<h2 id="headline-1">
+モジュール
+</h2>
+<p>
+LuneScript のモジュール管理は、基本的に Lua と同じです。
+</p>
+<p>
+Lua との違いを、次に挙げます。
+</p>
+<ul>
+<li>
+<p>
+特に宣言しない場合、ファイルそれぞれが 1 つのモジュールとなる。
+</p>
+</li>
+<li>
+<p>
+ファイル名の拡張子は .lns で、 .lns を除いた名前がモジュール名となる。
+</p>
+</li>
+<li>
+<p>
+init.lns は非サポート。
+</p>
+</li>
+<li>
+<p>
+LuneScript の組込みキーワード(class 等)のファイル名は非サポート。
+</p>
+</li>
+</ul>
+<p>
+念のため、LuneScript と Lua のモジュール管理の共通部分を説明します。
+</p>
+<ul>
+<li>
+<p>
+パッケージの検索パスは package.path に格納されているパス情報によって制御される。
+</p>
+</li>
+<li>
+<p>
+モジュール名は . で区切り、サブディレクトリを表わす。
+</p>
+</li>
+<li>
+<p>
+相互参照モジュールをサポートしない。
+</p>
+</li>
+</ul>
+<p>
+例えば、ファイル hoge/test.lns のモジュール名は hoge.test になります。
+</p>
+<p>
+上記から分かるように、ディレクトリ名、ファイル名(拡張子以外)に
+. を含めることは出来ません。
+</p>
+<p>
+LuneScript のソースは、特に何も宣言しなくても 1 つのモジュールとなります。
+</p>
+<p>
+例えば、次のような Test.lns は関数 func を持つモジュールとなります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// Test.lns
+fn func(): str, str {
+   return __mod__, __func__;
+}</code></pre>
+</div>
+<p>
+ただし、モジュール内の情報を外部に公開するには、 pub 宣言が必要です。
+</p>
+<p>
+具体的には、次のように pub を宣言する必要があります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}</code></pre>
+</div>
+<p>
+これによって、このモジュールの func() 関数が外部から利用できるようになります。
+</p>
+<h2 id="headline-2">
+import
+</h2>
+<p>
+import は、外部モジュールの利用を宣言します。
+</p>
+<p>
+import は、モジュールの先頭に宣言してください。
+</p>
+<p>
+<strong>(2019/6/24) 関数内部でも宣言できるように対応しました。</strong>
+</p>
+<p>
+上記 Test.lns を利用するには、次の様にします。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">import Test;
+
+print( Test.func() ); // @Test   Test.func</code></pre>
+</div>
+<p>
+上記の例では、 Test.func() で Test モジュール内の func() を呼び出しています。
+</p>
+<p>
+このように import することで、
+外部モジュールが pub 宣言しているシンボルにアクセス出来ます。
+</p>
+<p>
+なお、work/Test.lns を import する場合は、次のようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">import work.Test;
+
+print( Test.func() ); // work.Test	Test.func</code></pre>
+</div>
+<p>
+上記例から分かるように、import したモジュールにアクセスするには、
+そのモジュール名の最後の . 以降の名前を使用します。
+上記例の場合、 work.Test を import しているので、シンボル Test でアクセスします。
+</p>
+<p>
+なお、複数モジュールを import する時に、
+アクセス名が同じになる場合は(例えば foo.bar と hoge.bar を import する場合)、
+次に説明する as を利用してください。
+</p>
+<h3 id="headline-3">
+import as
+</h3>
+<p>
+import as は、 import 後のアクセス名を指定します。
+</p>
+<p>
+例えば、上記の work.Test を import as で foo とすると、次のようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">import work.Test as foo;
+
+print( foo.func() ); // work.Test	Test.func</code></pre>
+</div>
+<h2 id="headline-4">
+LuneScript でトランスコンパイルしたモジュールを Lua から require() する
+</h2>
+<p>
+LuneScript は、Lua のトランスコンパイラです。
+つまり、 LuneScript で書いたモジュールは、
+Lua から require() して使用することが出来ます。
+</p>
+<p>
+この場合、 LuneScript で書いたモジュールは、必ずテーブルとなります。
+</p>
+<p>
+例えば、上記 Test.lns のトランスコンパイル後の Lua ソースは、次のようになります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--work/Test.lns</span>
+<span class="kd">local</span> <span class="n">_moduleObj</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;work.Test&#39;</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune</span> <span class="kr">then</span>
+   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="kd">local</span> <span class="n">__func__</span> <span class="o">=</span> <span class="s1">&#39;Test.func&#39;</span>
+
+   <span class="kr">return</span> <span class="n">__mod__</span><span class="p">,</span> <span class="n">__func__</span>
+<span class="kr">end</span>
+<span class="n">_moduleObj.func</span> <span class="o">=</span> <span class="n">func</span>
+<span class="kr">return</span> <span class="n">_moduleObj</span></code></pre></div>
+</div>
+<p>
+上記のソースを見ると分かりますが、
+Lua からこのソースを require() すると、_moduleObj が得られることになります。
+</p>
+<p>
+一方で、 Lua の require() は任意の値を返すこと出来ます。
+そして、この動作を期待される場合があります。
+</p>
+<p>
+つまり、LuneScript でトランスコンパイルした Lua モジュールは、
+テーブル以外のオブジェクトが得られることを期待した Lua から、
+直接 require して使用することが出来ないことになります。
+</p>
+<p>
+このような Lua モジュールとの互換を可能にする仕組みが、 provide です。
+</p>
+<h2 id="headline-5">
+provide
+</h2>
+<p>
+provide は、既存の Lua モジュールとの互換性を提供するものです。
+</p>
+<p>
+<strong>Lua モジュールとの互換性が不要な場合の使用は避けてください。</strong>
+</p>
+<p>
+次に provide の例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+
+provide func;</code></pre>
+</div>
+<p>
+上記例は、 provide に 関数 func() を与えています。
+</p>
+<p>
+これによって、この Test.lns モジュールのトランスコンパイル結果は、
+次のようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">--work/Test.lns
+local __mod__ = &#39;work.Test&#39;
+if not _lune then
+   _lune = {}
+end
+local function func(  )
+   local __func__ = &#39;Test.func&#39;
+
+   return __mod__, __func__
+end
+return func</code></pre>
+</div>
+<p>
+上記から分かるように、 Lua からこのモジュールを require() すると、
+関数 func が得られます。
+</p>
+<p>
+このように provide を利用すると、
+既存の Lua モジュールとの互換性のあるモジュールを生成することが出来ます。
+</p>
+<p>
+なお、 provide に指定できるのは <strong>シンボルだけ</strong> です。
+プリミティブな値を指定することは出来ません。
+</p>
+<h2 id="headline-6">
+まとめ
+</h2>
+<p>
+LuneScript は、簡単にモジュールを作成でき、既存の Lua モジュールとの互換性もあります。
+</p>
+<p>
+次回は、 LuneScript から既存の Lua  モジュールを利用する方法について説明します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/tutorial3.hello/" title="Hello world"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Hello world</a>
+<a class="nav nav-next" href="https://example.com/lunescript/introduce2/" title="Lua のトランスコンパイラ LuneScript の紹介 2">Next - Lua のトランスコンパイラ LuneScript の紹介 2 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class="active"><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

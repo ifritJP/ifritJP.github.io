@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ビルド 編 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://example.comindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://example.com/lunescript/make/">
+<link rel="stylesheet" href="https://example.com/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://example.com/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://example.com/js/bundle.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="ビルド 編" />
+<meta property="og:description" content="~# -- coding:utf-8 -- 今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://example.com/lunescript/make/" />
+<meta property="og:image" content="https://example.com/images/og-image.png"/>
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://example.com/images/og-image.png"/>
+
+<meta name="twitter:title" content="ビルド 編"/>
+<meta name="twitter:description" content="~# -- coding:utf-8 -- 今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが"/>
+<meta itemprop="name" content="ビルド 編">
+<meta itemprop="description" content="~# -- coding:utf-8 -- 今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが">
+
+<meta itemprop="wordCount" content="1878">
+<meta itemprop="image" content="https://example.com/images/og-image.png"/>
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>ビルド 編</h1>
+
+<p>
+~# -<strong>- coding:utf-8 -</strong>-
+</p>
+<p>
+今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。
+</p>
+<p>
+LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、
+LuneScript 専用のビルドツールは提供していません。
+よって、ここでは一般的なビルド方法について説明します。
+</p>
+<h2 id="headline-1">
+ビルド
+</h2>
+<p>
+LuneScript は Lua のトランスコンパイラですが、
+LuneScript のコードそのままでも実行可能です。
+</p>
+<p>
+例えば、次のようなソースは
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">print( &#34;hello&#34; );</code></pre>
+</div>
+<p>
+次のコマンドで実行できます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnsc hello.lns exe</code></pre></div>
+</div>
+<p>
+しかし、これでは LuneScript から Lua へのトランスコンパイル処理が走るため、
+ある程度の規模のプロジェクトになると効率が悪くなります。
+</p>
+<p>
+そこで、モジュール毎に Lua へトランスコンパイルするビルド管理が必要になります。
+</p>
+<h3 id="headline-2">
+トランスコンパイル
+</h3>
+<p>
+Lua へトランスコンパイルするには、次のコマンドを実行します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnsc hello.lns save</code></pre></div>
+</div>
+<p>
+これにより hello.lns をトランスコンパイルし、
+変換後のコードを hello.lua に出力します。
+</p>
+<p>
+この hello.lua は Lua コマンドで実行できます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua hello.lua</code></pre></div>
+</div>
+<p>
+モジュールごとにトランスコンパイルしておくだけでも
+lnsc コマンドで直接実行するよりは効率良くなりますが、
+まだ改善できます。
+</p>
+<p>
+それは LuneScript の import です。
+</p>
+<p>
+LuneScript の import は、指定のモジュールを読み込みます。
+このとき、LuneScript は指定モジュールを解析します。
+この解析には時間がかかります。
+</p>
+<p>
+LuneScript は、この解析時間を短縮する手段を提供しています。
+</p>
+<h3 id="headline-3">
+メタ情報ファイル
+</h3>
+<p>
+メタ情報ファイルとは、モジュールが公開しているクラスや、
+そのモジュールが import している他のモジュールの依存関係などの情報を
+まとめたファイルです。
+</p>
+<p>
+import する際、モジュールを解析する代わりに
+このメタ情報ファイルを読み込むことで、解析時間を短縮できます。
+</p>
+<p>
+メタ情報ファイルは、次のコマンドで生成できます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnsc hello.lns SAVE</code></pre></div>
+</div>
+<p>
+先程のコマンドと何が違うかというと、 &#34;<strong>save</strong>&#34; と &#34;<strong>SAVE</strong>&#34; の違いです。
+</p>
+<p>
+小文字の save は、トランスコンパイルした Lua コードだけ生成しますが、
+大文字の SAVE は、 Lua コードとメタ情報ファイルを生成します。
+</p>
+<p>
+具体的には、上記コマンドを実行すると hello.lua と hello.meta が生成されます。
+</p>
+<p>
+LuneScript はモジュールを import する際、
+次の条件が全て成り立つ時に .meta ファイルをロードします。
+このとき、import 対象の .lns ファイルの解析は行ないません。
+</p>
+<ul>
+<li>
+<p>
+.lns に対応する .lua と .meta が存在する
+</p>
+</li>
+<li>
+<p>
+それぞれのファイルの更新時間について、次の条件を満す
+</p>
+<ul>
+<li>
+<p>
+<code>.lns &lt; .meta</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+インポート対象の mod1.lns 内で import しているモジュール mod2 の更新時間に対し、
+次の条件を満す。
+</p>
+<ul>
+<li>
+<p>
+<code>mod1 &gt; mod2</code>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+.meta ファイルのフォーマットバージョンが正しい
+</p>
+</li>
+</ul>
+<h3 id="headline-4">
+依存関係
+</h3>
+<p>
+2 つのモジュール mod1, mod2 があった時、
+mod1 が mod2 を import していると、「mod1 が mod2 に依存する」ことになります。
+</p>
+<p>
+「mod1 が mod2 に依存する」ということは、
+mod2 を修正した時は「mod2 だけでなく、mod1 もトランスコンパイルが必要になる」
+ということです。
+</p>
+<p>
+このような依存関係があるモジュールをビルドするには、
+古くから make コマンドが利用されています。
+近年は様々なビルドツールがありますが、
+make が代表的なビルドツールであることには違いありません。
+</p>
+<p>
+make コマンドは、定義された依存関係によって、
+あるファイルが修正された際、
+そのファイルに依存するファイルを更新する制御を行ないます。
+</p>
+<p>
+この依存関係を手動で定義するのは、意外と面倒なものです。
+</p>
+<p>
+LuneScript は、 make コマンドの依存関係を自動生成する機能を提供します。
+</p>
+<p>
+LuneScript で依存関係を自動生成するには、次のように SAVE 時にオプションを指定します。
+</p>
+<div class="src src-sh">
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ lnsc mod1.lns --depends depends/mod1.d SAVE</code></pre></div>
+</div>
+<p>
+これは、 mod1.lns をトランスコンパイルすると同時に、
+depends/mod1.d に mod1.lns の依存関係情報を出力します。
+</p>
+<p>
+この依存関係情報を Makefile に取り込むことで、
+手動で依存関係を定義することなく、簡単に make によるビルド制御が可能になります。
+</p>
+<h4 id="headline-5">
+サンプル
+</h4>
+<p>
+例えば次のようなモジュールをもつプロジェクトを作成したとします。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">test/proj/
+      |
+      +--- Mod1.lns
+      |
+      +--- Mod2.lns
+      |
+      +--- Mod3.lns
+      |
+      +--- Mod4.lns</code></pre></div>
+</div>
+<p>
+ここで、それぞれのファイルの中身は次とします。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">import test.proj.Mod2;
+
+pub fn func(): str {
+   return &#34;%s -&gt; %s&#34; (__func__, Mod2.func() );
+}
+print( func() );</code></pre>
+</div>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">import test.proj.Mod3;
+
+pub fn func(): str {
+   return &#34;%s -&gt; %s&#34; (__func__, Mod3.func() );
+}</code></pre>
+</div>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">import test.proj.Mod4;
+
+pub fn func(): str {
+   return &#34;%s -&gt; %s&#34; (__func__, Mod4.func() );
+}</code></pre>
+</div>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn func(): str {
+   return __func__;
+}</code></pre>
+</div>
+<p>
+上記のファイルの依存関係は次のようになっています。
+</p>
+<table>
+<thead>
+<tr>
+<th>ファイル</th>
+<th>依存ファイル</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mod1.lns</td>
+<td>Mod2.lns</td>
+</tr>
+<tr>
+<td>Mod2.lns</td>
+<td>Mod3.lns</td>
+</tr>
+<tr>
+<td>Mod3.lns</td>
+<td>Mod4.lns</td>
+</tr>
+<tr>
+<td>Mod4.lns</td>
+<td>なし</td>
+</tr>
+</tbody>
+</table>
+<p>
+このプロジェクトをビルドする Makefile は、次のようになります。
+</p>
+<div class="src src-makefile">
+<div class="highlight"><pre class="chroma"><code class="language-makefile" data-lang="makefile"><span class="nv">PROJ_DIR</span><span class="o">=</span>test/proj
+<span class="nv">MKFILE</span><span class="o">=</span><span class="k">$(</span>PROJ_DIR<span class="k">)</span>/Makefile
+<span class="nv">SRC_DIR</span><span class="o">=</span><span class="k">$(</span>PROJ_DIR<span class="k">)</span>/
+
+<span class="nf">.PHONY</span><span class="o">:</span> <span class="n">test</span> <span class="n">all</span> <span class="n">build</span> <span class="n">setup</span>
+
+<span class="err">define</span> <span class="err">comp</span>
+	<span class="err">@echo</span> <span class="s2">&#34;$1 -&gt; $2&#34;</span>
+	<span class="err">lnsc</span> <span class="err">$1</span> <span class="err">--depends</span> <span class="err">depends/</span><span class="k">$(</span><span class="nv">shell</span> <span class="nv">echo</span> <span class="k">$</span>1 | <span class="nv">sed</span> &#39;<span class="nv">s</span>@/@.@<span class="nv">g</span>&#39;<span class="k">)</span><span class="err">.d</span> <span class="err">SAVE</span>
+<span class="err">endef</span>
+
+<span class="nf">%.meta</span><span class="o">:</span> %.<span class="n">lns</span>
+	<span class="k">$(</span>call comp,$&lt;,<span class="nv">$@</span><span class="k">)</span>
+
+<span class="nv">SRCS</span> <span class="o">=</span>
+<span class="nv">SRCS</span> <span class="o">+=</span> Mod1.lns
+<span class="nv">SRCS</span> <span class="o">+=</span> Mod2.lns
+<span class="nv">SRCS</span> <span class="o">+=</span> Mod3.lns
+<span class="nv">SRCS</span> <span class="o">+=</span> Mod4.lns
+
+<span class="nv">SRCS</span> <span class="o">:=</span> <span class="k">$(</span>addprefix <span class="k">$(</span>SRC_DIR<span class="k">)</span>,<span class="k">$(</span>SRCS<span class="k">))</span>
+
+<span class="nv">META_LIST</span><span class="o">=</span><span class="k">$(</span>SRCS:.lns<span class="o">=</span>.meta<span class="k">)</span>
+<span class="nv">LUA_LIST</span><span class="o">=</span><span class="k">$(</span>SRCS:.lns<span class="o">=</span>.lua<span class="k">)</span>
+
+<span class="err">-include</span> <span class="err">depends/*.d</span>
+
+<span class="nf">all</span><span class="o">:</span>
+	@echo make setup
+	@echo make build
+
+<span class="nf">setup</span><span class="o">:</span>
+	mkdir -p depends
+
+<span class="nf">build</span><span class="o">:</span> <span class="k">$(</span><span class="nv">META_LIST</span><span class="k">)</span>
+</code></pre></div>
+</div>
+<p>
+ここで重要なのが、 <code>define comp</code> と <code>-include depends/*.d</code> の部分です。
+</p>
+<ul>
+<li>
+<p>
+<code>define comp</code> は、トランスコンパイルと依存情報ファイルの生成処理を登録しています。
+</p>
+</li>
+<li>
+<p>
+<code>-include depends/*.d</code> は、生成した依存情報ファイルを読み込んでいます。
+</p>
+</li>
+</ul>
+<p>
+このような makefile を作成することで、
+import の依存関係に応じたビルドが可能になります。
+</p>
+<h2 id="headline-6">
+まとめ
+</h2>
+<p>
+make コマンドを使うことで、
+LuneScript プロジェクトのビルド制御を簡単に実現できます。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://example.com/lunescript/recommend/" title="トランスコンパイラ開発のすゝめ"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - トランスコンパイラ開発のすゝめ</a>
+<a class="nav nav-next" href="https://example.com/lunescript/macro/" title="マクロ 編">Next - マクロ 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="open-menu">
+<ul>
+<li class=""><a href="https://example.com">Home</a></li>
+
+<li class=""><a href="https://example.com/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://example.com/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://example.com/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://example.com/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent"><a href="https://example.com/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://example.com/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://example.com/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://example.com/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://example.com/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://example.com/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://example.com/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://example.com/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://example.com/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://example.com/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://example.com/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://example.com/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://example.com/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://example.com/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://example.com/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://example.com/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://example.com/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://example.com/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://example.com/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class="active"><a href="https://example.com/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://example.com/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://example.com/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/value/">値編</a></li>
+<li class=""><a href="https://example.com/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://example.com/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://example.com/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://example.com/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://example.com/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://example.com/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://example.com/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
