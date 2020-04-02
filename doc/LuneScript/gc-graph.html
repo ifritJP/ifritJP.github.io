@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2020-02-22 土 13:54 -->
+<!-- 2020-04-02 木 23:29 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>LuneScript の GC 検討(図解)</title>
@@ -248,31 +248,43 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org7e26e5a">1. 世代別 GC 概要</a></li>
-<li><a href="#orgb34cd97">2. 原理</a>
+<li><a href="#orgf7b911f">1. 世代別 GC 概要</a></li>
+<li><a href="#org0fd2fc9">2. 原理</a></li>
+<li><a href="#orgda0b532">3. gcFull</a>
 <ul>
-<li><a href="#org42d08aa">2.1. 属性</a></li>
-<li><a href="#org7876669">2.2. MinorObject を参照する MinorSymbol リスト minorRefList の実現方法</a>
+<li><a href="#org5f54fba">3.1. 手段</a>
 <ul>
-<li><a href="#org3071601">2.2.1. MinorSymbol 側に pNext/pPrev のリスト構造を持たせる</a></li>
-<li><a href="#org9768b19">2.2.2. MinorObject 側に MinorSymbol を管理する配列を持たせる</a></li>
+<li><a href="#orgca12873">3.1.1. 属性</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a href="#org78bf360">3. gcNew の手順</a>
+<li><a href="#org1d95c4f">4. gcNew</a>
 <ul>
-<li><a href="#orgd167157">3.1. case1</a>
+<li><a href="#orgad57da5">4.1. MinorObject から辿る方法</a>
 <ul>
-<li><a href="#org00c6712">3.1.1. gc</a></li>
+<li><a href="#org02060a6">4.1.1. 属性</a></li>
+<li><a href="#orgfc3a26b">4.1.2. MinorObject を参照する MinorSymbol リスト minorRefList の実現方法</a></li>
 </ul>
 </li>
-<li><a href="#orga43214c">3.2. case2</a>
+<li><a href="#orgfe64c7b">4.2. gcNew の手順</a>
 <ul>
-<li><a href="#orgdb50040">3.2.1. gc</a></li>
+<li><a href="#org7be185b">4.2.1. case1-1</a></li>
+<li><a href="#org5f6bec7">4.2.2. case1-2</a></li>
+<li><a href="#org33a5801">4.2.3. gc 実行後</a></li>
 </ul>
 </li>
-<li><a href="#orgb8c8d2c">3.3. gc 実行後</a></li>
+<li><a href="#orge553194">4.3. MinorSymbol から辿る方法</a>
+<ul>
+<li><a href="#org2ed902a">4.3.1. オブジェクトと変数の扱い</a></li>
+</ul>
+</li>
+<li><a href="#org3c9b90b">4.4. gcNew の手順</a>
+<ul>
+<li><a href="#orgbaeda9d">4.4.1. case2-1</a></li>
+<li><a href="#org5506e54">4.4.2. case2-2</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -282,8 +294,8 @@ for the JavaScript code in this tag.
 LuneScript の GC を、参照カウンタ型から世代別 GC に切り替えるための検討。
 </p>
 
-<div id="outline-container-org7e26e5a" class="outline-2">
-<h2 id="org7e26e5a"><span class="section-number-2">1</span> 世代別 GC 概要</h2>
+<div id="outline-container-orgf7b911f" class="outline-2">
+<h2 id="orgf7b911f"><span class="section-number-2">1</span> 世代別 GC 概要</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 生成したオブジェクトの生存期間は、次の特性を持つ傾向にある。
@@ -303,8 +315,8 @@ GC 処理を効率的に行なうのが世代別 GC の戦略だ。
 </div>
 
 
-<div id="outline-container-orgb34cd97" class="outline-2">
-<h2 id="orgb34cd97"><span class="section-number-2">2</span> 原理</h2>
+<div id="outline-container-org0fd2fc9" class="outline-2">
+<h2 id="org0fd2fc9"><span class="section-number-2">2</span> 原理</h2>
 <div class="outline-text-2" id="text-2">
 <ul class="org-ul">
 <li>世代別 GC は gcNew と gcFull で GC 処理を分割する。
@@ -333,12 +345,58 @@ Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
+</div>
+
+<div id="outline-container-orgda0b532" class="outline-2">
+<h2 id="orgda0b532"><span class="section-number-2">3</span> gcFull</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+gcFull は、全てのオブジェクトに対し生存状態を確認し、
+オブジェクトの開放処理を行なう。
+</p>
+</div>
+
+<div id="outline-container-org5f54fba" class="outline-3">
+<h3 id="org5f54fba"><span class="section-number-3">3.1</span> 手段</h3>
+<div class="outline-text-3" id="text-3-1">
+<ul class="org-ul">
+<li>全オブジェクトをリスト管理する</li>
+<li>Top から辿れる全シンボルを辿り、オブジェクトの参照状態を確認する</li>
+<li>参照されなていないオブジェクトを開放する</li>
+</ul>
+</div>
+
+<div id="outline-container-orgca12873" class="outline-4">
+<h4 id="orgca12873"><span class="section-number-4">3.1.1</span> 属性</h4>
+<div class="outline-text-4" id="text-3-1-1">
+
+<div class="figure">
+<p><object type="image/svg+xml" data="attrib0.svg" class="" width="40%">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
 
 
 
-<div id="outline-container-org42d08aa" class="outline-3">
-<h3 id="org42d08aa"><span class="section-number-3">2.1</span> 属性</h3>
-<div class="outline-text-3" id="text-2-1">
+<div id="outline-container-org1d95c4f" class="outline-2">
+<h2 id="org1d95c4f"><span class="section-number-2">4</span> gcNew</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+gcNew の実現手段を検討する。
+</p>
+</div>
+
+<div id="outline-container-orgad57da5" class="outline-3">
+<h3 id="orgad57da5"><span class="section-number-3">4.1</span> MinorObject から辿る方法</h3>
+<div class="outline-text-3" id="text-4-1">
+</div>
+<div id="outline-container-org02060a6" class="outline-4">
+<h4 id="org02060a6"><span class="section-number-4">4.1.1</span> 属性</h4>
+<div class="outline-text-4" id="text-4-1-1">
 <ul class="org-ul">
 <li>全オブジェクトは次の状態を持つ
 <ul class="org-ul">
@@ -374,9 +432,9 @@ Sorry, your browser does not support SVG.</object>
 </div>
 
 
-<div id="outline-container-org7876669" class="outline-3">
-<h3 id="org7876669"><span class="section-number-3">2.2</span> MinorObject を参照する MinorSymbol リスト minorRefList の実現方法</h3>
-<div class="outline-text-3" id="text-2-2">
+<div id="outline-container-orgfc3a26b" class="outline-4">
+<h4 id="orgfc3a26b"><span class="section-number-4">4.1.2</span> MinorObject を参照する MinorSymbol リスト minorRefList の実現方法</h4>
+<div class="outline-text-4" id="text-4-1-2">
 <p>
 minorRefList の実現方法には、次の 2 つが考えられる。
 </p>
@@ -387,24 +445,94 @@ minorRefList の実現方法には、次の 2 つが考えられる。
 </ul>
 
 <p>
-次節ではそれぞれの特徴を述べる
+次節でそれぞれの特徴を述べる
 </p>
 </div>
 
-<div id="outline-container-org3071601" class="outline-4">
-<h4 id="org3071601"><span class="section-number-4">2.2.1</span> MinorSymbol 側に pNext/pPrev のリスト構造を持たせる</h4>
+<ol class="org-ol">
+<li><a id="org03034c8"></a>MinorSymbol 側に pNext/pPrev のリスト構造を持たせる<br />
+<div class="outline-text-5" id="text-4-1-2-1">
+<ul class="org-ul">
+<li>計算量    
+<ul class="org-ul">
+<li>シンボルにオブジェクトを代入するときの処理
+<ul class="org-ul">
+<li>代入先シンボルが所属している pNext/pPrev のリストから除外する
+<ul class="org-ul">
+<li>2 回の代入が必要</li>
+</ul></li>
+<li>代入先のシンボルを、オブジェクトの参照リストに加える
+<ul class="org-ul">
+<li>4 回の代入が必要</li>
+</ul></li>
+<li>合計 6 回の代入処理</li>
+</ul></li>
+</ul></li>
+<li>メモリ
+<ul class="org-ul">
+<li>MinorSymbol 毎に pNext/pPrev が必要</li>
+</ul></li>
+<li>備考
+<ul class="org-ul">
+<li>MinorSymbol の alloc/free 制御が面倒そう</li>
+</ul></li>
+</ul>
+</div>
+</li>
+
+
+<li><a id="orgdcb41d8"></a>MinorObject 側に MinorSymbol を管理する配列を持たせる<br />
+<div class="outline-text-5" id="text-4-1-2-2">
+<ul class="org-ul">
+<li>計算量    
+<ul class="org-ul">
+<li>シンボルにオブジェクトを代入するときの処理
+<ul class="org-ul">
+<li>配列を空要素を詰めずに使用する場合
+<ul class="org-ul">
+<li>代入先シンボルが所属しているリストから除外する
+<ul class="org-ul">
+<li>平均 N/2 回のサーチ + 1 回の代入が必要</li>
+</ul></li>
+<li>代入先のシンボルを、オブジェクトのリストに加える
+<ul class="org-ul">
+<li>平均 N/2 回のサーチ + 1 回の代入が必要</li>
+</ul></li>
+<li>合計 約 N 回のサーチ + 2回の代入</li>
+</ul></li>
+<li>配列を空要素を詰めて使用する場合
+<ul class="org-ul">
+<li>代入先シンボルが所属しているリストから除外する
+<ul class="org-ul">
+<li>平均 N/2 回のサーチ + N/2 回の代入が必要</li>
+</ul></li>
+<li>代入先のシンボルを、オブジェクトのリストに加える
+<ul class="org-ul">
+<li>1 回の代入が必要</li>
+</ul></li>
+<li>合計 約 N/2 回のサーチ + N/2 + 1回の代入</li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li>メモリ
+<ul class="org-ul">
+<li>MinorObject 毎に N 個のポインタ配列が必要</li>
+</ul></li>
+<li>備考
+<ul class="org-ul">
+<li>あるオブジェクトが N 個を越えるシンボルから参照された場合、
+そのオブジェクトは Major に promote させる</li>
+</ul></li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
 </div>
 
-<div id="outline-container-org9768b19" class="outline-4">
-<h4 id="org9768b19"><span class="section-number-4">2.2.2</span> MinorObject 側に MinorSymbol を管理する配列を持たせる</h4>
-</div>
-</div>
-</div>
-
-
-<div id="outline-container-org78bf360" class="outline-2">
-<h2 id="org78bf360"><span class="section-number-2">3</span> gcNew の手順</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-orgfe64c7b" class="outline-3">
+<h3 id="orgfe64c7b"><span class="section-number-3">4.2</span> gcNew の手順</h3>
+<div class="outline-text-3" id="text-4-2">
 <ul class="org-ul">
 <li>minor リストのオブジェクトに対し次を実行
 <ul class="org-ul">
@@ -434,33 +562,31 @@ minorRefList の実現方法には、次の 2 つが考えられる。
 </ul>
 </div>
 
-
-
-<div id="outline-container-orgd167157" class="outline-3">
-<h3 id="orgd167157"><span class="section-number-3">3.1</span> case1</h3>
-<div class="outline-text-3" id="text-3-1">
+<div id="outline-container-org7be185b" class="outline-4">
+<h4 id="org7be185b"><span class="section-number-4">4.2.1</span> case1-1</h4>
+<div class="outline-text-4" id="text-4-2-1">
 
 <div class="figure">
-<p><object type="image/svg+xml" data="dot1.svg" class="org-svg">
-Sorry, your browser does not support SVG.</object>
-</p>
-</div>
-</div>
-
-<div id="outline-container-org00c6712" class="outline-4">
-<h4 id="org00c6712"><span class="section-number-4">3.1.1</span> gc</h4>
-<div class="outline-text-4" id="text-3-1-1">
-
-<div class="figure">
-<p><object type="image/svg+xml" data="dot1-2.svg" class="org-svg">
+<p><object type="image/svg+xml" data="dot1-1.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 
 <ol class="org-ol">
-<li><a id="org580664a"></a>step<br />
-<div class="outline-text-5" id="text-3-1-1-1">
+<li><a id="orgbb67f32"></a>gc<br />
+<div class="outline-text-5" id="text-4-2-1-1">
+
+<div class="figure">
+<p><object type="image/svg+xml" data="dot1-1-2.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+<ol class="org-ol">
+<li><a id="org39e9d3e"></a>step<br />
+<div class="outline-text-6" id="text-4-2-1-1-1">
 <ul class="org-ul">
 <li>obj1 は、 var1 で参照されているため <b>生存</b></li>
 <li>obj2 は、 mbr2 で参照されているため、mbr2 を保持する obj1 の生存を確認
@@ -476,31 +602,32 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </li>
 </ol>
-</div>
+</li>
+</ol>
 </div>
 
 
-<div id="outline-container-orga43214c" class="outline-3">
-<h3 id="orga43214c"><span class="section-number-3">3.2</span> case2</h3>
-<div class="outline-text-3" id="text-3-2">
+<div id="outline-container-org5f6bec7" class="outline-4">
+<h4 id="org5f6bec7"><span class="section-number-4">4.2.2</span> case1-2</h4>
+<div class="outline-text-4" id="text-4-2-2">
 <p>
 case1 から var1 のスコープが外れる。
 </p>
 
 
 <div class="figure">
-<p><object type="image/svg+xml" data="dot2.svg" class="org-svg">
+<p><object type="image/svg+xml" data="dot1-2.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgdb50040" class="outline-4">
-<h4 id="orgdb50040"><span class="section-number-4">3.2.1</span> gc</h4>
-<div class="outline-text-4" id="text-3-2-1">
+<ol class="org-ol">
+<li><a id="org8931ca4"></a>gc<br />
+<div class="outline-text-5" id="text-4-2-2-1">
 
 <div class="figure">
-<p><object type="image/svg+xml" data="dot2-2.svg" class="org-svg">
+<p><object type="image/svg+xml" data="dot1-2-2.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
@@ -508,8 +635,8 @@ Sorry, your browser does not support SVG.</object>
 
 
 <ol class="org-ol">
-<li><a id="org384a7a6"></a>step<br />
-<div class="outline-text-5" id="text-3-2-1-1">
+<li><a id="org27f7830"></a>step<br />
+<div class="outline-text-6" id="text-4-2-2-1-1">
 <ul class="org-ul">
 <li>1 回目の確認    
 <ul class="org-ul">
@@ -547,25 +674,214 @@ Sorry, your browser does not support SVG.</object>
 </div>
 </li>
 </ol>
-</div>
+</li>
+</ol>
 </div>
 
-<div id="outline-container-orgb8c8d2c" class="outline-3">
-<h3 id="orgb8c8d2c"><span class="section-number-3">3.3</span> gc 実行後</h3>
-<div class="outline-text-3" id="text-3-3">
+<div id="outline-container-org33a5801" class="outline-4">
+<h4 id="org33a5801"><span class="section-number-4">4.2.3</span> gc 実行後</h4>
+<div class="outline-text-4" id="text-4-2-3">
 
 <div class="figure">
-<p><object type="image/svg+xml" data="dot2-3.svg" class="org-svg">
+<p><object type="image/svg+xml" data="dot1-2-3.svg" class="org-svg">
 Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 </div>
 </div>
+
+
+<div id="outline-container-orge553194" class="outline-3">
+<h3 id="orge553194"><span class="section-number-3">4.3</span> MinorSymbol から辿る方法</h3>
+<div class="outline-text-3" id="text-4-3">
+<p>
+MinorObject から辿ると、
+変数代入処理が非常に重くなるので、MinorSymbol から辿る。
+</p>
+
+<p>
+gcNew の実行を、minor の object を保持するシンボル MinorSymbol から辿って行なう。
+</p>
+
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="attrib2.svg" class="" width="20%">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-org2ed902a" class="outline-4">
+<h4 id="org2ed902a"><span class="section-number-4">4.3.1</span> オブジェクトと変数の扱い</h4>
+<div class="outline-text-4" id="text-4-3-1">
+<ul class="org-ul">
+<li>新しくオブジェクトを生成する場合
+<ul class="org-ul">
+<li>生成した Object を minorObjList に追加</li>
+<li>state を minor にセット</li>
+</ul></li>
+<li>minor Object を変数 Symbol にセットする場合
+<ul class="org-ul">
+<li>Symbol を minorSymSet に追加</li>
+</ul></li>
+<li>Object のメンバは、owner にその Object をセットする</li>
+</ul>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org3c9b90b" class="outline-3">
+<h3 id="org3c9b90b"><span class="section-number-3">4.4</span> gcNew の手順</h3>
+<div class="outline-text-3" id="text-4-4">
+<ul class="org-ul">
+<li>minorObjList の全 Object の state を生存未確定に初期化</li>
+<li>minorSymSetを workSet にコピーして、workSet のシンボルに対して次を実行
+<ul class="org-ul">
+<li>参照している Object の state に値をセット
+<ul class="org-ul">
+<li>owner が nil なら <b>minor</b> をセット</li>
+<li>owner の Object の state が <b>major</b> なら <b>minor</b> をセット</li>
+</ul></li>
+<li>state の値を更新しなかった Symbol を candidateList に追加</li>
+<li>state の値を <b>minor</b> にセットした Symbol を tempList に追加</li>
+<li>candidateList が空でない場合、そのリストを workSet として再度実行</li>
+</ul></li>
+<li>minorObjList の全 Object について実行
+<ul class="org-ul">
+<li>state が minor のものは、次を実行
+<ul class="org-ul">
+<li>counter をインクリメントし、カウントが一定値になったら state に <b>major</b> をセット</li>
+<li>カウントが一定値未満の場合 remainList に追加</li>
+</ul></li>
+<li>state が生存未確定のものに対して次を実行
+<ul class="org-ul">
+<li>その Object のメンバの Symbol を <b>破棄</b>
+<ul class="org-ul">
+<li>破棄した Symbol は tempList から除外</li>
+</ul></li>
+<li>その Object の owner が nil の場合、その Object 自身を <b>破棄</b>
+<ul class="org-ul">
+<li>owner が nil でない場合メンバーなので、その Object の破棄は owner に任せる</li>
+</ul></li>
+</ul></li>
+</ul></li>
+<li>remainList を	minorObjList とする</li>
+</ul>
+</div>
+
+<div id="outline-container-orgbaeda9d" class="outline-4">
+<h4 id="orgbaeda9d"><span class="section-number-4">4.4.1</span> case2-1</h4>
+<div class="outline-text-4" id="text-4-4-1">
+
+<div class="figure">
+<p><object type="image/svg+xml" data="dot2-1.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+
+<ol class="org-ol">
+<li><a id="orgfcab753"></a>gc<br />
+<div class="outline-text-5" id="text-4-4-1-1">
+
+<div class="figure">
+<p><object type="image/svg+xml" data="dot2-1-2.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+<ol class="org-ol">
+<li><a id="org7c8ce2a"></a>step<br />
+<div class="outline-text-6" id="text-4-4-1-1-1">
+<ul class="org-ul">
+<li>最初のループ     
+<ul class="org-ul">
+<li>var1 は obj1 を参照していて、 owner が nil なので obj1 に <b>minor</b> をセット</li>
+<li>var2 は obj4 を参照していて、 owner が nil なので obj4 に <b>minor</b> をセット</li>
+<li>mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は未確定なので <b>未確定</b></li>
+<li>mbr2 は obj2 を参照していて、 owner が obj1 で、 obj1 は <b>minor</b> なので obj2 は <b>minor</b></li>
+<li>mbr3 は obj3 を参照していて、 owner が obj2 で、 obj2 は <b>minor</b> なので obj3 は <b>minor</b></li>
+<li>mbr4 は obj4 を参照していて、 owner が obj4 で、 obj4 は <b>minor</b> なので obj4 は <b>minor</b></li>
+</ul></li>
+<li>2回目のループ
+<ul class="org-ul">
+<li>mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は <b>minor</b> なので obj1 は <b>minor</b></li>
+</ul></li>
+<li>obj1 〜 obj4 を インクリメント</li>
+</ul>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</div>
+
+
+<div id="outline-container-org5506e54" class="outline-4">
+<h4 id="org5506e54"><span class="section-number-4">4.4.2</span> case2-2</h4>
+<div class="outline-text-4" id="text-4-4-2">
+<p>
+case1 から var1 のスコープが外れる。
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="dot2-2-2.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+<ol class="org-ol">
+<li><a id="org8a699af"></a>gc<br />
+<div class="outline-text-5" id="text-4-4-2-1">
+
+<div class="figure">
+<p><object type="image/svg+xml" data="dot2-2-3.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+</div>
+
+<ol class="org-ol">
+<li><a id="orgeec7704"></a>step<br />
+<div class="outline-text-6" id="text-4-4-2-1-1">
+<ul class="org-ul">
+<li>最初のループ     
+<ul class="org-ul">
+<li>var2 は obj4 を参照していて、 owner が nil なので obj4 に <b>minor</b> をセット</li>
+<li>mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は未確定なので obj1 は <b>未確定</b></li>
+<li>mbr2 は obj2 を参照していて、 owner が obj1 で、 obj1 は未確定なので obj2 は <b>未確定</b></li>
+<li>mbr3 は obj3 を参照していて、 owner が obj2 で、 obj2 は未確定なので obj3 は <b>未確定</b></li>
+<li>mbr4 は obj4 を参照していて、 owner が obj4 で、 obj4 は <b>minor</b> なので obj4 は <b>minor</b></li>
+</ul></li>
+<li>2回目のループ
+<ul class="org-ul">
+<li>mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は未確定なので obj1 は <b>未確定</b></li>
+<li>mbr2 は obj2 を参照していて、 owner が obj1 で、 obj1 は未確定なので obj2 は <b>未確定</b></li>
+<li>mbr3 は obj3 を参照していて、 owner が obj2 で、 obj2 は未確定なので obj3 は <b>未確定</b></li>
+</ul></li>
+<li>state に変化ないためループ終了</li>
+<li>obj1 〜 obj3 を破棄</li>
+<li>obj4 を インクリメント</li>
+</ul>
+</div>
+</li>
+</ol>
+</li>
+</ol>
+</div>
+</div>
+</div>
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2020-02-22 土 13:54</p>
+<p class="date">Created: 2020-04-02 木 23:29</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>

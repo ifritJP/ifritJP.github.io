@@ -63,9 +63,47 @@ node_0_1->node_1_6 [label="promote"];
 }
 #+END_SRC
 
+* gcFull
+
+gcFull は、全てのオブジェクトに対し生存状態を確認し、
+オブジェクトの開放処理を行なう。
+
+** 手段
+
+- 全オブジェクトをリスト管理する
+- Top から辿れる全シンボルを辿り、オブジェクトの参照状態を確認する
+- 参照されなていないオブジェクトを開放する
+
+*** 属性
+
+# サイズを指定するため silent にする。
+# exports を none にすると画像生成もなくなるので、 exports は変えない。
+#+BEGIN_SRC plantuml :file attrib0.svg :results silent
+class Object {
+int state
+Object pAllNext
+Object pAllPrev
+}
+class Symbol {
+Object value
+}
+Object o-- "1..*" Object
+Symbol o-- Object
+#+END_SRC
 
 
-** 属性
+#+ATTR_HTML: :class "" :width 40%
+[[file:attrib0.svg]]
+    
+
+
+* gcNew
+
+gcNew の実現手段を検討する。
+
+** MinorObject から辿る方法
+
+*** 属性
 
 - 全オブジェクトは次の状態を持つ
   - minor
@@ -121,22 +159,56 @@ MinorPool o-- "1..*" MinorObject
 [[file:attrib.svg]]
 
 
-** MinorObject を参照する MinorSymbol リスト minorRefList の実現方法
+*** MinorObject を参照する MinorSymbol リスト minorRefList の実現方法
 
 minorRefList の実現方法には、次の 2 つが考えられる。
 
 - MinorSymbol 側に pNext/pPrev のリスト構造を持たせる
 - MinorObject 側に MinorSymbol を管理する配列を持たせる
 
-次節ではそれぞれの特徴を述べる
+次節でそれぞれの特徴を述べる
 
-*** MinorSymbol 側に pNext/pPrev のリスト構造を持たせる
+**** MinorSymbol 側に pNext/pPrev のリスト構造を持たせる
 
-*** MinorObject 側に MinorSymbol を管理する配列を持たせる
+- 計算量    
+  - シンボルにオブジェクトを代入するときの処理
+    - 代入先シンボルが所属している pNext/pPrev のリストから除外する
+      - 2 回の代入が必要
+    - 代入先のシンボルを、オブジェクトの参照リストに加える
+      - 4 回の代入が必要
+    - 合計 6 回の代入処理
+- メモリ
+  - MinorSymbol 毎に pNext/pPrev が必要
+- 備考
+  - MinorSymbol の alloc/free 制御が面倒そう
+  
+
+**** MinorObject 側に MinorSymbol を管理する配列を持たせる
+
+- 計算量    
+  - シンボルにオブジェクトを代入するときの処理
+    - 配列を空要素を詰めずに使用する場合
+      - 代入先シンボルが所属しているリストから除外する
+        - 平均 N/2 回のサーチ + 1 回の代入が必要
+      - 代入先のシンボルを、オブジェクトのリストに加える
+        - 平均 N/2 回のサーチ + 1 回の代入が必要
+      - 合計 約 N 回のサーチ + 2回の代入
+    - 配列を空要素を詰めて使用する場合
+      - 代入先シンボルが所属しているリストから除外する
+        - 平均 N/2 回のサーチ + N/2 回の代入が必要
+      - 代入先のシンボルを、オブジェクトのリストに加える
+        - 1 回の代入が必要
+      - 合計 約 N/2 回のサーチ + N/2 + 1回の代入
+- メモリ
+  - MinorObject 毎に N 個のポインタ配列が必要
+- 備考
+  - あるオブジェクトが N 個を越えるシンボルから参照された場合、
+    そのオブジェクトは Major に promote させる
+
+** gcNew の手順
 
 
-* gcNew の手順
-
+  
 - minor リストのオブジェクトに対し次を実行
   - minor オブジェクト ObjM を参照しているシンボルの有無を確認
     - 参照するシンボルが無ければ *破棄*
@@ -153,11 +225,9 @@ minorRefList の実現方法には、次の 2 つが考えられる。
 - 一つでも確定したオブジェクトが存在すれば、生存が確定していないオブジェクトに対して再度実施。
 - 一つも確定したオブジェクトがなければ、生存が確定していないオブジェクトを破棄。
 
+*** case1-1
 
-
-** case1
-
-#+BEGIN_SRC dot :file dot1.svg
+#+BEGIN_SRC dot :file dot1-1.svg
 digraph G {
 rankdir = LR;
 node_var [shape=record,label="<var1>var1|<var2>var2"];
@@ -185,9 +255,9 @@ node_var:var2->node_obj4:obj
 }
 #+END_SRC
 
-*** gc
+**** gc
 
-#+BEGIN_SRC dot :file dot1-2.svg
+#+BEGIN_SRC dot :file dot1-1-2.svg
 digraph G {
 rankdir = LR;
 
@@ -229,7 +299,7 @@ mbr1->obj3 [style=dashed]
 }
 #+END_SRC
 
-**** step    
+***** step    
 - obj1 は、 var1 で参照されているため *生存*
 - obj2 は、 mbr2 で参照されているため、mbr2 を保持する obj1 の生存を確認
   - obj1 は生存しているため *生存*
@@ -238,11 +308,11 @@ mbr1->obj3 [style=dashed]
 - obj4 は、 var2 で参照されているため *生存*
    
 
-** case2
+*** case1-2
 
 case1 から var1 のスコープが外れる。
   
-#+BEGIN_SRC dot :file dot2.svg
+#+BEGIN_SRC dot :file dot1-2.svg
 digraph G {
 rankdir = LR;
 node_var [shape=record,label="<var2>var2"];
@@ -269,9 +339,9 @@ node_var:var2->node_obj4:obj
 }
 #+END_SRC
 
-*** gc
+**** gc
 
-#+BEGIN_SRC dot :file dot2-2.svg
+#+BEGIN_SRC dot :file dot1-2-2.svg
 digraph G {
 rankdir = LR;
 
@@ -313,7 +383,7 @@ mbr1->obj3 [style=dashed]
 #+END_SRC
 
 
-**** step    
+***** step    
 
 - 1 回目の確認    
   - obj1 は、 mbr1 で参照されているため、mbr1 を保持する obj3 の生存を確認
@@ -332,9 +402,9 @@ mbr1->obj3 [style=dashed]
     - obj2 は未確定のため、保留。
   - なにも確定しなかったため、未確定オブジェクトを全て破棄
 
-** gc 実行後
+*** gc 実行後
 
-#+BEGIN_SRC dot :file dot2-3.svg
+#+BEGIN_SRC dot :file dot1-2-3.svg
 digraph G {
 rankdir = LR;
 node_var [shape=record,label="<var2>var2"];
@@ -353,3 +423,245 @@ node_var:var2->node_obj4:obj
 
 }
 #+END_SRC
+
+
+** MinorSymbol から辿る方法
+
+MinorObject から辿ると、
+変数代入処理が非常に重くなるので、MinorSymbol から辿る。
+  
+gcNew の実行を、minor の object を保持するシンボル MinorSymbol から辿って行なう。
+
+
+# サイズを指定するため silent にする。
+# exports を none にすると画像生成もなくなるので、 exports は変えない。
+#+BEGIN_SRC plantuml :file attrib2.svg :results silent
+class Object {
+int state
+int counter
+}
+class Symbol {
+Object value
+Object owner
+}
+
+class MinorPool {
+Array<Object> minorObjList
+Set<Symbol> minorSymSet
+}
+
+Symbol o-- Object
+MinorPool o-- "0..*" Object
+MinorPool o-- "0..*" Symbol
+#+END_SRC
+
+
+#+ATTR_HTML: :class "" :width 20%
+[[file:attrib2.svg]]
+
+
+*** オブジェクトと変数の扱い
+   
+- 新しくオブジェクトを生成する場合
+  - 生成した Object を minorObjList に追加
+  - state を minor にセット
+- minor Object を変数 Symbol にセットする場合
+  - Symbol を minorSymSet に追加
+- Object のメンバは、owner にその Object をセットする
+
+** gcNew の手順
+
+- minorObjList の全 Object の state を生存未確定に初期化
+- minorSymSetを workSet にコピーして、workSet のシンボルに対して次を実行
+  - 参照している Object の state に値をセット
+    - owner が nil なら *minor* をセット
+    - owner の Object の state が *major* なら *minor* をセット
+  - state の値を更新しなかった Symbol を candidateList に追加
+  - state の値を *minor* にセットした Symbol を tempList に追加
+  - candidateList が空でない場合、そのリストを workSet として再度実行
+- minorObjList の全 Object について実行
+  - state が minor のものは、次を実行
+    - counter をインクリメントし、カウントが一定値になったら state に *major* をセット
+    - カウントが一定値未満の場合 remainList に追加
+  - state が生存未確定のものに対して次を実行
+    - その Object のメンバの Symbol を *破棄*
+      - 破棄した Symbol は tempList から除外
+    - その Object の owner が nil の場合、その Object 自身を *破棄*
+      - owner が nil でない場合メンバーなので、その Object の破棄は owner に任せる
+- remainList を	minorObjList とする
+
+*** case2-1
+
+#+BEGIN_SRC dot :file dot2-1.svg
+digraph G {
+rankdir = LR;
+node_var [shape=record,label="<var1>var1|<var2>var2"];
+node_obj1 [shape=record,label="<obj>obj1|<mbr2>mbr2"];
+node_obj2 [shape=record,label="<obj>obj2|<mbr3>mbr3|<mbr4>mbr4"];
+node_obj3 [shape=record,label="<obj>obj3|<mbr1>mbr1"];
+node_obj4 [shape=record,label="<obj>obj4|<mbr>mbr"];
+
+subgraph cluster_obj {
+label = "object"
+node_obj1:mbr2->node_obj2:obj
+node_obj2:mbr3->node_obj3:obj
+node_obj2:mbr4->node_obj4:obj
+node_obj3:mbr1->node_obj1:obj
+}
+
+
+subgraph cluster_var {
+label = "variable"
+node_var:var1->node_obj1:obj
+node_var:var2->node_obj4:obj
+}
+
+
+}
+#+END_SRC
+
+
+**** gc
+
+#+BEGIN_SRC dot :file dot2-1-2.svg
+digraph G {
+rankdir = LR;
+
+subgraph cluster_var {
+label = "variable"
+node [shape=box]; var1; var2;
+}
+
+
+subgraph cluster_minor {
+label = "minor"
+node [shape=circle]; obj1; obj2; obj3; obj4;
+}
+
+
+subgraph cluster_mbr {
+label = "member"
+node [shape=box]; mbr2; mbr3; mbr4; mbr1;
+}
+
+obj1->obj2
+obj2->obj3
+obj3->obj4
+
+
+var1->obj1
+var2->obj4
+
+mbr2->obj2
+mbr3->obj3
+mbr4->obj4
+mbr1->obj1
+
+obj1->mbr2 [style=dashed]
+obj2->mbr3 [style=dashed]
+obj2->mbr4 [style=dashed]
+obj3->mbr1 [style=dashed]
+
+}
+#+END_SRC
+
+***** step
+- 最初のループ     
+  - var1 は obj1 を参照していて、 owner が nil なので obj1 に *minor* をセット 
+  - var2 は obj4 を参照していて、 owner が nil なので obj4 に *minor* をセット
+  - mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は未確定なので *未確定*
+  - mbr2 は obj2 を参照していて、 owner が obj1 で、 obj1 は *minor* なので obj2 は *minor*
+  - mbr3 は obj3 を参照していて、 owner が obj2 で、 obj2 は *minor* なので obj3 は *minor*
+  - mbr4 は obj4 を参照していて、 owner が obj4 で、 obj4 は *minor* なので obj4 は *minor*
+- 2回目のループ
+  - mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は *minor* なので obj1 は *minor*
+- obj1 〜 obj4 を インクリメント
+
+  
+*** case2-2
+
+case1 から var1 のスコープが外れる。
+  
+#+BEGIN_SRC dot :file dot2-2-2.svg
+digraph G {
+rankdir = LR;
+node_var [shape=record,label="<var2>var2"];
+node_obj1 [shape=record,label="<obj>obj1|<mbr2>mbr2"];
+node_obj2 [shape=record,label="<obj>obj2|<mbr3>mbr3|<mbr4>mbr4"];
+node_obj3 [shape=record,label="<obj>obj3|<mbr4>mbr4"];
+node_obj4 [shape=record,label="<obj>obj4|<mbr>mbr"];
+
+subgraph cluster_obj {
+label = "object"
+node_obj1:mbr2->node_obj2:obj
+node_obj2:mbr3->node_obj3:obj
+node_obj2:mbr4->node_obj4:obj
+node_obj3:mbr1->node_obj1:obj
+}
+
+
+subgraph cluster_var {
+label = "variable"
+node_var:var2->node_obj4:obj
+}
+
+
+}
+#+END_SRC
+
+**** gc
+
+#+BEGIN_SRC dot :file dot2-2-3.svg
+digraph G {
+rankdir = LR;
+
+subgraph cluster_var {
+label = "variable"
+node [shape=box]; var2;
+}
+
+
+subgraph cluster_minor {
+label = "minor"
+node [shape=circle]; obj1; obj2; obj3; obj4;
+}
+
+
+subgraph cluster_mbr {
+label = "member"
+node [shape=box]; mbr2; mbr3; mbr4; mbr1;
+}
+
+obj1->obj2
+obj2->obj3
+obj3->obj4
+
+
+var2->obj4
+
+mbr2->obj2
+mbr3->obj3
+mbr4->obj4
+mbr1->obj1
+
+obj1->mbr2 [style=dashed]
+obj2->mbr3 [style=dashed]
+obj2->mbr4 [style=dashed]
+obj3->mbr1 [style=dashed]
+}
+#+END_SRC
+
+***** step
+- 最初のループ     
+  - var2 は obj4 を参照していて、 owner が nil なので obj4 に *minor* をセット
+  - mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は未確定なので obj1 は *未確定*
+  - mbr2 は obj2 を参照していて、 owner が obj1 で、 obj1 は未確定なので obj2 は *未確定*
+  - mbr3 は obj3 を参照していて、 owner が obj2 で、 obj2 は未確定なので obj3 は *未確定*
+  - mbr4 は obj4 を参照していて、 owner が obj4 で、 obj4 は *minor* なので obj4 は *minor*
+- 2回目のループ
+  - mbr1 は obj1 を参照していて、 owner が obj3 で、 obj3 は未確定なので obj1 は *未確定*
+  - mbr2 は obj2 を参照していて、 owner が obj1 で、 obj1 は未確定なので obj2 は *未確定*
+  - mbr3 は obj3 を参照していて、 owner が obj2 で、 obj2 は未確定なので obj3 は *未確定*
+- state に変化ないためループ終了
+- obj1 〜 obj3 を破棄  
+- obj4 を インクリメント
