@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/rust/lifetime/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門" />
+<meta property="og:description" content="初めに Rust のキモであるライフタイムの概念において、 ネットの解説ドキュメントでは自分には理解が困難だったため、 Rust を動かして自分なりに確認した結果" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/rust/lifetime/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門"/>
+<meta name="twitter:description" content="初めに Rust のキモであるライフタイムの概念において、 ネットの解説ドキュメントでは自分には理解が困難だったため、 Rust を動かして自分なりに確認した結果"/>
+<meta itemprop="name" content="C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門">
+<meta itemprop="description" content="初めに Rust のキモであるライフタイムの概念において、 ネットの解説ドキュメントでは自分には理解が困難だったため、 Rust を動かして自分なりに確認した結果">
+
+<meta itemprop="wordCount" content="5927">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</h1>
+
+<h2 id="headline-1">
+初めに
+</h2>
+<p>
+Rust のキモであるライフタイムの概念において、
+ネットの解説ドキュメントでは自分には理解が困難だったため、
+Rust を動かして自分なりに確認した結果をまとめる。
+</p>
+<p>
+使用した Rust は 1.17.0 である。
+</p>
+<p>
+なお、ライフタイムを理解するには所有権の知識が必要なため、所有権の説明から始める。
+</p>
+<p>
+所有権の理解が十分な場合は、前半は飛して構わない。
+</p>
+<h2 id="headline-2">
+変数の制約
+</h2>
+<p>
+Rust は、データのライフタイムを厳密に管理することで、
+コンパイル時にメモリ破壊の可能性を検知する機能を持っている。
+</p>
+<p>
+一般的にプログラムでは、
+生成したデータを変数に代入してデータを操作することになるが、
+Rust ではこの変数に次の制約を付けている。
+</p>
+<ul>
+<li>
+<p>
+変数は、データに対して所有権(ownership)とアクセス権を持つ。
+</p>
+</li>
+<li>
+<p>
+あるデータに対する所有権を持つ変数がスコープから外れた時に、そのデータは開放される。
+</p>
+</li>
+<li>
+<p>
+あるデータに対する所有権を持つ変数は、アクセス権も持つ。
+</p>
+</li>
+<li>
+<p>
+アクセス権には、読み出し専用(immutable)と、読み書き用(mutable)がある。  
+</p>
+</li>
+<li>
+<p>
+アクセス権のデフォルトは、読み出し専用 (immutable)。
+</p>
+</li>
+<li>
+<p>
+変数にデータを代入すると、所有権とアクセス権がその変数に移る。 (1つのデータの所有権を持てる変数は 1 つだけ。)
+</p>
+</li>
+<li>
+<p>
+代入元の変数は、何もデータを格納していない状態になり、この変数に対してデータ読み込みアクセスするとコンパイルエラーになる。
+</p>
+</li>
+<li>
+<p>
+変数は、別の変数にアクセス権だけを与えることができる。
+</p>
+<ul>
+<li>
+<p>
+読み出し専用のアクセス権(Reference)は、複数の変数に与えることができる。
+</p>
+</li>
+<li>
+<p>
+読み書き用のアクセス権(Borrowing)は、1 つの変数に与えることができる。
+</p>
+</li>
+<li>
+<p>
+あるデータの Reference と Borrowing は、どちらか一方しか同時に存在出来ない。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+ある変数に格納されたデータへのアクセス権(Reference/Borrowing)を、そのデータのライフタイムより広いライフタイムを持つ変数に与えることはできない。
+</p>
+</li>
+</ul>
+<p>
+基本的には、この 12 個である。
+</p>
+<p>
+C は、次のような処理が書けてしまう。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="p">{</span>
+  <span class="kt">int</span> <span class="o">*</span><span class="n">pVal</span><span class="p">;</span>
+  <span class="p">{</span>
+     <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+     <span class="n">pVal</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">val</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+これは、最後の *pVal への代入で val のアドレスにデータを書き込むが、
+そのアドレスは書き込み時点では既に無効になっているため、
+この動作による影響は不定でありメモリ破壊が発生する。
+</p>
+<p>
+上記 C と同じような意味の処理を Rust で書くと次のようになるが、
+これはコンパイルエラーになる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">rval</span><span class="p">;</span><span class="w">
+</span><span class="w">  </span><span class="p">{</span><span class="w">
+</span><span class="w">     </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
+</span><span class="w">     </span><span class="n">rval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"> </span><span class="c1">// error
+</span><span class="c1"></span><span class="w">  </span><span class="p">}</span><span class="w">
+</span><span class="w">  </span><span class="o">*</span><span class="n">rval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+これは、
+「ある変数に格納されたデータへのアクセス権(Reference/Borrowing)を、そのデータのライフタイムより広いライフタイムを持つ変数に与えることはできない。」
+の制約から外れているためエラーとなる。
+</p>
+<p>
+ライフタイムについては後述するが、ここではスコープと同義であると考えて良い。
+</p>
+<p>
+このように、Rust は、データのライフタイムを厳密に管理することで、
+コンパイル時にメモリ破壊の可能性を検知する機能を持っている。
+</p>
+<p>
+以降では、上記 Rust の変数についての制約について説明する。
+</p>
+<h3 id="headline-3">
+あるデータに対する所有権を持つ変数がスコープから外れた時に、そのデータは開放される。
+</h3>
+<p>
+  データには所有権があり、その所有権を持つ変数がスコープから外れると、そのデータは開放される。
+</p>
+<p>
+  C のように malloc/free を明示的に呼び出す必要はない。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  上記の例では、 val には Vec 型のデータの所有権が与えられ、
+  println!() でデータを表示後、 val のスコープが外れるため、
+  Vec 型のデータが開放される。
+</p>
+<p>
+  C++ では、似たように機能する unique_ptr がある。
+</p>
+<p>
+  「C++ の unique_ptr のようなもの」と説明したが、
+  C++ で出来るなら Rust を使う意味はないじゃないか？という疑問を持つ方もいるだろう。
+  だが、 C++ は unique_ptr が「使える」のであって、
+  それを使うかどうかはプログラマ次第である。
+  また、その使用方法に論理的な間違えがあったとしてもコンパイルは成功してしまい、
+  実行時にエラーが発生することで初めて間違っていたことが分かる。
+</p>
+<p>
+  対して Rust は、プログラマ次第で「使える」のではなく、それしか「使えない」。
+  また、使用方法に論理的な間違えがあればコンパイル時に分かる。
+</p>
+<p>
+  これは重要な違いである。
+</p>
+<p>
+  静的型付け言語を選択する理由の一つには、コンパイル時にさまざまな論理的なエラーを
+  検知できることが大きい。
+  これは、 Google が TypeScript を採用していることからも容易に想像できるだろう。
+</p>
+<p>
+  Rust は、コンパイル時検知可能なエラーに型エラーだけでなく、
+  メモリ破壊も検知できることが特徴の言語である。
+</p>
+<h3 id="headline-4">
+あるデータに対する所有権を持つ変数は、アクセス権も持つ。
+</h3>
+<h3 id="headline-5">
+アクセス権には、読み出し専用(immutable)と、読み書き用(mutable)がある。  
+</h3>
+<h3 id="headline-6">
+アクセス権のデフォルトは、読み出し専用 (immutable)。
+</h3>
+<p>
+  アクセス権とは、データの値を読み出す、書き込むことが出来る権利である。
+</p>
+<p>
+  C で const 宣言することで書き込みアクセスを禁止出来るように、
+  Rust でもデータアクセスに対する制御が可能である。
+</p>
+<p>
+  多くの言語では、デフォルトのアクセス権は読み書き可能(mutable)であるのに対して、
+  Rust のデフォルトは読み出し専用(immutable)である。
+</p>
+<p>
+  これは、上記で説明しているメモリ破壊検知を可能にする構文を前提に考えた場合、
+  デフォルトを mutable にした方が、デフォルトを immutable にするよりも
+  コーディング量が増える可能性があるためだと考えられる。
+</p>
+<h3 id="headline-7">
+変数にデータを代入すると、所有権とアクセス権がその変数に移る。 (1つのデータの所有権を持てる変数は 1 つだけ。)
+</h3>
+<h3 id="headline-8">
+代入元の変数は、何もデータを格納していない状態になり、この変数に対してデータ読み込みアクセスするとコンパイルエラーになる。
+</h3>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">sub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w"> </span><span class="c1">// error
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  上記のソースは、println!() が val にアクセスしている箇所でコンパイルエラーが発生する。
+  これは、1 行目で val に Vec データの所有権が設定されるが、
+  2行目でその所有権が sub に移る。そして、その後に val に対してアクセスしているが、
+  val には所有権がないためエラーとなっている。
+</p>
+<p>
+  ここで、次の main() 関数内の println!() はどうなるだろうか？
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">(</span><span class="n">val</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;sub: {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">xx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">xx</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="n">sub</span><span class="p">(</span><span class="n">v</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="k">return</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;main: {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  v が持つ Vec の所有権は、
+  if の条件成立時に sub() を呼び出すと sub の引数 val に移る。
+  一方、条件不成立時に sub() は呼ばれない。
+</p>
+<p>
+  Rust は、このようなコードの意味解析を行なった上で所有権の検査を行なっているため、
+  この場合はコンパイルエラーにならない。
+</p>
+<h3 id="headline-9">
+変数は、別の変数にアクセス権だけを与えることができる。
+</h3>
+<p>
+  データの所有権は 1 つの変数しか持てない。
+  これだと関数にデータを渡した時に所有権も渡ってしまうため、
+  関数の処理が戻った後の処理でデータにアクセスできないことになる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">(</span><span class="w"> </span><span class="n">dat</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="n">sub</span><span class="p">(</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w"> </span><span class="c1">// error
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  これを回避するには、例えば次のように戻り値として所有権を返すことでも対応可能だが、
+  これだと非常にコード量が多くなるし煩わしい。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">(</span><span class="w"> </span><span class="n">dat</span>: <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w">  </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w">  </span><span class="n">dat</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sub</span><span class="p">(</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  そこで、Rust では所有権を渡さずにアクセス権だけを渡すことができる。
+</p>
+<p>
+  具体的には次のようになる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">(</span><span class="w"> </span><span class="n">dat</span>: <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="n">sub</span><span class="p">(</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  アクセス権には読み出し専用のアクセス権(Reference)と、
+  読み書き用のアクセス権(Borrowing)がある。
+</p>
+<p>
+  上記の例は読み出し専用 Reference の例である。
+</p>
+<p>
+  読み出し専用 Reference を渡す場合、渡す側と受け取る側に &amp; を付ける。
+  これにより、通常の所有権の代入とアクセス権の代入とが区別される。
+</p>
+<p>
+  読み書き用(Borrowing)の例は次のようになる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">(</span><span class="w"> </span><span class="n">dat</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">dat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w">  </span><span class="n">dat</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="n">sub</span><span class="p">(</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w"> </span><span class="c1">// 10
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  読み書き用 Borrowing を渡す場合、渡す側と受け取る側に &amp;mut を付ける。
+</p>
+<p>
+  アクセス権には次の特徴がある。
+</p>
+<ul>
+<li>
+<p>
+読み出し専用のアクセス権(Reference)は、複数の変数に与えることができる。
+</p>
+</li>
+<li>
+<p>
+読み書き用のアクセス権(Borrowing)は、1 つの変数に与えることができる。
+</p>
+</li>
+<li>
+<p>
+あるデータの Reference と Borrowing は、どちらか一方しか同時に存在出来ない。
+</p>
+</li>
+</ul>
+<p>
+公式ドキュメントでは、Reference を参照、 Borrowing を借用と訳している。
+</p>
+<p>
+ここで次のコードを確認すると、
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="o">*</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">aaa</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+先ほどは「読み書き用 Borrowing を渡す場合、渡す側と受け取る側に &amp;mut を付ける。」と
+説明したが、上記 4行目で &amp;aaa に対して let val になっている。
+</p>
+<p>
+let &amp;mut val = &amp;mut aaa; になるのではないか？と、思ってしまうが、
+これではコンパイルエラーになる。
+</p>
+<p>
+ではどうするかというと、 &amp;mut を付けるのは型の方になる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">val</span>: <span class="kp">&amp;</span><span class="nc">mut</span><span class="w"> </span><span class="kt">i32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+ただ、 Rust では let で変数初期化する際は、型推論によって型を明示する必要がないため、
+let val = &amp;mut aaa; という形になる。
+</p>
+<p>
+では次の 2 つのケースで何が違うのか
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span></code></pre></div>
+</div>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+これは、次のサンプルを見ると分かり易い。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">bbb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="o">*</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">bbb</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="o">*</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{} {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">aaa</span><span class="p">,</span><span class="w"> </span><span class="n">bbb</span><span class="p">);</span><span class="w"> </span><span class="c1">// 2 3
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+上記のサンプルはコンパイルは成功する。
+</p>
+<p>
+一方で、次のサンプルは 7 行目 val = &amp;mut bbb; の箇所でコンパイルエラーになる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">bbb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="o">*</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">bbb</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="o">*</span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w">    </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{} {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">aaa</span><span class="p">,</span><span class="w"> </span><span class="n">bbb</span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+つまり let mut の mut は、let で宣言した変数そのものに対する書き込み許可宣言であり、
+変数が格納するデータの型には関係がない。
+</p>
+<p>
+C の const int * pVal; と int * const pVal; の違いのようなものだ。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="err">#</span><span class="n">include</span><span class="w"> </span><span class="o">&lt;</span><span class="n">stdio</span><span class="p">.</span><span class="n">h</span><span class="o">&gt;</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="n">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w">
+</span><span class="w"></span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">int</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">int</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">pVal1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="n">int</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">pVal2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="o">*</span><span class="n">pVal1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">   </span><span class="c1">// エラー: pVal1 の参照先が書き込み禁止
+</span><span class="c1"></span><span class="w">    </span><span class="n">pVal1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NULL</span><span class="p">;</span><span class="w"> 
+</span><span class="w">    </span><span class="o">*</span><span class="n">pVal2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="n">pVal2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">NULL</span><span class="p">;</span><span class="w"> </span><span class="c1">// エラー: pVal2 そのものが書き込み禁止
+</span><span class="c1"></span><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<h3 id="headline-10">
+ある変数に格納されたデータへのアクセス権(Reference/Borrowing)を、そのデータのライフタイムより広いライフタイムを持つ変数に与えることはできない。
+</h3>
+<p>
+  これは、先に説明した通りである。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">rval</span><span class="p">;</span><span class="w">
+</span><span class="w">  </span><span class="p">{</span><span class="w">
+</span><span class="w">     </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w">
+</span><span class="w">     </span><span class="n">rval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="k">mut</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"> </span><span class="c1">// error
+</span><span class="c1"></span><span class="w">  </span><span class="p">}</span><span class="w">
+</span><span class="w">  </span><span class="o">*</span><span class="n">rval</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+  上記の例では、 rval に対して val の Borrowing を渡している。
+  rval は val が保持するデータのライフタイムよりも大きいため、エラーとなる。
+</p>
+<h3 id="headline-11">
+Copy と 所有権の移動
+</h3>
+<p>
+先ほど、次の場合は所有権が移動するためコンパイルエラーになると説明した。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">sub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w"> </span><span class="c1">// error
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+一方で、次の場合はコンパイルエラーにならない。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">];</span><span class="w">
+</span><span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="n">sub</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+この例の let sub = val; においては所有権の移動ではなく、
+データの Copy が行なわれるためである。
+</p>
+<p>
+Copy では、コピー元と同じデータが複製され、それが変数に代入される。
+</p>
+<p>
+これにより、元の変数には Copy 後も所有権が残るため、
+上記の場合はエラーが発生しない。
+</p>
+<p>
+代入時に Copy されるか、所有権の移動が起るかは、そのデータ型の Copy トレイトが
+実装されているかどうかでコンパイル時に切り替わる。
+</p>
+<p>
+なお、Rust のプリミティブ型は全て Copy トレイトが実装されている。
+</p>
+<h2 id="headline-12">
+ライフタイム
+</h2>
+<p>
+Rust は、データのライフタイムを厳密に管理することで、
+コンパイル時にメモリ破壊の可能性を検知する機能を持っている。
+</p>
+<p>
+コンパイル時に検知するということは、
+ソースコードの構文上にデータのライフタイムを示す情報が現われている、
+ということでもある。
+</p>
+<h3 id="headline-13">
+関数宣言におけるライフタイム
+</h3>
+<p>
+次のソースコードを見てみる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">(</span><span class="n">val1</span>: <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span>: <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val1</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">sub2</span><span class="p">(</span><span class="n">val1</span>: <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span>: <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val2</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">val0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">val1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val0</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val0</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">val4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w">
+</span><span class="w">            </span><span class="n">val2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sub</span><span class="p">(</span><span class="o">&amp;</span><span class="n">val1</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val4</span><span class="p">);</span><span class="w">
+</span><span class="w">            </span><span class="n">val3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sub2</span><span class="p">(</span><span class="o">&amp;</span><span class="n">val1</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val4</span><span class="p">);</span><span class="w">
+</span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{} {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">val3</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+このソースコードはコンパイルエラーになる。
+</p>
+<p>
+エラーになる原因は、sub, sub2 関数の戻り値の型が参照になっているが、
+その参照元のライフタイムが不明なことにある。
+</p>
+<p>
+では、なぜライフタイムが不明だとコンパイルエラーになるのか？
+</p>
+<p>
+上記のソースの 16 行目の val3 = sub2(&amp;val1, &amp;val4); の箇所を見ると、
+sub2() は第2引数を返していることから、この処理は val3 に &amp;val4 を代入していることが分かる。
+これは、Rust の「ある変数に格納されたデータへのアクセス権(Reference/Borrowing)を、
+そのデータのライフタイムより広いライフタイムを持つ変数に与えることはできない」の
+規則に違反していることになる。
+しかし、sub2() が第二引数を返す、
+つまりは sub2() の戻り値のライフタイムが第二引数と同じであることが分からないと、
+変数の制約を満しているかどうかを判定することができない。
+そして、判定することができないから、コンパイルエラーになる。
+</p>
+<p>
+このコンパイルエラーを回避するには、
+ライフタイムを明示する必要がある。
+</p>
+<p>
+Rust では、次の 1, 4 行目のようにライフタイムを宣言する。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="w"> </span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="p">(</span><span class="n">val1</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span>: <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val1</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">sub2</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="w"> </span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="p">(</span><span class="n">val1</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span>: <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val2</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">val0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">val1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val0</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">val3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val0</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="p">{</span><span class="w">
+</span><span class="w">            </span><span class="kd">let</span><span class="w"> </span><span class="n">val4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w">
+</span><span class="w">            </span><span class="n">val2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sub</span><span class="p">(</span><span class="o">&amp;</span><span class="n">val1</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">val4</span><span class="p">);</span><span class="w">
+</span><span class="w">            </span><span class="c1">//val3 = sub2(&amp;val1, &amp;val4); // error
+</span><span class="c1"></span><span class="w">        </span><span class="p">}</span><span class="w">
+</span><span class="w">        </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{} {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">val3</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+ライフタイムは &#39; で宣言し、ライフタイムを識別するための名前を指定する。
+</p>
+<p>
+上記の例では &#39;a, &#39;b がライフタイムであり、
+sub() の戻り値は第1引数と同じライフタイムで、
+sub2() の戻り値は第2引数と同じライフタイムであることを示している。
+</p>
+<p>
+この宣言されているライフタイムの情報によって、
+Rust は上記 16 行目の処理が変数の制約を満していないことを判定することができる。
+</p>
+<p>
+なお、宣言しているライフタイムと、
+異なるライフタイムの戻り値を返すとコンパイルエラーになる。
+例えば次の場合、関数は ライフタイム &#39;a の参照を返すと宣言しているが、
+実際に返している val2 のライフタイムは &#39;b である。
+これは、宣言と矛盾しているためコンパイルエラーとなる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="w"> </span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="p">(</span><span class="n">val1</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span>: <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val2</span><span class="w"> </span><span class="c1">// error
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+同じライフタイムの変数が複数ある場合、次のように宣言できる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="o">&gt;</span><span class="p">(</span><span class="n">val1</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">val2</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val2</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+ライフタイムを明示せずに省略すると、全てのライフタイムは同じになる。
+</p>
+<p>
+例えば次の場合、
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="o">&gt;</span><span class="p">(</span><span class="n">val</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+次のように省略して記載できる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">(</span><span class="n">val</span>: <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">val</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<h3 id="headline-14">
+構造体宣言におけるライフタイム
+</h3>
+<p>
+構造体のメンバもライフタイムの明示が必要である。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">Foo</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="w"> </span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">xx</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">yy</span>: <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">impl</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="w"> </span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="w"> </span><span class="n">Foo</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="w"> </span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">x</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">xx</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w">    </span><span class="k">fn</span> <span class="nf">y</span><span class="p">(</span><span class="o">&amp;</span><span class="bp">self</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="bp">self</span><span class="p">.</span><span class="n">yy</span><span class="w"> </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">z</span>: <span class="kp">&amp;</span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">q</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Foo</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">xx</span>: <span class="kp">&amp;</span><span class="nc">x</span><span class="p">,</span><span class="w"> </span><span class="n">yy</span>: <span class="kp">&amp;</span><span class="nc">y</span><span class="w"> </span><span class="p">};</span><span class="w">
+</span><span class="w">        </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">x</span><span class="p">();</span><span class="w">
+</span><span class="w">        </span><span class="n">q</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">y</span><span class="p">();</span><span class="w">
+</span><span class="w">        </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{} {} {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">y</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w"> </span><span class="c1">// 1 2 2
+</span><span class="c1"></span><span class="w">        </span><span class="c1">//z = f.y(); // error
+</span><span class="c1"></span><span class="w">        </span><span class="n">f</span><span class="p">.</span><span class="n">yy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">&amp;</span><span class="n">x</span><span class="p">;</span><span class="w">
+</span><span class="w">        </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="s">&#34;{} {} {}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">q</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">y</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="w"> </span><span class="p">);</span><span class="w"> </span><span class="c1">// 1 2 1
+</span><span class="c1"></span><span class="w">        </span><span class="c1">//z = f.y(); // error
+</span><span class="c1"></span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+上記は構造体 Foo と、そのメソッド x(), y() を定義している。
+構造体 Foo は参照型の変数 xx と yy の保持しており、
+メソッド Foo.x(), Foo.y() は Foo.xx, Foo.yy を返す。
+</p>
+<p>
+16 行目で構造体が生成されるが、
+このとき Foo.xx は x、 Foo.yy は y の参照で初期化される。
+これによって、Foo.xx と Foo.yy のライフタイムも決定される。
+</p>
+<p>
+次に 17, 18 行目で Foo.x(), Foo.y() をコールし、その結果を z, q に代入している。
+</p>
+<p>
+この代入は変数の制約を満しているため、成功する。
+</p>
+<p>
+一方で、20 行目の代入はコンパイルエラーとなる。
+これは、16 行目の段階で Foo.y() のライフタイムが y と同じであることが決定していて、
+z のライフタイムは y のライフタイムよりも大きいため、変数の制約を満さないのでエラーとなる。
+</p>
+<p>
+一方で、21 行目の代入は成功する。
+Foo.yy のライフタイムは y と同じであるが、 x のライフタイムは y よりも大きい。
+よって、制限を満すため代入は成功する。
+ただし、この代入はデータ自体の代入を行なうが、
+Foo.yy のライフタイム自体は y と同じままである。
+</p>
+<p>
+次に 23 行目の代入はコンパイルエラーとなる。
+これは先程説明した通り、 Foo.yy に x の参照を代入しても、
+Foo.yy のライフタイムは y のまま変わらないため、変数の制約を満さない。
+</p>
+<h4 id="headline-15">
+構造体データの所有権、アクセス権移動
+</h4>
+<p>
+構造体データの所有権、アクセス権移動には、
+宣言したライフタイムの中で一番短いライフタイムが制約を満す必要がある。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">Foo</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">xx</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">yy</span>: <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">zzz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">bbb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">ccc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Foo</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">xx</span>: <span class="kp">&amp;</span><span class="nc">bbb</span><span class="p">,</span><span class="w"> </span><span class="n">yy</span>: <span class="kp">&amp;</span><span class="nc">zzz</span><span class="w"> </span><span class="p">};</span><span class="w">
+</span><span class="w">        </span><span class="c1">// aaa = ccc; // error
+</span><span class="c1"></span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<p>
+上記の場合、 12行目の所有権移動は bbb と zzz のライフタイムの短かい方が、
+制約を満す必要がある。
+</p>
+<p>
+bbb と zzz では、bbb の方がライフタイムが短い。
+また aaa は bbb よりもライフタイムが長いため、
+12 行目は制約を満さずにコンパイルエラーになる。
+</p>
+<p>
+次の場合は、aaa よりも bbb のライフタイムが長くなるため、
+12 行目の代入は可能になる。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">struct</span> <span class="nc">Foo</span><span class="o">&lt;</span><span class="na">&#39;a</span><span class="p">,</span><span class="na">&#39;b</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="n">xx</span>: <span class="kp">&amp;</span><span class="na">&#39;a</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w">    </span><span class="n">yy</span>: <span class="kp">&amp;</span><span class="na">&#39;b</span><span class="w"> </span><span class="nb">Vec</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">zzz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">bbb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">vec</span><span class="o">!</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span><span class="w">
+</span><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">aaa</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">{</span><span class="w">
+</span><span class="w">        </span><span class="kd">let</span><span class="w"> </span><span class="n">ccc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Foo</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">xx</span>: <span class="kp">&amp;</span><span class="nc">bbb</span><span class="p">,</span><span class="w"> </span><span class="n">yy</span>: <span class="kp">&amp;</span><span class="nc">zzz</span><span class="w"> </span><span class="p">};</span><span class="w">
+</span><span class="w">        </span><span class="n">aaa</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ccc</span><span class="p">;</span><span class="w">
+</span><span class="w">    </span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<h3 id="headline-16">
+ライフタイム &#39;static
+</h3>
+<p>
+  ライフタイムには任意の名前を付けられるが、&#39;static だけは予約されている。
+</p>
+<p>
+  &#39;static は、その名の通り静的に存在することを示すライフタイムである。
+</p>
+<p>
+  具体的例としては、プリミティブな文字列のライフタイムは &#39;static である。
+</p>
+<p>
+  もう一つの &#39;static の例としてグローバル変数がある。
+</p>
+<div class="src src-rust">
+<div class="highlight"><pre class="chroma"><code class="language-rust" data-lang="rust"><span class="k">fn</span> <span class="nf">sub</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="kp">&amp;</span><span class="nb">&#39;static</span><span class="w"> </span><span class="kt">str</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="s">&#34;abc&#34;</span><span class="w">
+</span><span class="w"></span><span class="p">}</span><span class="w">
+</span><span class="w"></span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span><span class="w">  </span><span class="n">println</span><span class="o">!</span><span class="p">(</span><span class="w"> </span><span class="s">&#34;{}&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">sub</span><span class="p">()</span><span class="w"> </span><span class="p">);</span><span class="w">  </span><span class="c1">// abc
+</span><span class="c1"></span><span class="p">}</span><span class="w">
+</span></code></pre></div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/rust/" title="Rusts"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Rusts</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/singleboard/" title="Singleboards">Next - Singleboards <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">Lctags<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+</ul>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class="active"><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

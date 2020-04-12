@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/reason/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="" />
+<meta property="og:description" content="Lua のトランスコンパイラ LuneScript を開発した理由 Lua は軽量で、かつ実行パフォーマンスの高い言語である。 Lua の 知名度は、同じスクリプト系言語の Ruby や Python, JavaScript 等とは" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/reason/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content=""/>
+<meta name="twitter:description" content="Lua のトランスコンパイラ LuneScript を開発した理由 Lua は軽量で、かつ実行パフォーマンスの高い言語である。 Lua の 知名度は、同じスクリプト系言語の Ruby や Python, JavaScript 等とは"/>
+<meta itemprop="name" content="">
+<meta itemprop="description" content="Lua のトランスコンパイラ LuneScript を開発した理由 Lua は軽量で、かつ実行パフォーマンスの高い言語である。 Lua の 知名度は、同じスクリプト系言語の Ruby や Python, JavaScript 等とは">
+
+<meta itemprop="wordCount" content="6591">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1></h1>
+<h1 class="title">Lua のトランスコンパイラ LuneScript を開発した理由</h1>
+
+<p>
+Lua は軽量で、かつ実行パフォーマンスの高い言語である。
+Lua の 知名度は、同じスクリプト系言語の Ruby や Python, JavaScript 等とは
+比べるまでもなく低いが、
+システムの拡張に利用できる言語としては、
+最もメジャーで組み込み易い言語の一つと言えるだろう。
+実際、 Lua を組み込んでいるシステムは多く存在している。
+</p>
+<p>
+また実行性能においても、スクリプト言語としては高速な部類に入る。
+DSP のような処理をさせなければ、
+システムパフォーマンスのボトルネックになるようなことは少ないだろう。
+</p>
+<p>
+私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
+よく使う言語の１つである。
+</p>
+<h2 id="headline-1">
+Lua のトランスコンパイラ LuneScript を開発した理由
+</h2>
+<p>
+Lua は私の良く使う言語の 1 つである。
+しかし、次の理由から Lua のコードを直接書くのは止めて、
+トランスコンパイラ LuneScript を使って開発する事を考えるようになった。
+</p>
+<ul>
+<li>
+<p>
+楽して安全に書きたい
+</p>
+</li>
+<li>
+<p>
+Lua には動的型付け言語特有の問題がある
+</p>
+<ul>
+<li>
+<p>
+静的なエラーチェックが出来ない
+</p>
+</li>
+<li>
+<p>
+他人のコードの内容を把握し難い
+</p>
+</li>
+<li>
+<p>
+メンテナンスや機能追加、リファクタリングのリスクが大きい
+</p>
+</li>
+<li>
+<p>
+コーディング時の補完がイケてない
+</p>
+</li>
+<li>
+<p>
+テーブル内のフィールドアクセス制御が出来ない
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Lua の機能に不満がある  
+</p>
+<ul>
+<li>
+<p>
+nil安全でない 
+</p>
+</li>
+<li>
+<p>
+マクロがない
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
+</p>
+</li>
+<li>
+<p>
+既に数多くのシステムで Lua を利用している
+</p>
+</li>
+</ul>
+<p>
+以降で、それぞれについて説明する。
+</p>
+<h3 id="headline-2">
+楽して安全に書きたい
+</h3>
+<p>
+Ruby のまつもとゆきひろ氏は、Ruby に楽しさを求めている。
+</p>
+<p>
+私は　LuneScriptに楽しさは求めていない。
+いや、「楽しさ」を求める以上に「楽」をしたいと考えている。
+</p>
+<p>
+もちろん、なにをするにも楽しい方がいい。
+私自身、ソフトウェア開発に楽しさを感じているからこそ、
+プライベートな時間に趣味（無償）のソフトウェア開発をやっている。
+</p>
+<p>
+今は営業の出来ない純粋なソフト屋だって、
+クラウドワークスの様なサービスを使ってギャランティーを受けられる仕事を
+取ってくることができる時代だ。
+そんな時代に、プライベートな時間を潰して無償のソフトウェア開発をする動機なんて、
+「楽しい」以外の何ものでもない。
+</p>
+<p>
+ただ、ソフトウェア開発自体は楽しいが、変なバグ取りやテストコード作成は楽しくない。
+では何故このような楽しくない作業が必要なのかと言えば、
+ソフトウェア開発にはバグが入り込み易く、
+そのバグを取り除いてやらないとまともにソフトが動かないからだ。
+</p>
+<p>
+繰り返すが、この作業は楽しくない。
+人によっては楽しめるかもしれないが、少なくとも私にとっては苦行だ。
+まぁ、「やりとげた」という達成感は無くはないが、
+仕事ならともかく、わざわざプライベートな時間を潰してまでやりたくない。
+</p>
+<p>
+そういった楽しくない作業を出来るだけやらずに、
+楽して安全なソフトウェア開発をしたいのだ。
+</p>
+<p>
+Perl の作者 Larry Wall 氏は
+プログラマーの三大美徳として「怠惰 、短気、傲慢」をあげている。
+「楽して安全なソフトウェア開発」は、これとかなり似ていると思う。
+</p>
+<p>
+Lua には、楽して安全なソフトウェア開発を行なう仕組みが提供されていない。
+提供されていないなら、自分で作れば良いだけだ。
+</p>
+<p>
+私は、楽をするための労力は惜しまない。
+</p>
+<p>
+これが、私が LuneScript を開発する一番の理由だ。
+</p>
+<h3 id="headline-3">
+動的型付け言語特有の問題
+</h3>
+<p>
+私は動的型付け言語を否定している訳ではない。
+</p>
+<p>
+私自身、動的型付け言語で処理を書く事は良くあるし、
+100 行にも満たない様な簡単な処理を書く時に
+静的型付け言語なんて使いたいとは思わない。
+</p>
+<p>
+ここで動的型付け言語を問題としているのは、
+個人が一人で作成して、一人でメンテナンスするスクリプトではなく、
+不特定多数が開発する可能性のあるスクリプトに
+動的型付け言語を利用した場合に、
+問題となり易いことを挙げている。
+</p>
+<h4 id="headline-4">
+静的なエラーチェックが出来ない
+</h4>
+<p>
+人間は間違える。
+</p>
+<p>
+フルタイムでコーディングしているソフトウェアエンジニアなら、
+引数に間違った型のデータを渡した経験は両手・両足では数え切れない程度は有るだろう。
+よくある間違いとしては、
+数字文字列の入力を parse した結果をある関数に渡す時、
+その関数は数値型の値を求めているのに、
+parse したそのままの文字列データを渡してしまう等、
+例を考えれば他にも色々と思い浮かぶ。
+</p>
+<p>
+複数メンバーで開発する際は、コミュニケーションミス等で、間違いが発生する確率が更に高まる。
+</p>
+<p>
+静的型付け言語であれば、
+コンパイル時、あるいはイマドキはコーディング時に
+型不一致エラーとなって間違いに気が付く。
+</p>
+<p>
+しかし動的型付け言語では、
+実際に動かさないと分からない。
+また、場合によっては単純に動かしただけでは発生せず、
+特定のパスや特定のタイミングでしか発生しない、と言う事すらある。
+</p>
+<p>
+単純なミスが後々になって重大な問題の原因となる、
+そしてその原因にたどり着く為に多大なコストが必要になることはよくある。
+</p>
+<p>
+「テストでカバー出来る」という考えもあると思うが、テストを書くのもタダではない。
+最初に書いたが、私はテスト作成を楽しめない。
+テストを書かずにコンパイラが保証してくれるなら、私はそちらの方を取る。
+</p>
+<p>
+動的型付け言語で書いたコードに対しても、ある程度は静的チェックを行なうことは可能だ。
+しかし、それは静的型付け言語のものに比べれば、
+とてもコストの掛かる事であり、精度も不十分である。
+</p>
+<p>
+静的型付け言語であれば、少なくとも型に関連するミスは、
+確実に静的に解析することが出来る。
+</p>
+<p>
+もちろん、c の void * や java の Object の様な何でもありな型にしてしまった場合や、
+強制的な型変換を使用した場合などは解析不能だが。
+</p>
+<p>
+私は、将来的に、ディープラーニング等の技術によって静的解析技術が進化し、
+もっと楽してソフトウェア開発が出来るようになると考えている。
+そして、そのような開発をサポートするのは、動的型付け言語ではなく、
+静的型付け言語であると思う。
+</p>
+<p>
+まぁ、もっと違うパラダイムなのかもしれないが。
+</p>
+<h4 id="headline-5">
+他人のコードの内容を把握し難い
+</h4>
+<p>
+他人のコードは、自分が書いたコードに比べれば、内容を把握し難い。
+コレは当然のことだ。
+</p>
+<p>
+ここで言いたいのは、そういう事ではない。
+</p>
+<p>
+また、インデントが揃ってないとか、
+コーディング規約が守られていないとか、
+そういうレベルの低い事でもない。
+</p>
+<p>
+どんなに著名なエンジニアが書こうとも、
+ソレが動的型付け言語で書かれていれば、
+静的型付け言語で書かれたコードに比べれば把握し難い。
+</p>
+<p>
+何故ならば、プログラムの重要なファクターであるデータの型情報が、
+ほとんど書かれていないのだから。
+もしも型情報などは大して重要ではないと言うエンジニアがいるならば、
+「アルゴリズムとデータ構造」の単位を取り直した方が良い。
+</p>
+<p>
+なお、シンボル名から型を予想することは出来る。
+また、そのようにシンボル名は付けるべきだ。
+</p>
+<p>
+しかし、ソレはあくまでも予想であり、事実ではない。
+私はソフトウェア開発をする時に、推理ゲームに頼って開発したいとは思わない。
+</p>
+<p>
+また、コメントあるいはドキュメントに型情報を記載しているからそれを確認すれば良い、
+と言う意見もあるだろう。
+しかし、コメントやドキュメントと実装が乖離している事は良くあるし、
+コードをひと目見れば理解出来るのと、コード+αを見ないと分からないのであれば、
+私はコードをひと目見れば理解出来る方が良い。
+</p>
+<p>
+なんども言うが私は楽をしたいのだ。
+</p>
+<h4 id="headline-6">
+メンテナンスや機能追加、リファクタリングのリスクが大きい
+</h4>
+<p>
+どんなコードでも、一度作ったらそれっきり手を加えない、なんて事は滅多にない。
+</p>
+<p>
+動かしている OS が変わったとか、機能追加が必要になったとか、
+潜在バグが見つかったとか理由は様々だが、
+既存のコードに手を加える機会は少なくない。
+</p>
+<p>
+そうした既存のコードに手を加える時に、
+動的型付け言語は静的型付け言語に比べるとリスクが大きい。
+</p>
+<p>
+ここでも、「テストをしっかり書いておけば問題無い」と言う意見もあるだろう。
+しかし、ソレは半分正解だが半分ハズレだ。
+</p>
+<p>
+「手を加える」と言うことは、「振る舞いが変わる」と同義だ。
+変化の度合いの違いはあっても、変わる事には違いはない。
+そして振る舞い変わってしまうと、テストがあっても安心とは言えなくなる。
+</p>
+<p>
+何故ならば、テストは振る舞いが正しい事を確認するためのもので、
+その振る舞いが変わるのだから、テストもそのままでは使えなくなるからだ。
+もちろん、すべてが使えなくなる訳ではなく、振る舞いが変わるところだけに限定は出来る。
+</p>
+<p>
+さて、本題の動的型付け言語と静的型付け言語の話に戻そう。
+</p>
+<p>
+どうして動的型付け言語だと、静的型付け言語に比べて、
+既存のコードに手を加える時のリスクが大きいのか。
+それは、手を加えることによって影響する箇所を
+抜け漏れなく修正する事が難しいからだ。
+</p>
+<p>
+静的型付け言語であれば、コンパイルさえ通せば、
+ほぼ修正完了と言って良い。
+一方、動的型付け言語では、全てを修正した後、
+いざテストを動かそうとしても、修正漏れによるエラーでまともに動かない、と言うことが多い。
+エラーを一つ一つ潰してていき、ようやく完了となる。
+</p>
+<p>
+コンパイルエラーの対応と、テストのエラーを対応するのにどちらが時間がかかるか、
+と考えれば、それは圧倒的にテストのエラーだ。
+コンパイルエラーであれば、コンパイルエラーの行を修正すれば済むが、
+テストのエラーは、エラーの原因を特定する作業が余計に追加となる。
+更に、既存のテスト自体に漏れがあれば、修正漏れ自体を発見できない可能性もある。
+</p>
+<p>
+また、手を加える作業者が、そのモジュール作成者本人であればまだ良いが、
+全くの別人が対応することも珍しくない。
+その場合は、先程挙げた「他人のコードの内容を把握し難い」との相乗効果で
+更にリスクが高まる。
+</p>
+<p>
+LuneScript 開発中、何度も設計変更を行ったが、
+もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。
+</p>
+<h4 id="headline-7">
+コーディング時の補完がイケてない
+</h4>
+<p>
+コーディングで楽をするには、まともな補完機能が必須である。
+</p>
+<p>
+最近は動的型付け言語でも、かなり頑張ってコーディングの補完機能が動作している。
+しかし、その補完機能がリストする候補にガッカリした経験を持っていないだろうか。
+あるいは、そもそもリストされるべきものが、全くリストされない事は無いだろうか。
+</p>
+<p>
+動的型付け言語の補完はかなり難しい。
+何故ならば補完機能は型情報をもとに補完候補を認識するが、
+動的型付け言語では、それを静的に認識するのが困難だからだ。
+</p>
+<p>
+静的型付け言語であれば、型情報が静的に決定できるので、
+型関連の補完は正確に実現可能た。
+</p>
+<p>
+もちろん、 LuneScript も補完機能を提供している。
+</p>
+<p>
+詳しくは次の記事を参照のこと。
+</p>
+<p>
+<a href="../completion">../completion</a>
+</p>
+<h4 id="headline-8">
+テーブル内のフィールドアクセス制御が出来ない
+</h4>
+<p>
+アクセス制御は重要である。
+</p>
+<p>
+どのデータ・関数をアクセスしても大丈夫かを明示できるからだ。
+</p>
+<p>
+設計時の大前提として、外部から使用可能な関数、データを公開し、
+外部から使用されると動作を保証できない関数、データを非公開とするのが常識だ。
+</p>
+<p>
+しかし、 Lua ではテーブルのフィールドに対してはこれが出来ない。
+</p>
+<p>
+もしかしたら、 metatable を駆使すれば動的な制御は可能かもしれないが、
+少なくとも静的な制御は出来ない。
+</p>
+<p>
+何度も言うが、動的にエラーが検知できるのは
+エラーが検知できるだけマシというだけで、
+静的にエラーが検出できることに比べれば、圧倒的に不便である。
+</p>
+<p>
+アクセス制限を持つ言語でも、
+リフレクションの機能を使うと非公開としていた関数・データにアクセスできる場合もあるが、
+これは特に問題はないと考える。
+</p>
+<p>
+何故ならアクセス制御は、そのモジュール設計者の意図を明示することで、
+別の人間がそのモジュールを利用する時にその意図を理解せずにアクセスした場合、
+そのアクセスは設計者の意図からはずれていることを報せることが目的だと、
+私は考えているからである。
+</p>
+<p>
+特にテストコードを書く場合は、非公開関数・データにアクセスできることが
+求められることがあるため、非公開関数・データにアクセスする手段があること自体は、
+問題ではない。
+</p>
+<p>
+問題なのはそういった制御がなく、全てアクセス可能になってしまっていることである。
+</p>
+<h3 id="headline-9">
+Luaの機能に不満がある
+</h3>
+<p>
+Lua はコンパクトでパワフルな言語であるが、
+素の Lua ではサポートされていない機能も多くある。
+</p>
+<p>
+トランスコンパイラは、Lua に手を加えずに、
+素の Lua ではサポートされていない機能をサポートすることも
+目的の一つに開発している。
+</p>
+<h4 id="headline-10">
+nil安全でない
+</h4>
+<p>
+Lua の nil は便利な値ではあるが、動的エラーの原因にもなる。
+多くのエンジニアは、この nil 関連のエラーに悩まされている。
+</p>
+<p>
+その問題を解決するのが nil 安全だ。
+</p>
+<p>
+現在のプログラミングで無くてはならない多くの機能は、
+Lisp の時代からすでに実現されている。
+例えば、GC やラムダ式や、クロージャ等は、数十年前からあるものだ。
+</p>
+<p>
+つまり、その時代からほとんど進化していないと言える。
+</p>
+<p>
+「ほとんど進化していない」というのは、「多少進化している」ということでもあり、
+その進化の一つに nil 安全は含めて良いだろう。それ程重要なものだ。
+</p>
+<p>
+しかし、 Lua には nil 安全がサポートされておらず、
+これはイマドキの言語としては、かなりの減点対象と言って良い。
+</p>
+<p>
+なお、話は逸れるが、
+Rust はライフタイムと所有権という概念で nil(null) の危険性に対応している。
+初めてこのアプローチを見た時「こんなやり型があったのか」と、とても関心した。
+</p>
+<p>
+さらに Rust はライフタイムと所有権によって、 nil 安全だけでなく、
+メモリ管理やデータアクセス競合など様々な問題を解決している。
+</p>
+<p>
+Rust を触れたことがないのであれば、
+是非ライフタイムと所有権について確認してもらいたい。
+</p>
+<p>
+閑話休題。
+</p>
+<p>
+LuneScript では、
+nil を取り得る型 nilable と、
+nil を取り得ない 非 nilable を別の型として管理することで、
+意図しないタイミングで nil エラーが発生することを防止している。
+</p>
+<p>
+また、 nilable から 非 nilable 型への変換の unwrap 処理、
+多階層の nilable データに楽にアクセスするための nil 条件演算子をサポートすることで、
+nil エラーの対応を楽にかつ安全に対応できるようにしている。
+</p>
+<h4 id="headline-11">
+マクロがない
+</h4>
+<p>
+マクロといえば、 Lisp が非常に強力なマクロを持っていて、
+マクロをもつ言語の代表格と言って良いだろう。
+Lisp の魅力の根底を支えているものこそマクロだと言っても過言ではない。
+</p>
+<p>
+しかし、比較的新しい言語は、マクロをサポートしていないものが多い気がする。
+</p>
+<p>
+C 言語ですら「なんちゃってマクロ」を持っているのに、何故だろうか？
+</p>
+<p>
+まぁ、言語自体がマクロを持っていなくても、
+なんらかのデータからコードを自動生成するスクリプトを別途エンジニアが作成すれば、
+マクロは不要だと言えなくもないかもしれない。
+</p>
+<p>
+ただ、そうすると「なんらかのデータ」や、「自動生成するスクリプト」が
+氾濫することになってしまう。
+</p>
+<p>
+そのようなことにならないようにするためにも、マクロは必要だと考える。
+</p>
+<p>
+とはいえ、Lisp ほどの高機能なマクロは実装が難しく、
+使用する側もそれなりの学習が必要である。
+</p>
+<p>
+LuneScript では、実装が簡単で、かつ使用する側の学習に負担がなく、
+誰でも簡単に使えて効果のあるマクロを用意した。
+</p>
+<p>
+LuneScript のセルフホスティングでもマクロを使用しているが、
+やはりマクロはプログラム言語には無くてはならないものだと改めて感じている。
+</p>
+<h3 id="headline-12">
+Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
+</h3>
+<p>
+前述している通り、Lua はシステムに組込むには最も扱い易い言語の一つである。
+</p>
+<p>
+特にそのコンパクトさや、C の標準関数のみでコンパイル可能という特徴は、
+組込みには非常に有用である。
+</p>
+<p>
+他にも組込みを意識した言語はいくつかあるが、
+組込みという条件で見た場合、Lua を越える言語を私は知らない。
+</p>
+<h3 id="headline-13">
+既に数多くのシステムで Lua を利用している
+</h3>
+<p>
+Lua を組み込んでいるシステムは多く存在する。
+</p>
+<p>
+一度システムに組込まれれば、
+そのシステムが生きている限り余程の事がなければ、その Lua は生き続ける。
+</p>
+<p>
+ちょっと気にいらないからといって、変えられるものではない。
+</p>
+<h2 id="headline-14">
+最後に
+</h2>
+<p>
+LuneScript は、Lua の欠点を補うべく開発している。
+</p>
+<p>
+これは、Lua が使えない言語だからではなく、
+Lua の欠点を放置して他の言語に浮気するには惜しい言語だからだ。
+</p>
+<p>
+もし今後、組込み言語を検討する機会があれば、
+Lua には LuneScript があることも検討材料にして欲しい。
+</p>
+<p>
+何度も言うが、Lua は軽量で、かつ実行パフォーマンスの高い言語である。
+そして、Lua には LuneScript という選択肢もあることを覚えておいて欲しい。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/" title="トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/class2accessor/" title="accessor 編">Next - accessor 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">Lctags<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/reason/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

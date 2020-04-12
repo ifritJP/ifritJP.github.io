@@ -1,0 +1,581 @@
+#+TITLE: C/C++ ソースコードタグシステム lctags の紹介
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+
+
+* まえがき
+
+*忙しい人はこのセクションを飛して、 [[#lctags][「lctags の紹介」]] に進んでください。*
+
+
+** ソースコードタグシステムとは
+
+プログラミングしていると、
+必ずと言って良い程、関数の定義や、関数の参照箇所を調べる機会があります。
+
+小規模なコードであれば、grep-find すればこと足ります。
+
+しかし規模が大きくなると、grep-find だといつまで経っても結果が返ってこない、
+あるいは、ノイズ(文字列や一部の名前が同じシンボル等)が多くてフィルタリングが大変になります。
+
+そこで、予めソースコードを解析し、
+どの関数、シンボルがどこのソースコードで定義しているかを解析してタグ付けしておくことで、
+所望の関数、シンボルの定義位置や参照位置を検索できるようにする
+ソースコードタグシステムが利用されています。
+
+C 言語では主に、ctags, etags, gtags(GNU global) が使われています。
+
+** 既存ツールの制限
+
+しかし、これらツールには制限があります。
+
+それは、構造体/クラスのメンバーのタグが、名前空間を認識せずにメンバー名だけでしか登録されていないというものです。
+
+例えば、次の構造体宣言があった場合、
+
+#+BEGIN_SRC C
+typedef struct {
+  int data;
+} TEST1;
+typedef struct {
+  int data;
+} TEST2;
+#+END_SRC
+
+TEST1 と TEST2 はそれぞれ data というメンバを持ち、
+この data に対してタグが登録されます。
+このとき、その data が TEST1::data なのか、 TEST2::data なのかを判別するには、
+名前空間の TEST1, TEST2 を管理しなければならないですが、
+先ほどあげたツールではその情報を管理しません。
+
+これにより、 TEST1::data の定義を確認したいときも、
+直接 TEST1::data を確認することはできず、
+候補として TEST1::data、TEST2::data がそれぞれ列挙され、それぞれを確認することになります。
+
+定義であればまだ箇所が少ないですが、参照となるとかなりノイズが混ることになりますし、
+参照箇所を見ただけでは、どの型なのかを判別するのが難しい場合があります。
+
+また、 C++ の set/get のような汎用的なメソッド名では、
+ノイズだらけになることが簡単に想像できます。
+
+このような制限になるのは、
+これらツールがソースコードの構文解析を行なっていないためです。
+
+「構文解析を行なっていない」というと語弊があるので少し補足すると、
+C言語の構文に則った字句解析までは行なっているが、
+そのトークンが示す意味を完全には解析していない、ということです。
+
+これらのツールを利用していることがあるなら気が付いていると思いますが、
+これらのツールを利用してソースコードを解析する際に、
+ソースコードに対するコンパイラオプションを指定する必要がありません。
+
+コンパイラオプションを指定していないということは、
+これらツールはインクルードファイルや define シンボルが分からないということです。
+
+/実際にはコンパイルオプションがなくてもコンパイルできる場合もありますが、ある程度以上の規模ではコンパイルオプションは必須です。/
+
+コンパイルオプションがなくても解析できているということは、
+つまりはそのレベルでの解析であるということです。
+
+これは、ツールを導入する上でのハードルが低いという意味では非常に良い特徴ではありますが、
+それによっていくつかの制限が発生してしまいます。
+その制限の代表的なものとして、ここで説明している「構造体メンバの区別が付かない」があります。
+
+** 構文解析のハードル
+
+従来ツールの制限を解消するには、ツールがコンパイラオプションを認識し、
+意味解析まで行なう必要があります。
+
+この工程は、
+コンパイラを作ることとほとんど同義であると言って良いくらいの複雑な
+処理が伴ないます。
+
+高水準言語の中では比較的にシンプルとされている C 言語でも、
+規格に則ったコンパイラを作るのは至難の業です。
+
+CPU や SOC 等のチップベンダが C コンパイラを提供していますが、
+これら C コンパイラは基本的に C89 準拠で
+C99 以降をサポートするものがほとんどないことを考えても、
+そのハードルの高さがうかがえます。
+
+/まぁ、チップベンダのコンパイラに関して言えば、ARM 以外の組込み向けチップに載せる様なプログラムは移植性が特に重視されるから、C89 以外を使うことは推奨されていない。よって、ベンダ側も C89 以外を対応していない、ってこともあるのかもしれない。/
+
+** libclang の利用
+
+そこで登場するのが libclang です。
+
+libclang は clang の機能をまとめたライブラリで、
+これを利用することで C/C++ のコードを自前で解析せずに AST(Abstract Syntax Tree) にアクセスできます。
+
+AST にアクセスできるので、後はその情報を管理して検索できるシステムを作成すれば、
+ソースコードタグシステムの完成です。
+
+このアイデア自体はかなり前からあって、実際にいくつかのツールが存在しますし、
+私自身もツールを作成していました (今回紹介する lctags ではない)。
+
+** lctags 
+
+しかし、それらの libclang 対応ツールを業務のプロジェクトに適応するには
+いくつかの課題があり、採用を見送っていました。
+
+そこで、それらの課題を解決する libclang 対応のソースコードタグシステムを新に作成しました。
+そのツールが、ここで紹介する lctags です。
+
+* lctags の紹介
+  :PROPERTIES:
+  :CUSTOM_ID: lctags
+  :END:
+
+lctags は、主に gtags の置き換えを目的に作成したソースコードタグシステムです。
+よって、 gtags の主要な機能と互換を持たせています。
+また、独自機能もいくつか搭載しています。
+
+
+** lctags の機能
+
+具体的な機能を挙げると次のものがあります。
+
+- 関数、シンボル、メンバの定義・参照位置列挙
+- 関数、シンボル、メンバの補完、展開
+- インクルードファイルの列挙
+- ワーニング、エラーの表示
+- コールグラフの作成
+- 複数のコンパイルオプション対応
+- emacs 対応
+
+** lctags の使用方法
+
+ビルド方法や実行時のサンプル画面等は次のリンク先で確認してください。
+
+[[https://github.com/ifritJP/lctags]]
+
+
+次も参考にしてください。
+
+- lctags で C 言語の関数コールを簡単に
+  - https://qiita.com/dwarfJP/items/5fe29d4c22c8d76aac0b
+- lctags を使って C/C++ ソースコードをリファクタリング(サブルーチン化編)
+  - https://qiita.com/dwarfJP/items/263db943fe8ebc407abb
+- C/C++ ソースコードをリファクタリング by lctags on emacs (リネーム編)
+  - https://qiita.com/dwarfJP/items/b702c60ff0381750e746
+- C/C++ の特定シンボルをハイライト by lctags on emacs  
+  - https://qiita.com/dwarfJP/items/418541e8de1e040ed78b
+- C/C++ の enum 補完 by lctags on emacs
+  - [[https://qiita.com/dwarfJP/items/29b4b1a4490c1ba42b9a]]  
+- C/C++ の変数サイズ確認 by lctags on emacs
+  - https://qiita.com/dwarfJP/items/2ce744f3e534a943c98d
+- lctags のプロジェクト簡易登録
+  - https://qiita.com/dwarfJP/items/965cfbf31a49998df95d  
+- C/C++ コードを解析してインタラクティブなコールグラフ表示 by lctags
+  - https://qiita.com/dwarfJP/items/ef868813a7aaa2572468  
+- C言語/C++ コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags
+  - https://qiita.com/dwarfJP/items/fbc324704892667452c1
+- Windows で lctags (C言語/C++ のタグジャンプ、コールグラフ、etc..)    
+  - https://qiita.com/dwarfJP/items/9894ac9f65734317e1ad
+
+
+lctags は libclanglua を利用して libclang を操作します。
+
+libclanglua については次を参照してください。
+
+https://qiita.com/dwarfJP/items/607d46e0a1dcb1e3a2a5
+
+** チュートリアル
+
+*** DB の作成
+
+プロジェクトディレクトリのトップディレクトリで lctags init . を実行します。
+
+ここではプロジェクトディレクトリとして新しく test を作成し、そこに DB を作成します。
+
+#+BEGIN_SRC TXT
+$ mkdir test
+$ cd test
+$ lctags init .
+#+END_SRC
+
+*** ソースファイルの作成
+
+ソースファイルはなんでも構いませんが、
+以降は次の内容のソースに沿って説明します。
+
+#+BEGIN_SRC C -n
+typedef enum {
+    enum_val1,
+    enum_val2,
+    enum_val3,
+    enum_val4
+} enum_val_t;
+struct DATA {
+    enum_val_t value;
+    struct DATA * pData;
+};
+struct DATA2 {
+    int value;
+    enum_val_t value2;
+    struct DATA * pData;
+};
+void sub( void )
+{
+    struct DATA data;
+    struct DATA2 data2;
+    struct DATA2 data22;
+    data.value = enum_val2;
+    data2.value = 0;
+    data22.value2 = enum_val1;
+
+}
+#+END_SRC
+
+*** ソースファイルの登録
+
+次のコマンドで sub.c を登録する。
+
+#+BEGIN_SRC TXT
+$ lctags build gcc sub.c
+#+END_SRC
+
+これで sub.c の情報が登録されます。
+
+-I 等のコンパイルオプションが必要な場合は、
+通常のコンパイル通り gcc に続けて指定します。
+
+*** シンボル定義位置の列挙
+
+次のコマンドで DATA の定義場所をリストします。
+
+#+BEGIN_SRC TXT
+$ lctags -x DATA
+DATA                7 ./sub.c          struct DATA {
+#+END_SRC
+
+emacs の場合、M-t DATA で定義場所にジャンプします。
+
+*** シンボル参照位置の列挙  
+
+次のコマンドで value の参照場所をリストします。
+
+#+BEGIN_SRC TXT
+$ lctags -xr value
+value              21 ./sub.c              data.value = enum_val2;
+value              22 ./sub.c              data2.value = 0;
+#+END_SRC
+
+emacs の場合、M-r value で参照場所をリストします。
+
+この場合、 DATA::value, DATA2::value の両方をリストします。
+
+*** 完全限定名シンボル定義位置の列挙
+  
+次のコマンドで DATA::value の定義場所をリストします。
+
+#+BEGIN_SRC TXT
+$ lctags -x ::@struct::DATA::value
+::@struct::DATA::value    8 ./sub.c              enum_val_t value;
+#+END_SRC
+
+上記結果を見ると、DATA2::value が除外されていることが分かります。
+
+emacs の場合、21 行目の ~data.value = enum_val2;~ の value の箇所にカーソルを合せて、
+C-u M-t で定義場所にジャンプします。
+
+*** 完全限定名シンボル参照位置の列挙
+
+次のコマンドで DATA2::value の参照場所をリストします。
+
+#+BEGIN_SRC TXT
+$ lctags -xr ::@struct::DATA2::value
+::@struct::DATA2::value   22 ./sub.c              data2.value = 0;
+#+END_SRC
+
+上記結果を見ると、DATA::value が除外されていることが分かります。
+
+
+emacs の場合、12 行目の int value; の value の箇所にカーソルを合せて、
+C-u M-r で参照場所にジャンプします。
+
+*** メンバ補完, 展開
+  
+emacs で 24 行目に次を追記し、
+
+#+BEGIN_SRC TXT
+data2.
+#+END_SRC
+
+. の後で C-c C-/ を入力すると、value, value2, pData をリストします。
+
+pData にカーソルを移動し C-M-f を入力すると pData が展開され、
+さらに pData のメンバ補完状態になります。
+
+この状態で C-M-b を入力すると pData の展開が戻ります。
+
+メンバをリスト表示している状態で C-SPC を入力すると、メンバがマークされます。
+メンバを複数マークして RET すると、マークしたメンバーが展開されます。
+
+*** enum 補完
+  
+21 行目の ~data.value = enum_val2;~ の ~enum_val2~ の位置にカーソルを移動し、
+C-c C-x を入力すると、 ~enum_val_t~ の enum 値補完になります。
+
+#+BEGIN_SRC TXT
+(E) enum_val1 => 0 <::@enum::<enum_enum_val_t>>
+(E) enum_val2 => 1 <::@enum::<enum_enum_val_t>>
+(E) enum_val3 => 2 <::@enum::<enum_enum_val_t>>
+(E) enum_val4 => 3 <::@enum::<enum_enum_val_t>>
+#+END_SRC
+
+このとき、リストには enum 値の数値も表示されます。
+
+ここで別の値を選択すると、 ~enum_val2~ が選択した enum 値に置き換わります。
+
+また、 ~data.value = enum_val2;~ の ~enum_val2;~ の部分を削除し、
+= の直後にカーソルを合せて C-c C-/ を入力すると、
+~enum_val_t~ の値補完になります。
+
+*** 構文エラーチェック
+
+22 行目の data2.value = 0; を data2.val = 0; に編集し C-c C-f を入力すると、
+構文チェックされ次のエラー内容を示すバッファが開きます。
+
+#+BEGIN_SRC TXT
+sub.c:22: error: no member named 'val' in 'struct DATA2'
+#+END_SRC
+
+このバッファ内の行に移動して RET すると、そのエラー箇所に飛びます。
+
+変更を元に戻して C-c C-f を入力すると、ミニバッファに次のメッセージが表示されます。
+
+#+BEGIN_SRC TXT
+none diagnostics message
+#+END_SRC
+
+*** snippet
+
+解析した情報をもとに、 snippet を展開します。
+     
+**** メンバダンプ
+  
+sub() 内の空いている行に data2 を入力し、 C-c l を入力するとメニューが開きます。
+この状態で G (大文字) を入力し、さらに m を入力します。
+すると mini-buffer に log function?: printf( が表示されます。
+ここでそのまま ENTER すると、 次の data2 のメンバを出力する printf が生成されます。
+
+#+BEGIN_SRC c
+    printf( "data22.value = %p\n", data22.value );
+    printf( "data22.value2 = %p\n", data22.value2 );
+    printf( "data22.pData = %p\n", data22.pData );
+#+END_SRC
+
+なお、書式は全て %p として出力します。
+
+**** enum 文字列変換
+  
+sub() 内の空いている行に ~enum_val_t~ を入力し、 C-c l を入力するとメニューが開きます。
+この状態で G (大文字) を入力し、さらに e を入力します。
+すると、次の ~enum_val_t~ の enum 値を文字列変換する switch 文が出力されます。
+
+#+BEGIN_SRC c
+    switch (enum_val2) {
+    case enum_val1:
+        return "enum_val1";
+    case enum_val2:
+        return "enum_val2";
+    case enum_val3:
+        return "enum_val3";
+    case enum_val4:
+        return "enum_val4";
+    default:
+        return NULL;
+    }
+#+END_SRC
+
+
+** lctags の制限事項
+
++ lctags は libclang を利用しているので C/C++ のソースコードを解析することができます。
+  しかし、私自身が C++ をあまり利用していないため C++ での動作検証がほとんど出来ていません。
++ DB サイズは gtags と比べると 2 倍以上の大きさになります。
+  これによりストレージの容量を消費するのはもちろん、シンボルの検索などで利用するメモリ量も増加します。
++ 解析は高速性を重視して journal mode を memory に設定しています。
+  これにより、メモリを多めに消費します。
+  とはいえ、 高々 1 プロセス 100M 程度なので、いまどきの PC であれば然程影響はないと思います。
+
+
+* lctags の内部情報
+
+*以降はユーザ向け情報でなはく、内部の技術情報なので興味のある方だけ参考程度にどうぞ*
+
+** ツール構成
+
+lctags は次のソフトウェアを利用しています。
+
++ lua, lua-dev
++ libclang-dev
++ luasqlite3
++ openssl
+
+lctags は Lua で作成しています。
+
+Lua を選択した理由は、次の通りです。
+
+- コンパイル型ではなく、スクリプト型で気軽に開発したかった。
+- 以前、他の言語で libclang を bind してツールを作成したことがあるが、
+  良い結果を得られなかった経験があり、
+  何か不具合があった時に深いレベルまで追える知識のある言語である必要があった。
+  - libclang の公式 binding が利用できる python でソースコードタグシステムを実装したことがあるが、
+    実行速度に難があった。
+  - オープンソースの java 版 binding を利用したことがあるが、原因不明な不具合に悩まされた。
+  - lua は binding の IF が非常にシンプルで、問題があっても追い易い。
+- スクリプト言語でありながら、実行速度もそこそこ出る。
+- JIT 版もあるので、実行速度に問題があればそれを利用できる。
+- クロージャ等のいまどきのプログラムに必須の技術をサポートしている。
+- 構成ファイルが最小限。
+- セットアップが簡単。 
+  - 「パッケージ管理が優秀」という意味ではなく、数個のファイルコピーだけで動かせるという意味。
+
+
+   
+** DB Table の設計
+
+解析結果は SQLite で管理しています。
+
+DB Table は、次の構成になっています。
+
+なお、 DB Table は出来るだけ構成を維持するつもりですが、
+機能追加等で変更することがあります。
+
+#+BEGIN_SRC TXT
+CREATE TABLE namespace ( id INTEGER PRIMARY KEY, snameId INTEGER, parentId INTEGER, digest CHAR(32), name VARCHAR UNIQUE COLLATE binary, otherName VARCHAR COLLATE binary, virtual INTEGER);
+CREATE TABLE simpleName ( id INTEGER PRIMARY KEY, name VARCHAR UNIQUE COLLATE binary);
+CREATE TABLE filePath ( id INTEGER PRIMARY KEY, path VARCHAR UNIQUE COLLATE binary, incFlag INTEGER, digest CHAR(32), currentDir VARCHAR COLLATE binary, invalidSkip INTEGER);
+CREATE TABLE targetInfo ( fileId INTEGER, target VARCHAR COLLATE binary, compOp VARCHAR COLLATE binary, hasPch INTEGER, updateTime INTEGER, PRIMARY KEY ( fileId, target, compOp ) );
+CREATE TABLE symbolDecl ( nsId INTEGER, snameId INTEGER, parentId INTEGER, type INTEGER, fileId INTEGER, line INTEGER, column INTEGER, endLine INTEGER, endColumn INTEGER, charSize INTEGER, comment VARCHAR COLLATE binary, hasBodyFlag INTEGER, PRIMARY KEY( nsId, fileId, line ) );
+CREATE TABLE symbolRef ( nsId INTEGER, snameId INTEGER, fileId INTEGER, line INTEGER, column INTEGER, endLine INTEGER, endColumn INTEGER, charSize INTEGER, belongNsId INTEGER, PRIMARY KEY( nsId, fileId, line, column ) );
+CREATE TABLE funcCall ( nsId INTEGER, snameId INTEGER, belongNsId INTEGER, fileId INTEGER, line INTEGER, column INTEGER, endLine INTEGER, endColumn INTEGER, charSize INTEGER, PRIMARY KEY( nsId, belongNsId ) );
+CREATE TABLE incRef ( id INTEGER, baseFileId INTEGER, line INTEGER );
+CREATE TABLE incCache ( id INTEGER, baseFileId INTEGER, incFlag INTEGER, PRIMARY KEY( id, baseFileId ) );
+CREATE TABLE tokenDigest ( fileId INTEGER, digest CHAR(32), PRIMARY KEY( fileId, digest ) );
+CREATE TABLE preproDigest ( fileId INTEGER, nsId INTEGER, digest CHAR(32), PRIMARY KEY( fileId, nsId, digest ) );
+CREATE TABLE etc ( keyName VARCHAR UNIQUE COLLATE binary PRIMARY KEY, val VARCHAR);
+#+END_SRC
+
+- namespace 
+  - 名前空間を管理する。
+- simpleName
+  - 名前を管理する。
+  - namespace は完全限定名で管理するのに対し、 simpleName は名前空間を除いた単純名を管理します。
+- filePath
+  - ファイルのパスを管理する。
+- targetInfo
+  - コンパイルオプションを管理する。
+- symbolDecl
+  - シンボルの定義位置を管理する。
+- symbolRef
+  - シンボルの参照位置を管理する。
+- funcCall
+  - 関数コール位置を管理する。
+- incRef
+  - インクルードの参照関係を管理する。
+- incCache
+  - インクルードの参照関係をメモ化管理する。
+- tokenDigest
+  - ファイルの解析結果の digest を管理する。
+- preproDigest
+  - ファイルのプリプロセス解析結果の digest を管理する。
+- etc
+  - バージョン情報等のメタ情報を管理する。
+    
+Table は、パフォーマンスを優先して、あまり正規化していません。
+
+lctags で作成した DB は、lctags を通さずに直接 SQLite でアクセスすることも可能です。
+
+** 設計方針
+
+一般的な話だと思いますが、特に次のことを気をつけて設計しています。
+
+  *『SQL に依存しないように DB アクセス処理をカプセル化する。』*
+
+手軽さから SQLite を採用していますが、
+パフォーマンス次第では別の SQL DB や NoSQL に置き換える必要があると考えているので、
+データアクセスは SQL に依存しない形にカプセル化しています。
+また、使用する SQL のクエリも単純なものに限定しています。
+
+DB アクセスは 2 つのソースでカプセル化しています。
+
+- DBAccess.lua
+- DBCtrl.lua  
+  
+DBAccess.lua は SQLite をカプセル化し、DBCtrl.lua は SQL をカプセル化しています。
+
+ただし、いくつかこの方針から外れてしまっている箇所もあります。
+
+なお DBCtrl.lua については、
+規模が大きくなってしまっているため将来的にモジュールを分割したいと思っています。
+
+** ソース構成
+
+lctags のソース構成について説明します。
+
+ツールに何か不具合がある場合、
+大抵は Analyzer.lua, DBCtrl.lua, Complete.lua にあります。
+    
+*** Lua     
+
+- lctags.lua
+  - メインソース
+  - コマンドライン解析の結果を受け、各種処理に振り分ける
+- Option.lua
+  - コマンドライン解析
+- Analyzer.lua
+  - AST 解析
+- DBCtrl.lua
+  - DB 制御
+- DBAccess.lua
+  - SQLite 制御
+- Complete.lua
+  - 補完制御
+- Make.lua
+  - ビルド制御
+- Util.lua
+  - 汎用処理
+- Query.lua
+  - DB 問い合わせ
+- OutputCtrl.lua
+  - DB 問い合わせ結果出力制御
+- StatusServer.lua
+  - 解析ステータスサーバ
+- TermCtrl.lua
+  - ターミナル制御
+- config.lua
+  - lctags.cnf のサンプル
+- gcc.lua
+  - gcc 用の conf
+- Json.lua
+  - JSON enc/dec
+- LogCtrl.lua
+  - ログ出力
+- StackCalc.lua
+  - スタック使用量解析(開発中)
+- DynamicCall.lua
+  - 動的呼び出し解析(開発中)
+
+*** emacs lisp
+  
+- lctags.el
+  - メインソース
+- lctags-dispatch.el
+  - コマンドメニュー
+- lctags-helm.el
+  - helm 用
+- lctags-anything.el
+  - anything 用
+
+** テスト
+
+テストは次のコマンドで実行できます。
+
+#+BEGIN_SRC C
+$ make test
+#+END_SRC
+

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>emacs 簡易 HTTPD 化パケージ simple-httpd.el - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/emacs/simple-httpd/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="emacs 簡易 HTTPD 化パケージ simple-httpd.el" />
+<meta property="og:description" content="lctags(https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156) の インタラクティブなコールグラフ機能実現のため、 HTTPD として simple-httpd.el(https://github.com/skeeto/emacs-http-server) を利用しました。 simple-httpd.el についての日本語の情報があまり無かったため、 ここにまとめておき" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/emacs/simple-httpd/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="emacs 簡易 HTTPD 化パケージ simple-httpd.el"/>
+<meta name="twitter:description" content="lctags(https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156) の インタラクティブなコールグラフ機能実現のため、 HTTPD として simple-httpd.el(https://github.com/skeeto/emacs-http-server) を利用しました。 simple-httpd.el についての日本語の情報があまり無かったため、 ここにまとめておき"/>
+<meta itemprop="name" content="emacs 簡易 HTTPD 化パケージ simple-httpd.el">
+<meta itemprop="description" content="lctags(https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156) の インタラクティブなコールグラフ機能実現のため、 HTTPD として simple-httpd.el(https://github.com/skeeto/emacs-http-server) を利用しました。 simple-httpd.el についての日本語の情報があまり無かったため、 ここにまとめておき">
+
+<meta itemprop="wordCount" content="1691">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>emacs 簡易 HTTPD 化パケージ simple-httpd.el</h1>
+
+<p>
+lctags(<a href="https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156)">https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156)</a> の
+インタラクティブなコールグラフ機能実現のため、
+HTTPD として simple-httpd.el(<a href="https://github.com/skeeto/emacs-http-server)">https://github.com/skeeto/emacs-http-server)</a> を利用しました。
+</p>
+<p>
+simple-httpd.el についての日本語の情報があまり無かったため、
+ここにまとめておきます。
+</p>
+<h2 id="headline-1">
+simple-httpd.el とは
+</h2>
+<p>
+その名の通り、 emacs を シンプルな HTTPD とするための emacs lisp パケージです。
+</p>
+<p>
+これを利用することで、Web サービスを emacs で簡単に立ち上げられます。
+</p>
+<p>
+HTTPD には多くの実装がありますが、これを利用する最大の利点は
+</p>
+<p>
+<strong>「Web サービスと emacs との連携が容易に可能」</strong>
+</p>
+<p>
+これに尽きるでしょう。
+</p>
+<p>
+これに魅力を感じなければ、
+HTTPD として simple-httpd.el を採用する理由はほとんどないと言えます。
+</p>
+<p>
+simple-httpd.el の特徴には他にもありますが、
+それは simple-httpd.el に特化したものではなく、
+他の HTTPD にもあるものですので、
+敢えて simple-httpd.el を選択することもないと思います。
+</p>
+<p>
+私が lctags の HTTPD として simple-httpd.el を選択したのも、
+Web サービスと emacs との連携が容易に可能であることが一番です。
+</p>
+<p>
+例えば、 lctags のコールグラフで関数ノードを右クリックすると
+その関数の定義場所を emacs で表示する、という機能が連携の例です。
+</p>
+<p>
+この連携機能を simple-httpd.el を使わずに実現するには、次の処理が必要になります。
+</p>
+<ul>
+<li>
+<p>
+HTTPD は、受信したリクエストを解析する
+</p>
+</li>
+<li>
+<p>
+HTTPD は、解析した情報から RPC 等で emacs に所定の関数の定義場所を開けと指示する
+</p>
+</li>
+<li>
+<p>
+emacs は、指示された要求を処理し、関数定義場所を開く
+</p>
+</li>
+</ul>
+<p>
+simple-httpd.el を利用することで、上記処理の大部分を省けます。
+</p>
+<h2 id="headline-2">
+simple-httpd.el の利用方法
+</h2>
+<p>
+基本的には次のステップで利用可能です。  
+</p>
+<ul>
+<li>
+<p>
+<a href="https://github.com/skeeto/emacs-http-server">https://github.com/skeeto/emacs-http-server</a> を clone
+</p>
+</li>
+<li>
+<p>
+(require &#39;simple-httpd)
+</p>
+</li>
+<li>
+<p>
+(httpd-start)
+</p>
+</li>
+</ul>
+<p>
+これによって、8080 ポートで HTTPD が待ち受けます。
+</p>
+<p>
+あとは PATH に対するサーブレット登録するだけです。
+</p>
+<h2 id="headline-3">
+サーブレット登録
+</h2>
+<p>
+サーブレットの登録は (defservlet NAME MIME PATH-QUERY-REQUEST &amp;rest BODY) で
+行ないます。
+</p>
+<p>
+例えば lctags では、次の登録をしています。
+</p>
+<div class="src src-lisp">
+<div class="highlight"><pre class="chroma"><code class="language-lisp" data-lang="lisp"><span class="p">(</span><span class="nv">defservlet</span> <span class="nv">lctags</span> <span class="nv">text/json</span> <span class="p">(</span><span class="nv">path</span> <span class="nv">query</span> <span class="nv">req</span><span class="p">)</span>
+  <span class="p">(</span><span class="nv">lctags-servlet-gen</span> <span class="s">&#34;/lctags/gen/index.html&#34;</span> <span class="nv">query</span> <span class="nv">req</span><span class="p">))</span></code></pre></div>
+</div>
+<p>
+これは、
+</p>
+<ul>
+<li>
+<p>
+NAME パラメータとして lctags を指定。
+</p>
+<ul>
+<li>
+<p>
+これにより、HTTPD に <a href="http://xxxxxxx/lctags">http://xxxxxxx/lctags</a> をリクエストすると処理されるサーブレットを
+ 登録できます。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+MIME パラメータとして text/json を指定。
+</p>
+<ul>
+<li>
+<p>
+これはレスポンスに利用するデフォルトの Content-Type です。
+</p>
+</li>
+<li>
+<p>
+あくまでデフォルトであり、後で別の Content-Type を指定出来ます。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+PATH-QUERY-REQUEST パラメータとして (path query req) を指定。
+</p>
+<ul>
+<li>
+<p>
+path, query, req それぞれに、リクエストで指定された情報が格納されます。
+</p>
+</li>
+<li>
+<p>
+query には URL の query が格納され、例えば <code>lctags?hoge=1&amp;foo=2</code> の場合
+<code>((&#34;hoge&#34; &#34;1&#34;)(&#34;foo&#34; &#34;2))</code> が格納されます。
+</p>
+</li>
+<li>
+<p>
+req には、HTTP HEADER などの情報が格納されます。
+</p>
+<ul>
+<li>
+<p>
+<code>((&#34;Host&#34; &#34;192.168.0.1:8080&#34;)(&#34;User-Agent&#34; &#34;hogehoge&#34;))</code>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+BODY パラメータとして、 (lctags-servlet-gen) を実行。
+</p>
+</li>
+</ul>
+<p>
+(defservlet) の BODY パラメータでは、次の処理を行ないます。
+</p>
+<ul>
+<li>
+<p>
+レスポンスするデータを current-buffer に (insert) する
+</p>
+</li>
+<li>
+<p>
+レスポンスする Content-Type、HTTP ヘッダ、HTTP ステータスを設定する (httpd-send-header)
+</p>
+</li>
+</ul>
+<p>
+ちなみに、上記処理は必須ではありません。
+何も処理しなければ、なにも処理しないサーブレットになります。
+</p>
+<p>
+Content-Type、HTTP ヘッダ、ステータスを設定しなければ、
+defservlet で指定した MIME の Content-Type で、ステータス 200 となります。
+</p>
+<p>
+レスポンスは、(httpd-send-header) を実行したタイミングか、
+(httpd-send-header) を実行しない場合は BODY 実行後のタイミングです。
+よって、(httpd-send-header) を実行前に必ずレスポンスするデータを
+(insert) しておく必要があります。
+</p>
+<p>
+このことからも分かるように、
+simple-httpd.el では Transfer-Encoding に対応していません。
+この辺りはあくまで simple ということなのでしょう。
+まぁ、問題ないと思いますが。
+</p>
+<p>
+なお、httpd-send-header の引数は次の通りです。
+</p>
+<div class="src src-lisp">
+<div class="highlight"><pre class="chroma"><code class="language-lisp" data-lang="lisp"><span class="p">(</span><span class="nv">httpd-send-header</span> <span class="nv">proc</span> <span class="nv">mime</span> <span class="nv">status</span> <span class="k">&amp;rest</span> <span class="nv">header-keys</span><span class="p">)</span></code></pre></div>
+</div>
+<h2 id="headline-4">
+その他の関数
+</h2>
+<h3 id="headline-5">
+(httpd-error PROC STATUS &amp;optional INFO)
+</h3>
+<p>
+サーブレットの BODY 中に実行することで、
+指定した STATUS エラーをサーブレットのレスポンスとします。
+</p>
+<h3 id="headline-6">
+(httpd-def-file-servlet NAME ROOT)
+</h3>
+<p>
+ローカルなファイルをそのままレスポンスするサーブレットが必要なことが
+良くあります。
+この関数は、そのサーブレットを登録するためのものです。
+</p>
+<p>
+NAME は URL のパスで、 ROOT はローカルディレクトリのパスです。
+</p>
+<p>
+この関数で登録した URL にアクセスすると、
+Apache の Options Indexes 指定したような動作になります。
+</p>
+<h3 id="headline-7">
+(httpd-get-mime EXT)
+</h3>
+<p>
+指定した EXT の拡張子に対応する MIME を返す。
+</p>
+<h3 id="headline-8">
+(httpd-date-string &amp;optional DATE)
+</h3>
+<p>
+RFC 1123 の日付表記を返す。
+</p>
+<h2 id="headline-9">
+まとめ
+</h2>
+<p>
+simple-httpd.el を利用することで、
+Web サービスと emacs との連携を容易に実現できます。
+</p>
+<p>
+ただ、具体的にどのような Web サービスを提供すれば
+より良いユースケースが実現出来るかが難しいところでもあります。
+</p>
+<p>
+特に emacs は、 emacs で処理が閉じていることが善しとされることが多々あるので、
+simple-httpd.el を使うユースケースというのは少ないのかもしれません。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/emacs/" title="Emacs"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Emacs</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/emacs/company-mode/" title="自作言語 (LuneScript) の emacs company-mode backend 設定">Next - 自作言語 (LuneScript) の emacs company-mode backend 設定 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class="active"><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">Lctags<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

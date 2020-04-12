@@ -1,0 +1,152 @@
+#+TITLE: emacs 簡易 HTTPD 化パケージ simple-httpd.el
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+
+lctags(https://qiita.com/dwarfJP/items/982ef7ee3f3bfd435156) の
+インタラクティブなコールグラフ機能実現のため、
+HTTPD として simple-httpd.el(https://github.com/skeeto/emacs-http-server) を利用しました。
+
+simple-httpd.el についての日本語の情報があまり無かったため、
+ここにまとめておきます。
+
+* simple-httpd.el とは
+
+その名の通り、 emacs を シンプルな HTTPD とするための emacs lisp パケージです。
+
+これを利用することで、Web サービスを emacs で簡単に立ち上げられます。
+
+HTTPD には多くの実装がありますが、これを利用する最大の利点は
+
+*「Web サービスと emacs との連携が容易に可能」*
+
+これに尽きるでしょう。
+
+これに魅力を感じなければ、
+HTTPD として simple-httpd.el を採用する理由はほとんどないと言えます。
+
+simple-httpd.el の特徴には他にもありますが、
+それは simple-httpd.el に特化したものではなく、
+他の HTTPD にもあるものですので、
+敢えて simple-httpd.el を選択することもないと思います。
+
+私が lctags の HTTPD として simple-httpd.el を選択したのも、
+Web サービスと emacs との連携が容易に可能であることが一番です。
+
+例えば、 lctags のコールグラフで関数ノードを右クリックすると
+その関数の定義場所を emacs で表示する、という機能が連携の例です。
+
+この連携機能を simple-httpd.el を使わずに実現するには、次の処理が必要になります。
+
+- HTTPD は、受信したリクエストを解析する
+- HTTPD は、解析した情報から RPC 等で emacs に所定の関数の定義場所を開けと指示する
+- emacs は、指示された要求を処理し、関数定義場所を開く
+
+simple-httpd.el を利用することで、上記処理の大部分を省けます。
+
+* simple-httpd.el の利用方法
+
+基本的には次のステップで利用可能です。  
+- https://github.com/skeeto/emacs-http-server を clone
+- (require 'simple-httpd)
+- (httpd-start)
+
+これによって、8080 ポートで HTTPD が待ち受けます。
+
+あとは PATH に対するサーブレット登録するだけです。
+
+* サーブレット登録
+
+サーブレットの登録は (defservlet NAME MIME PATH-QUERY-REQUEST &rest BODY) で
+行ないます。
+
+例えば lctags では、次の登録をしています。
+
+#+BEGIN_SRC lisp
+(defservlet lctags text/json (path query req)
+  (lctags-servlet-gen "/lctags/gen/index.html" query req))
+#+END_SRC
+
+これは、
+
+- NAME パラメータとして lctags を指定。
+  - これにより、HTTPD に http://xxxxxxx/lctags をリクエストすると処理されるサーブレットを
+     登録できます。
+- MIME パラメータとして text/json を指定。
+  - これはレスポンスに利用するデフォルトの Content-Type です。
+  - あくまでデフォルトであり、後で別の Content-Type を指定出来ます。
+- PATH-QUERY-REQUEST パラメータとして (path query req) を指定。
+  - path, query, req それぞれに、リクエストで指定された情報が格納されます。
+  - query には URL の query が格納され、例えば ~lctags?hoge=1&foo=2~ の場合
+    ~(("hoge" "1")("foo" "2))~ が格納されます。
+  - req には、HTTP HEADER などの情報が格納されます。
+    - ~(("Host" "192.168.0.1:8080")("User-Agent" "hogehoge"))~
+- BODY パラメータとして、 (lctags-servlet-gen) を実行。
+
+
+(defservlet) の BODY パラメータでは、次の処理を行ないます。
+
+- レスポンスするデータを current-buffer に (insert) する
+- レスポンスする Content-Type、HTTP ヘッダ、HTTP ステータスを設定する (httpd-send-header)
+
+ちなみに、上記処理は必須ではありません。
+何も処理しなければ、なにも処理しないサーブレットになります。
+
+Content-Type、HTTP ヘッダ、ステータスを設定しなければ、
+defservlet で指定した MIME の Content-Type で、ステータス 200 となります。
+
+レスポンスは、(httpd-send-header) を実行したタイミングか、
+(httpd-send-header) を実行しない場合は BODY 実行後のタイミングです。
+よって、(httpd-send-header) を実行前に必ずレスポンスするデータを
+(insert) しておく必要があります。
+
+このことからも分かるように、
+simple-httpd.el では Transfer-Encoding に対応していません。
+この辺りはあくまで simple ということなのでしょう。
+まぁ、問題ないと思いますが。
+
+なお、httpd-send-header の引数は次の通りです。
+
+#+BEGIN_SRC lisp
+(httpd-send-header proc mime status &rest header-keys)
+#+END_SRC
+
+* その他の関数
+
+** (httpd-error PROC STATUS &optional INFO)
+
+サーブレットの BODY 中に実行することで、
+指定した STATUS エラーをサーブレットのレスポンスとします。
+
+  
+** (httpd-def-file-servlet NAME ROOT)
+
+ローカルなファイルをそのままレスポンスするサーブレットが必要なことが
+良くあります。
+この関数は、そのサーブレットを登録するためのものです。
+
+NAME は URL のパスで、 ROOT はローカルディレクトリのパスです。
+
+この関数で登録した URL にアクセスすると、
+Apache の Options Indexes 指定したような動作になります。
+
+** (httpd-get-mime EXT)
+   
+指定した EXT の拡張子に対応する MIME を返す。
+
+** (httpd-date-string &optional DATE)
+
+RFC 1123 の日付表記を返す。
+
+* まとめ
+
+simple-httpd.el を利用することで、
+Web サービスと emacs との連携を容易に実現できます。
+
+ただ、具体的にどのような Web サービスを提供すれば
+より良いユースケースが実現出来るかが難しいところでもあります。
+
+特に emacs は、 emacs で処理が閉じていることが善しとされることが多々あるので、
+simple-httpd.el を使うユースケースというのは少ないのかもしれません。

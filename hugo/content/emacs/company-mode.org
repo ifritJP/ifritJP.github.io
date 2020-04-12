@@ -1,0 +1,306 @@
+#+TITLE: 自作言語 (LuneScript) の emacs company-mode backend 設定
+#+AUTHOR: ifritJP
+#+LANGUAGE: ja
+#+EMAIL: 
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+LuneScript の emacs の補完機能フレームワークとして、
+これまで auto-complete を使っていました。
+
+auto-complete を使用していた理由は、
+とある事情のため company-mode が使えなかった、というものでした。
+
+ここ最近、その事情が解消されたため、先日 company-mode 対応しました。
+
+その対応過程において、
+company-mode の backend 設定方法を Web で検索してみましたが、
+日本語の解説があまり無かったので情報共有と自分の備忘録を兼ねて、
+ここにまとめておきます。
+
+まぁ、company-mode の backend 対応なんて、
+余程の物好きくらいしか興味はないと思いますし、
+そもそも最近は LSP への移行が少しずつ進みつつあるので、
+あまり需要はないのかもしれないですが。。。
+
+
+とはいえ、 company-mode の backend の作成方法が分かれば、
+例えば機械学習と組合せてスゴい補完機能を実現する、など面白そうなことも出来そうです。
+
+そんな訳で、少しお付き合いください。
+
+以降では、 LuneScript で company-mode 対応した際の具体例を挙げて説明していきます。
+
+* company-mode
+
+ご存知の通り company-mode は emacs で補完機能を実現するフレームワークです。
+
+company-mode の機能は、大きく分けると次になります。
+
+- 編集中のバッファに入力される文字列からパターン(prefix)を検出
+- 検出した prefix に紐付けられた backend に補完候補生成を依頼
+- backend から取得した補完候補をリスト表示
+- 選択された補完候補をバッファに挿入
+
+一方、backend の機能は次になります。
+
+- prefix のパターン認識方法を登録
+- prefix と現在のカーソル位置から補完候補リストを生成
+- リスト表示する文字列を生成
+
+この backend の情報をまとめた関数を company-backends に登録することで、
+company-mode に backend が登録されます。
+
+LuneScript では、次のように登録しました。
+
+#+BEGIN_SRC el
+(defun company-lns (command &optional arg &rest ignored)
+  (interactive (list 'interactive))
+  (cl-case command
+    (interactive (company-begin-backend 'company-lns))
+    ;; バージョンコマンドが動作しない場合は、
+    ;; lunescript がインストールされていないと判断する。
+    (init (when (not (eq (lns-command-sync "--version") 0))
+	    (error "not found lns")))
+    ;; 補完を開始する prefix の定義。 . で区切った場合に開始する。
+    (prefix (and (eq major-mode 'lns-mode)
+		 (company-grab-symbol-cons "\\." 1)))
+    ;; 候補を生成する。 非同期。
+    (candidates (cons :async
+		      (lambda (callback)
+			(company-lns--candidates arg callback))))
+    ;; 候補のリストを表示する
+    (annotation (company-lns--annotation arg))
+    (meta (company-lns--meta arg))))
+
+(add-to-list 'company-backends 'company-lns)
+#+END_SRC
+
+company-mode は、
+company-backends に登録されている各 backend の関数
+(LuneScript の場合は company-lns)を、
+処理毎に引数 command を指定して随時コールします。
+引数 arg は、command 毎に渡される情報が異なります。
+
+
+例えば prefix に応じた補完候補の生成を backend に行なわせる場合、
+company-mode は command に candidates、
+arg に検出した prefix を指定してこの関数をコールします。
+
+以降では、 LuneScript で利用している各 command について説明します。
+
+なお、 LuneScript で利用している command は、
+company-mode が対応している command の一部です。
+
+** init
+
+init は company-mode を有効にする際に呼び出されます。
+
+主に各 backend の初期化処理を行なうのが目的ですが、
+もう一つ大きな役割があります。
+
+それは、 backend の無効化です。
+
+company-mode は、キー入力毎に登録されている backend を呼び出します。
+
+これは、ある程度の負荷がかかります。
+一方で、 backend によっては外部ツールがインストールされていないと動作しない、
+というものもあります。
+例えば company-mode に標準でサポートされている company-clang は、
+clang がインストールされていることが前提で、clang がない場合正常に動作しません。
+
+そのような backend を無効化することで、
+キー入力時の負荷を下げることが出来ます。
+
+backend を無効化するには、init 処理時に error を起します。
+
+なお、この無効化情報は company-backends に登録したシンボルの property に記録されます。
+
+property は次で確認できます。
+
+: (symbol-plist 'company-lns)
+
+また、 company-mode の有効化を行なうことで再度 init がコールされます。
+
+
+** prefix
+
+prefix は backend の補完候補生成を開始するための文字列パターン検知手段を登録します。
+
+基本的には、次の 3 つのパターンの何れかを登録します。
+
+- =(company-grab-word)=
+- =(company-grab-symbol)=
+- =(company-grab-symbol-cons IDLE-BEGIN-AFTER-RE &optional MAX-LEN)=
+
+company-grab-word, company-grab-symbol は、
+emacs の syntax-table に基いて word あるいは symbol を
+パターン検出として登録します。
+
+company-grab-symbol-cons は、 syntax-table の symbol に加え、
+IDLE-BEGIN-AFTER-RE で指定した正規表現にマッチした場合もパターンに追加します。
+
+LuneScript では次を登録しています。
+
+#+BEGIN_SRC el
+(company-grab-symbol-cons "\\." 1)
+#+END_SRC
+
+これは、 =.= で区切った箇所でも補完候補生成を開始することを意味しています。
+
+
+なお、 company-mode が有効な時は、
+無効化されていない全ての backend で prefix が処理され、
+そのパターンがマッチした candidates がコールされます。
+
+例えば Python コードを編集中も、LuneScript の backend が動作することになります。
+つまり backend は、自分がどのバッファで実行されているかを判断し、
+そのバッファが処理対象でないことを検知した場合は prefix 処理で nil を返し、
+速やかに処理を終了する必要があります。
+これにより、その backend の candidates はコールされず、
+次の backend が処理されます。
+   
+** candidates
+
+補完候補の文字列リストを生成する処理を登録します。
+company-mode の backend として、最も重要な処理といえます。
+
+これは、上記の prefix のパターンにマッチした場合に、コールされます。
+
+引数 arg には、マッチした prefix が格納されます。
+
+backend のこの処理の戻り値として文字列リストを返してやれば、
+company-mode が補完候補として表示します。
+
+例えば、次のようにするだけで 3 つの補完候補("abcd" "efgh" "ijkl")をセットできます。
+
+#+BEGIN_SRC el
+ (candidates '("abcd" "efgh" "ijkl"))
+#+END_SRC
+
+company-mode の candidates 処理の特徴として、
+非同期処理が考慮されていることが挙げられます。
+
+この candidates 処理は、
+上記 prefix のパターンがマッチした時に、常にコールされます。
+
+そしてその処理が終わるまで、待たされます。
+つまり candidates の処理が長いと、
+キー入力ごとにかなりの時間待たされることになります。
+
+一般的に多くの補完処理は、補完候補作成に時間がかかるものです。
+
+そういった補完処理の際、非同期処理が必須になります。
+
+ここでいう非同期処理というのは、
+
+- backend の補完候補作成処理をバックグランドで実行しておき、
+- その処理が終了するのを待たずに candidates の処理を終わらせることで
+  キー入力を待たせることなく処理を行ない、
+- バックグランドで実行していた補完候補作成処理が終了した時点で、
+  候補の表示を行なう、
+
+というものです。
+
+backend でこの非同期処理を行なうには、
+次のように candidates の処理に登録します。
+
+#+BEGIN_SRC el
+    (candidates (cons :async
+		      (lambda (callback)
+			(company-lns--candidates arg callback))))
+#+END_SRC
+
+非同期処理であることを company-mode に伝えるために、
+=:async= と、実際の補完候補作成処理を cons セルで繋げます。
+
+なお、 =:async= を指定した補完候補作成処理には callback の引数が渡されます。
+
+この callback は、非同期で生成した補完候補を
+company-mode に通知するために使用する関数が格納されています。
+
+補完候補を作成し終ったタイミングで、
+次のように callback をコールすることで、 company-mode に補完候補が通知されます。
+
+#+BEGIN_SRC el
+(funcall callback candidate-list)  ;; candidate-list は補完候補文字列のリスト
+#+END_SRC
+
+なお =:async= を指定しても、
+backend の candidates 処理自体が非同期になる訳ではありません。
+
+elisp は原則全てが同期処理です。
+例外として外部プロセスは非同期処理が可能です。
+
+つまり、 candidates 処理を非同期にするには、
+外部プロセスで処理を行なうことが前提です。
+
+ただし emacs26 以降で elisp 自体にスレッドが追加になったので、
+プロセスである必要はないです。
+とはいえ、そもそも elisp のパフォーマンスには難があります。
+スレッド化しても elisp の処理が早くなる訳ではないので、
+外部プロセスにまかせるのが無難でしょう。
+
+
+** annotation
+
+company-mode は candidates でセットされた補完候補の文字列リストで渡された
+文字列をリスト表示します。
+そして、リストから文字列が選択されると、その文字列をバッファに挿入します。
+
+このリスト表示する際、
+その文字列の付加的な説明文を生成するのがこの annotation 処理です。
+
+この annotation で生成した文字列は、candidates の文字列に続けて表示されます。
+
+例えば次の画像では enum Test の値の補完候補をリスト表示していますが、
+Bar, Baz, Foo が補完候補文字列のリストであり、
+そのとなりの =: Test= が annotation です。
+
+[[https://ifritjp.github.io/doc/emacs/company-mode.png]]
+
+この =: Test= は annotation なので、
+補完決定時にバッファに挿入されることはありません。
+
+annotation では、表示する candidates の文字列が引数 arg に格納されます。
+
+company-mode では、 candidates で補完候補文字列リストを生成する際に、
+補完候補文字列の property に propertize で annotation などのメタ情報を付加し、
+各 command で get-text-property を使用して、
+その property にアクセスして情報を取得することを想定してデザインされています。
+
+
+なお、 annotation はリストに表示されるため、詳細情報を表示するのには向いていません。
+
+詳細情報を表示する場合、次の meta を利用します。
+   
+** meta
+
+meta は、 annotation と同様に補完候補文字列の付加的な説明文を生成します。
+
+ただし、 annotation は補完候補リストに表示されていたのに対し、
+meta は mini-buffer に表示されます。
+   
+** post-completion
+
+現状 LuneScript では post-completion を利用していませんが、
+使用する可能性が高いであろうと予想されるこの command について簡単に説明します。
+
+post-completion は選択した補完候補をバッファに展開した後にコールされます。
+
+company-mode は、この command をコールした後に何かをする訳ではなく、
+あくまで backend に補完の展開完了を通知するだけです。
+
+backend は、この通知を受けて backend 独自の処理をします。
+例えば、展開した補完を整形したり snippet をさらに展開するなどです。
+
+
+* 最後に
+
+以上で company-mode の backend 設定に必要な基礎知識は揃ったと思います。
+
+auto-complete の backend の設定に比べると、だいぶ簡単になった気がします。
+
+/auto-complete 対応した時は lexical-binding を使えなかった、というのも大きいですが。。/
+
+是非、面白くて革新的な backend を作成してください。

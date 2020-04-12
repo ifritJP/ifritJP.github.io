@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説 - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説" />
+<meta property="og:description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が Web に載っていますが、幾つかハマったポイント" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説"/>
+<meta name="twitter:description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が Web に載っていますが、幾つかハマったポイント"/>
+<meta itemprop="name" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説">
+<meta itemprop="description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が Web に載っていますが、幾つかハマったポイント">
+
+<meta itemprop="wordCount" content="2832">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</h1>
+
+<p>
+<strong>2019/6 Bluetooth のファイル転送、PAN 設定について書きました。</strong> 
+</p>
+<ul>
+<li>
+<p>
+<a href="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html">https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html</a>
+</p>
+</li>
+</ul>
+<p>
+RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
+Web に載っていますが、幾つかハマったポイントがあったので、
+そのポイントを解説していきます。
+</p>
+<p>
+設定内容は、apt でパッケージを入れてペアリングするだけですが、
+ペアリングして音声が再生出来るようになるまでに、
+いくつかハマるポイントがあります。
+</p>
+<p>
+なお、基本的には次の URL に記載されている設定手順を参考にしますが、
+その URL に記載されている多くの手順は不要です。
+</p>
+<p>
+https://www.raspberrypi.org/forums/viewtopic.php?t=68779
+</p>
+<h2 id="headline-1">
+OS イメージ
+</h2>
+<p>
+https://www.raspberrypi.org/downloads/raspbian/
+</p>
+<p>
+RaspberryPi の OS イメージは、
+必ず <strong>Raspbian Stretch with desktop</strong> を使用してください。
+ちなみに今回使用したのは現時点で最新 2018-04-18 4.14 を使用しました。
+</p>
+<p>
+当初は Raspbian Stretch lite を使っていて、
+これが原因で A2DP を認識出来ない問題が発生していました。
+これについては後述します。
+</p>
+<p>
+Raspbian のバージョンによっては lite でも問題ないかもしれませんが、
+ここでは <strong>Raspbian Stretch with desktop</strong> を使用します。
+</p>
+<p>
+<strong>2020/3/08 追記</strong>
+</p>
+<p>
+<strong>2020/3 現在、 Raspbian Buster と RaspberryPi3 Model B の組み合わせだと、A2DP 再生時の音声ノイズを改善できません。</strong>
+Raspbian Stretch でも、バージョンが異なるとノイズを改善できない可能性があります。
+RaspberryPi3 Model B 以外でどうか、
+あるいは、RaspberryPi3 Model B の他の個体でどうかは確認できていません。
+</p>
+<p>
+なお、RaspberryPi3 の WiFi で脆弱性が確認されているようです。
+</p>
+<p>
+https://pc.watch.impress.co.jp/docs/news/1237645.html
+</p>
+<p>
+この記事では、末尾で WiFi を無効化しているので影響はありませんが、
+もしも WiFi を有効化している場合は <strong>各自の自己責任</strong> のもと、
+注意して運用してください。
+</p>
+<h2 id="headline-2">
+sshd 有効化
+</h2>
+<p>
+これは必須ではないですが ssh で作業した方が、なにかと便利なので設定しておきます。
+</p>
+<p>
+OS イメージを書き込んだドライブ直下に、ファイル名 ssh で空ファイルを作成します。
+</p>
+<p>
+Raspbian から作業する場合は、次のコマンドと等価です。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo touch /boot/ssh</code></pre></div>
+</div>
+<p>
+Raspbian から作業するには、
+RaspberryPi に キーボードとディスプレイを接続する必要があるので、
+OS イメージ書き込み時にファイルを作成しておいた方が良いでしょう。
+</p>
+<p>
+これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。
+</p>
+<p>
+※ デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。
+</p>
+<h2 id="headline-3">
+apt パッケージ更新
+</h2>
+<p>
+まずは apt パッケージを更新します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo apt-get update
+$ sudo apt-get upgrade # ※※※※ 2020/3 現在、 upgrade すると bluetooth の音声ノイズを改善できません</code></pre></div>
+</div>
+<p>
+これはお決まりのパターンなんで、特に理由がない限りやっておきます。
+</p>
+<h2 id="headline-4">
+bluetooth 関連のパッケージ追加
+</h2>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo apt-get install bluez pulseaudio-module-bluetooth python-gobject python-gobject-2</code></pre></div>
+</div>
+<p>
+このバージョンの OS イメージでは、
+bluez はインストール済みですが念のため指定しておきます。
+</p>
+<h2 id="headline-5">
+Bluetooth の設定
+</h2>
+<p>
+次のコマンドを実行します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">pi@raspberrypi:~$ sudo bluetoothctl
+[NEW] Controller XX:XX:XX:XX:XX:XX raspberrypi [default]</code></pre></div>
+</div>
+<p>
+ここで show を入力し、 Bluetooth の情報を確認します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">show
+Controller XX:XX:XX:XX:XX:XX
+	Name: raspberrypi
+	Alias: raspberrypi
+	Class: 0x6c0000
+	Powered: yes
+	Discoverable: no
+	Pairable: yes
+	UUID: Headset AG                
+	UUID: Generic Attribute Profile 
+	UUID: A/V Remote Control        
+	UUID: Generic Access Profile    
+	UUID: PnP Information           
+	UUID: A/V Remote Control Target 
+	UUID: Audio Sink                
+	UUID: Audio Source              
+	UUID: Handsfree                 
+	UUID: Handsfree Audio Gateway   
+	UUID: Headset                   
+	Discovering: no</code></pre></div>
+</div>
+<p>
+上記出力で、UUID: Audio Sink が含まれていることを確認してください。
+これがないと A2DP で接続出来ません。
+</p>
+<p>
+最初に Raspbian の lite を使うと A2DP を認識しなかったと書きましたが、
+lite だとこの出力が次のようになっていました。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">Controller XX:XX:XX:XX:XX:XX
+	Name: raspberrypi
+	Alias: raspberrypi
+	Class: 0x000000
+	Powered: yes
+	Discoverable: no
+	Pairable: yes
+	UUID: Generic Attribute Profile 
+	UUID: A/V Remote Control        
+	UUID: PnP Information           
+	UUID: Generic Access Profile    
+	UUID: A/V Remote Control Target 
+	Discovering: no</code></pre></div>
+</div>
+<p>
+この症状を改善する方法を検索しましたが、
+Raspbian の with desktop を使う以外の方法を見つけられませんでした。
+</p>
+<p>
+<strong>2019/6/15 追記</strong>
+</p>
+<p>
+2019-04-08 版の Raspbian だと、
+desktop 版でもデフォルト状態では Audio Sink が含まれません。
+</p>
+<p>
+別途、次のパッケージをインストールしてください。
+</p>
+<pre class="example">
+sudo apt-get install pulseaudio-module-bluetooth
+</pre>
+<p>
+インストール後に再起動が必要です。
+</p>
+<h3 id="headline-6">
+ペアリング方法
+</h3>
+<p>
+Bluetooth を使用したことがあれば分かると思いますが、
+ペアリングは次のステップで行ないます。
+</p>
+<ul>
+<li>
+<p>
+Bluetooth service 側のデバイスをペアリング登録状態にする
+</p>
+</li>
+<li>
+<p>
+Bluetooth client 側のデバイスで検索し、ペアリングする
+</p>
+</li>
+<li>
+<p>
+ペアリングを認証する
+</p>
+</li>
+</ul>
+<p>
+以降では、ペアリングの登録と認証手順に分けて説明します。
+</p>
+<h4 id="headline-7">
+ペアリング登録
+</h4>
+<p>
+ペアリングを行なうには、service 側をペアリング登録状態にします。
+具体的には show コマンドで表示される次の状態を変更する必要があります。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">	Powered: yes
+	Discoverable: no
+	Pairable: yes</code></pre></div>
+</div>
+<p>
+それぞれの状態を設定するには、次のコマンドを使用します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">  power &lt;on/off&gt;             Set controller power
+  pairable &lt;on/off&gt;          Set controller pairable mode
+  discoverable &lt;on/off&gt;      Set controller discoverable mode</code></pre></div>
+</div>
+<p>
+現状 discoverable だけ no になっているので、
+今回は discoverable on だけ実行します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">[bluetooth]# discoverable on</code></pre></div>
+</div>
+<p>
+念のため再度 show を実行し、次のようになっていることを確認します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">	Powered: yes
+	Discoverable: yes
+	Pairable: yes</code></pre></div>
+</div>
+<p>
+この状態で、 client 側で検索し、ペアリングします。
+</p>
+<p>
+ペアリングすると、 discoverable が自動で off になりますが、
+念のため show コマンドで discoverable の状態を確認します。
+</p>
+<p>
+discoverable が on の状態だと新規にペアリングを登録可能なので、
+そのままだとセキュリティ上問題になります。
+必ず discoverable が off になっていることを確認してください。
+</p>
+<h3 id="headline-8">
+ペアリングの認証
+</h3>
+<p>
+ペアリングすると、次のように出力されます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">[CHG] Device XX:XX:XX:XX:XX:XX Connected: yes
+[CHG] Device XX:XX:XX:XX:XX:XX Connected: no</code></pre></div>
+</div>
+<p>
+出力を見ると Connected が yes になった後に直ぐに no になっていることが分かります。
+</p>
+<p>
+これは、ペアリングが認証されていないため、
+接続を持続できずに切断していることを示します。
+</p>
+<p>
+そこで、次のコマンドでペアリングを認証します。
+</p>
+<pre class="example">
+[bluetooth]# trust XX:XX:XX:XX:XX:XX
+</pre>
+<p>
+これでペアリングが認証され次のように表示されます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">[CHG] Device XX:XX:XX:XX:XX:XX Trusted: yes
+Changing XX:XX:XX:XX:XX:XX trust succeeded</code></pre></div>
+</div>
+<p>
+この状態で再度 client 側から接続すると、接続が維持されます。
+</p>
+<p>
+以上でペアリング完了です。
+</p>
+<p>
+この状態になれば、リブート後も自動でペアリングされます。
+</p>
+<h2 id="headline-9">
+audio source の確認
+</h2>
+<p>
+ペアリング完了した状態で、次のコマンドを実行してください。
+</p>
+<p>
+$ pactl list sources short
+</p>
+<p>
+これで次のような出力がされます。
+</p>
+<pre class="example">
+0	lsa_output.platform-soc_audio.analog-stereo.monitor	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED
+</pre>
+<p>
+これは、 Audio のソース一覧を出力するコマンドです。
+A2DP で接続すると、このリストに次のような情報が出力されると、
+ Web の解説ページには記載されていましたが、私の環境では表示されませんでした。
+</p>
+<pre class="example">
+6	bluez_source.XX_XX_XX_XX_XX_XX.a2dp_source	module-bluez5-device.c	s16le 2ch 44100Hz	RUNNING
+</pre>
+<p>
+ここでは慌てず騒がず、
+client 側の Audio 出力設定を Bluetooth に切り替えて音楽を再生してから、
+再度上記コマンドを実行してください。
+</p>
+<p>
+どうでしょうか？ 出力されましたか？ まだ、出力されない？
+その人は、 client が A2DP ではなく Headset で再生されていると思われます。
+client 側の設定で出力を A2DP に変更してください。
+</p>
+<p>
+それでも駄目な場合、次のコマンドを実行してください。
+</p>
+<pre class="example">
+$ sudo service bluetooth restart
+</pre>
+<p>
+これで出力される場合、 rc.local に次の処理を追加します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">sleep 10
+service bluetooth restart</code></pre></div>
+</div>
+<p>
+対処療法でしかないですが、 自分の環境ではこれで正常に再生されるようになりました。
+</p>
+<p>
+Web には対応方法として、
+/etc/bluetooth/audio.conf の設定や、
+loadmodule のタイミング変更などが紹介されていましたが、
+私の環境では効果がありませんでした。
+</p>
+<h2 id="headline-10">
+pulseaudio 出力先変更
+</h2>
+<p>
+pulseaudio の出力先は、次のコマンドで確認できます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ pactl list sinks short
+0	alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	RUNNING
+1	alsa_output.platform-soc_audio.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED</code></pre></div>
+</div>
+<p>
+デフォルトの出力先を変更する場合は、
+/etc/pulse/default.pa に出力先名を設定します。
+</p>
+<pre class="example">
+set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
+</pre>
+<p>
+これでリブートすれば出力先が切り替わります。
+</p>
+<h2 id="headline-11">
+WiFi を無効化
+</h2>
+<p>
+Bluetooth は WiFi と干渉します。
+RaspberryPi3 の WiFi を有効にしていると、干渉ノイズが入ります。
+</p>
+<p>
+干渉ノイズが気になる場合は、WiFi を無効化します。
+</p>
+<p>
+WiFi 無効化は /boot/config.txt に次の設定を追加します。
+</p>
+<pre class="example">
+dtoverlay=pi3-disable-wifi
+</pre>
+<h2 id="headline-12">
+/etc/pulse/daemon.conf の設定
+</h2>
+<p>
+<strong>2018/5/29 追記</strong>
+</p>
+<p>
+/etc/pulse/daemon.conf に追記し、リブートさせます。
+</p>
+<pre class="example">
+resample-method = trivial
+</pre>
+<p>
+この設定をしないと、多くの場合にノイズが発生します。
+</p>
+<h2 id="headline-13">
+/etc/bluetooth/main.conf の設定
+</h2>
+<p>
+<strong>2018/6/7 追記</strong>
+</p>
+<p>
+Client によっては、デフォルトだとペアリングできないことがあります。
+その場合 /etc/bluetooth/main.conf に次を設定します。
+</p>
+<pre class="example">
+Class = 0x240404
+</pre>
+<p>
+Amazon Fire TV とペアリングする場合、この設定が必要でした。
+</p>
+<h2 id="headline-14">
+参考
+</h2>
+<ul>
+<li>
+<p>
+<a href="https://www.raspberrypi.org/forums/viewtopic.php?t=68779">https://www.raspberrypi.org/forums/viewtopic.php?t=68779</a>
+</p>
+</li>
+<li>
+<p>
+<a href="https://qiita.com/yyano/items/802da53ad8a4a00d00e1">https://qiita.com/yyano/items/802da53ad8a4a00d00e1</a>  
+</p>
+</li>
+</ul>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/singleboard/" title="Singleboards"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Singleboards</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/" title="トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!">Next - トランスコンパイラ LuneScript で Lua の開発をもっと楽に!! <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">Lctags<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class="active"><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>D3.js V4 forceSimulation のノード動的更新(追加・削除) - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/javascript/d3force/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="D3.js V4 forceSimulation のノード動的更新(追加・削除)" />
+<meta property="og:description" content="D3.js とは D3.js は Data-Driven Documents ということらしいですが、 これだと良く分からんのでもう少し分かり易く言うと 要素の座標を指定されたレイアウトで計算し、計算結果を DOM" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/javascript/d3force/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="D3.js V4 forceSimulation のノード動的更新(追加・削除)"/>
+<meta name="twitter:description" content="D3.js とは D3.js は Data-Driven Documents ということらしいですが、 これだと良く分からんのでもう少し分かり易く言うと 要素の座標を指定されたレイアウトで計算し、計算結果を DOM"/>
+<meta itemprop="name" content="D3.js V4 forceSimulation のノード動的更新(追加・削除)">
+<meta itemprop="description" content="D3.js とは D3.js は Data-Driven Documents ということらしいですが、 これだと良く分からんのでもう少し分かり易く言うと 要素の座標を指定されたレイアウトで計算し、計算結果を DOM">
+
+<meta itemprop="wordCount" content="6175">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>D3.js V4 forceSimulation のノード動的更新(追加・削除)</h1>
+
+<h2 id="headline-1">
+D3.js とは
+</h2>
+<p>
+D3.js は Data-Driven Documents ということらしいですが、
+これだと良く分からんのでもう少し分かり易く言うと
+<strong>要素の座標を指定されたレイアウトで計算し、計算結果を DOM に反映させるアクセッサを提供する</strong> ライブラリです。
+実際の描画には何(svg や canvas など)を使うかはユーザ側で選択できます。
+</p>
+<p>
+ちなみに svg は、 XML ベースのベクタ系画像フォーマットです。
+</p>
+<p>
+D3.js の公式 HP (<a href="https://d3js.org/)">https://d3js.org/)</a>は、
+オープンソースライブラリの中でもかなりの充実ぶりで多くのサンプルもあり、
+自分の実現したいことがサンプルと同じであればデータを変えるだけで実現できます。
+サンプルに無くても、ドキュメントを読めば大抵のことは実現可能でしょう。
+</p>
+<p>
+とはいえ充実しているからこそ、それを読むのも大変な訳で。
+</p>
+<p>
+そんな訳で多くの方は web で解説ページを検索することになると思います。
+少なくとも私は検索しました。
+</p>
+<p>
+私が実現したかった内容は、
+タイトル通り 「D3.js V4 forceSimulation のノード動的更新(追加・削除)」 です。
+</p>
+<p>
+ちなみに今回作ったサンプルはこんな感じです。
+</p>
+<p>
+https://ifritjp.github.io/doc/D3.js/force.update.html
+</p>
+<p>
+これを実現するために、
+上記ワードで検索していくつかの解説ページの情報を総合して
+ようやく実現することができました。
+この記事ではそれらの情報をまとめて javascript, svg 素人でも
+分かるように解説していきます。
+</p>
+<p>
+ちなみにこの記事を書いたのは、
+<a href="https://github.com/ifritJP/lctags">lctags</a> でインタラクティブなコールグラフを実現するのに
+D3.js の習得が必要だったためです。
+</p>
+<h2 id="headline-2">
+読者対象
+</h2>
+<p>
+この記事の読者対象は、 JavaScript のごく簡単なコードを書いた経験がある方です。
+レベルは問いません。 DOM と JavaScript の概念さえ分かっていれば十分です。
+もちろん JavaScript マスターも D3.js の基礎を知りたい方であれば対象となりますが、
+その場合は記事の多くを読み飛すことになるでしょう。
+</p>
+<p>
+ちなみに D3.js の経験は不要です。
+</p>
+<p>
+なお、自分の JavaScript レベルは、
+基本的な Syntax は知っているが、滅多に使わないので忘れてしまうため、
+都度検索しながら使えるレベルです。
+多分 Qiita ユーザの中では、かなり下層の方でしょう。
+</p>
+<p>
+そんな素人レベルが解説するので、素人が疑問に思うポイントを解説できると思います。
+</p>
+<h2 id="headline-3">
+参考ページ
+</h2>
+<p>
+まず今回のことを実現にする上で参考にした情報を挙げておきます。
+</p>
+<ul>
+<li>
+<p>
+<a href="https://d3js.org/">https://d3js.org/</a>
+</p>
+<ul>
+<li>
+<p>
+公式 HP
+</p>
+</li>
+<li>
+<p>
+詳細を知りたい方は、こちらを見ましょう。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<a href="http://bl.ocks.org/tgk/6068367">http://bl.ocks.org/tgk/6068367</a>
+</p>
+<ul>
+<li>
+<p>
+D3.js V3 でノードを動的更新するサンプルコード
+</p>
+</li>
+<li>
+<p>
+この記事では、このサンプルコードを元に V4 対応したものを解説しています。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<a href="https://qiita.com/junkoda/items/2d12ecdd3b4b5c99d994">https://qiita.com/junkoda/items/2d12ecdd3b4b5c99d994</a>
+</p>
+<ul>
+<li>
+<p>
+forceSimulation 設定パラメータの解説
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="headline-4">
+サンプル
+</h2>
+<p>
+上記で説明している通り、この記事では次のサンプルを解説してきます。
+</p>
+<p>
+https://ifritjp.github.io/doc/D3.js/force.update.html
+</p>
+<p>
+このサンプルは次の動作を行ないます。
+</p>
+<ul>
+<li>
+<p>
+クリックで forceSimulation のノードを追加
+</p>
+</li>
+<li>
+<p>
+ノードにはラベル &#34;hoge&#34; を付加
+</p>
+</li>
+<li>
+<p>
+別のノードの近くをクリックすると、そのノードとリンクを持ったノードを追加する
+</p>
+</li>
+<li>
+<p>
+追加したノードをクリックすると、そのノードとリンクを削除する  
+</p>
+</li>
+<li>
+<p>
+ノードはドラッグで移動可能
+</p>
+</li>
+<li>
+<p>
+新しく追加したノードは赤く表示し、別のノードが追加すると黒く表示する。
+</p>
+</li>
+</ul>
+<p>
+実際に動かせば分かると思います。
+</p>
+<p>
+サンプルの全ソースは、ブラウザのソース表示機能で確認してください。
+</p>
+<h2 id="headline-5">
+解説
+</h2>
+<p>
+以降で解説します。
+</p>
+<h3 id="headline-6">
+svg の基礎
+</h3>
+<p>
+前述した通り D3.js は、要素の座標を指定されたレイアウトで計算するもので、
+実際の描画はユーザ側で制御する必要があります。
+</p>
+<p>
+多くのグラフィック系ライブラリでは、描画に必要な情報を抽象化し、
+実際にどのように描画が行なわれているかをユーザに意識させません。
+一方 D3.js ではユーザが svg や canvas 等の制御を意識する必要があります。
+</p>
+<p>
+つまりは、ユーザは svg や canvas の知識を持っていなければなりません。
+</p>
+<p>
+svg の規格はそこそこ大きく、全てを理解するのはハードルが高いです。
+しかし、よほどリッチな graph の実現が目的でない限り、
+代表的なものだけをおさえておけば問題ないでしょう。
+</p>
+<p>
+今回のサンプルで利用する svg の element は、次の通りです。
+</p>
+<ul>
+<li>
+<p>
+g
+</p>
+<ul>
+<li>
+<p>
+svg 内の element をグループ化する
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+circle
+</p>
+<ul>
+<li>
+<p>
+円を表現する
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+text
+</p>
+<ul>
+<li>
+<p>
+Text を表現する
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+line
+</p>
+<ul>
+<li>
+<p>
+線を表現する
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+ちなみに、今回のサンプルの svg 構成は次のようになります。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">svg
+  +-- カーソル用 circle
+  +-- g
+    +--- ノードの circle1
+    +--- ノードのラベル text1
+    +--- ノード間のリンク line1
+    +--- ノードの circle2
+    +--- ノードのラベル text2
+    +--- ノード間のリンク line2
+    +--- ...</code></pre></div>
+</div>
+<p>
+今回のサンプルでは g を使用していますが、
+g を生成せずに直接 circle, text 等を生成しても問題ありません。
+今回の例では、この g はほとんど意味を持ちません。
+ただ g を入れておくことで、全体の移動等の効果を入れ易いです。
+</p>
+<h3 id="headline-7">
+svg element の設定
+</h3>
+<p>
+HTML 上で svg element は <code>&lt;svg&gt; 〜 &lt;/svg&gt;</code> で表現されます。
+</p>
+<p>
+サンプルでは、この svg element を body 直下に生成しています。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">width</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">innerWidth</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">height</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">innerHeight</span><span class="p">;</span>
+
+<span class="kd">var</span> <span class="nx">svg</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">select</span><span class="p">(</span><span class="s2">&#34;body&#34;</span><span class="p">).</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;svg&#34;</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;width&#34;</span><span class="p">,</span> <span class="nx">width</span><span class="p">).</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;height&#34;</span><span class="p">,</span> <span class="nx">height</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;mousemove&#34;</span><span class="p">,</span> <span class="nx">mousemove</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;click&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="nx">addNode</span><span class="p">(</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">mouse</span><span class="p">(</span><span class="k">this</span><span class="p">)</span> <span class="p">);</span> <span class="p">}</span> <span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+コードを見れば直感的に分かるとは思いますが、
+上記は次の処理を行なっています。
+</p>
+<ul>
+<li>
+<p>
+d3.select() メソッドで body DOM を取得
+</p>
+</li>
+<li>
+<p>
+body DOM に svg element を追加
+</p>
+</li>
+<li>
+<p>
+svg element に width, height 属性を設定
+</p>
+</li>
+<li>
+<p>
+svg element の mousemove, click イベントにそれぞれハンドラを設定
+</p>
+</li>
+</ul>
+<p>
+D3.js は、このように関数の戻り値を使って Chain するスタイルです。
+このスタイルは良く見かけるので、それほど違和感はないと思います。
+</p>
+<p>
+<em>個人的には、あまり好きではないですが。。</em>
+</p>
+<h3 id="headline-8">
+link の矢印定義
+</h3>
+<p>
+ここは D3.js とは直接関係ないですが、
+サンプルに載せているので簡単に説明すると、
+ノードを接続するリンクの矢印部分の定義をしています。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="c1">// 矢印の定義
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">defs</span> <span class="o">=</span> <span class="nx">svg</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;defs&#34;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">marker</span> <span class="o">=</span> <span class="nx">defs</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;marker&#34;</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;id&#34;</span><span class="p">,</span> <span class="s2">&#34;arrow&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;markerUnits&#34;</span><span class="p">,</span> <span class="s2">&#34;userSpaceOnUse&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;markerWidth&#34;</span><span class="p">,</span> <span class="s2">&#34;12&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;markerHeight&#34;</span><span class="p">,</span> <span class="s2">&#34;12&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;viewBox&#34;</span><span class="p">,</span> <span class="s2">&#34;0 0 10 10&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;refX&#34;</span><span class="p">,</span> <span class="s2">&#34;17&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;refY&#34;</span><span class="p">,</span> <span class="s2">&#34;6&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;orient&#34;</span><span class="p">,</span> <span class="s2">&#34;auto&#34;</span> <span class="p">);</span>
+<span class="nx">marker</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;path&#34;</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;d&#34;</span><span class="p">,</span> <span class="s2">&#34;M2,2 L10,6 L2,10 L6,6 L2,2&#34;</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">style</span><span class="p">(</span> <span class="s2">&#34;fill&#34;</span><span class="p">,</span> <span class="s2">&#34;red&#34;</span> <span class="p">);</span>
+</code></pre></div>
+</div>
+<h3 id="headline-9">
+g element の追加
+</h3>
+<p>
+上述している通り g element は svg の element をグループ化するものです。
+HTML の div のようなものと考えれば良いと思います。
+</p>
+<p>
+これを svg の直下に生成します。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">g</span> <span class="o">=</span> <span class="nx">svg</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;g&#34;</span><span class="p">);</span>
+</code></pre></div>
+</div>
+<h3 id="headline-10">
+カーソル用 circle の追加
+</h3>
+<p>
+カーソルに追従する円を描画する circle を追加します。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">cursor</span> <span class="o">=</span> <span class="nx">svg</span><span class="p">.</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;circle&#34;</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;r&#34;</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;display&#34;</span><span class="p">,</span> <span class="s2">&#34;none&#34;</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">style</span><span class="p">(</span> <span class="s2">&#34;stroke&#34;</span><span class="p">,</span> <span class="s2">&#34;red&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">style</span><span class="p">(</span> <span class="s2">&#34;pointer-events&#34;</span><span class="p">,</span> <span class="s2">&#34;none&#34;</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">style</span><span class="p">(</span> <span class="s2">&#34;fill&#34;</span><span class="p">,</span> <span class="s2">&#34;none&#34;</span> <span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+主な設定内容は以下の通りです。
+</p>
+<ul>
+<li>
+<p>
+円の半径: 30
+</p>
+</li>
+<li>
+<p>
+色: 赤
+</p>
+</li>
+</ul>
+<p>
+attr で設定している属性値は、svg で規定されている設定値です。
+</p>
+<p>
+style で設定している値は、 CSS で規定されている設定値です。
+</p>
+<h3 id="headline-11">
+svg の要素にバインドするデータを用意する
+</h3>
+<p>
+今回のサンプルでは、 svg の要素としてノード、ラベル、リンクの 3 つあります。
+</p>
+<p>
+それらの要素の情報を管理するデータとして、
+nodes, links 配列を用意しています。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">// バインドするデータ
+var nodes = [];
+var links = [];</code></pre></div>
+</div>
+<p>
+なんでラベルのデータがないの？と疑問を持つ方もいるかと思いますが、
+今回のサンプルではラベルをノードのメンバとして持たせるように設計しているため、
+ラベル単独の配列は用意していません。
+</p>
+<p>
+D3.js のルールとしては、
+DOM ごとにデータを分ける必要はありません。
+DOM ごとの数と、バインドするデータの配列長が同じであれば、
+バインドするデータは共有しても OK です。
+ただし、 D3.js にバインドする際に決め打ちでメンバーが必要になることがあるため、
+メンバー名には注意が必要です。
+例えば forceSimulation のノードには、
+以下のメンバが D3.js によって自動的に割りあてられます。
+</p>
+<ul>
+<li>
+<p>
+index
+</p>
+</li>
+<li>
+<p>
+x
+</p>
+</li>
+<li>
+<p>
+y
+</p>
+</li>
+<li>
+<p>
+vx
+</p>
+</li>
+<li>
+<p>
+vy
+</p>
+</li>
+</ul>
+<p>
+また、 forceSimulation のリンクには、
+以下のメンバを設定する必要があります。
+</p>
+<ul>
+<li>
+<p>
+target
+</p>
+</li>
+<li>
+<p>
+source  
+</p>
+</li>
+<li>
+<p>
+index
+</p>
+</li>
+</ul>
+<p>
+target, source はリンクが接続するノードを示す必要があります。
+</p>
+<h3 id="headline-12">
+svg の要素を準備する
+</h3>
+<p>
+次のコードは、
+ノード、ラベル、リンクの 3 つの要素を操作するための準備をしています。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="c1">// SVG の画像要素
+</span><span class="c1"></span><span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="nx">g</span><span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s2">&#34;.node&#34;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">link</span> <span class="o">=</span> <span class="nx">g</span><span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s2">&#34;.link&#34;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">label</span> <span class="o">=</span> <span class="nx">g</span><span class="p">.</span><span class="nx">selectAll</span><span class="p">(</span><span class="s2">&#34;.label&#34;</span><span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+selectAll() は、指定名称の element にアクセスする <em>selection</em> を返します。
+<em>selection</em> は、 D3.js で定義されているオブジェクトです。
+</p>
+<p>
+selectAll() は、 <em>selection</em> を返すのであって element の生成は行ないません。
+</p>
+<p>
+なお、この時点では指定した名前にマッチする element は存在しないため、
+なんの element も管理しない空の <em>selection</em> が返されます。
+</p>
+<h3 id="headline-13">
+forceSimulation の生成
+</h3>
+<p>
+forceSimulation のオブジェクトを生成します。   
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">simulation</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">forceSimulation</span><span class="p">(</span> <span class="nx">nodes</span> <span class="p">)</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;tick&#34;</span><span class="p">,</span> <span class="nx">ticked</span> <span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+ここで、 forceSimulation で使用するノード nodes を指定します。
+forceSimulation は、この nodes 情報を利用して座標計算を行ないます。
+</p>
+<p>
+tick イベントは、 forceSimulation での座標計算ごとに発生するイベントです。
+このイベントで、計算された座標を基に DOM の位置情報に反映することで、
+画像の要素がリアルタイムに動きます。
+</p>
+<p>
+なお、 forceSimulation で座標計算可能な要素はノードとリンクの 2 つで、
+ノードは円形である必要があります(svg の circle という意味ではない)。
+ノードが円形でなければならない理由は、
+forceSimulation の座標計算でノードが円形であることを想定しているからであり、
+これは forceSimulation の仕様です。
+</p>
+<p>
+なお、これは forceSimulation の座標計算が円形を想定しているということであって、
+実際のノードの形は四角でもなんでも構いません。
+ただその場合、ノードの collision 計算が不正確になるため、
+意図しない結果になります。
+</p>
+<p>
+非公式の拡張では、ノードの形状として楕円等に対応したものもあるようです。
+</p>
+<h3 id="headline-14">
+ドラッグ制御情報
+</h3>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">drag</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">drag</span><span class="p">()</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;start&#34;</span><span class="p">,</span> <span class="nx">dragstarted</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;drag&#34;</span><span class="p">,</span> <span class="nx">dragged</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;end&#34;</span><span class="p">,</span> <span class="nx">dragended</span><span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+d3 でマウスドラッグを制御するには d3.drag() オブジェクトを使用します。
+このオブジェクトのイベントとして、 start/drag/end のハンドラを設定します。
+</p>
+<p>
+このオブジェクトを、ドラッグさせたい element の call に登録することで、
+マウスドラッグ制御を行ないます。
+</p>
+<h3 id="headline-15">
+バインド元にノード情報を追加
+</h3>
+<p>
+以下の処理で所定の座標にノードを追加します。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">addNode</span><span class="p">(</span> <span class="nx">point</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">id</span><span class="o">:</span> <span class="nx">idSeed</span><span class="o">++</span><span class="p">,</span>
+		 <span class="nx">x</span><span class="o">:</span> <span class="nx">point</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">y</span><span class="o">:</span> <span class="nx">point</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+		 <span class="nx">name</span><span class="o">:</span> <span class="s2">&#34;hoge&#34;</span><span class="p">,</span> <span class="nx">size</span><span class="o">:</span> <span class="mi">10</span> <span class="p">};</span>
+
+    <span class="c1">// add links to any nearby nodes
+</span><span class="c1"></span>    <span class="nx">nodes</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">target</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">x</span> <span class="o">=</span> <span class="nx">target</span><span class="p">.</span><span class="nx">x</span> <span class="o">-</span> <span class="nx">node</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span>
+            <span class="nx">y</span> <span class="o">=</span> <span class="nx">target</span><span class="p">.</span><span class="nx">y</span> <span class="o">-</span> <span class="nx">node</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">sqrt</span><span class="p">(</span><span class="nx">x</span> <span class="o">*</span> <span class="nx">x</span> <span class="o">+</span> <span class="nx">y</span> <span class="o">*</span> <span class="nx">y</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">40</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">links</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span> <span class="nx">id</span><span class="o">:</span> <span class="nx">idSeed</span><span class="o">++</span><span class="p">,</span> <span class="nx">source</span><span class="o">:</span> <span class="nx">node</span><span class="p">,</span> <span class="nx">target</span><span class="o">:</span> <span class="nx">target</span><span class="p">});</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+    
+    <span class="nx">nodes</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+
+    <span class="nx">update</span><span class="p">(</span> <span class="nx">nodes</span> <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<p>
+ノード情報およびリンク情報を生成します。
+ここで、各情報には id を付加しています。
+D3.js でデータを動的更新する場合は、データの識別情報が必須となります。
+</p>
+<p>
+この処理で重要なのは、
+新しいノード情報を生成し nodes に push し、
+その nodes を update() で処理することで svg の element に反映される、ということです。
+</p>
+<p>
+あくまで nodes はバインド元の情報であって、
+この情報を変更しただけでは svg には反映されず、
+update( nodes ) を実行することで svg に反映されます。
+</p>
+<h3 id="headline-16">
+ノードの動的更新 (del/add)
+</h3>
+<p>
+このセクションがこの記事の一番重要なポイントです。
+</p>
+<p>
+D3.js を使った動的更新 (del/add) には必須なので詳しく説明します。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">update</span><span class="p">(</span><span class="nx">nodes</span><span class="p">)</span> <span class="p">{</span>
+
+    <span class="c1">// transition
+</span><span class="c1"></span>    <span class="kd">var</span> <span class="nx">t</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">transition</span><span class="p">().</span><span class="nx">duration</span><span class="p">(</span><span class="mi">750</span><span class="p">);</span>    
+
+    <span class="c1">// node の更新  ======&gt;
+</span><span class="c1"></span>
+    <span class="c1">// 新しく nodes をバインド
+</span><span class="c1"></span>    <span class="nx">node</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="nx">nodes</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">d</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span> <span class="p">}</span> <span class="p">);</span>
+
+    <span class="c1">// バインドした情報に存在しない DOM を削除
+</span><span class="c1"></span>    <span class="nx">node</span><span class="p">.</span><span class="nx">exit</span><span class="p">().</span><span class="nx">transition</span><span class="p">(</span> <span class="nx">t</span> <span class="p">).</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;r&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="nx">e</span><span class="o">-</span><span class="mi">4</span> <span class="p">).</span><span class="nx">remove</span><span class="p">();</span>
+
+    <span class="c1">// 削除後の node に対する操作
+</span><span class="c1"></span>    <span class="nx">node</span><span class="p">.</span><span class="nx">transition</span><span class="p">(</span> <span class="nx">t</span> <span class="p">)</span>	
+	<span class="p">.</span><span class="nx">style</span><span class="p">(</span> <span class="s2">&#34;fill&#34;</span><span class="p">,</span> <span class="s2">&#34;black&#34;</span> <span class="p">);</span>
+
+    <span class="c1">// 新しくバインドした nodes を元に DOM を生成
+</span><span class="c1"></span>    <span class="nx">node</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;circle&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">style</span><span class="p">(</span><span class="s2">&#34;fill&#34;</span><span class="p">,</span> <span class="s2">&#34;red&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;r&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">){</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">size</span> <span class="p">})</span>
+        <span class="p">.</span><span class="nx">call</span><span class="p">(</span> <span class="nx">drag</span> <span class="p">)</span> <span class="c1">// ドラッグ対象とする
+</span><span class="c1"></span>	<span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;click&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">d</span> <span class="p">)</span> <span class="p">{</span>
+	    <span class="nx">d3</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">stopPropagation</span><span class="p">();</span>
+	    <span class="nx">deleteNode</span><span class="p">(</span> <span class="nx">d</span> <span class="p">);</span>
+	<span class="p">}</span> <span class="p">)</span> <span class="c1">// 追加分の DOM を生成する
+</span><span class="c1"></span>        <span class="p">.</span><span class="nx">merge</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span> <span class="c1">// 前の DOM とマージする
+</span><span class="c1"></span>    
+    <span class="c1">// label の更新 ======&gt;
+</span><span class="c1"></span>    <span class="nx">label</span> <span class="o">=</span> <span class="nx">label</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="nx">nodes</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">d</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span> <span class="p">}</span> <span class="p">);</span>
+    <span class="nx">label</span><span class="p">.</span><span class="nx">exit</span><span class="p">().</span><span class="nx">remove</span><span class="p">();</span>
+    
+    <span class="nx">label</span> <span class="o">=</span> <span class="nx">label</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;text&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;class&#34;</span><span class="p">,</span> <span class="s2">&#34;label&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;fill&#34;</span><span class="p">,</span> <span class="s2">&#34;black&#34;</span> <span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;dx&#34;</span><span class="p">,</span> <span class="mi">18</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;dy&#34;</span><span class="p">,</span> <span class="s2">&#34;.35em&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">text</span><span class="p">(</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">name</span> <span class="p">}</span> <span class="p">)</span>
+        <span class="p">.</span><span class="nx">merge</span><span class="p">(</span><span class="nx">label</span><span class="p">);</span>
+
+
+    <span class="c1">// link の更新 ======&gt;
+</span><span class="c1"></span>    <span class="nx">link</span> <span class="o">=</span> <span class="nx">link</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span> <span class="nx">links</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">d</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span> <span class="p">}</span> <span class="p">);</span>
+    <span class="nx">link</span><span class="p">.</span><span class="nx">exit</span><span class="p">().</span><span class="nx">remove</span><span class="p">();</span>
+    
+    <span class="nx">link</span> <span class="o">=</span> <span class="nx">link</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;line&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">style</span><span class="p">(</span> <span class="s2">&#34;stroke&#34;</span><span class="p">,</span> <span class="s2">&#34;black&#34;</span> <span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;stroke-width&#34;</span><span class="p">,</span> <span class="mi">2</span> <span class="p">)</span>
+	<span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;marker-end&#34;</span><span class="p">,</span> <span class="s2">&#34;url(#arrow)&#34;</span> <span class="p">)</span>
+        <span class="p">.</span><span class="nx">merge</span><span class="p">(</span><span class="nx">link</span><span class="p">);</span>
+
+    <span class="c1">// forceSimulation 開始
+</span><span class="c1"></span>    <span class="nx">simulation</span><span class="p">.</span><span class="nx">nodes</span><span class="p">(</span> <span class="nx">nodes</span> <span class="p">)</span>
+	<span class="p">.</span><span class="nx">force</span><span class="p">(</span><span class="s2">&#34;charge&#34;</span><span class="p">,</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">forceManyBody</span><span class="p">().</span><span class="nx">strength</span><span class="p">(</span><span class="o">-</span><span class="mi">200</span><span class="p">))</span>
+	<span class="p">.</span><span class="nx">force</span><span class="p">(</span><span class="s2">&#34;forceX&#34;</span><span class="p">,</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">forceX</span><span class="p">().</span><span class="nx">strength</span><span class="p">(</span><span class="mf">.1</span><span class="p">))</span>
+	<span class="p">.</span><span class="nx">force</span><span class="p">(</span><span class="s2">&#34;forceY&#34;</span><span class="p">,</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">forceY</span><span class="p">().</span><span class="nx">strength</span><span class="p">(</span><span class="mf">.1</span><span class="p">))</span>
+	<span class="p">.</span><span class="nx">force</span><span class="p">(</span><span class="s2">&#34;center&#34;</span><span class="p">,</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">forceCenter</span><span class="p">(</span> <span class="nx">width</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="nx">height</span><span class="o">/</span><span class="mi">2</span> <span class="p">))</span>
+	<span class="p">.</span><span class="nx">force</span><span class="p">(</span><span class="s2">&#34;link&#34;</span><span class="p">,</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">forceLink</span><span class="p">(</span> <span class="nx">links</span> <span class="p">).</span><span class="nx">distance</span><span class="p">(</span> <span class="mi">100</span> <span class="p">).</span><span class="nx">strength</span><span class="p">(</span><span class="mf">1.5</span><span class="p">).</span><span class="nx">iterations</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="p">)</span>
+	<span class="p">.</span><span class="nx">alphaTarget</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<p>
+ここでは、ノードの追加削除の処理方法から説明していきます。
+</p>
+<h4 id="headline-17">
+基本パターン
+</h4>
+<p>
+D3.js の動的更新は次のパターンで行ないます。
+</p>
+<ul>
+<li>
+<p>
+<em>selection</em>.data()
+</p>
+<ul>
+<li>
+<p>
+D3.js の <em>selection</em> に配列をバインド
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+バインドしたデータに存在しなかった古い情報を取り出し、 DOM を削除
+</p>
+<ul>
+<li>
+<p>
+<em>selection</em>.exit().remove()
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+新しく追加された情報を取り出し、所定の DOM の element を生成
+</p>
+<ul>
+<li>
+<p>
+<em>selection</em>.enter().append()
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+新しく生成した element と、元の element をマージ
+</p>
+<ul>
+<li>
+<p>
+<em>selection</em>.merge()
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+以降で各処理について説明します。
+</p>
+<h4 id="headline-18">
+バインド
+</h4>
+<p>
+まず、ノードの情報を管理する nodes を、
+ノードの element を管理する <em>selection</em> にバインドします。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript">    <span class="c1">// 新しく nodes をバインド
+</span><span class="c1"></span>    <span class="nx">node</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">data</span><span class="p">(</span><span class="nx">nodes</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">d</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">id</span><span class="p">;</span> <span class="p">}</span> <span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+このとき、 data() の第二引数に <code>function( d ) { return d.id; }</code> を与えています。
+これは、バインドした情報の識別情報として d.id を使用することことを示しています。
+</p>
+<p>
+D3.js はこの識別情報を利用して、
+データとデータをバインドした element の紐付けを管理します。
+</p>
+<p>
+この識別情報が不正な場合、
+データと element との紐付けが不正になり、
+動的更新を行なった際に意図しない動作となることがあります。
+</p>
+<h4 id="headline-19">
+存在しない DOM を削除
+</h4>
+<p>
+.exit() で削除されたデータを管理する <em>selection</em> を取得し、
+それを remove() することで DOM から element が削除されます。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript">    <span class="c1">// バインドした情報に存在しない DOM を削除
+</span><span class="c1"></span>    <span class="nx">node</span><span class="p">.</span><span class="nx">exit</span><span class="p">().</span><span class="nx">transition</span><span class="p">(</span> <span class="nx">t</span> <span class="p">).</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;r&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="nx">e</span><span class="o">-</span><span class="mi">4</span> <span class="p">).</span><span class="nx">remove</span><span class="p">();</span>
+</code></pre></div>
+</div>
+<p>
+なお、上記の <code>transition( t ).attr( &#34;r&#34;, 1e-4 )</code> は、
+削除した element に対して、
+半径 &#34;r&#34; を小さくする変化を付けて消すことを指示しています。
+</p>
+<h4 id="headline-20">
+新しく DOM を追加 &amp; <em>selection</em> をマージ
+</h4>
+<p>
+.enter() で追加されたデータを管理する <em>selection</em> を取得し、
+それに append() することで DOM に element を追加します。
+そして、 merge() によって以前の <em>selection</em> とマージすることで、
+既存の element と追加分の element を管理する <em>selection</em> を得ます。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript">    <span class="c1">// 新しくバインドした nodes を元に DOM を生成
+</span><span class="c1"></span>    <span class="nx">node</span> <span class="o">=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">enter</span><span class="p">().</span><span class="nx">append</span><span class="p">(</span><span class="s2">&#34;circle&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">style</span><span class="p">(</span><span class="s2">&#34;fill&#34;</span><span class="p">,</span> <span class="s2">&#34;red&#34;</span><span class="p">)</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;r&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">){</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">size</span> <span class="p">})</span>
+        <span class="p">.</span><span class="nx">call</span><span class="p">(</span> <span class="nx">drag</span> <span class="p">)</span> <span class="c1">// ドラッグ対象とする
+</span><span class="c1"></span>	<span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s2">&#34;click&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">d</span> <span class="p">)</span> <span class="p">{</span>
+	    <span class="nx">d3</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">stopPropagation</span><span class="p">();</span>
+	    <span class="nx">deleteNode</span><span class="p">(</span> <span class="nx">d</span> <span class="p">);</span>
+	<span class="p">}</span> <span class="p">)</span> <span class="c1">// 追加分の DOM を生成する
+</span><span class="c1"></span>        <span class="p">.</span><span class="nx">merge</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span> <span class="c1">// 前の DOM とマージする
+</span></code></pre></div>
+</div>
+<p>
+サンプルではノードの click イベントとして、 deleteNode() を設定しています。
+また、他の element に click イベントが通知されないように
+d3.event.stopPropagation() を実行しています。
+</p>
+<h4 id="headline-21">
+詳しく解説
+</h4>
+<p>
+<em>selection</em>.data( <em>array</em> ) の戻り値は、新しい <em>selection</em> です。
+</p>
+<p>
+この新しい <em>selection</em> は、
+いままでバインドしていた配列要素 old と、
+新しくバインドされた配列要素 new の情報から、次の情報を管理します。
+</p>
+<ul>
+<li>
+<p>
+削除された要素 (.exit)
+</p>
+<ul>
+<li>
+<p>
+old に存在し new にない要素
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+新たに追加された要素 (.enter)
+</p>
+<ul>
+<li>
+<p>
+old になく、new に存在する要素
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+残った要素
+</p>
+<ul>
+<li>
+<p>
+old と new どちらにも存在する要素
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+公式の <a href="https://github.com/d3/d3-selection/blob/master/README.md#selection_exit">サンプル</a> で具体例を説明すると、
+</p>
+<p>
+ある <em>selection</em> が <code>[4, 8, 15, 16, 23, 42]</code> をバインドしていた時、
+新しく <code>[1, 2, 4, 8, 16, 32]</code> をバインド (.data) すると、
+生成された <em>selection</em> の .exit, .enter は次を返します。
+</p>
+<ul>
+<li>
+<p>
+.exit
+</p>
+<ul>
+<li>
+<p>
+<code>[15, 23, 42]</code> を管理する <em>selection</em>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+.enter
+</p>
+<ul>
+<li>
+<p>
+<code>[ [1, 2, 32]</code> を管理する <em>selection</em>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+なお、この <em>selection</em> が管理している DOM の element は、
+既存の element であり、まだ削除も追加もされていません。
+.exit().remove() することで、実際に DOM の element が削除され、
+.enter().append() することで、 DOM の element が追加されます。
+</p>
+<p>
+注意すべきなのは、 .merge() しないと 最終的な svg の element を管理する
+<em>selection</em> が得られないということです。
+</p>
+<p>
+add/delete がこのようなステップに分かれているのは
+ちょっと手間が多いようにも思えます。
+しかしこのステップによって、
+削除される情報、残る情報、追加される情報を <em>selection</em> で管理してくれるので、
+ユーザ側でそれらを管理する必要がなく、
+さらに、削除される情報、残る情報、追加される情報に対して
+異なる制御を簡単に行なうことが出来ます。
+このサンプルでも、削除されるノードの半径を小さくするエフェクトを加えていますが、
+その制御は簡単に記述出来ています。
+</p>
+<h3 id="headline-22">
+座標計算結果を svg に反映
+</h3>
+<p>
+forceSimulation による座標計算ごとに、
+事前に登録した tickedハンドラがコールされます。
+</p>
+<p>
+forceSimulation は、 ノードとリンクの座標を計算します。
+この計算結果は nodes, links の各データに反映されています。
+</p>
+<p>
+この計算結果を element に反映します。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">ticked</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">link</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;x1&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">source</span><span class="p">.</span><span class="nx">x</span><span class="p">;</span> <span class="p">})</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;y1&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">source</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span> <span class="p">})</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;x2&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">x</span><span class="p">;</span> <span class="p">})</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;y2&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span> <span class="p">});</span>
+
+    <span class="nx">node</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;cx&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">x</span><span class="p">;</span> <span class="p">})</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;cy&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span> <span class="p">});</span>
+
+    <span class="nx">label</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;x&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">x</span><span class="p">;</span> <span class="p">})</span>
+        <span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;y&#34;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="nx">d</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span> <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<h3 id="headline-23">
+ノードを削除
+</h3>
+<p>
+次の処理でノードを削除します。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">deleteNode</span><span class="p">(</span> <span class="nx">node</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="c1">// node を削除する
+</span><span class="c1"></span>
+    <span class="c1">// node.index は forceSimulation によって追加される
+</span><span class="c1"></span>    <span class="nx">nodes</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span> <span class="nx">node</span><span class="p">.</span><span class="nx">index</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+
+    <span class="c1">// node に繋がっている link を削除
+</span><span class="c1"></span>    <span class="nx">links</span> <span class="o">=</span> <span class="nx">links</span><span class="p">.</span><span class="nx">filter</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">l</span><span class="p">)</span> <span class="p">{</span>
+	<span class="k">return</span> <span class="nx">l</span><span class="p">.</span><span class="nx">source</span><span class="p">.</span><span class="nx">index</span> <span class="o">!=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">index</span> <span class="o">&amp;&amp;</span> <span class="nx">l</span><span class="p">.</span><span class="nx">target</span><span class="p">.</span><span class="nx">index</span> <span class="o">!=</span> <span class="nx">node</span><span class="p">.</span><span class="nx">index</span><span class="p">;</span>
+    <span class="p">});</span>
+
+    <span class="c1">// graph を更新
+</span><span class="c1"></span>    <span class="nx">update</span><span class="p">(</span> <span class="nx">nodes</span> <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<h3 id="headline-24">
+カーソルに追従する円
+</h3>
+<p>
+次の処理でカーソルに追従する円を描画します。   
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">mousemove</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">cursor</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;display&#34;</span><span class="p">,</span> <span class="s2">&#34;block&#34;</span><span class="p">);</span>
+    <span class="nx">cursor</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s2">&#34;transform&#34;</span><span class="p">,</span> <span class="s2">&#34;translate(&#34;</span> <span class="o">+</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">mouse</span><span class="p">(</span><span class="k">this</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&#34;)&#34;</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<p>
+ここで cursor の属性に transform を設定しています。
+これはアフィン変換等を行なうもので、
+translate は element の 座標(x,y) を offset させます。
+</p>
+<h3 id="headline-25">
+ノードのドラッグ処理
+</h3>
+<p>
+次の処理でノードのドラッグ処理を行ないます。
+</p>
+<div class="src src-javascript">
+<div class="highlight"><pre class="chroma"><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">dragstarted</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">cursor</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span> <span class="s2">&#34;display&#34;</span><span class="p">,</span> <span class="s2">&#34;none&#34;</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">d3</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">active</span><span class="p">)</span> <span class="nx">simulation</span><span class="p">.</span><span class="nx">alphaTarget</span><span class="p">(</span><span class="mf">0.3</span><span class="p">).</span><span class="nx">restart</span><span class="p">();</span>
+    <span class="nx">d</span><span class="p">.</span><span class="nx">fx</span> <span class="o">=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">x</span><span class="p">;</span>
+    <span class="nx">d</span><span class="p">.</span><span class="nx">fy</span> <span class="o">=</span> <span class="nx">d</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">dragged</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">d</span><span class="p">.</span><span class="nx">fx</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">x</span><span class="p">;</span>
+    <span class="nx">d</span><span class="p">.</span><span class="nx">fy</span> <span class="o">=</span> <span class="nx">d3</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">y</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">dragended</span><span class="p">(</span><span class="nx">d</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">d3</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">active</span><span class="p">)</span> <span class="nx">simulation</span><span class="p">.</span><span class="nx">alphaTarget</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+    <span class="nx">d</span><span class="p">.</span><span class="nx">fx</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="nx">d</span><span class="p">.</span><span class="nx">fy</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<p>
+ここで重要なのは次の 2 点です。
+</p>
+<ul>
+<li>
+<p>
+dragstarted() の simulation.alphaTarget(0.3).restart()
+</p>
+</li>
+<li>
+<p>
+dragended() の simulation.alphaTarget(0)
+</p>
+</li>
+</ul>
+<p>
+ノードをドラッグすると、
+ドラッグしたノードの位置に応じて他のノードも動きます。
+このノードを動かすのが dragstarted() の
+simulation.alphaTarget(0.3).restart() です。
+</p>
+<p>
+forceSimulation の座標計算は、ある時間内に行ないます。
+その時間を α と呼ばれるパラメータで管理します。
+座標計算ごとにαは減算され、α が alphaMin よりも小さくなると、
+座標計算は停止します。
+このαの計算に alphaTarget が使われており、
+alphaTarget を alphaMin 以上に設定されている間は座標計算が止まらなくなります。
+つまり、ドラック中は座標計算が止まらずにノードが動き続けることになります。
+</p>
+<p>
+そして dragended() の simulation.alphaTarget(0) によって、
+所定時間の座標計算後にα値が alphaMin よりも小さくなり、ノードが止まります。
+</p>
+<h2 id="headline-26">
+おわりに
+</h2>
+<p>
+この記事では、
+D3.js V4 forceSimulation のノード動的更新(追加・削除)方法について説明しました。
+</p>
+<p>
+javascript, svg 素人でも理解できるように説明したつもりですが、
+疑問点や認識間違いなどあればコメント欄への記載をお願いします。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/javascript/" title="Javascripts"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Javascripts</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lctags/" title="Lctags">Next - Lctags <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class="active"><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">Lctags<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">関数 編</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
