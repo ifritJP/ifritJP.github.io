@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>lctags で C 言語の関数コールを簡単に - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lctags/callfunc/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="lctags で C 言語の関数コールを簡単に" />
+<meta property="og:description" content="ある関数をコールする際、その関数の名前がうろ覚えの場合や、 使いたい関数がどのヘッダで定義しているか分からないケースが多いと思います。 lctags では、" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lctags/callfunc/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="lctags で C 言語の関数コールを簡単に"/>
+<meta name="twitter:description" content="ある関数をコールする際、その関数の名前がうろ覚えの場合や、 使いたい関数がどのヘッダで定義しているか分からないケースが多いと思います。 lctags では、"/>
+<meta itemprop="name" content="lctags で C 言語の関数コールを簡単に">
+<meta itemprop="description" content="ある関数をコールする際、その関数の名前がうろ覚えの場合や、 使いたい関数がどのヘッダで定義しているか分からないケースが多いと思います。 lctags では、">
+
+<meta itemprop="wordCount" content="1303">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>lctags で C 言語の関数コールを簡単に</h1>
+
+<p>
+ある関数をコールする際、その関数の名前がうろ覚えの場合や、
+使いたい関数がどのヘッダで定義しているか分からないケースが多いと思います。
+</p>
+<p>
+lctags では、そのような場合でも簡単に関数補完できる方法を提供しています。
+</p>
+<h2 id="headline-1">
+使用方法
+</h2>
+<p>
+関数コールしたい箇所で M-x lctags-insert-call-func します。
+</p>
+<p>
+あるいは、C-c l i c を入力します。
+</p>
+<p>
+mini buffer に funcname-pattern: の入力が求められるので、
+使用したい関数名の一部を入力します。
+</p>
+<p>
+入力した関数名にマッチする関数の一覧がリストされるので、
+そのリストから関数を選択します。
+</p>
+<p>
+もしも、その関数を定義するインクルードファイルをインクルードしていなかった場合、
+インクルードすべきファイルがリストされます。
+</p>
+<p>
+なお、使用したい関数を定義しているヘッダーファイルを、
+事前に lctags に登録しておく必要があります。
+</p>
+<h2 id="headline-2">
+hello world サンプル
+</h2>
+<p>
+<a href="https://www.youtube.com/watch?v=gMgyNMBmqws"><a href="https://www.youtube.com/watch?v=gMgyNMBmqws">https://www.youtube.com/watch?v=gMgyNMBmqws</a></a>
+</p>
+<p>
+上記リンクは、実際に emacs で操作した際の解説動画です。
+</p>
+<p>
+simple.c で hello world 出力するサンプルです。
+</p>
+<h3 id="headline-3">
+DB 生成
+</h3>
+<p>
+まずはプロジェクトディレクトリのトップで DB を生成します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lctags init .</code></pre></div>
+</div>
+<h3 id="headline-4">
+ソース登録
+</h3>
+<p>
+プロジェクトのソースを登録します。
+ここでは simple.c を登録します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lctags addStdInc
+$ lctags build gcc test/simple.c</code></pre></div>
+</div>
+<p>
+addStdInc は、C の標準ヘッダを登録します。
+</p>
+<p>
+simple.c は次の内容です。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">hello</span> <span class="o">=</span> <span class="s">&#34;hello &#34;</span><span class="p">;</span>
+
+<span class="p">}</span></code></pre></div>
+</div>
+<h3 id="headline-5">
+関数コール
+</h3>
+<p>
+simple.c を emacs で開いて 3 行目の空行に移動し、次を入力します。
+</p>
+<p>
+<code>C-c l i c</code>
+</p>
+<p>
+次に mini buffer に、使用した関数名の一部を入力します。
+</p>
+<p>
+ここでは write を入力します。
+</p>
+<p>
+すると、 関数名に write を含む関数一覧がリストされます。
+このリストは、DB に登録してあるファイル内で定義された関数情報を元に生成します。
+</p>
+<p>
+リストの中から、 fwrite を選択します。
+</p>
+<p>
+すると、次にヘッダファイルの選択になります。
+このサンプルでは、何も include していないため、
+fwrite を使用するにはヘッダファイルを include する必要があります。
+</p>
+<p>
+リストされているヘッダファイルには、
+先頭に fwrite を直接宣言しているヘッダ stdio.h がリストされ、
+残りは stdio.h を include しているヘッダがリストされます。
+</p>
+<p>
+ヘッダを選択すると、
+fwrite() の関数プロトタイプと、必要なヘッダが展開されます。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">hello</span> <span class="o">=</span> <span class="s">&#34;hello &#34;</span><span class="p">;</span>
+  <span class="n">fwrite</span><span class="p">(</span> <span class="k">const</span> <span class="kt">void</span> <span class="o">*</span> <span class="n">__restrict</span> <span class="n">__ptr</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">__size</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">__n</span><span class="p">,</span> <span class="n">FILE</span> <span class="o">*</span> <span class="n">__restrict</span> <span class="n">__s</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="n">size_t</span>
+    <span class="c1">// #include &lt;/usr/include/stdio.h&gt;
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+</div>
+<p>
+次に、fwrite の第 1 引数に hello を指定し、
+fwrite の第2引数には strlen( hello ) を指定します。
+</p>
+<p>
+strlen をコールするとき、再度関数展開 <code>C-c l i c</code> を利用します。
+</p>
+<p>
+mini buffer には、 len と入力します。
+</p>
+<p>
+これにより len を含む関数一覧がリストされるので、strlen を選択します。
+</p>
+<p>
+strlen を利用するために必要な string.h がまだ include されていないため、
+ヘッダ選択モードになります。
+</p>
+<p>
+ヘッダを選択すると、次のようになります。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">hello</span> <span class="o">=</span> <span class="s">&#34;hello &#34;</span><span class="p">;</span>
+  <span class="n">fwrite</span><span class="p">(</span> <span class="n">hello</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">__s</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="kt">unsigned</span> <span class="kt">long</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">__n</span><span class="p">,</span> <span class="n">FILE</span> <span class="o">*</span> <span class="n">__restrict</span> <span class="n">__s</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="n">size_t</span>
+    <span class="c1">// #include &lt;/usr/include/string.h&gt;
+</span><span class="c1"></span>    <span class="c1">// #include &lt;/usr/include/stdio.h&gt;
+</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+</div>
+<p>
+fwrite の残りの引数を適宜指定し、
+展開された #include をファイル先頭に移動し、コメントを外します。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">hello</span> <span class="o">=</span> <span class="s">&#34;hello &#34;</span><span class="p">;</span>
+  <span class="n">fwrite</span><span class="p">(</span> <span class="n">hello</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span> <span class="n">hello</span> <span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stdout</span> <span class="p">);</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+次に world を出力するため 再度関数展開 <code>C-c l i c</code> を利用します。
+</p>
+<p>
+ここでは put を指定します。
+リストに表示されている関数から puts を選択すると、次のように展開されます。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">hello</span> <span class="o">=</span> <span class="s">&#34;hello &#34;</span><span class="p">;</span>
+  <span class="n">fwrite</span><span class="p">(</span> <span class="n">hello</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span> <span class="n">hello</span> <span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stdout</span> <span class="p">);</span>
+  <span class="n">puts</span><span class="p">(</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">__s</span> <span class="p">)</span> <span class="o">=&gt;</span> <span class="kt">int</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+ここで include が展開されません。
+なぜなら puts は stdio.h に定義されており、
+stdio.h は既に include 済みだからです。
+</p>
+<p>
+最後に puts() の引数を次のように編集して終了です。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;string.h&gt;</span><span class="cp">
+</span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">hello</span> <span class="o">=</span> <span class="s">&#34;hello &#34;</span><span class="p">;</span>
+  <span class="n">fwrite</span><span class="p">(</span> <span class="n">hello</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span> <span class="n">hello</span> <span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stdout</span> <span class="p">);</span>
+  <span class="n">puts</span><span class="p">(</span> <span class="s">&#34;world&#34;</span> <span class="p">);</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lctags/modulegraph/" title="C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lctags/register/" title="lctags のプロジェクト簡易登録">Next - lctags のプロジェクト簡易登録 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">03. Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">04. 値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">04.2. Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">05. enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">06. match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">07. 変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">08. 一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">09. 繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">10. 関数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">10.2. 多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
