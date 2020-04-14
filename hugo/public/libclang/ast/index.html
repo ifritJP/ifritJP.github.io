@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>16. クラス override 編 - 公開技術情報</title>
+<title>libclang の AST(Abstract Syntax Tree) - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.68.3" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/classoverride/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/libclang/ast/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -23,18 +23,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="16. クラス override 編" />
-<meta property="og:description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の" />
+<meta property="og:title" content="libclang の AST(Abstract Syntax Tree)" />
+<meta property="og:description" content="libclang とは libclang は clang の機能にアクセスするためのライブラリです。 libclang を利用することで C/C&#43;&#43; のソースコード解析などが出来ます。 libclang の CXCursor libclang で C/C&#43;&#43; のソースコードを解析" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/classoverride/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/libclang/ast/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="16. クラス override 編"/>
-<meta name="twitter:description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の"/>
-<meta itemprop="name" content="16. クラス override 編">
-<meta itemprop="description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の">
+<meta name="twitter:title" content="libclang の AST(Abstract Syntax Tree)"/>
+<meta name="twitter:description" content="libclang とは libclang は clang の機能にアクセスするためのライブラリです。 libclang を利用することで C/C&#43;&#43; のソースコード解析などが出来ます。 libclang の CXCursor libclang で C/C&#43;&#43; のソースコードを解析"/>
+<meta itemprop="name" content="libclang の AST(Abstract Syntax Tree)">
+<meta itemprop="description" content="libclang とは libclang は clang の機能にアクセスするためのライブラリです。 libclang を利用することで C/C&#43;&#43; のソースコード解析などが出来ます。 libclang の CXCursor libclang で C/C&#43;&#43; のソースコードを解析">
 
-<meta itemprop="wordCount" content="790">
+<meta itemprop="wordCount" content="1367">
 
 
 
@@ -50,165 +50,313 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>16. クラス override 編</h1>
+<main><h1>libclang の AST(Abstract Syntax Tree)</h1>
 
-<p>
-LuneScript は、メソッドの override をサポートします。
-</p>
 <h2 id="headline-1">
-メソッドの override
+libclang とは
 </h2>
 <p>
-クラスのメソッドは全て override 可能です。
+libclang は clang の機能にアクセスするためのライブラリです。
 </p>
 <p>
-むしろ、現在は override を抑制することができません。
-</p>
-<p>
-メソッドの override の例を次に示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
-   pub fn func() {
-      print( __func__ );
-   }
-}
-class Sub extend Super {
-   pub override fn func() {
-      print( __func__ );
-   }
-}
-fn test( obj:Super ) {
-   obj.func();
-}
-test( new Super() ); // Super.func
-test( new Sub() ); // Sub.func</code></pre>
-</div>
-<p>
-ここで、 Sub クラスは Super クラスの func メソッドを override しています。
-</p>
-<p>
-override する Sub クラス側のメソッドは、
-override キーワードで明示する必要があります。
+libclang を利用することで C/C++ のソースコード解析などが出来ます。
 </p>
 <h2 id="headline-2">
-親クラスのメソッド呼び出し
+libclang の CXCursor 
 </h2>
 <p>
-override しているサブクラスから、親クラスのメソッドをコールするには、
-super() を使用します。
+libclang で C/C++ のソースコードを解析すると、
+そのソースコードの AST (Abstract Syntax Tree) にアクセスできます。
 </p>
 <p>
-次に super() の例を示します。
+この AST には CXCursor 構造体を通してアクセスします。
+AST にアクセスすることで、解析対象のソースコードにどのような関数が定義されていて、
+その関数内でどのような変数にアクセスしているかや、
+どのような関数をコールしているか、などを簡単に調べることができます。
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
-   pub fn func(): int {
-      return 1;
-   }
-}
-class Sub extend Super {
-   pub override fn func(): int {
-      return 10 + super();
-   }
-}
-fn test( obj:Super ) {
-   print( obj.func() );
-}
-test( new Sub() ); // 11</code></pre>
+<h3 id="headline-3">
+CXCursor とは
+</h3>
+<p>
+CXCursor は、 libclang で clang の AST にアクセスするための構造体です。
+</p>
+<p>
+clang 内部では AST を C++ のクラスで管理していますが、
+ライブラリのインタフェースではクラスを直接扱えないため、
+CXCursor 構造体でラッピングしています。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">アプリ -&gt; CXCursor (C) -&gt; libclang (C/C++)-&gt; AST (C++)</code></pre></div>
+</div>
+<h3 id="headline-4">
+木構造
+</h3>
+<p>
+AST (Abstract Syntax Tree)は、その名の通り木構造になっています。
+</p>
+<p>
+例えば次のようなソースを解析すると、
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">func1</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="nf">func2</span><span class="p">(</span> <span class="kt">int</span> <span class="n">arg1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">arg2</span> <span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">arg1</span> <span class="o">+</span> <span class="n">arg2</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
 </div>
 <p>
-この例では、 Super クラスの func() メソッドを Sub クラスで override しています。
-そして、 Sub クラスの func() から super() を使用して、
-Super クラスの func() メソッドを呼び出しています。
+次のような情報が AST の木構造に格納されます。
 </p>
-<h2 id="headline-3">
-abstract
-</h2>
-<p>
-実体を持たない abstract メソッドを定義できます。
-</p>
-<p>
-次に abstract の例を示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">abstract class Super {
-   pub abstract fn func(): int;
-}
-class Sub extend Super {
-   pub override fn func(): int {
-      return 10;
-   }
-}
-fn test( obj:Super ) {
-   print( obj.func() );
-}
-test( new Sub() );</code></pre>
+<div class="src src-dot">
+<pre><code class="language-dot" data-lang="dot">digraph {
+len = 1;
+dpi=80;
+rankdir = &#34;LR&#34;;
+root -&gt; FunctionDecl_func1;
+FunctionDecl_func1 -&gt; CompoundStmt_func1;
+CompoundStmt_func1 -&gt; ReturnStmt_func1;
+ReturnStmt_func1 -&gt; IntegerLiteral_0;
+
+FunctionDecl_func1 [label=&#34;FunctionDecl (func1)&#34;];
+CompoundStmt_func1 [label=&#34;CompoundStmt&#34;];
+ReturnStmt_func1 [label=&#34;ReturnStmt&#34;];
+IntegerLiteral_0 [label=&#34;IntegerLiteral (0)&#34;];
+
+root -&gt; FunctionDecl_func2;
+FunctionDecl_func2 -&gt; ParmDecl_arg1
+FunctionDecl_func2 -&gt; ParmDecl_arg2
+FunctionDecl_func2 -&gt; CompoundStmt_func2;
+CompoundStmt_func2 -&gt; ReturnStmt_func2
+ReturnStmt_func2 -&gt; BinaryOperator
+BinaryOperator -&gt; UnexposedExpr_arg1
+UnexposedExpr_arg1 -&gt; DeclRefExpr_arg1
+BinaryOperator -&gt; UnexposedExpr_arg2
+UnexposedExpr_arg2 -&gt; DeclRefExpr_arg2
+
+
+FunctionDecl_func2 [label=&#34;FunctionDecl (func2)&#34;];
+ParmDecl_arg1 [label=&#34;ParmDecl (arg1)&#34;];
+ParmDecl_arg2 [label=&#34;ParmDecl (arg2)&#34;];
+CompoundStmt_func2 [label=&#34;CompoundStmt&#34;];
+ReturnStmt_func2 [label=&#34;ReturnStmt&#34;];
+UnexposedExpr_arg1 [label=&#34;UnexposedExpr&#34;];
+UnexposedExpr_arg2 [label=&#34;UnexposedExpr&#34;];
+DeclRefExpr_arg1 [label=&#34;DeclRefExpr (arg1)&#34;];
+DeclRefExpr_arg2 [label=&#34;DeclRefExpr (arg2)&#34;];
+
+}</code></pre>
 </div>
 <p>
-この例で、 func() メソッドは実体を持たない abstract メソッドです。
+上記の root は木構造の先頭を意味し、root から各ノードを辿ることで、
+解析したソースの構造を把握することができます。
 </p>
 <p>
-なお、 abstract メソッドを持つクラスは abstract クラスとして宣言する必要があります。
+statement, expression, literal 等でノードが生成されます。
 </p>
 <p>
-abstract メソッドの実体は、 継承したクラスで定義されます。
-もしも、親クラスの全ての abstract メソッドを継承したクラスで override しないと、
-その継承したクラスは abstract として宣言する必要があります。
+このノードが CXCursor そのものです。
+</p>
+<h3 id="headline-5">
+CXCursor からアクセス可能な情報
+</h3>
+<p>
+CXCursor を libclang が提供する関数に与えることで、
+さまざまな情報を取得することが可能です。
 </p>
 <p>
-abstract クラスは、それ単体ではインスタンスを生成できなくなります。
+例えば、上記 AST の各ノードの種別(FunctionDecl, CompoundStmt, ReturnStmt 等)は、
+CXCursor:getCursorKind() で取得します。
 </p>
-<h2 id="headline-4">
-まとめ
-</h2>
 <p>
-LuneScript のメソッド override/abstract の仕様は次の通りです。
+CXCursor から取得可能な代表的な情報を挙げます。
 </p>
 <ul>
 <li>
 <p>
-全てのメソッドは override 出来る
+CursorKind (種別)
+</p>
+<ul>
+<li>
+<p>
+CXCursor:getCursorKind()
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+文字列 (FunctionDecl であればその関数名)
+</p>
+<ul>
+<li>
+<p>
+CXCursor:getCursorSpelling()
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+CXType (型情報)
+</p>
+<ul>
+<li>
+<p>
+CXCursor:getCursorType()
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+ソース上の位置
+</p>
+<ul>
+<li>
+<p>
+CXCursor:getCursorLocation()
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+DeclRefExpr などの参照元 CXCursor
+</p>
+<ul>
+<li>
+<p>
+CXCursor:getCursorReferenced()
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+ハッシュ
+</p>
+<ul>
+<li>
+<p>
+CXCursor:hashCursor()
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-6">
+型情報 CXType
+</h3>
+<p>
+CXCursor から、そのノードの型情報(CXType)を取得できます。
+</p>
+<p>
+例えば引数宣言 ParmDecl の型情報は、宣言している引数の型を示します。
+</p>
+<p>
+具体的には int arg1 の型情報 CXType は、 int を示す情報となります。
+</p>
+<p>
+なお、C 言語の変数にポインタや配列があるように、
+型情報 CXType はそれらポインタや配列の情報を含みます。
+</p>
+<p>
+例えば int * pVal の型情報 CXType は、 int * を示す情報となり、
+これは int val の型情報 CXType とは異なります。
+</p>
+<p>
+C 言語の変数は int 等の primitive な型だけでなく、構造体等の型を持つこともできます。
+その場合、CXType は構造体の型を示すことになります。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">struct</span> <span class="n">VALUE</span> <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="k">struct</span> <span class="n">VALUE</span> <span class="n">val1</span><span class="p">;</span></code></pre></div>
+</div>
+<p>
+例えば上記 val1 の型は構造体 VALUE です。
+このとき AST は次のようになります。
+</p>
+<div class="src src-dot">
+<pre><code class="language-dot" data-lang="dot">digraph {
+len = 1;
+dpi=80;
+rankdir = &#34;LR&#34;;
+root -&gt; StructDecl;
+StructDecl -&gt; FieldDecl;
+root -&gt; VarDecl;
+VarDecl -&gt; TypeRef;
+
+StructDecl [ label=&#34;StructDecl (VALUE)&#34;];
+FieldDecl [ label=&#34;FieldDecl (val)&#34;];
+VarDecl [ label=&#34;VarDecl (val1)&#34; ];
+}</code></pre>
+</div>
+<p>
+ここで VarDecl の CXType は、構造体 VALUE を示します。
+</p>
+<p>
+VarDecl の CXType が具体的にどのような型であるかは、
+次のように処理するとこで得られます。
+</p>
+<ul>
+<li>
+<p>
+CXType:getTypeDeclaration() を使ってその型を宣言している CXCursor を取得
 </p>
 </li>
 <li>
 <p>
-override するクラスは、 override を明示する必要がある
-</p>
-</li>
-<li>
-<p>
-override しているメソッドから、 override 元のメソッドをコールするには super() を利用する。
-</p>
-</li>
-<li>
-<p>
-実体の持たない abstract メソッドを宣言できる
-</p>
-</li>
-<li>
-<p>
-abstract メソッドを持つクラスは abstract クラスとなる
-</p>
-</li>
-<li>
-<p>
-abstract メソッドは、サブクラスで override しなければならない
-</p>
-</li>
-<li>
-<p>
-abstract クラスは、単体ではインスタンスを生成できない
+その CXCursor 情報を確認する
 </p>
 </li>
 </ul>
 <p>
-次回は、 class の advertise について説明します。
+上記サンプルの場合、 CXType:getTypeDeclaration() で得られる CXCursor は、
+VALUE の StructDecl となります。
+</p>
+<div class="src src-dot">
+<pre><code class="language-dot" data-lang="dot">digraph {
+dpi=80;
+rankdir = &#34;LR&#34;;
+root -&gt; StructDecl;
+StructDecl -&gt; FieldDecl;
+root -&gt; VarDecl;
+CXType -&gt; StructDecl [ label = &#34;getTypeDeclaration()&#34;, style = &#34;dashed&#34; ];
+VarDecl -&gt; CXType [ label = &#34;getCursorType()&#34;, style = &#34;dashed&#34; ];
+VarDecl -&gt; TypeRef;
+
+{rank=same; StructDecl; VarDecl; }
+{rank=sink; TypeRef; FieldDecl }
+
+StructDecl [ label=&#34;StructDecl (VALUE)&#34;];
+FieldDecl [ label=&#34;FieldDecl (val)&#34;];
+VarDecl [ label=&#34;VarDecl (val1)&#34; ];
+CXType [ shape=box ];
+}</code></pre>
+</div>
+<p>
+CXCursor はハッシュ値を持っています。
+CXCursor が同一かどうかは、ハッシュ値で比較するか
+CXCursor:equalCursors() 関数で確認出来ます。
+</p>
+<h2 id="headline-7">
+動かしてみよう
+</h2>
+<p>
+CXCursor と CXType の関係さえ分かれば、
+後は実際に libclang を使って AST を生成し、
+AST の中身を見てみるのが一番理解が早いと思います。
+</p>
+<p>
+その際 <a href="https://github.com/ifritJP/libclanglua">libclanglua</a> が役に立てれば嬉しいです。
 </p>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/classadvertise/" title="15. クラス advertise 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 15. クラス advertise 編</a>
-<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/interface/" title="17. インタフェース 編">Next - 17. インタフェース 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/libclang/operator/" title="libclang で演算子を特定する方法"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - libclang で演算子を特定する方法</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/rust/" title="Rusts">Next - Rusts <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -264,11 +412,11 @@ abstract クラスは、単体ではインスタンスを生成できない
   
 </li>
 
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/libclang/">Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)<span class="mark closed">+</span></a>
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/libclang/">Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/libclang/operator/">libclang で演算子を特定する方法</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/libclang/ast/">libclang の AST(Abstract Syntax Tree)</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/libclang/ast/">libclang の AST(Abstract Syntax Tree)</a></li>
 </ul>
   
 </li>
@@ -289,7 +437,7 @@ abstract クラスは、単体ではインスタンスを生成できない
   
 </li>
 
-<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
@@ -312,7 +460,7 @@ abstract クラスは、単体ではインスタンスを生成できない
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>

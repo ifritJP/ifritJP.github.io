@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding) - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/libclang/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/libclang/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)"/>
+<meta name="twitter:description" content=""/>
+<meta itemprop="name" content="Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)">
+<meta itemprop="description" content=""></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)</h1>
+<p>
+ここでは <a href="https://github.com/ifritJP/libclanglua">libclanglua</a> を使って Lua から C/C++ の構文解析を行なう方法を紹介します。
+</p>
+<p>
+libclanglua は libclang の Lua 用 binding です。
+</p>
+<p>
+以降は、 libclanglua のテスト用サンプル <a href="https://github.com/ifritJP/libclanglua/blob/master/src/test.lua">test.lua</a> の内容を元に説明します。
+</p>
+<p>
+なお、この test.lua を利用し、
+解析対象のテストコード <a href="https://github.com/ifritJP/libclanglua/blob/master/src/test/hoge.cpp">hoge.cpp</a> を解析した結果が <a href="https://github.com/ifritJP/libclanglua/blob/master/src/test-result.expect">test-result.expect</a> となります。
+</p>
+<p>
+C/C++ で書いたソースコードを libclanglua で構文解析して得られる情報は、
+さまざまな用途に活用できます。
+ソースコードタグシステム <a href="https://github.com/ifritJP/lctags">lctags</a> は、その活用例の一つです。
+</p>
+<p>
+libclanglua については、次も参考にしてください。
+</p>
+<ul>
+<li>
+<p>
+libclang で演算子を特定する方法
+</p>
+</li>
+</ul>
+<p>
+<a href="operator">operator</a>
+</p>
+<ul>
+<li>
+<p>
+libclang の AST(Abstract Syntax Tree)
+</p>
+</li>
+</ul>
+<p>
+<a href="ast">ast</a>  
+</p>
+<h3 id="headline-1">
+基本
+</h3>
+<h4 id="headline-2">
+require
+</h4>
+<p>
+まずは require で libclanglua をロードします。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">clang</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s1">&#39;libclanglua.if&#39;</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+以降 libclanglua モジュールは、clang として扱います。
+</p>
+<h4 id="headline-3">
+index
+</h4>
+<p>
+解析するために、index を生成します。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">clangIndex</span> <span class="o">=</span> <span class="n">clang.createIndex</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">)</span></code></pre></div>
+</div>
+<h4 id="headline-4">
+解析
+</h4>
+<p>
+index を使用して C ソースを解析します。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&#34;-Iinc&#34;</span><span class="p">,</span> <span class="s2">&#34;-DDEF&#34;</span> <span class="p">}</span>
+<span class="kd">local</span> <span class="n">args</span> <span class="o">=</span> <span class="n">clang.mkcharPArray</span><span class="p">(</span> <span class="n">options</span> <span class="p">)</span>
+<span class="kd">local</span> <span class="n">transUnit</span> <span class="o">=</span> <span class="n">clangIndex</span><span class="p">:</span><span class="n">createTranslationUnitFromSourceFile</span><span class="p">(</span>
+      <span class="s2">&#34;hoge.cpp&#34;</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span><span class="n">getLength</span><span class="p">(),</span> <span class="n">args</span><span class="p">:</span><span class="n">getPtr</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">);</span></code></pre></div>
+</div>
+<p>
+options には、コンパイルオプション文字列配列を指定します。
+コンパイルオプションは clang のコンパイルオプションを指定する必要があります。
+clang のコンパイルオプションは、多くの場合 gcc と互換があります。
+</p>
+<p>
+clang.mkcharPArray( options ) は、
+Lua の文字列配列(テーブル)から libclang に渡す文字列配列型データを生成する関数です。
+</p>
+<p>
+clangIndex:createTranslationUnitFromSourceFile() は、
+ソース hoge.cpp をコンパイルオプション arg で構文解析し、
+TranslationUnit を返します。
+</p>
+<p>
+なお、clangIndex:createTranslationUnitFromSourceFile() の第 4、5 引数は、
+解析対象のファイル情報を渡します。
+指定しない場合はディスクから解析対象のファイルを取得しますが、
+指定することでその情報を使って解析します。
+</p>
+<h4 id="headline-5">
+AST の走査
+</h4>
+<p>
+コードを解析した結果は TranslationUnit を通して取得できます。
+</p>
+<p>
+AST の格要素の情報は Cursor と呼ばれるオブジェクトで管理されています。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">root</span> <span class="o">=</span> <span class="n">transUnit</span><span class="p">:</span><span class="n">getTranslationUnitCursor</span><span class="p">()</span>
+<span class="n">root</span><span class="p">:</span><span class="n">visitChildren</span><span class="p">(</span> <span class="n">visitFuncMain</span><span class="p">,</span> <span class="p">{</span> <span class="n">depth</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">}</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+transUnit:getTranslationUnitCursor() で、 AST の Root Cursor を取得します。
+</p>
+<p>
+なお、 Index、TranslationUnit、Cursor 等のオブジェクトは、
+Lua の GC によって開放されます。
+</p>
+<p>
+ここで次の点に関して注意する必要があります。
+</p>
+<p>
+<strong>「TranslationUnit のオブジェクトが Cursor オブジェクトよりも先に開放されてはならない」</strong>
+</p>
+<h4 id="headline-6">
+子要素の列挙
+</h4>
+<p>
+AST( Abstract Syntax Tree) は、その名の通りツリー構造になっています。
+</p>
+<p>
+libclanglua では、 libclang の標準機能である再帰列挙方式と、
+リスト取得方式を提供しています。
+</p>
+<p>
+ツリーの階層構造を利用するには再起列挙方式の方が便利ですが、
+ツリーの要素ごとに libclang と Lua 間を行き来するためオーバヘッドが大きくなり、
+パフォーマンスが悪くなります。
+</p>
+<p>
+一方でリスト取得方式では、
+要素ごとではなくツリーの要素を全てリストに格納して一括処理するため、
+オーバヘッドは少なくなります。
+ただし、ツリーの要素全てをリストに格納するため、メモリを消費します。
+なお、格納する要素の種別を指定することはできます。
+また、リスト自体は libclanglua 内で制御するので、
+リストの制御を意識する必要はありません。
+</p>
+<h4 id="headline-7">
+再起列挙方式
+</h4>
+<p>
+再起列挙方式では、root:visitChildren() を利用します。
+</p>
+<p>
+root:visitChildren() の第 1 引数の visitFuncMain は、
+子要素を列挙した際に呼ばれるコールバック関数です。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">visitFuncMain</span><span class="p">(</span> <span class="n">cursor</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">exInfo</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+visitFuncMain() には、次の3 つの引数が渡されてコールされます。
+</p>
+<p>
+第 1 引数 cursor は、列挙された子要素の情報を保持する Cursor です。
+</p>
+<p>
+第 2 引数 parent は、第一引数 cursor の親要素の情報を保持する Cursor です。
+</p>
+<p>
+第 3 引数 exInfo は、visitChildren() の 第 2 引数で渡した値が入ります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">cursorKind</span> <span class="o">=</span> <span class="n">cursor</span><span class="p">:</span><span class="n">getCursorKind</span><span class="p">()</span>
+<span class="kd">local</span> <span class="n">txt</span> <span class="o">=</span> <span class="n">cursor</span><span class="p">:</span><span class="n">getCursorSpelling</span><span class="p">()</span></code></pre></div>
+</div>
+<p>
+cursor:getCursorKind() は、その要素の種別を返します。
+例えば 関数宣言 FunctionDecl, クラス宣言 ClassDecl などの宣言文や、
+関数コール CallExpr、整数リテラル IntegerLiteral などの式などの種別があります。
+</p>
+<p>
+cursor:getCursorSpelling() は、その要素のコード上の文字列表現です。
+</p>
+<p>
+なお、 cursor に対してさらに cursor:visitChildren() を呼び出すことで、
+その cursor の子要素が列挙されます。
+</p>
+<p>
+visitFuncMain() が返す値で、 visitChildren() の動作を制御します。
+</p>
+<ul>
+<li>
+<p>
+<code>CXChildVisit_Break</code> (0) を返すと以降の子要素の列挙はしない。
+</p>
+</li>
+<li>
+<p>
+<code>CXChildVisit_Continue</code> (1) を返すと、現在の子要素と同じ階層の子要素の列挙を継続します。
+</p>
+</li>
+<li>
+<p>
+<code>CXChildVisit_Recurse</code> (2) を指定すると、現在の子階層以降の要素の列挙します。
+</p>
+</li>
+</ul>
+<h4 id="headline-8">
+リスト取得方式
+</h4>
+<p>
+リスト取得方式では、
+clang.visitChildrenFast( cursor, visitFuncMain, exInfo, nil, 1 )  を利用します。
+</p>
+<p>
+第 1 引数〜第 3 引数までは、visitChildren() と同じです。
+</p>
+<p>
+第 4 引数は、リストに格納する要素の CursorKind を指定するテーブルです。
+nil の場合は、全ての CursorKind をリストに格納します。
+</p>
+<p>
+第 5 引数は、リストに格納する要素を指定します。
+</p>
+<ul>
+<li>
+<p>
+<code>CXChildVisit_Continue</code> (1) を指定すると、 Cursor の直接の子階層の要素だけを格納します。
+</p>
+</li>
+<li>
+<p>
+<code>CXChildVisit_Recurse</code> (2) を指定すると、Cursor の子階層以降の要素を全て格納します。
+</p>
+</li>
+</ul>
+<h3 id="headline-9">
+libclanglua のモジュール構成
+</h3>
+<p>
+libclanglua は次のモジュールで構成しています。
+</p>
+<ul>
+<li>
+<p>
+libclanglua/core.so
+</p>
+</li>
+<li>
+<p>
+libclanglua/if.lua 
+</p>
+</li>
+</ul>
+<p>
+core.so は、libclang を Lua からアクセスできるようにする Glue です。
+swig で生成しています。
+</p>
+<p>
+この core.so は、
+libclang の C API をそのまま Lua からアクセスできるようにしているだけなので、
+オブジェクトの dispose などを明示的に行なう必要があり、使い勝手がいまいちです。
+if.lua は、その dispose などを Lua の gc を利用することで、
+明示的に行なわなくても良いようにラッピングしています。
+また、 Index や TranslationUnit のオブジェクトごとにメソッドをカプセル化したり、
+データ変換を行なっています。
+</p>
+<p>
+if.lua の各メソッド定義には、 clang のコメントをそのまま付加しているので、
+if.lua を見れば各関数の仕様確認や目的の関数を見つけることができます。
+</p>
+<p>
+ただし if.lua の内容を確認する場合、いくつか注意すべきことがあります。
+</p>
+<p>
+たとえば、 Cursor の文字列表現を取得するには Cursor:getCursorSpelling() を使用しますが、
+この Cursor:getCursorSpelling() を if.lua で確認すると、次の定義が見つかります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="cm">--[==[
+</span><span class="cm">/**
+</span><span class="cm"> * \brief Retrieve a name for the entity referenced by this cursor.
+</span><span class="cm"> */
+</span><span class="cm">
+</span><span class="cm"> @param __arg0 CXCursor
+</span><span class="cm"> @return CXString
+</span><span class="cm">]==]</span>
+<span class="kr">function</span> <span class="nc">libs</span><span class="p">.</span><span class="nc">CXCursor</span><span class="p">:</span><span class="nf">getCursorSpelling</span><span class="p">(</span>  <span class="p">)</span>
+  <span class="kr">return</span> <span class="n">libs.cx2string</span><span class="p">(</span> <span class="n">libclangcore.clang_getCursorSpelling</span><span class="p">(</span> <span class="n">self.__ptr</span> <span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span></code></pre></div>
+</div>
+<p>
+コメントは clang の doxygen 形式コメントをそのまま引用しています。
+</p>
+<p>
+コメントを見ると引数 __arg0 が CXCursor であると記載がありますが、
+Lua から Cursor:getCursorSpelling() をコールする場合、引数に CXCursor を指定しません。
+これは、メソッド呼び出しである &#39;:&#39; を使用してコールしているので、
+Lua によって CXCursor が self として与えられているためです。
+</p>
+<p>
+また、戻り値が CXString とありますが、
+Lua で Cursor:getCursorSpelling() の戻り値を処理する際には、
+CXString ではなく通常の文字列となります。
+</p>
+<p>
+これは、Cursor:getCursorSpelling() の処理で CXString から Lua の文字列に変換する処理
+cx2string を実行しているためです。
+</p>
+<p>
+if.lua では、戻り値が CXString のものは if.lua 内部で Lua の文字列に変換してから
+返すようにしています。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">clang</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s1">&#39;libclanglua.if&#39;</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+上記の require は if.lua をロードします。
+ロード後は、clang.core にアクセスすることで core.so に直接アクセスできます。
+</p>
+<h3 id="headline-10">
+libclang の構造体
+</h3>
+<p>
+libclang は構造体を扱いますが、Lua では構造体の概念がありません。
+</p>
+<p>
+ここでは、Lua で libclang の構造体を扱う方法について説明します。
+</p>
+<p>
+例として、ソースコードを解析する際に使用する
+clangIndex:createTranslationUnitFromSourceFile() を挙げます。
+</p>
+<p>
+clangIndex:createTranslationUnitFromSourceFile() の第 5 引数には、
+struct CXUnsavedFile の配列を指定します。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">&#34;-Iinc&#34;</span><span class="p">,</span> <span class="s2">&#34;-DDEF&#34;</span> <span class="p">}</span>
+<span class="kd">local</span> <span class="n">args</span> <span class="o">=</span> <span class="n">clang.mkcharPArray</span><span class="p">(</span> <span class="n">options</span> <span class="p">)</span>
+<span class="kd">local</span> <span class="n">transUnit</span> <span class="o">=</span> <span class="n">clangIndex</span><span class="p">:</span><span class="n">createTranslationUnitFromSourceFile</span><span class="p">(</span>
+      <span class="s2">&#34;hoge.cpp&#34;</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span><span class="n">getLength</span><span class="p">(),</span> <span class="n">args</span><span class="p">:</span><span class="n">getPtr</span><span class="p">(),</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">);</span></code></pre></div>
+</div>
+<p>
+Lua から struct CXUnsavedFile を生成するため、
+clang.core.CXUnsavedFile() を実行します。
+</p>
+<p>
+clang.core.CXUnsavedFile() は、
+struct CXUnsavedFile のユーザデータを生成して返します。
+</p>
+<p>
+このユーザデータに対して次のようにアクセスすることで、
+struct CXUnsavedFile のメンバにアクセスできます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">unsavedFile</span> <span class="o">=</span> <span class="n">clang.core</span><span class="p">.</span><span class="n">CXUnsavedFile</span><span class="p">()</span>
+<span class="n">unsavedFile.Filename</span> <span class="o">=</span> <span class="n">targetFullPath</span>
+<span class="n">unsavedFile.Contents</span> <span class="o">=</span> <span class="n">fileContents</span>
+<span class="n">unsavedFile.Length</span> <span class="o">=</span> <span class="o">#</span><span class="n">unsavedFile.Contents</span></code></pre></div>
+</div>
+<p>
+なお、clangIndex:createTranslationUnitFromSourceFile() に与えるのは、
+struct CXUnsavedFile の配列です。
+</p>
+<p>
+一方 clang.core.CXUnsavedFile() が生成するのは struct CXUnsavedFile のユーザデータであり、
+struct CXUnsavedFile の配列ではないため、
+別途 struct CXUnsavedFile の配列を生成する必要があります。
+</p>
+<p>
+struct CXUnsavedFile の配列は、
+clang.mkCXUnsavedFileArray( tbl, length ) で生成します。
+</p>
+<p>
+引数は tbl か length のどちらかを与えます。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">unsavedFileArray</span> <span class="o">=</span> <span class="n">clang.mkCXUnsavedFileArray</span><span class="p">(</span> <span class="n">unsavedFileTable</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+引数の tbl には、clang.core.CXUnsavedFile() で生成した値を格納したテーブルを与えます。
+length には、生成する配列長を与えます。
+</p>
+<p>
+tbl を与えた場合は、テーブルのデータで初期化した struct CXUnsavedFile 配列を生成します。
+length を与えた場合は、データを初期化せずに struct CXUnsavedFile 配列を生成します。
+</p>
+<p>
+n
+なお、tbl を指定した場合は length に nil を指定し、
+length を指定した場合は tbl に nil を指定します。
+</p>
+<p>
+生成した unsavedFileArray からポインタを得るには、
+unsavedFileArray:getPtr() を実行します。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/javascript/d3force/" title="D3.js V4 forceSimulation のノード動的更新(追加・削除)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - D3.js V4 forceSimulation のノード動的更新(追加・削除)</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/libclang/operator/" title="libclang で演算子を特定する方法">Next - libclang で演算子を特定する方法 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class="parent active has-sub-menu"><a href="https://ifritjp.github.io/documents/libclang/">Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/operator/">libclang で演算子を特定する方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/ast/">libclang の AST(Abstract Syntax Tree)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">03. Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">04. 値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">04.2. Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">05. enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">06. match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">07. 変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">08. 一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">09. 繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">10. 関数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">10.2. 多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">Z. Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">イマドキな開発環境でもっと楽しよう</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

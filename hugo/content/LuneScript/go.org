@@ -1,0 +1,78 @@
+#+title: Z. Go 言語へのトランスコンパイル
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+* 値
+
+| LuneScriptの型 | Go の型                    |
+|----------------+----------------------------|
+| nil, null      | interface{}                |
+| int            | int                        |
+| real           | float64                    |
+| str            | string                     |
+| bool           | bool                       |
+| List           | スライス                   |
+| Array          | 配列                       |
+| Map            | map                        |
+| Set            | map (key に item を入れる) |
+| class          | 構造体                     |
+| interface      | interface                  |
+| form           | func                       |
+| enum           | int/floag64/string         |
+| stem           | interface{}                |
+| nilable        | interface{}                |
+
+** nilable の扱い
+
+LuneScript の nilable は、そのままでは元の値として扱えない。
+しかし、等しいかどうかのチェックは行なえる。
+これは go と LuneScript と同じ。
+
+** 真偽値の扱い
+
+LuneScript は nil と false が偽で、それ以外は真となる。
+go は true/false で判断が必要なので、 LuneScript 用の条件変換関数を用意する。
+
+** and/or の扱い
+
+LuneScript の and/or は論理演算ではなく、式の評価を制御し、評価結果も bool ではない。
+go は評価結果が bool になる。
+
+** Set の扱い
+
+go は Set がないので、 Map で代用する。   
+   
+
+* 多値返却
+
+go と LuneScript の多値返却は動きが異なる。
+
+hoge() が x, y を返す多値返却の関数としたとき、それぞれ次の動きになる。
+
+| コード      | LuneScript 展開結果 | go 展開結果 |
+|-------------+---------------------+-------------|
+| (hoge())    | x                   | x, y        |
+| hoge(), val | x, val              | x, y, val   |
+
+上記違いを実現するために、 go では次の変換関数を用意する。
+
+#+BEGIN_SRC go
+// 多値返却の先頭 int を返す
+func carInt( multi ...interface{} ) int {
+    if len( multi ) == 0 {
+        panic( "nothing" )
+    }
+    return multi[0].(int)
+}
+// 多値返却の先頭 int! を返す
+func carIntN( multi ...interface{} ) interface{} {
+    if len( multi ) == 0 {
+        return nil
+    }
+    return multi[0].(int)
+}
+#+END_SRC
+
