@@ -18,7 +18,7 @@ lnsc コマンドは次のように利用します。
 $ lnsc src.lns exe
 #+END_SRC
 
-ここで src.lns は、 LuneScript で作成したスクリプトです。
+ここで src.lns は、 LuneScript で作成したスクリプトのパスです。
 exe は lnsc のオプションで、 指定したスクリプトを実行することを意味します。
 
 * Hello world 
@@ -112,6 +112,54 @@ LuneScript のスクリプトをトランスコンパイルし、Lua コード�
 このドキュメントでは exe を利用しつつ、
 変換後のコードを確認する際は save コマンドを利用していきます。
 
+* エラーメッセージ
+
+LuneScript では、 区切り記号 =;= が必須です。
+次のように =;= を終端に入れていないとエラーになります。
+  
+#+BEGIN_SRC lns
+print( "Hello world." )
+#+END_SRC
+
+このとき、以下のエラーメッセージが出力されます。
+
+#+BEGIN_SRC txt
+mini.lns:1:23: error: EOF
+lua5.3: ./lune/base/Util.lua:176: has error
+stack traceback:
+	[C]: in function 'error'
+	./lune/base/Util.lua:176: in function 'lune.base.Util.err'
+	./lune/base/TransUnit.lua:3465: in method 'error'
+	./lune/base/TransUnit.lua:3538: in method 'getToken'
+	./lune/base/TransUnit.lua:11641: in method 'analyzeStatement'
+	./lune/base/TransUnit.lua:3710: in method 'analyzeStatementList'
+	./lune/base/TransUnit.lua:5430: in function <./lune/base/TransUnit.lua:5393>
+	(...tail calls...)
+	./lune/base/front.lua:848: in method 'loadFileToLuaCode'
+	./lune/base/front.lua:914: in method 'loadFile'
+	./lune/base/front.lua:1066: in method 'loadModule'
+	./lune/base/front.lua:1709: in method 'exec'
+	./lune/base/front.lua:1744: in function 'lune.base.front.exec'
+	lune/base/base.lua:1: in main chunk
+	[C]: in ?  
+#+END_SRC
+
+このエラー出力において、次のメッセージがコンパイルエラーを示します。
+
+: mini.lns:1:23: error: EOF
+
+このエラーは、 mini.lns の 1 行目の 23 バイト目で、
+予期しない EOF エラーが発生したことを示しています。
+
+これ以外のエラー出力は、 LuneScript 内部のエラーです。
+LuneScript 内部のエラー出力を抑制するには、
+次のオプション (diag --nodebug) を指定します。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns exe diag --nodebug
+mini.lns:1:23: error: EOF
+has error
+#+END_SRC
 
 * ランタイム
 
@@ -121,7 +169,7 @@ LuneScript のスクリプトをトランスコンパイルし、Lua コード�
 LuneScript から Lua に出力したコードには、
 そのコードを動作させるために必要なランタイムが付加されます。
 
-例えば、次の LuneScript のコードを Lua に出力すると、
+例えば、次の LuneScript のコードを Lua に変換すると、
 
 #+BEGIN_SRC lns
 fn add( val:int! ):int {
@@ -134,6 +182,7 @@ print( add( nil ) ); // 10
 
 次のようになります。
 
+#+SRCNAME: mini.lns
 #+BEGIN_SRC lua
 --mini.lns
 local _moduleObj = {}

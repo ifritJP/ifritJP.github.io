@@ -113,6 +113,50 @@ LuneScript のスクリプトをトランスコンパイルし、Lua コード�
 変換後のコードを確認する際は save コマンドを利用していきます。
 
 
+* エラーメッセージ
+
+次のように、 =;= を終端に入れていないとエラーになります。
+  
+#+BEGIN_SRC lns
+print( "Hello world." )
+#+END_SRC
+
+このときの以下のエラーメッセージが出力されます。
+
+#+BEGIN_SRC txt
+mini.lns:1:23: error: EOF
+lua5.3: ./lune/base/Util.lua:176: has error
+stack traceback:
+	[C]: in function 'error'
+	./lune/base/Util.lua:176: in function 'lune.base.Util.err'
+	./lune/base/TransUnit.lua:3465: in method 'error'
+	./lune/base/TransUnit.lua:3538: in method 'getToken'
+	./lune/base/TransUnit.lua:11641: in method 'analyzeStatement'
+	./lune/base/TransUnit.lua:3710: in method 'analyzeStatementList'
+	./lune/base/TransUnit.lua:5430: in function <./lune/base/TransUnit.lua:5393>
+	(...tail calls...)
+	./lune/base/front.lua:848: in method 'loadFileToLuaCode'
+	./lune/base/front.lua:914: in method 'loadFile'
+	./lune/base/front.lua:1066: in method 'loadModule'
+	./lune/base/front.lua:1709: in method 'exec'
+	./lune/base/front.lua:1744: in function 'lune.base.front.exec'
+	lune/base/base.lua:1: in main chunk
+	[C]: in ?  
+#+END_SRC
+
+ここで、次のメッセージ以外は LuneScript 内部のエラーです。
+
+: mini.lns:1:23: error: EOF
+
+LuneScript 内部のエラー出力を抑制するには、次のオプションを指定します。
+
+: diag --nodebug
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns exe diag --nodebug
+#+END_SRC
+
+
 * ランタイム
 
 ちょっと Hello world をネタにしている記事にしては重い内容ですが、

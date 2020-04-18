@@ -5,25 +5,58 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
+
+LuneScript から Go 言語へのトランスコンパイルを検討中。
+
+ここでは、検討中の内容を記録する。
+
+* ねらい
+
+LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。
+
+- LuneScript の動作高速化
+  - LuneScript はコード補完機能をサポートしているが、
+    規模の大きいコードだと重くなって使い勝手が悪い。
+  - 高速化することで、LuneScript のコード補完機能の使い勝手を向上させる。
+- 高速化による、 LuneScript 自体のバージョンアップ作業効率改善
+  - LuneScript のセルフホストのビルド・テスト時間が、現状 2 分弱掛っている。
+  - 変更する毎に 2 分かかるのは辛いので、Go で高速化を図る。
+  - C 言語へのトランスコンパイルの対応を進めていたが、
+    C 言語での GC 実装が思うように進まなかったので、
+    言語レベルで GC 対応している Go を先に対応する。
+
+
+
 * 値
 
-| LuneScriptの型 | Go の型                    |
-|----------------+----------------------------|
-| nil, null      | interface{}                |
-| int            | int                        |
-| real           | float64                    |
-| str            | string                     |
-| bool           | bool                       |
-| List           | スライス                   |
-| Array          | 配列                       |
-| Map            | map                        |
-| Set            | map (key に item を入れる) |
-| class          | 構造体                     |
-| interface      | interface                  |
-| form           | func                       |
-| enum           | int/floag64/string         |
-| stem           | interface{}                |
-| nilable        | interface{}                |
+| LuneScriptの型 | Go の型                    | Go 用 Lns ランタム での type     |
+|----------------+----------------------------+----------------|
+| nil, null      | interface{}                | nil            |
+| int            | int                        | LnsInt (alias) |
+| real           | float64                    | LnsReal(alias) |
+| str            | string                     | LnsStr (alias) |
+| bool           | bool                       | LnsBool(alias) |
+| List           | スライス                   | LnsList        |
+| Array          | 配列                       | LnsArray       |
+| Map            | map                        | LnsMap         |
+| Set            | map (key に item を入れる) | LnsSet         |
+| class          | 構造体                     |                |
+| interface      | interface                  |                |
+| form           | func                       | LnsForm        |
+| enum           | int/floag64/string         | LnsEnum        |
+| stem           | interface{}                | LnsStem        |
+| nilable        | interface{}                |                |
+
+** int/real の扱い
+
+LuneScript int/real は、 go の type alias を使用して次のように定義する。
+
+#+BEGIN_SRC go
+type LnsInt = int
+type LnsReal = floag64
+#+END_SRC
+
+
 
 ** nilable の扱い
 
@@ -40,6 +73,12 @@ go は true/false で判断が必要なので、 LuneScript 用の条件変換�
 
 LuneScript の and/or は論理演算ではなく、式の評価を制御し、評価結果も bool ではない。
 go は評価結果が bool になる。
+
+** Generics の扱い
+
+go は Generics がないので、 Generics の型は全て interface{} で扱う。
+
+
 
 ** Set の扱い
 
@@ -72,7 +111,530 @@ func carIntN( multi ...interface{} ) interface{} {
     if len( multi ) == 0 {
         return nil
     }
+    if multi[0] == nil {
+        return nil
+    }
     return multi[0].(int)
 }
 #+END_SRC
 
+* クラスと継承
+  
+Go は構造体とレシーバはあるが、継承がない。
+
+LuneScript は継承を持つので、 Go で継承を実現する必要がある。
+
+次の LuneScript のクラスを Go で対応する方法を示す。
+   
+#+BEGIN_SRC lns
+interface IF {
+  pub fn sub1():int;
+}
+class Parent {
+   let val1:int;
+   pub fn sub1():int {
+      return self.val1;
+   }
+}
+class Sub extend Parent {
+   let val2:int;
+   pub override fn sub1():int {
+      return self.val2;
+   }
+   pub fn sub2():int {
+      return self.val2;
+   }
+}
+class SubSub extend Sub {
+   let val3:int;
+   pub override fn sub1():int {
+      return self.val3;
+   }
+   pub fn sub3():int {
+      return self.val3;
+   }
+}
+#+END_SRC
+
+** Go による等価コード
+
+Go による等価コードを示す
+   
+#+BEGIN_SRC go
+type IF interface {
+    sub1 () int
+}
+
+type ParentMtd interface {
+    sub1 () int
+}
+
+type Parent struct {
+    val1 int
+    fp ParentMtd
+}
+func (self *Parent) sub1() int {
+    return self.val1
+}
+
+func newParent(val1 int) *Parent {
+    parent := Parent{ val1, nil }
+    parent.fp = &parent
+    return &parent
+}
+
+type SubMtd interface {
+    sub2 () int
+}
+
+type Sub struct {
+    super Parent
+    val2 int
+    fp SubMtd
+}
+func (self *Sub) sub1() int {
+    return self.val2
+}
+func (self *Sub) sub2() int {
+    return self.val2
+}
+
+func newSub(val1,val2 int) *Sub {
+    sub := Sub{ Parent{ val1, nil }, val2, nil }
+    sub.super.fp = &sub
+    sub.fp = &sub
+    return &sub
+}
+
+
+type SubSubMtd interface {
+    sub3 () int
+}
+
+type SubSub struct {
+    super Sub
+    val3 int
+    fp SubSubMtd
+}
+func (self *SubSub) sub1() int {
+    return self.val3
+}
+func (self *SubSub) sub2() int {
+    return self.super.sub2()
+}
+func (self *SubSub) sub3() int {
+    return self.val3
+}
+
+
+func newSubSub(val1,val2,val3 int) *SubSub {
+    subsub := SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
+    subsub.super.super.fp = &subsub
+    subsub.super.fp = &subsub
+    subsub.fp = &subsub
+    return &subsub
+}
+#+END_SRC
+   
+
+** 継承実現方法
+
+*** Parent クラス
+    
+まず、 Parent クラスについて説明する。
+
+#+BEGIN_SRC lns
+class Parent {
+   let val1:int;
+   pub fn sub1():int {
+      return self.val1;
+   }
+}
+#+END_SRC
+
+**** データ構造
+   
+Parent クラスを表現するため、次の構造体と interface を定義する。
+
+#+BEGIN_SRC go
+type ParentMtd interface {
+    sub1 () int
+}
+type Parent struct {
+    val1 int
+    fp ParentMtd
+}
+#+END_SRC
+
+- ParentMtd インタフェースは、次の役割を持つ
+  - Parent クラスのメソッドを定義
+  - Parent クラスのモリモーフィズムを表現する
+- Parent 構造体は、メンバと ParentMtd を持つ
+
+**** メソッド
+
+Parent クラスのメソッドを表現するため、次のレシーバ関数を定義する。
+   
+#+BEGIN_SRC go
+func (self *Parent) sub1() int {
+    return self.val1
+}
+#+END_SRC
+
+**** コンストラクタ
+
+Parent クラスのコンストラクタとして、次を定義する。
+   
+#+BEGIN_SRC go
+func newParent(val1 int) *Parent {
+    super := Parent{ val1, nil }
+    super.fp = &super
+    return &super
+}
+#+END_SRC
+   
+このコンストラクタは次の処理を行なう。
+- メンバの初期化
+- fp の設定
+
+
+**** Parent クラスの使用方法
+
+Parent は次のように使用する。
+
+#+BEGIN_SRC go
+parent := newParent( 1 )
+print( parent.fp.sub1() )
+#+END_SRC
+
+*** Sub クラス
+    
+Sub クラスについて説明する。
+
+#+BEGIN_SRC lns
+class Sub extend Parent {
+   let val2:int;
+   pub override fn sub1():int {
+      return self.val2;
+   }
+   pub fn sub2():int {
+      return self.val2;
+   }
+}
+#+END_SRC
+
+**** データ構造
+   
+Sub クラスを表現するため、次の構造体と interface を定義する。
+
+#+BEGIN_SRC go
+type SubMtd interface {
+    sub2 () int
+}
+type Sub struct {
+    super Parent
+    val2 int
+    fp SubMtd
+}
+#+END_SRC
+
+- SubMtd インタフェースは、 Sub で定義しているメソッドを宣言する。
+  - Parent のメソッドは含めない 
+- Sub 構造体は、Parent 構造体のデータと、 Sub で定義しているメンバを宣言する。
+
+**** メソッド
+
+Sub クラスのメソッドを表現するため、次のレシーバ関数を定義する。
+   
+#+BEGIN_SRC go
+func (self *Sub) sub1() int {
+    return self.val1
+}
+func (self *Sub) sub2() int {
+    return self.val2
+}
+#+END_SRC
+
+**** コンストラクタ
+
+Sub クラスのコンストラクタとして、次を定義する。
+   
+#+BEGIN_SRC go
+func newSub(val1,val2 int) *Sub {
+    sub := Sub{ Parent{ val1, nil }, val2, nil }
+    sub.super.fp = &sub
+    sub.fp = &sub
+    return &sub
+}
+#+END_SRC
+   
+このコンストラクタは次の処理を行なう。
+- メンバの初期化
+- fp の設定
+  - *super の fp もここで設定する*
+  - この super の fp に &super ではなく &sub を設定することで、ポリモーフィズムを実現する
+  
+
+
+*** SubSub クラス
+    
+SubSub クラスについて説明する。
+
+#+BEGIN_SRC lns
+class SubSub extend Sub {
+   let val3:int;
+   pub override fn sub1():int {
+      return self.val3;
+   }
+   pub fn sub3():int {
+      return self.val3;
+   }
+}
+#+END_SRC
+
+**** データ構造
+   
+SubSub クラスを表現するため、次の構造体と interface を定義する。
+
+#+BEGIN_SRC go
+type SubSubMtd interface {
+    sub3 () int
+}
+type SubSub struct {
+    super Sub
+    val3 int
+    fp SubSubMtd
+}
+#+END_SRC
+
+- SubSubMtd インタフェースは、 SubSub で定義しているメソッドを宣言する。
+  - Sub のメソッドは含めない 
+- SubSub 構造体は、Sub 構造体のデータと、 SubSub で定義しているメンバを宣言する。
+
+**** メソッド
+
+SubSub クラスのメソッドを表現するため、次のレシーバ関数を定義する。
+   
+#+BEGIN_SRC go
+func (self *SubSub) sub1() int {
+    return self.val3
+}
+func (self *SubSub) sub2() int {
+    return self.super.sub2()
+}
+func (self *SubSub) sub3() int {
+    return self.val3
+}
+#+END_SRC
+
+
+***** override していないメソッド定義
+      
+上記で注目すべきは、 sub2() メソッドで =self.super.sub2()= をコールしている点。
+
+SubSub クラスは、 sub2 メソッドを override していない。
+つまりは、SubSub の sub2 メソッドは Sub クラスのメソッドが使用されることになる。
+よって、 super (Sub クラス) の sub2 メソッドをコールしている。
+
+継承関係が 1 段階の場合 super になるが、
+*2 段階の場合は super.super になることを注意する。*
+
+**** コンストラクタ
+
+SubSub クラスのコンストラクタとして、次を定義する。
+   
+#+BEGIN_SRC go
+func newSubSub(val1,val2,val3 int) *SubSub {
+    subsub := SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
+    subsub.super.super.fp = &subsub
+    subsub.super.fp = &subsub
+    subsub.fp = &subsub
+    return &subsub
+}
+#+END_SRC
+   
+このコンストラクタは次の処理を行なう。
+- メンバの初期化
+- fp の設定
+  - *super の fp もここで設定する*
+  - *super.super の fp も ここで設定する* 
+  - この super の fp に &super ではなく &sub を設定することで、ポリモーフィズムを実現する
+  
+
+*** IF インタフェース
+
+#+BEGIN_SRC lns
+interface IF {
+  pub fn sub1():int;
+}
+#+END_SRC
+
+
+**** データ構造
+
+LuneScript の interface は、 Go のインタフェースをそのまま使用する。
+
+     
+#+BEGIN_SRC go
+interface IF {
+  pub fn sub1():int;
+}
+#+END_SRC
+
+*** メソッド呼び出し
+
+Parent クラスのメソッドを呼び出すには、次のように行なう。
+    
+#+BEGIN_SRC go
+func test(parent *Parent) int {
+  print( parent.fp.sub1() )
+  print( parent.sub1() )
+}  
+#+END_SRC
+
+**** parent.fp.sub1() と parent.sub1() の違い
+
+メソッド呼び出しには、次の 2 つのパターンがある。
+
+- parent.fp.sub1()
+  - ポリモーフィズムに対応したメソッド呼び出し
+- parent.sub1()
+  - Parent クラスに定義しているメソッド呼び出し
+    - ポリモーフィズムに非対応
+
+  
+**** オーバーヘッド
+
+- ポリモーフィズムに対応したメソッド呼び出しは、オーバーヘッドが大きい。
+- ポリモーフィズムに対応したメソッド呼び出しは、
+  *ポリモーフィズムが必要な場合に限定すべき。*
+- ポリモーフィズムが必要かどうかは、 *LuneScript では現状定義がない。*
+  - *クラスとメソッドに final 宣言を導入* し、
+    ポリモーフィズムが不要であることを明示できるようにする対応が必要
+
+*** up-cast / down-cast
+
+- up-cast は、メンバの super のポインタにアクセスすることで実現する
+  - インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
+- down-cast は、 interface を型アサーションで実現する。
+
+#+BEGIN_SRC go
+var ifObj IF = obj.fp // インタフェースをセットする
+super := &obj.super // アップキャスト
+super.fp.(*Sub) // obj を Sub にダウンキャストする
+#+END_SRC
+
+
+** Class のまとめ
+
+- クラスのメソッドを定義する interface を宣言する
+  - Super クラスで定義しているメソッドは除外する
+#+BEGIN_SRC go
+type TestMtd interface {
+    method() int
+}
+#+END_SRC
+- クラスのメンバと前記の interface を保持する構造体を宣言する
+  - 継承は、 Super クラス型のメンバを持つ
+#+BEGIN_SRC go
+type Test struct {
+    super Super
+    val int
+    fp TestMtd
+}
+#+END_SRC
+- クラスのメソッドの動作を定義するレシーバを宣言する
+  - レシーバは Super クラスのメソッドを含めて宣言する
+  - override していない関数は、そのメソッドを定義している構造体のメソッドをコールする
+#+BEGIN_SRC go
+func (self *Test) method() int {
+    return self.super.method()
+}
+#+END_SRC
+    
+- コンストラクタで、メンバの初期化と interface fp を初期化する
+  - interface は、 Super クラスの interface fp を含めて初期化する
+- メソッド呼び出しは、 interface fp 経由でコールする
+  - ポリモーフィズム無効なメソッド呼び出しは、構造体のメソッドを直接コールする
+#+BEGIN_SRC go
+obj.fp.method() // ポリモーフィズム有効
+obj.method()    // ポリモーフィズム無効
+#+END_SRC
+- up-cast は、メンバの super のポインタにアクセスすることで実現する
+  - インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
+- down-cast は、 interface を型アサーションで実現する。
+#+BEGIN_SRC go
+var ifObj IF = obj.fp // インタフェースをセットする
+super := &obj.super // アップキャスト
+super.fp.(*Sub) // obj を Sub にダウンキャストする
+#+END_SRC
+- インタフェースは、 Go の interface をそのまま利用する
+  - クラスオブジェクトからインタフェースに up-cast する場合、 interface fp を使用する
+
+
+* Lua VM
+
+現状の LuneScript では、 Macro 展開時に Lua VM を使用する。
+Go で Lua VM を使用する方法として、次の 2 つがある。
+
+- Lua を Go に移植した gopher-lua を使用する
+- liblua を使用する
+
+gopher-lua を使用すると Lua VM の扱いが楽になるが、次の制限がある。
+
+- Lua VM のバージョンが Lua5.1 になる
+- liblua と比べると遅い
+  - 公式 Wiki(<https://github.com/yuin/gopher-lua/wiki/Benchmarks>) の情報によると、
+    fib(35) の実行時間が次になる。
+    - lua5.1.4 :: 1.71sec
+    - Gopherlua :: 5.40sec
+
+上記から、 LuneScript のトランスコンパイラでは liblua を利用する。
+
+** cgo
+
+Go から liblua を利用するため cgo を使う。
+
+cgo は Go から C 言語のライブラリをコールするためのパッケージ。
+
+以下のように import "C" の前のコメントに書いた C コードが解析され、
+Go からアクセスできるように C パッケージ内に展開される。
+#+BEGIN_SRC go
+// #include <stdlib.h>
+// #cgo CFLAGS: -I/usr/include/lua
+// #cgo LDFLAGS: -ldl -lm -llua
+// #include <lauxlib.h>
+// #include <lualib.h>
+import "C"
+
+import "unsafe"
+
+// lua のコードを実行する
+func lua_runScript( script string ) {
+    var vm * C.lua_State = C.luaL_newstate()
+    if vm == nil {
+        return
+    }
+    defer C.lua_close( vm )
+    
+    C.luaL_openlibs( vm )
+
+    block := C.CString( script )
+    defer C.free( unsafe.Pointer( block ) )
+    
+    C.luaL_loadstring( vm, block )
+    C.lua_pcallk( vm, 0, C.LUA_MULTRET, 0, 0, nil )
+}
+
+func main() {
+   lua_runScript( "print( 'hello world' )" )
+}
+#+END_SRC
+
+*cgo* は #define マクロ関数には対応していないので、
+次のようなマクロ定義された関数は、自前で展開して処理を書かなければならない。
+
+#+BEGIN_SRC c
+#define luaL_dostring(L, s) \
+	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))
+#+END_SRC
