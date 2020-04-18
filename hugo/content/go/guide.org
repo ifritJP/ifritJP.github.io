@@ -1,0 +1,1041 @@
+#+TITLE: Go 入門
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+* 公式チュートリアル
+
+<https://tour.golang.org/welcome/1>
+
+* 規格まとめ
+
+** 特徴
+
+- 文の区切りに =;= を使用しない
+- 型の宣言はシンボル名の後
+- 多値返却
+- 型推論に対応(ただし、専用の宣言方法が必要)
+- 変数のデフォルトは mutable
+- for 文などは、必ずブロックを持つ。  
+
+** 関数
+
+#+BEGIN_SRC go
+func add(x int, y int) int {
+	return x + y
+}
+#+END_SRC
+
+
+同じ型の引数が複数ある場合、最後以外の型宣言を省略できる。
+
+#+BEGIN_SRC go
+func add(x, y int) int {
+	return x + y
+}
+#+END_SRC
+
+*** 多値返却
+
+多値返却をサポートする。
+多値返却は =()= で括る。 *これはタプルではない。*
+
+#+BEGIN_SRC go
+func swap(x, y string) (string, string) {
+	return y, x
+}
+#+END_SRC
+
+戻り値を関数宣言時に指定できる。
+次の場合、宣言時に x, y を戻り値に指定し、関数本体では return だけを書いている。
+
+#+BEGIN_SRC go
+func split(sum int) (x, y int) {
+	x = sum * 4 / 9
+	y = sum - x
+	return
+}
+#+END_SRC
+
+** 変数
+
+var で宣言する。
+*初期化していない場合の値は？？？ 型によって決っている？*
+
+#+BEGIN_SRC go
+var c, python, java bool
+
+func main() {
+	var i int
+	fmt.Println(i, c, python, java)
+}
+#+END_SRC
+
+初期化。
+
+#+BEGIN_SRC go
+var i, j int = 1, 2
+
+func main() {
+	var c, python, java = true, false, "no!"
+	fmt.Println(i, j, c, python, java)
+}
+#+END_SRC
+
+~:=~ を使って型推論。
+ただし、これは関数内部でのみ有効。
+
+#+BEGIN_SRC go
+func main() {
+	var i, j int = 1, 2
+	k := 3
+	c, python, java := true, false, "no!"
+
+	fmt.Println(i, j, k, c, python, java)
+}
+#+END_SRC
+
+** 型
+
+#+BEGIN_SRC txt
+bool
+
+string
+
+int  int8  int16  int32  int64
+uint uint8 uint16 uint32 uint64 uintptr
+
+byte // uint8 の別名
+
+rune // int32 の別名
+     // Unicode のコードポイントを表す
+
+float32 float64
+
+complex64 complex128
+#+END_SRC
+
+int/uint のサイズは、処理系によって異なる。
+サイズを限定する場合以外は int/uint の使用を推奨。
+
+
+*** ゼロ値
+
+初期値を与えない変数の初期値。
+
+#+BEGIN_SRC txt
+    数値型(int,floatなど): 0
+    bool型: false
+    string型: "" (空文字列( empty string ))
+#+END_SRC
+
+*** 文字列
+
+- 文字列は byte 列で、終端文字はない。その代わりに、長さ情報を持つ。
+- 文字列データは immutable。
+- 文字列 str の byte 長は len(str) で取得する。
+- str[ i ] は、 i 番目の byte データを取得する。
+- &str[ i ] はアクセスできない。
+- 文字列リテラルは =""= と =``= を使用する。
+- =``= は、改行や \ のクオートを無視してそのまま文字列にする。
+
+#+BEGIN_SRC go
+"abc" // abc
+`
+\n`    // \n\\n
+"\""  // "
+#+END_SRC
+
+
+
+*** 型変換
+
+ある値 v を、型 T に変換する場合、 T(v) で変換する。
+    
+#+BEGIN_SRC go
+i := 42
+f := float64(i)  // <- 42 を float64 に変換
+u := uint(f)     // <- 42 を uint に変換
+#+END_SRC
+
+*** Constant
+
+定数は Constant で変数を宣言する。
+定数なので、当然初期値を設定する。
+この初期値を使って型推論も行なうので、型宣言は不要。
+なお、変数の型推論は関数内だけで有効だが、 Constant は関数外でも有効。
+
+#+BEGIN_SRC go
+const Pi = 3.14
+
+func main() {
+	const World = "世界"
+	fmt.Println("Hello", World)
+	fmt.Println("Happy", Pi, "Day")
+
+	const Truth = true
+	fmt.Println("Go rules?", Truth)
+}
+#+END_SRC
+
+**** 数値の Constant
+
+数値型の範囲(64bit)では表現できない値も、 Constant であれば表現できる。
+
+
+#+BEGIN_SRC go
+const (
+	// Create a huge number by shifting a 1 bit left 100 places.
+	// In other words, the binary number that is 1 followed by 100 zeroes.
+	Big = 1 << 100
+	// Shift it right again 99 places, so we end up with 1<<1, or 2.
+	Small = Big >> 99
+)
+
+func needInt(x int) int { return x*10 + 1 }
+func needFloat(x float64) float64 {
+	return x * 0.1
+}
+
+func main() {
+	fmt.Println(needInt(Small))
+	fmt.Println(needFloat(Small))
+	fmt.Println(needFloat(Big))
+}
+#+END_SRC
+
+** for
+
+- ほぼ C と同じ。
+- スコープは for ループで閉じる。
+
+#+BEGIN_SRC go
+func main() {
+	sum := 0
+	for i := 0; i < 10; i++ {
+		sum += i
+	}
+	fmt.Println(sum)
+}
+#+END_SRC
+
+For の 3 つのループ制御ステートメントはそれぞれ省略可能。
+これにより、 while/無限ループを表現する。
+For で while と等価な表現ができるため、 go は while をサポートしない。
+
+while と等価の for。
+
+#+BEGIN_SRC go
+func main() {
+	sum := 1
+	for sum < 1000 {
+		sum += sum
+	}
+	fmt.Println(sum)
+}
+#+END_SRC
+
+無限ループの for。
+
+#+BEGIN_SRC go
+func main() {
+	for {
+	}
+}
+#+END_SRC
+
+** if
+
+- =()= が無い
+- {} が必須
+- 条件式の前に文を書ける。
+  - ここで宣言した変数は if と else のスコープ。
+- else は、 if の =}= と同じ行に書かなければならない。
+
+次の場合はコンパイルエラー。
+#+BEGIN_SRC go
+if val {
+}
+else {
+}
+#+END_SRC
+
+次のように =}= の行に else を書く。
+
+#+BEGIN_SRC go
+if val {
+} else {
+}
+#+END_SRC
+
+  
+#+BEGIN_SRC go
+func pow(x, n, lim float64) float64 {
+	if v := math.Pow(x, n); v < lim {
+		return v
+	}
+	return lim
+}
+#+END_SRC
+
+** switch
+
+- switch は if/else のシンタックスシュガー。
+- 条件文の前の文も書ける。
+- シンタックスシュガーなので、 case の各式は上から順に評価される。
+- C のような fall-through はない。
+  - break はなくても、一致した case/default を実行したら終わる。
+
+   
+#+BEGIN_SRC go
+func main() {
+	fmt.Print("Go runs on ")
+	switch os := runtime.GOOS; os {
+	case "darwin":
+		fmt.Println("OS X.")
+	case "linux":
+		fmt.Println("Linux.")
+	default:
+		// freebsd, openbsd,
+		// plan9, windows...
+		fmt.Printf("%s.", os)
+	}
+}
+#+END_SRC
+
+*** switch の値を省略
+
+switch の値を省略すると switch true と同義。
+
+#+BEGIN_SRC go
+func main() {
+	t := time.Now()
+	switch {
+	case t.Hour() < 12:
+		fmt.Println("Good morning!")
+	case t.Hour() < 17:
+		fmt.Println("Good afternoon.")
+	default:
+		fmt.Println("Good evening.")
+	}
+}
+#+END_SRC
+
+** defer
+
+- 関数コールを呼び出し元関数終了時に実行するように予約する。
+- 関数コールの引数に与えている式は、 defer 評価時に実行される。
+
+次は hello hoge ではなく、hello world が表示される。
+
+#+BEGIN_SRC go
+func main() {
+	txt := "world"
+	defer fmt.Println( txt )
+	txt = "hoge"
+
+	fmt.Println("hello")
+}
+#+END_SRC
+
+defer の予約は、スタックに Push される。
+
+#+BEGIN_SRC go
+func main() {
+	fmt.Println("counting")
+
+	for i := 0; i < 10; i++ {
+		defer fmt.Println(i)
+	}
+
+	fmt.Println("done")
+}
+#+END_SRC
+
+** ポインタ
+
+- 値を格納しているポインタを扱える。
+- ただし、ポインタの演算はできない。
+- C++ の参照と考えれば良い。
+- ゼロ値は nil。
+- 演算子は C と同じ。 &val でポインタ取得。 *val でポインタが格納する値を取得。
+- C と同じで、構造体は値渡しとポインタ渡しで意味が異なる。
+  - 値渡しはコピーされる。
+- ポインタ型は 型名の前に * を付ける。 =*int= 等。
+
+
+
+#+BEGIN_SRC go
+func main() {
+	i, j := 42, 2701
+
+	p := &i         // point to i
+	fmt.Println(*p) // read i through the pointer -- 42
+	*p = 21         // set i through the pointer
+	fmt.Println(i)  // see the new value of i   -- 21
+
+	p = &j         // point to j
+	*p = *p / 37   // divide j through the pointer
+	fmt.Println(j) // see the new value of j -- 73
+}
+#+END_SRC
+
+** 構造体
+
+- メンバアクセスは C と同じで =.= を使用する。
+- ただし、ポインタ経由のアクセス方法が異なる
+  - 時に =->= は使用せず、 =.= を使用する。
+  - (*p).val のようにも書けるが、 p.val と同義。
+- Println は、構造体のデータを出力可能
+- 構造体のポインタを Println すると、 & を付加した
+
+#+BEGIN_SRC go
+type Vertex struct {
+	X int
+	Y int
+}
+
+func main() {
+	v := Vertex{1, 2}
+	p := &v
+	p.X = 1e9
+	fmt.Println(v)
+}
+#+END_SRC
+
+
+*** 構造体リテラル
+
+- 構造体の初期化データ。
+- メンバの初期化は宣言順に処理される。
+- 初期値を与えないメンバは、ゼロ値で初期化される。
+- 構造体リテラルのポインタも取れる。
+
+#+BEGIN_SRC go
+type Vertex struct {
+	X, Y int
+}
+
+var (
+	v1 = Vertex{1, 2}  // has type Vertex
+	v2 = Vertex{X: 1}  // Y:0 is implicit
+	v3 = Vertex{}      // X:0 and Y:0
+	p  = &Vertex{1, 2} // has type *Vertex
+)
+#+END_SRC
+
+
+** 配列
+
+- 要素数固定のシーケンス。
+- 要素数は、宣言時に指定する。
+- 配列は =[N]T= として宣言する。ここで N は要素数、T は型。 
+- 要素アクセスは 0 〜 N-1 まで。
+- 範囲外アクセスはエラー
+   
+#+BEGIN_SRC go
+func main() {
+	var a [2]string
+	a[0] = "Hello"
+	a[1] = "World"
+	fmt.Println(a[0], a[1])
+	fmt.Println(a)
+
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+	fmt.Println(primes)
+}
+#+END_SRC
+
+*** スライス
+
+- スライスは、配列の一部を参照する。
+- スライスの型は =[]T= として宣言する。要は配列の N がない形になる。
+- スライスの要素アクセスは 0 〜。
+- 範囲外アクセスはエラー
+
+
+#+BEGIN_SRC go
+func main() {
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+
+	var s []int = primes[1:4]
+	fmt.Println(s)
+}
+#+END_SRC
+
+- 上記の primes[1:4] がスライス
+- ここで primes[1:4] は、 {3,5,7} を示す。 つまり 1 から (4-1) 番目まで。
+- 参照元の配列の範囲内であっても、要素アクセスにマイナスは指定できない。
+  - 例えば ~s := primes[1:]~ の時の ~s[-1]~ は NG。
+
+  
+- スライスは参照なので、スライスの要素を変更すると、参照元の値も変更になる。
+- 次の場合、スライス ~s[1] = 0~ しているが、これによって、 primes[ 2 ] が変わる。
+
+#+BEGIN_SRC go
+func main() {
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+
+	var s []int = primes[1:4]
+	fmt.Println(s)
+	s[1] = 0;
+	fmt.Println( primes )  // [2 3 0 7 11 13]
+}
+#+END_SRC
+
+**** スライスの範囲
+  
+- スライスの範囲は、省略できる。
+- 省略した場合、最小、あるいは最大になる。
+- 次の s1 〜 s4 は同じ範囲を示す。
+
+#+BEGIN_SRC go
+func main() {
+	primes := [6]int{2, 3, 5, 7, 11, 13}
+
+	s1 := primes[ 0: 6 ]
+	s2 := primes[ : 6 ]
+	s3 := primes[ 0: ]
+	s4 := primes[ : ]
+}
+#+END_SRC
+
+
+**** スライスのスライス
+
+- スライスから更にスライスを作れる。
+- この場合、スライスの範囲は生成元スライスのインデックスを指定するが、
+  範囲の上限値は生成元スライスの上限値を越えて、
+  元の配列の最終要素に該当するインデックスまで指定できる。
+  - ただし下限値は 0 〜。 
+
+
+#+BEGIN_SRC go
+func main() {
+	s := []int{2, 3, 5, 7, 11, 13}
+	s = s[3:5] 
+	fmt.Println( s )  // [7 11]
+	s = s[1:3] // [11 13]
+	fmt.Println( s )
+}
+#+END_SRC
+
+**** スライスの len と cap
+
+- len は、スライスの要素数
+- cap は、次の式から得られる
+: スライスが参照する元の配列の要素数 - スライスが先頭が参照する元の配列インデックス
+  - つまり cap は、そのスライスを生成元にした新しいスライスの最大サイズ
+
+**** スライスのゼロ値
+
+- ゼロ値は nil
+- len( nil ) と cap( nil ) は 0
+
+**** 多次元スライス
+
+- 多次元のスライスを生成できる
+
+#+BEGIN_SRC go
+board := [][]string{
+	[]string{"o", "o", "o"},
+	[]string{"o", "o", "o"},
+	[]string{"o", "o", "o"},
+}
+print( board[0][0] )
+#+END_SRC
+
+**** スライスへの append
+
+- スライスは append によって、末尾に要素を追加できる
+- スライスの上限値によって、 append の動作が変わる
+  - スライスの上限値が参照元の配列より小さい場合
+    - 参照元の配列の該当位置に append した値がセットされる
+  - スライスの上限値が参照元の配列と同じ場合
+    - append に必要な要素数分だけ拡張した参照元の配列のコピーが生成され、
+      それを参照するスライスが生成される
+
+    
+
+     
+#+BEGIN_SRC go
+func main() {
+	ss := [4]int{1,2,3,4}
+	var s []int = ss[:3]
+	printSlice(s)
+
+	// ここでは、 ss[3] に 0 がセットされる
+	s = append(s, 0) 
+	printSlice(s)
+
+	// ここで、ss のサイズ + α の配列が生成され、ss の内容がコピーされる
+	// + αが幾つになるかは？？？
+	s = append(s, 1) 
+	printSlice(s)
+
+	// ここで s[0] に代入しているが、参照元配列がコピーした物に
+	// 置き換わっているため当初の参照先の ss [0] は書き変わらない。
+	s[0] = 10
+	fmt.Printf("%v", ss)
+}
+
+func printSlice(s []int) {
+	fmt.Printf("len=%d cap=%d %v\n", len(s), cap(s), s)
+}
+#+END_SRC
+
+上記の結果は次になる。
+
+#+BEGIN_SRC txt
+len=3 cap=4 [1 2 3]
+len=4 cap=4 [1 2 3 0]
+len=5 cap=8 [1 2 3 0 1]
+[1 2 3 0]
+#+END_SRC
+
+
+** range
+
+- range は for ループで制御するイテレータ制御を行なう。
+- スライスを range で処理する場合、 要素の index, 要素のコピーを返す
+
+#+BEGIN_SRC go
+var pow = []int{1, 2, 4, 8, 16, 32, 64, 128}
+
+func main() {
+	for i, v := range pow {
+		fmt.Printf("2**%d = %d\n", i, v)
+	}
+}
+#+END_SRC
+  
+- range の戻り値は、格納先を =_= とすることで値を捨てられる。
+- =_= を使用することで、記述の省略が可能。
+
+
+
+** map
+
+- map のゼロ値は nil
+- map 型の表現は次になる
+  - これは、キーが int、値が string の map
+: map[int]string
+- map リテラルは次になる。
+: { key1:val1, key2:val2, }
+  
+*** map アクセス
+
+- m[key] = val
+  - map の key に val を設定
+- val = m[key]
+  - map の key の要素を取得
+- val, ret = m[key]
+  - map の key の要素を取得し、 key に対する要素の有無が ret に取得。
+  - ret は bool
+- delete( m, key )
+  - map の key の要素を削除
+
+
+** レシーバー
+
+- Rust のトレイトのような仕組み。
+- 次は関数 Abs の Vertex 型のレシーバーを定義している。
+- レシーバーは構造体だけでなく全ての型に対して定義できる。
+- ただし、同じパッケージ内で定義している型でなければならない。
+
+#+BEGIN_SRC go
+type Vertex struct {
+	X, Y float64
+}
+
+func (v Vertex) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
+func main() {
+	v := Vertex{3, 4}
+	fmt.Println(v.Abs())
+}
+#+END_SRC
+
+
+- レシーバーの型は、ポインタで宣言しないとコピーが発生する。
+  - つまり、構造体のレシーバは通常ポインタ型で宣言する。
+- 次の Scale() は *Vertex 型で渡している。
+  これを Vertex に変更すると、Scale() 内で変更した結果は Scale() 呼び出し元には反映されない。
+- このとき Scale() 呼び出し側は、
+  レシーバの型が *Vertex と Vertex どちらでも呼び出し方は変わらない。
+
+#+BEGIN_SRC go
+type Vertex struct {
+	X, Y float64
+}
+
+func (v *Vertex) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+
+func (v *Vertex) Scale(f float64) {
+	v.X = v.X * f
+	v.Y = v.Y * f
+}
+
+func main() {
+	v := Vertex{3, 4}
+	v.Scale(10)
+	fmt.Println(v.Abs())
+}
+#+END_SRC
+
+- 非ポインタ型の値からポインタ型のレシーバをコールできるように、
+  ポインタ型の値から非ポインタ型のレシーバをコールできる。
+
+** interface
+
+- レシーバの集りを定義したもの
+- 次は、 Abs() レシーバを持つ Abser インタフェースを定義している
+
+#+BEGIN_SRC go
+type Abser interface {
+	Abs() float64
+}
+#+END_SRC
+
+- 次の ~a = &v~ はコンパイルが通るが、 ~a = v~ はコンパイルエラーになる。
+- これは、 Abs() のレシーバが *Vertex であり、 Vertex ではないため。
+
+#+BEGIN_SRC go
+type Abser interface {
+	Abs() float64
+}
+func main() {
+	var a Abser
+	v := Vertex{3, 4}
+
+	a = &v // a *Vertex implements Abser
+	a = v
+
+	fmt.Println(a.Abs())
+}
+type Vertex struct {
+	X, Y float64
+}
+func (v *Vertex) Abs() float64 {
+	return math.Sqrt(v.X*v.X + v.Y*v.Y)
+}
+#+END_SRC
+
+- どの型が、どの interface を実装しているか宣言はしない
+- ある型 T が、ある interface I を実装できているかどうかは、
+  T 型のデータを I 型の変数に代入する時にコンパイルエラーするかどうかで判断する
+  
+** インタフェース型の値
+
+- インタフェース型の値は、レシーバの型をもつ。
+- 次の T は、 *T でレシーバを定義しているため、 I の型は *T となる。
+
+
+#+BEGIN_SRC go
+type I interface {
+	M()
+}
+type I2 interface {
+	M2()
+}
+
+type T struct {
+	S string
+}
+func (t *T) M() {
+	fmt.Println(t.S,1)
+}
+func (t T) M2() {
+	fmt.Println(t.S,2)
+}
+
+func main() {
+	t := T{"Hello"}
+	describe(&t)
+	describe2(t)
+}
+
+func describe(i I) {
+	fmt.Printf("(%v, %T)\n", i, i)  // (&{Hello}, *main.T)
+	i.M()
+}
+func describe2(i I2) {
+	fmt.Printf("(%v, %T)\n", i, i)  // ({Hello}, main.T)
+	i.M2()
+}
+#+END_SRC
+
+*** レシーバの値が nil だった場合の処理
+
+インタフェース型の変数が nil になるケースは次の 2 つある。
+
+- 変数を未初期化の場合
+#+BEGIN_SRC go
+var i IF  
+#+END_SRC
+- 変数に nil 値を持つ型をセットした場合
+#+BEGIN_SRC go
+var t *T
+var i IF
+i = t
+#+END_SRC
+
+ただし、2番目の方は実際には nil ではない。
+これは、インタフェースの値の持ち方から来ている。
+インタフェースの値は、型情報の *T と nil をセット (*T,nil) を保持している。
+よって、次に示すように ~i == nil~ は false となる。
+
+#+BEGIN_SRC go
+var t *T
+var i IF
+i = t
+fmt.Println( i == nil, t == nil ) // false true
+#+END_SRC
+
+- 上記の i のように、インタフェースの型が確定していて、
+  その型のオブジェクトが nil の場合、そのレシーバの関数はコールできる。
+- 一般的なオブジェクト指向言語では、
+  nil オブジェクトのメソッドコールはランタイムエラーするが、
+  go では関数が実行される。
+- この時のレシーバの値は、 nil として関数が実行される。
+
+
+#+BEGIN_SRC go
+type I interface {
+	M()
+}
+type T struct {
+	S string
+}
+func (t *T) M() { // この t が nil となる
+        if t == nil {
+   	  fmt.Println("nil")
+	  return
+	}
+ 	fmt.Println(t.S)
+}
+func main() {
+	var t *T;
+	describe(t)
+}
+
+func describe(i I) {
+	fmt.Printf("(%v, %T)\n", i, i)  // (<nil>, *main.T)
+	i.M()
+}
+#+END_SRC
+
+上記のように型が確定しているインタフェースは型の値が nil でも関数コールされる。
+一方で、型も確定していないゼロ値であるインタフェースを関数コールすると、
+ランタイムエラーする。
+
+#+BEGIN_SRC go
+type I interface {
+	M()
+}
+func main() {
+	var i I
+	describe(i)
+	i.M()
+}
+func describe(i I) {
+	fmt.Printf("(%v, %T)\n", i, i)
+}
+#+END_SRC
+
+*** 空のインタフェース
+
+関数を持たないインタフェースを空のインタフェースと呼ぶ。
+この空のインタフェースは、全ての値を保持できる。
+
+#+BEGIN_SRC go
+interface {}
+#+END_SRC
+
+func main() {
+	var i interface{}
+	i = 1
+	i = "abc"
+}
+
+** 型アサーション
+
+インタフェースの値を、具体的な型に変換する。
+
+- =i.(T)= を書き、インタフェースの値 i を T に変換する。
+- 戻り値は 2 つあり、1つ目は T に変換した値、 2 つ目は変換が成功したかどうかの bool。
+- 変換が失敗し、2 つ目の戻り値を変数に格納しなかった場合は panic する。
+
+#+BEGIN_SRC go
+func main() {
+	var i interface{} = "hello"
+
+	s := i.(string)
+	fmt.Println(s)
+
+	s, ok := i.(string)
+	fmt.Println(s, ok)
+
+	f, ok := i.(float64)
+	fmt.Println(f, ok)
+
+	f = i.(float64) // panic
+	fmt.Println(f)
+}
+#+END_SRC
+
+- 上記コードでは、空のインタフェース i に "hello" をセットしている。
+- 次に i を string に変換する
+  - ここでは成功するので s は "hello" で、 ok は true が入る
+- 次に i を float64 に変換する
+  - ここでは失敗するので s は 0 で、ok は false が入る
+- 最後に i を float64 に変換し、 2 つ目の戻り値を格納していない
+  - ここでは panic する   
+
+** 型 switch
+
+型情報で switch する。
+   
+#+BEGIN_SRC go
+switch v := i.(type) {
+case T:
+    // here v has type T
+case S:
+    // here v has type S
+default:
+    // no match; here v has the same type as i
+}
+#+END_SRC
+
+** stringer インタフェース
+
+値を文字列表現で出力する際に使用する。
+   
+#+BEGIN_SRC go
+type Stringer interface {
+    String() string
+}
+#+END_SRC
+
+** error インタフェース
+
+エラーを保持する。
+
+#+BEGIN_SRC go
+type error interface {
+    Error() string
+}
+#+END_SRC
+
+
+error が *nil 以外* のときエラーが発生している。
+
+** goroutine
+
+go が管理する軽量スレッド。   
+   
+#+BEGIN_SRC go
+go f(x, y, z)
+#+END_SRC
+
+f, x, y, z が、呼び出し元スレッドで評価され、
+f の実行は新しいスレッドで実行される。
+
+goroutine は、同じメモリ空間内で実行される。
+
+
+#+BEGIN_SRC go
+func say(s string) {
+	for i := 0; i < 5; i++ {
+		time.Sleep(100 * time.Millisecond)
+		fmt.Println(s)
+	}
+}
+
+func main() {
+	go say("world")
+	say("hello")
+}
+#+END_SRC
+
+** channel
+
+- 値の送受信を行なうための FIFO。
+- コピーした値を、送受信する。
+  - 参照渡しする場合は、ポインタを送信する。
+
+#+BEGIN_SRC go
+ch <- v    // v をチャネル ch へ送信する
+v := <-ch  // ch から受信した変数を v へ割り当てる
+#+END_SRC
+
+int のチャネル型の生成。
+デフォルトの場合、 0 個のバッファ。
+
+#+BEGIN_SRC go
+ch := make(chan int)
+ch2 := make(chan int,2)
+#+END_SRC
+
+*** ブロック
+
+- *送信処理は、バッファに空きがあればブロックしない。*
+- *受信処理は、データの送信が行なわれるまでブロックされる。*
+
+*** close
+
+- チャネルの送信完了を明示するため close を呼ぶ。
+- close したチャネルへの送信は panic する。  
+- close された空のチャネルからデータを受信すると、そのデータ型のゼロ値が取得される。
+- close されていたかどうかは、次のように 2 つ目の戻り値を取得する
+
+#+BEGIN_SRC go
+v, ret := <-ch
+#+END_SRC
+
+** select
+
+- 対応する case の式がブロックしていない(ready)場合、その case を実行する。
+- 全ての case の式がブロックしている場合、いずれかの式がブロック解除されるまで待つ。
+  - default がある場合、 default を実行する。
+- 複数の case の式が ready の場合、ランダムで実行する。
+  
+** Mutex
+
+排他制御を行なう。
+
+sync.Mutex の Lock()/Unlock() を使用して排他区間を明示する。
+
+#+BEGIN_SRC go
+var lock sync.Mutex
+lock.Lock()
+fmt.Println( lock )
+lock.Unlock()
+#+END_SRC
+
+
+    
+
+** パッケージ
+
+- 公開シンボルは大文字で始める。
+  
+** import
+
+パッケージをインポートする。
+
+#+BEGIN_SRC go
+import (
+  "fmt"
+  "math"
+)
+import "fmt"
+import "math"
+#+END_SRC
+
