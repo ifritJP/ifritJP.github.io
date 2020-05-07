@@ -1,11 +1,21 @@
 var endPoint = "/access";
 
+
+var reqNum = 0;
+
 function access( method, path, input, callback ) {
+    reqNum++;
     var oReq = new XMLHttpRequest();
     oReq.onreadystatechange = function () {
         if (oReq.readyState == 4) {
+
+            var lastReqObj = document.getElementById( "last-req" );
+            lastReqObj.textContent = reqNum + ":" + (new Date()).toISOString() + ":" + oReq.status;
+            
             if (oReq.status == 200) {
-                callback( oReq.responseText );
+                if ( callback ) { 
+                    callback( oReq.responseText );
+                }
             } else {
             }
         }
@@ -258,11 +268,23 @@ function setSleep() {
     } );
 }
 
+function reqPing() {
+    access( "POST", "/publish", null, null );
+}
+
+function reqExit() {
+    if ( window.confirm( "制御を停止しますか？" ) ) {
+        access( "POST", "/publish?req=exit", null, null );
+    }
+}
+
 function reqStop() {
-    access( "POST", "/reqStop", null,
-            responseText => {
-                updateReqStop();
-            } );
+    if ( window.confirm( "録画を停止しますか？" ) ) {
+        access( "POST", "/reqStop", null,
+                responseText => {
+                    updateReqStop();
+                } );
+    }
 }
 
 function updateReqStop() {
