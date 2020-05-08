@@ -17,7 +17,7 @@
 - 多値返却
 - 型推論に対応(ただし、専用の宣言方法が必要)
 - 変数のデフォルトは mutable
-- for 文などは、必ずブロックを持つ。  
+- for 文などは、必ずブロックを持つ。
 
 ** 関数
 
@@ -35,6 +35,50 @@ func add(x, y int) int {
 	return x + y
 }
 #+END_SRC
+
+*** 可変長引数
+
+可変長引数は次のように =...= を使って定義する。
+
+#+BEGIN_SRC go
+func hoge1( vals ...int ) {
+    for _, val := range( vals ) {
+        fmt.Printf( "%v ", val )
+    }
+    fmt.Println()
+}
+func main() {
+    hoge1( 1, 2 )
+}
+#+END_SRC
+
+上記 hoge1 は、 int 型の値を複数指定してコールすることができる。
+引数 vals は、 関数内で slice として処理できる。
+
+**** 可変長引数への slice 展開
+
+可変長引数に値を渡す場合、個別に値を指定する以外に、
+slice の値を展開して渡すことも出来る。
+
+次の例の =hoge1( 1, 2)= と =hoge( work... )= は、同じ結果となる。
+
+#+BEGIN_SRC go
+func hoge1( vals ...int ) {
+    for _, val := range( vals ) {
+        fmt.Printf( "%v ", val )
+    }
+    fmt.Println()
+}
+func main() {
+    hoge1( 1, 2 )
+    work := []int{ 1, 2 }
+    hoge1( work... )
+}
+#+END_SRC
+
+
+
+
 
 *** 多値返却
 
@@ -58,10 +102,132 @@ func split(sum int) (x, y int) {
 }
 #+END_SRC
 
+*** 多値返却による関数コール
+
+次のように、関数コールの引数に多値返却の値を使用できる。
+
+#+BEGIN_SRC go
+func gets() (int,int) {
+    return 1, 2
+}
+func add( val1, val2 int ) {
+    fmt.Println( val1 + val2 )
+}
+func main() {
+    add( gets() ) // 1 + 2 = 3
+}
+#+END_SRC
+
+ただし、次の条件を全て満す必要がある。
+
+- コールする関数の引数に渡す値は、多値返却の関数だけ
+- コールする関数の引数が可変長引数を含ない場合
+  - 多値返却で返す値の数と、コールする関数の引数数が一致する
+- コールする関数の引数に可変長引数を含む場合
+  - 多値返却で返す値の数と、コールする関数の可変長引数以外の引数数が一致する
+
+次の例では、 多値返却する gets() の戻り値を使用して
+hoge1(), hoge2(), hoge3() をコールしている。
+
+- hoge1() は、可変長引数のみ持つ。
+- hoge2() は、int 型の引数 1 つと可変長引数を持つ。
+- hoge2() は、int 型の引数 2 つと可変長引数を持つ。
+
+#+BEGIN_SRC go
+func gets() (int,int) {
+    return 1, 2
+}
+func hoge1( vals ...int ) {
+    test( vals )
+}
+func hoge2( val int, vals ...int ) {
+    test( append( []int{ val }, vals... ) )
+}
+func hoge3( val int, val2 int, vals ...int ) {
+    test( append( []int{ val, val2 }, vals... ) )
+}
+func main() {
+    hoge1( 1, 2 )
+    hoge1( gets() )
+
+    hoge2( 1, 2 )
+    hoge2( gets() )
+
+    hoge3( 1, 2 )
+    hoge3( gets() )
+}
+
+func test( vals []int ) {
+    for _, val := range( vals ) {
+        fmt.Printf( "%v ", val )
+    }
+    fmt.Println( "" )
+}
+#+END_SRC
+
+この例では、全て 1 2 を出力する。
+
+*** 関数 body 内の関数宣言
+
+次のような関数 body 内の関数宣言は出来ない。
+
+#+BEGIN_SRC go
+func hoge() {
+   func sub() int { // error
+     return 1
+   }
+   print( sub() )
+}
+#+END_SRC
+
+しかし、次のように anonymous 関数オブジェクトを変数に入れてコールすることは出来る。
+
+#+BEGIN_SRC go
+func hoge() {
+   sub := func() int {
+     return 1
+   }
+   print( sub() )
+}
+#+END_SRC
+
+ただこの場合、
+hoge 関数コール毎にオブジェクトが作られて、実行性能が悪くなるようだ。
+
+試しに次のようなコードを作成し、 Test() と Test2() の実行性能を比較すると、
+Test2() の実行時間は Test() の 3 倍以上かかった。
+
+#+BEGIN_SRC go
+func hoge() int {
+    return 1
+}
+func Test() int {
+    return hoge()
+}
+
+func Test2() int {
+    hoge2 := func() int {
+        return 1
+    }
+    return hoge2()
+}
+#+END_SRC
+
+つまり、クロージャが目的で無いのなら、通常の関数宣言を行なうべき。
+関数コール可能なスコープを制限するテクニックとして
+関数 body 内部に関数を定義することがあるが、
+パフォーマンスを考えるとそれは非推奨となる。
+
+もちろん、パフォーマンスと可読性・メンテナンス性は
+トレードオフになるケースがあるので、どちらを優先すべきかは状況次第である。
+どちらにせよ、「パフォーマンスに影響がある」という知識を持っておくことは重要。
+
+
 ** 変数
 
 var で宣言する。
-*初期化していない場合の値は？？？ 型によって決っている？*
+*初期化していない場合の値はゼロ値で初期化される。*
+*ゼロ値は型毎に決っている*
 
 #+BEGIN_SRC go
 var c, python, java bool
@@ -1018,8 +1184,6 @@ fmt.Println( lock )
 lock.Unlock()
 #+END_SRC
 
-
-    
 
 ** パッケージ
 

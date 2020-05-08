@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Google Cloud Platform を使ってみる - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/gcp/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="Google Cloud Platform を使ってみる" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/gcp/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Google Cloud Platform を使ってみる"/>
+<meta name="twitter:description" content=""/>
+<meta itemprop="name" content="Google Cloud Platform を使ってみる">
+<meta itemprop="description" content=""></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Google Cloud Platform を使ってみる</h1>
+<p>
+新型コロナによる非常事態宣言を受け、休業になったのを機に、
+これまで避けてきたクラウドサービスを使ってみることにした。
+</p>
+<p>
+これは、その備忘録である。
+</p>
+<p>
+なお、作業中にハマった箇所をトラブルシュートとして載せているので、参考にして欲しい。
+</p>
+<h2 id="headline-1">
+ゴールイメージ
+</h2>
+<p>
+ここでは、クラウドサービスを使って、次の機能の実現を目指す。
+</p>
+<p>
+<strong>「クラウドサービス上の Web インターフェースから、家にある raspberry pi を操作する」</strong>
+</p>
+<p>
+言い換えれば、「家にある raspberry pi を外から操作する」ことを目標とする。
+</p>
+<p>
+「ルータの DMZ やポートフォワードを利用すれば、クラウドサービスを使う必要がない」
+という話もあるが、
+その場合 raspberry pi のセキュリティが気になるし、
+なによりクラウドサービスの勉強にならない。
+</p>
+<p>
+そんな訳で、今回のシステムは次のような感じにする。
+</p>
+<p>
+<img src="gcp_goal.svg" alt="gcp_goal.svg" title="gcp_goal.svg" />
+</p>
+<div class="src src-plantuml">
+<pre><code class="language-plantuml" data-lang="plantuml">actor ユーザ
+node スマホ
+cloud クラウド{
+database データベース
+}
+node raspberrypi
+
+ユーザ -- スマホ
+スマホ -- クラウド
+クラウド -- raspberrypi</code></pre>
+</div>
+<h2 id="headline-2">
+サービスプロバイダーの選択
+</h2>
+<p>
+クラウドサービスと言えば、次の 3 つが代表に挙げられるだろう。
+</p>
+<ul>
+<li>
+<p>
+AWS
+</p>
+</li>
+<li>
+<p>
+Azure
+</p>
+</li>
+<li>
+<p>
+GCP (and firebase)
+</p>
+</li>
+</ul>
+<p>
+お試しなので、無料で出来るものをピックアップした結果、
+次の URL の内容を元に GCP を選択した。
+</p>
+<ul>
+<li>
+<p>
+【AWS, GCP, Azure, OracleCloud, Firebase】無料で使えるクラウドのサーバリソースまとめ【2020年1月版】
+</p>
+<ul>
+<li>
+<p>
+<a href="https://qiita.com/goyae/items/196221169391dd44125d">https://qiita.com/goyae/items/196221169391dd44125d</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="headline-3">
+GCP のアカウント作成
+</h2>
+<p>
+そんな訳で GCP を利用するために、まずは以下の URL からアカウントの登録を行なう。
+</p>
+<p>
+&lt;<a href="https://cloud.google.com/?hl=ja">https://cloud.google.com/?hl=ja</a>&gt;
+</p>
+<p>
+このアカウント登録には、個人情報やクレジット番号の入力が必要になる。
+入力が必要な個人情報には、名前は当然として、住所も入力するのだが、
+<strong>恐しいことに郵便番号の入力欄が自動的に入力された。</strong>
+</p>
+<p>
+今回 GCP の登録に利用した gmail アカウントには、
+個人情報を登録した覚えはない。
+なのに、何故か Google にはこちらの郵便番号が分かるらしい。
+</p>
+<p>
+ちなみに、2段階認証で Android スマホを利用しているが、
+そのスマホの位置情報機能も原則 Off にしている。
+</p>
+<p>
+それにもかかわらず、郵便番号が判ってしまうというのは、本当に恐しい限りだ。
+</p>
+<p>
+ネットワークの通信遅延から大まかな場所を特定可能というが、
+郵便番号レベルで判ってしまうというのは、
+位置情報が半径数百メートル精度で把握されているということであり、
+もはや恐怖でしかない。
+</p>
+<p>
+まさに、Google にはプライバシーが筒抜けといっていいだろう。
+</p>
+<h2 id="headline-4">
+Google Clund の無料枠
+</h2>
+<p>
+そんな訳で、 Google の恐しさを感じてモチベーションが下りつつも、話を進める。
+</p>
+<p>
+出来るだけ無駄なお金はかけくないので、無料枠をチェックする。
+Google Cloud の無料枠の説明は以下にある。
+</p>
+<p>
+&lt;<a href="https://cloud.google.com/free/docs/gcp-free-tier?hl=ja">https://cloud.google.com/free/docs/gcp-free-tier?hl=ja</a>  &gt;
+</p>
+<p>
+ちなみに、ここはアカウント登録前にも確認できるので、
+サービスをじっくり比較検討したいという人は参考に。
+</p>
+<p>
+無料枠の終了条件は以下のいずれか早い方。
+</p>
+<ul>
+<li>
+<p>
+登録後 12 ヶ月が経過した場合。
+</p>
+</li>
+<li>
+<p>
+登録時に支給される $300 相当のクレジットを使い切った場合。
+</p>
+</li>
+</ul>
+<p>
+自分の検討内容的に考えて、 $300 相当を使い切ることは無いだろう。
+もちろん「意図せず何かを暴走させる」なんてことが無いことが前提だが。
+</p>
+<h3 id="headline-5">
+無料枠終了後
+</h3>
+<p>
+もしも $300 を使い切った場合や、12 ヶ月を経過した場合でも、
+「いつの間にかクレジットカードに多額の請求が来る」なんてことはないらしい。
+</p>
+<p>
+無料枠が終了した場合、それまで作成したサービスが全て一旦停止される。
+そのサービスを継続して利用したい場合は、
+無料アカウントから有償アカウントにアップグレードする必要があり、
+アップグレード後に発生した料金がクレジットカードに請求される仕組みらしい。
+</p>
+<p>
+ただし、アップグレードでサービスが復旧されるのは、
+無料枠が終了してから 30 日以内にアップグレードした場合に限り、
+30 日を過ぎた場合はサービスが削除されるので注意が必要。
+</p>
+<p>
+そんな訳で、 GCP を勉強するだけなら、お金の心配は不要。
+</p>
+<p>
+ただし、それと引き換えに個人情報を Google に持っていかれるということを、
+十分留意する必要がある。
+</p>
+<p>
+前々から気付いていたことだが、
+もう Google には逆らえないな。。。
+</p>
+<p>
+なんていうか、中国人が中国政府に個人情報だだ漏れで生活しているように、
+全世界の人口の大部分は Google に対して個人情報だだ漏れで
+付き合っていく必要があるだろう。
+</p>
+<h2 id="headline-6">
+Google Cloud Functions
+</h2>
+<p>
+自分のような Web 素人、かつ、お手軽にクラウドサービスを試したいという場合、
+サーバレスの FaaS が一番良いだろう、ということで、
+Google Cloud Functions から初める。
+</p>
+<p>
+Google Cloud Functions の公式ドキュメントはこちら。
+</p>
+<p>
+&lt;<a href="https://cloud.google.com/functions/docs?hl=ja">https://cloud.google.com/functions/docs?hl=ja</a>&gt;
+</p>
+<p>
+公式の入門日本語ドキュメントがあるというのは本当に素晴しい。
+</p>
+<p>
+「いかかでしたか？」系の Web ドキュメントに頼ることなく、
+安心して作業を進められる。
+それだけ、誰でも使えるレベルの当たり前の技術になっている、ということなんだろう。
+これは、周回遅れで勉強を初めることの数少ないメリットの一つと言って良い。
+</p>
+<p>
+そんな訳で上記公式ドキュメントを、一からやってみる。
+</p>
+<h3 id="headline-7">
+クイックスタート
+</h3>
+<p>
+Google Cloud Functions のクイックスタートには
+Node.js/Python/Go のチュートリアルがあるが、
+今は Go の勉強中なので Go を選択する。
+</p>
+<p>
+多分、 Web のバックエンド技術としては Node.js が一番メジャーだと思うが、
+今は Go を優先させたい気分なので。
+</p>
+<h4 id="headline-8">
+デプロイ
+</h4>
+<p>
+ドキュメントに従ってデプロイするが、デプロイは 1、2 分程度掛った。
+</p>
+<p>
+デプロイに成功すると、 所定の URL にアクセスすることで登録した関数が実行できるようになる。
+</p>
+<p>
+GCP のサンプルでは、認証不要で誰でもアクセス可能なサービスとして登録される。
+もちろん URL が分からなければアクセスは出来ない。
+サンプルだから認証不要で問題ないと思うが、勉強後はサービスを削除するか、認証ありにしておくべきだろう。
+</p>
+<h4 id="headline-9">
+トラブルシュート
+</h4>
+<ul>
+<li>
+<p>
+デプロイに失敗する
+</p>
+<ul>
+<li>
+<p>
+ビルドエラーしている
+</p>
+<ul>
+<li>
+<p>
+デプロイする前に <code class="verbatim">go build XXXX.go</code> を実行してビルドエラーがないか調べる
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+ハンドラ関数の名前が、小文字で始まっている
+</p>
+<ul>
+<li>
+<p>
+ハンドラ関数は、大文字で始める必要がある
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+ハンドラ関数名と deploy で指定している名前が異なる
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-10">
+サービス開発環境について
+</h3>
+<p>
+デプロイの処理時間が想像以上に(分単位)掛るので、
+動作確認で何回もデプロイすると効率がめちゃ悪くなる。
+</p>
+<p>
+そんな訳で、デプロイする前にサービスを動作確認できる環境をローカルに作成する。
+</p>
+<h4 id="headline-11">
+環境作成手順
+</h4>
+<p>
+ローカルに開発環境を整える場合、公式ドキュメントとは手順が一部異なるが、
+ここの手順通りにやって欲しい。
+そうしないと、後半に書いてある PubSub が動かなくて困ることになるだろう。
+</p>
+<ul>
+<li>
+<p>
+どこか適当なディレクトリを環境変数 <strong>GOPATH</strong> に設定する
+</p>
+</li>
+</ul>
+<pre class="example">
+export GOPATH=/home/hoge/work/gcp
+</pre>
+<ul>
+<li>
+<p>
+<strong>環境変数 GO111MODULE に auto を設定する</strong>
+</p>
+</li>
+</ul>
+<pre class="example">
+export GO111MODULE=auto
+</pre>
+<ul>
+<li>
+<p>
+<strong>$GOPATH/src 以下</strong> に適当なディレクトリ Test を作成。
+</p>
+</li>
+<li>
+<p>
+Test ディレクトリに gcp にデプロイするソースのあるディレクトリ YYYYYYYY へのシンボリックリンクを作成する
+</p>
+</li>
+<li>
+<p>
+Test ディレクトリに、次のようなソース main.go を作成する。
+</p>
+</li>
+</ul>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="p">(</span>
+    <span class="s">&#34;net/http&#34;</span>
+    <span class="s">&#34;Test/YYYYYYYY&#34;</span>
+<span class="p">)</span>
+
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">http</span><span class="p">.</span><span class="nf">HandleFunc</span><span class="p">(</span> <span class="s">&#34;/XXXXXXXXX/&#34;</span><span class="p">,</span> <span class="nx">srrec</span><span class="p">.</span><span class="nx">Access</span><span class="p">)</span>
+    <span class="nx">http</span><span class="p">.</span><span class="nf">Handle</span><span class="p">(</span>
+        <span class="s">&#34;/content/&#34;</span><span class="p">,</span>
+        <span class="nx">http</span><span class="p">.</span><span class="nf">StripPrefix</span><span class="p">(</span>
+            <span class="s">&#34;/content/&#34;</span><span class="p">,</span> <span class="nx">http</span><span class="p">.</span><span class="nf">FileServer</span><span class="p">(</span><span class="nx">http</span><span class="p">.</span><span class="nf">Dir</span><span class="p">(</span> <span class="s">&#34;./content&#34;</span> <span class="p">))))</span>
+    <span class="nx">http</span><span class="p">.</span><span class="nf">ListenAndServe</span><span class="p">(</span><span class="s">&#34;:28080&#34;</span><span class="p">,</span> <span class="kc">nil</span><span class="p">)</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+ここで XXXXXXXXX は、YYYYYYYY で定義しているハンドラ関数名
+</p>
+</li>
+<li>
+<p>
+ここで Test/YYYYYYYY は、 <strong>GOPATH からの相対パス</strong>
+</p>
+</li>
+</ul>
+<ul>
+<li>
+<p>
+まとめると、次のようなディレクトリ構成になる。
+</p>
+</li>
+</ul>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">--- $GOPATH/src/Test
+     +--- main.go
+     +--- context   // テスト用コンテンツ置き場
+           +--- index.html 
+     +--- YYYYYYYY // (シンボリックリンク)
+           +--- ZZZZZZZ.go   // XXXXXXXXX 関数を定義するソース</code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+次のコマンドを実行
+</p>
+</li>
+</ul>
+<pre class="example">
+$ go run main.go
+</pre>
+<p>
+これで、簡易的な HTTPD サービスがローカルで動くので、次のコマンドで動作を確認できる。
+</p>
+<pre class="example">
+curl http://localhost:28080/XXXXXXXXX
+curl http://localhost:28080/content/index.html
+</pre>
+<p>
+上記手順で特に重要なモノを挙げると
+</p>
+<ul>
+<li>
+<p>
+環境変数 GOPATH,  GO111MODULE の設定
+</p>
+</li>
+<li>
+<p>
+$GOPATH/src/ 以下にプロジェクトを作成
+</p>
+</li>
+<li>
+<p>
+Cloud Functions パッケージの import は、 GOPATH からの相対パスを指定
+</p>
+</li>
+</ul>
+<p>
+なお、 Test ディレクトリでは <code class="verbatim">go mod</code> 系のコマンドは実行しない。
+</p>
+<h2 id="headline-12">
+Firestore
+</h2>
+<p>
+Cloud Functions は、入力を受けて出力を行なうフィルターのようなもので、
+Cloud Functions 単体ではデータを保持できない。
+データを保持する方法として、Firestore がサンプルとして挙げられている。
+</p>
+<p>
+なお、Firestore には次の 2 つのモードがある。
+</p>
+<ul>
+<li>
+<p>
+ネイティブモード
+</p>
+</li>
+<li>
+<p>
+Datastore モード
+</p>
+</li>
+</ul>
+<p>
+<strong>Cloud Functions からアクセスする場合、ネイティブモードを選択する。</strong>
+</p>
+<h3 id="headline-13">
+Firestore のデータ型
+</h3>
+<p>
+Firestore は、いわゆる NoSQL タイプのデータベース。
+</p>
+<p>
+Firestore で扱えるデータの型は次の URL を参照すること。
+</p>
+<p>
+&lt;<a href="https://firebase.google.com/docs/firestore/manage-data/data-types?hl=ja">https://firebase.google.com/docs/firestore/manage-data/data-types?hl=ja</a>&gt;
+</p>
+<p>
+ちなみに、 <strong>整数型は int64 固定</strong> になる。
+</p>
+<p>
+これが分からずに暫く悩んでしまった。
+</p>
+<h2 id="headline-14">
+JSON
+</h2>
+<p>
+REST API には必須の JSON。
+今回は Go でコードを組むので、 Go で JSON を扱う必要がある。
+</p>
+<p>
+JSON と静的型付け言語は、 JSON ⇔ データの変換が面倒なことが多い。
+Go では JSON のデータの取扱がどうなっているか調べてみたが、
+静的型付け言語としては、だいぶ簡単に扱えるようになっている。
+</p>
+<h3 id="headline-15">
+Go の文字列→構造体変換
+</h3>
+<h4 id="headline-16">
+構造体宣言
+</h4>
+<div class="src src-json">
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;Val1&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&#34;Val2&#34;</span><span class="p">:</span> <span class="s2">&#34;abc&#34;</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+簡単な例として、上記の JSON 文字列を、次の構造体に変換する処理を考える。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Hoge</span> <span class="kd">struct</span> <span class="p">{</span>
+  <span class="nx">Val1</span> <span class="kt">int</span>
+  <span class="nx">Val2</span> <span class="kt">string</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<h5 id="headline-17">
+変換サンプル
+</h5>
+<p>
+次の処理で、 JSON → 構造体変換が出来る。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+<span class="kn">import</span> <span class="s">&#34;strings&#34;</span>
+<span class="kn">import</span> <span class="s">&#34;fmt&#34;</span>
+<span class="kn">import</span> <span class="s">&#34;encoding/json&#34;</span>
+
+<span class="kd">type</span> <span class="nx">Hoge</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="nx">Val1</span> <span class="kt">int</span>
+    <span class="nx">Val2</span> <span class="kt">string</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">reader</span> <span class="o">:=</span> <span class="nx">strings</span><span class="p">.</span><span class="nf">NewReader</span><span class="p">(</span> <span class="s">`{ &#34;Val1&#34;: 1, &#34;Val2&#34;: &#34;abc&#34; }`</span> <span class="p">)</span>
+    <span class="kd">var</span> <span class="nx">item</span> <span class="nx">Hoge</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">NewDecoder</span><span class="p">(</span> <span class="nx">reader</span> <span class="p">).</span><span class="nf">Decode</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">item</span> <span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span> <span class="s">&#34;error: %v\n&#34;</span><span class="p">,</span> <span class="nx">err</span> <span class="p">)</span> <span class="c1">// 失敗
+</span><span class="c1"></span>    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span> <span class="s">&#34;decode: %v\n&#34;</span><span class="p">,</span> <span class="nx">item</span> <span class="p">)</span> <span class="c1">// 成功
+</span><span class="c1"></span>    <span class="p">}</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+上記の通り <code class="verbatim">json.NewDecoder( reader ).Decode( &amp;item )</code> だけで、
+文字列から構造体に変換できる。
+</p>
+<p>
+ただし、これだけで処理が済むには、
+JSON オブジェクトのメンバ名が次の条件を満している必要がある。
+</p>
+<ul>
+<li>
+<p>
+<strong>Go の構造体のメンバ名と一致している</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>JSON オブジェクトのメンバ名の頭文字が大文字で始まっている</strong>
+</p>
+</li>
+</ul>
+<p>
+上記の条件で、少し厄介なのが 2 つ目の条件だろう。
+例えば、次のようにメンバ名が小文字で始まっている場合、
+</p>
+<div class="src src-json">
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+  <span class="nt">&#34;val1&#34;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&#34;val2&#34;</span><span class="p">:</span> <span class="s2">&#34;abc&#34;</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+次のように Go の構造体を宣言しても、 JSON 文字列→構造体変換が正常に動作しない。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Hoge</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="nx">val1</span> <span class="kt">int</span>
+    <span class="nx">val2</span> <span class="kt">string</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+なぜなら、 Go の構造体のメンバは
+<strong>大文字から始まらないと、外部パッケージからアクセス出来ない</strong>
+という Go の仕様があるためだ。
+</p>
+<p>
+では、このような JSON を扱うにはどうすれば良いかというと、
+Go の構造体宣言を次のようにすることで対応できる。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Hoge</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="nx">Val1</span> <span class="kt">int</span> <span class="s">`json:&#34;val1&#34;`</span>
+    <span class="nx">Val2</span> <span class="kt">string</span> <span class="s">`json:&#34;val2&#34;`</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+この <strong>`json:&#34;XXXX&#34;`</strong> を宣言することで、
+そのメンバと JSON オブジェクトのメンバ名との紐付けを指定することができる。
+なお、 <strong>`json:&#34;XXXX&#34;`</strong> は大文字小文字の違いだけでなく、
+全く名前の異なるものでも紐付けできる。
+</p>
+<h4 id="headline-18">
+トラブルシュート
+</h4>
+<ul>
+<li>
+<p>
+Decode() がエラーする
+</p>
+<ul>
+<li>
+<p>
+JSON 文字列に、JSON フォーマット上のエラーがある
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+JSON の Decode はエラーを返さないのに、構造体のメンバーがセットされない
+</p>
+<ul>
+<li>
+<p>
+メンバ名が小文字で始まっている
+</p>
+</li>
+<li>
+<p>
+`json:&#34;XXXX&#34;` の指定が間違っている
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-19">
+Go の構造体 → JSON 文字列変換
+</h3>
+<p>
+前述した構造体から文字列に変換する場合、次のような処理を行なう。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">struct2json</span><span class="p">(</span> <span class="nx">item</span> <span class="o">*</span><span class="nx">Hoge</span> <span class="p">)</span> <span class="p">{</span>
+  <span class="nx">jsonBytes</span><span class="p">,</span> <span class="nx">_</span> <span class="o">:=</span> <span class="nx">json</span><span class="p">.</span><span class="nf">Marshal</span><span class="p">(</span> <span class="nx">item</span> <span class="p">)</span>
+  <span class="nx">fmt</span><span class="p">.</span><span class="nf">Printf</span><span class="p">(</span> <span class="s">&#34;items: %v&#34;</span><span class="p">,</span> <span class="nb">string</span><span class="p">(</span><span class="nx">jsonBytes</span><span class="p">))</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+大文字でない構造体のメンバは、 JSON 文字列に出力されない。
+</p>
+<h2 id="headline-20">
+システムのデータの流れ
+</h2>
+<ul>
+<li>
+<p>
+スマホから Cloud Functions にアクセスし、
+Raspberry pi への操作を要求する。
+</p>
+<ul>
+<li>
+<p>
+この時、Cloud Functions は操作要求情報を firestore  に記録する
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Raspberry pi は、Cloud Functions にアクセスし、
+操作要求情報を取得して処理する。
+</p>
+<ul>
+<li>
+<p>
+この時、Cloud Functions は操作要求情報を firestore  から読み出す
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<img src="gcp_goal.svg" alt="gcp_goal.svg" title="gcp_goal.svg" width="20%"/>
+<ul>
+<li>
+<p>
+この構成の場合、Raspberry pi は、クラウド側に操作要求情報がないか
+定期的にポーリングする必要がある。
+</p>
+</li>
+<li>
+<p>
+一般的に、ポーリングはサーバ負荷がかかる。
+</p>
+<ul>
+<li>
+<p>
+とはいえ、1台の Raspberry pi からポーリングしたところで、
+サーバ負荷を考えるレベルにはない。
+</p>
+</li>
+<li>
+<p>
+また、常識レベルのポーリング間隔であれば、GCP の 1 ヶ月間の無料枠をオーバーすることもない。
+</p>
+</li>
+<li>
+<p>
+よって、 <strong>ポーリングでも実質的な問題はない。</strong>
+</p>
+</li>
+<li>
+<p>
+しかし、 <strong>ポーリングはかっこ悪い</strong> し、折角の勉強の機会なので、別の手段を考える。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="headline-21">
+PubSub
+</h2>
+<p>
+PubSub は、一対多のメッセージングシステムを提供するサービスである。
+これを利用することで、定期的な <strong>ポーリングが不要</strong> になる。
+</p>
+<p>
+ちなみに、 PubSub は Publisher と Subscriber を示しており、
+Publisher 側でメッセージを通知し、 Subscriber 側でメッセージを受けとる形になる。
+</p>
+<p>
+今回のシステムでは Cloud Functions 側が Publisher で、
+Raspberry Pi 側が Subscriber になる。
+Cloud Functions は、操作要求情報をデータベースに記録したタイミングで <strong>Publish</strong> し、
+Raspberry Pi 側はメッセージを受信したタイミングで操作要求情報を取得し、
+その要求を処理することで、定期的なポーリングが不要になる。
+通知するメッセージに、操作要求情報を直接含めても良いが、今回は更新通知だけを送り、
+操作要求情報は別途取得する構成にする。
+</p>
+<h3 id="headline-22">
+Python による PubSub アクセスのトラブルシュート
+</h3>
+<ul>
+<li>
+<p>
+Python で PubSub にアクセスすると、 &#34;403 User not authorized to perform this action.&#34; が表示される
+</p>
+<ul>
+<li>
+<p>
+環境変数 GOOGLE_APPLICATION_CREDENTIALS の指定が間違っている
+</p>
+<ul>
+<li>
+<p>
+GOOGLE_APPLICATION_CREDENTIALS には、ユーザ認証のキー情報 JSON ファイルのパスを指定する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+環境変数 GOOGLE_APPLICATION_CREDENTIALS で指定しているユーザのロールが間違っている
+</p>
+<ul>
+<li>
+<p>
+ユーザのロールは、GCP Console の IAM から設定するのではなく、
+<strong>PubSub のトピック、サブスクリプションのそれぞれの権限メニューからユーザにロールを設定する。</strong>
+</p>
+<ul>
+<li>
+<p>
+権限の表示領域上部の「継承された権限を表示」が On になっている場合、Off にする。
+<strong>「継承された権限を表示」を Off にした状態で、</strong> Pub/Sub のトピック、サブスクリプションの
+パブリッシャー、サブスクライバーにメンバーが割り当てられていることを確認する。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-23">
+Cloud Functions の Go から Publish
+</h3>
+<p>
+GCP の入門ドキュメントでは、 Python で PubSub にアクセスしていたが、
+今回のシステムの Cloud Functions では Go を選択しているので、
+Go から PubSub にアクセスする。
+</p>
+<p>
+Go の PubSub API リファレンスは次を参照する。
+</p>
+<p>
+&lt;<a href="https://godoc.org/cloud.google.com/go/pubsub">https://godoc.org/cloud.google.com/go/pubsub</a>&gt;
+</p>
+<p>
+メッセージをトピック my-topic に publish する処理は次のようになる。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">import</span> <span class="s">&#34;cloud.google.com/go/pubsub&#34;</span>
+<span class="kd">func</span> <span class="nf">Publish</span><span class="p">(</span> <span class="nx">w</span> <span class="nx">http</span><span class="p">.</span><span class="nx">ResponseWriter</span><span class="p">,</span> <span class="nx">r</span> <span class="o">*</span><span class="nx">http</span><span class="p">.</span><span class="nx">Request</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="nx">ctx</span> <span class="o">:=</span> <span class="nx">context</span><span class="p">.</span><span class="nf">Background</span><span class="p">()</span>
+    <span class="kd">var</span> <span class="nx">client</span> <span class="o">*</span><span class="nx">pubsub</span><span class="p">.</span><span class="nx">Client</span>
+    <span class="kd">var</span> <span class="nx">err</span> <span class="kt">error</span>
+    <span class="nx">client</span><span class="p">,</span> <span class="nx">err</span> <span class="p">=</span> <span class="nx">pubsub</span><span class="p">.</span><span class="nf">NewClient</span><span class="p">(</span> <span class="nx">ctx</span><span class="p">,</span> <span class="nx">projID</span> <span class="p">)</span>
+    <span class="k">if</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Fprintf</span><span class="p">(</span><span class="nx">w</span><span class="p">,</span> <span class="s">&#34;error NewClient: %v\n&#34;</span><span class="p">,</span> <span class="nx">err</span> <span class="p">)</span>
+    <span class="p">}</span>
+    <span class="nx">topic</span> <span class="o">:=</span> <span class="nx">client</span><span class="p">.</span><span class="nf">Topic</span><span class="p">(</span> <span class="s">&#34;my-topic&#34;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">topic</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Fprintf</span><span class="p">(</span> <span class="nx">w</span><span class="p">,</span> <span class="s">&#34;error Publish -- not found topic\n&#34;</span> <span class="p">)</span>
+        <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nx">res</span> <span class="o">:=</span> <span class="nx">topic</span><span class="p">.</span><span class="nf">Publish</span><span class="p">(</span><span class="nx">ctx</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">pubsub</span><span class="p">.</span><span class="nx">Message</span><span class="p">{</span><span class="nx">Data</span><span class="p">:</span> <span class="p">[]</span><span class="nb">byte</span><span class="p">(</span><span class="s">&#34;payload&#34;</span><span class="p">)})</span>
+
+    <span class="k">if</span> <span class="nx">_</span><span class="p">,</span> <span class="nx">err</span> <span class="o">:=</span> <span class="nx">res</span><span class="p">.</span><span class="nf">Get</span><span class="p">(</span> <span class="nx">ctx</span> <span class="p">);</span> <span class="nx">err</span> <span class="o">!=</span> <span class="kc">nil</span> <span class="p">{</span>
+        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Fprintf</span><span class="p">(</span> <span class="nx">w</span><span class="p">,</span> <span class="s">&#34;error Publish: %v\n&#34;</span><span class="p">,</span> <span class="nx">err</span> <span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<h4 id="headline-24">
+Go による PubSub アクセスのトラブルシュート
+</h4>
+<ul>
+<li>
+<p>
+ビルドエラーする    
+</p>
+<ul>
+<li>
+<p>
+package XXXXX is not in GOROOT エラー
+</p>
+<ul>
+<li>
+<p>
+環境変数 GO111MODULE が on になっている。
+</p>
+<ul>
+<li>
+<p>
+auto に設定する。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+unexpected directory layout エラー
+</p>
+<ul>
+<li>
+<p>
+独自パッケージのインポートパス指定が間違っている。
+</p>
+<ul>
+<li>
+<p>
+GOPATH からの相対パスを指定する
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+cannot find package エラー
+</p>
+<ul>
+<li>
+<p>
+上記の併せ技の状況になっている。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="headline-25">
+構成まとめ
+</h2>
+<p>
+今回の GCP 構成をまとめた図を示す。
+</p>
+<ul>
+<li>
+<p>
+HTML 等の静的コンテンツは github Pages でホスティングする
+</p>
+</li>
+<li>
+<p>
+javascript から GCP Cloud Functions にアクセスする
+</p>
+</li>
+<li>
+<p>
+GCP Cloud Functions から、 firestore, Pub/Sub にアクセスする
+</p>
+</li>
+<li>
+<p>
+raspberrypi から、 Pub/Sub に Subscriber としてアクセスする    
+</p>
+</li>
+</ul>
+<p>
+<img src="gcp_goal2.svg" alt="gcp_goal2.svg" title="gcp_goal2.svg" />
+</p>
+<div class="src src-plantuml">
+<pre><code class="language-plantuml" data-lang="plantuml">actor ユーザ
+node スマホ
+node githubPages
+cloud GCP{
+database firestore
+rectangle CloudFunctions
+rectangle PubSub
+}
+rectangle 家 {
+node raspberrypi
+}
+
+ユーザ -- スマホ
+スマホ --&gt; githubPages
+githubPages --&gt; CloudFunctions
+CloudFunctions --&gt; firestore
+CloudFunctions --&gt; PubSub
+PubSub --&gt; raspberrypi
+CloudFunctions &lt;-- raspberrypi</code></pre>
+</div>
+<h2 id="headline-26">
+料金
+</h2>
+<p>
+今回の構成は、無料期間が過ぎても無料で運用できる。
+</p>
+<table>
+<thead>
+<tr>
+<th>サービス</th>
+<th>役割</th>
+<th>料金</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>github pages</td>
+<td>静的コンテンツホスティング</td>
+<td>無料</td>
+</tr>
+<tr>
+<td>Cloud Functions</td>
+<td>動的処理のエントリ</td>
+<td>無料(月に200万回実行 or 5GB download)</td>
+</tr>
+<tr>
+<td>firestore</td>
+<td>操作要求情報の保持</td>
+<td>無料(日に 5万回read or 2万回 write)</td>
+</tr>
+<tr>
+<td>Pub/Sub</td>
+<td>更新通知</td>
+<td>無料(月に 10GB のメッセージ )</td>
+</tr>
+</tbody>
+</table>
+<p>
+ポーリングではなく Pub/Sub を利用したことで、ほとんどサーバアクセスは不要になっている。
+ただし、 Pub/Sub は publish しなくても Subscriber から pull していると、
+pull の内部処理によってサーバにアクセスしている。
+</p>
+<p>
+例えば、 subscriber の pull() 関数を実行して、メッセージ待ちしている時の
+subscriber の通信状況を図を示す。
+これを見ると分かる通り、約 5 分間隔で通信のピークがある。
+なお、この間、実際にはなんのメッセージも publish していない。
+</p>
+<p>
+<img src="subscriber1.png" alt="subscriber1.png" title="subscriber1.png" />
+</p>
+<p>
+また、次の Pull リクエスト数を見ると 191 回となっている。
+</p>
+<p>
+<img src="subscriber2.png" alt="subscriber2.png" title="subscriber2.png" />
+</p>
+<p>
+Pub/Sub ライブラリの Pull() を 1 度実行しているだけでも、
+ライブラリの内部的には 191 回サーバにアクセスしていることになる。
+</p>
+<p>
+Pub/Sub の料金が、この内部的なアクセスを含むのか含まないのかが不明だが、
+もしも含んだとしても、月の通信量は (/ (* 191 24 31) 1000) 142MB 程度なので、
+無料枠 10GB の 14% にしかならない。まず気にすることはないだろう。
+</p>
+<p>
+Cloud Functions, firestore に関して言えば、
+意図的にアクセスしない限りは定期的にアクセスすることはないため、
+無料枠を越えることはありえない。
+</p>
+<h3 id="headline-27">
+予算とアラート
+</h3>
+<p>
+前述の通り、今回の構成では無料枠内で収まる。
+しかし、何事も念の為の保険が必要だ。
+</p>
+<p>
+そこで、 GCP の予算設定機能を利用する。
+</p>
+<p>
+GCP の console から次のメニューに移動する。
+</p>
+<pre class="example">
+GCP -&gt; 支払い -&gt; 予算とアラート
+</pre>
+<p>
+ここで、予算の上限とアラートを送信する閾値を設定すれば、
+閾値を越えた段階でメールが通知されるはず。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/emacs/company-mode/" title="自作言語 (LuneScript) の emacs company-mode backend 設定"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 自作言語 (LuneScript) の emacs company-mode backend 設定</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/go/" title="Gos">Next - Gos <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class="parent active"><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/libclang/">Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/operator/">libclang で演算子を特定する方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/ast/">libclang の AST(Abstract Syntax Tree)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">03. Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">04. 値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">04.2. Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">05. enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">06. match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">07. 変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">08. 一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">09. 繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">10. 関数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">10.2. 多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">Z. Go 言語へのトランスコンパイル</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
