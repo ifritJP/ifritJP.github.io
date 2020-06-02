@@ -318,6 +318,8 @@ function reloadEtc() {
         statusObj.textContent = info.Status.Status;
         var lastAccessTimeObj = document.getElementById( "lastAccessTime" );
         lastAccessTimeObj.textContent = info.LastAccessTime.Time;
+        var remoteAddressObj = document.getElementById( "remoteAddress" );
+        remoteAddressObj.textContent = info.LastAccessTime.RemoteAddress;
     });
 }
 
