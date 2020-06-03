@@ -1,0 +1,1006 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2020-06-03 水 22:14 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tunnel/Reverse Tunnel over websocket を作った</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="ifritJP" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2020 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Tunnel/Reverse Tunnel over websocket を作った</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#org32ba849">1. 「Tunnel/Reverse Tunnel over websocket」 とは</a></li>
+<li><a href="#org7d7efbf">2. VPN</a></li>
+<li><a href="#org8390349">3. 開発した背景</a></li>
+<li><a href="#orgcb3e96d">4. 使用方法</a>
+<ul>
+<li><a href="#org19f1ed3">4.1. ビルド</a></li>
+<li><a href="#org75800d0">4.2. tunnel コマンド</a>
+<ul>
+<li><a href="#org842e190">4.2.1. オプション一覧</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a href="#org646356b">5. 注意事項</a></li>
+<li><a href="#org3201ebe">6. 開発に関して</a>
+<ul>
+<li><a href="#org8fe9ba4">6.1. 開発言語</a></li>
+<li><a href="#orgcd0699d">6.2. 設計</a>
+<ul>
+<li><a href="#orgc245f3c">6.2.1. ファイル</a></li>
+<li><a href="#org24fe9b4">6.2.2. 構造体</a></li>
+<li><a href="#org240e5ba">6.2.3. tunnel 切断の問題</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<p>
+とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。
+</p>
+
+<p>
+「Tunnel/Reverse Tunnel over websocket」 が何かというと、
+「websocket を tunnel にして別の TCP 通信を通すもの」だ。
+</p>
+
+<div id="outline-container-org32ba849" class="outline-2">
+<h2 id="org32ba849"><span class="section-number-2">1</span> 「Tunnel/Reverse Tunnel over websocket」 とは</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+「Tunnel/Reverse Tunnel over websocket」を少し具体的にいうと、
+次のような構成で通信を可能にするモノだ。
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="../tunnel.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<p>
+上の図は network_1, network_2, network_A, network_B の
+4 つのネットワークを表わしている。
+</p>
+
+<p>
+このネットワーク間通信を行なうポートが制限されているような場合、
+その開放されているポートを繋いだセッションに、
+仮想的な Tunnel を構築して、
+その Tunnel 内にポートの制限を受けない通信を実現する。
+</p>
+
+
+<p>
+左は Tunnel の構成例である。
+分断されている network_1, network_2 を、
+tunnel server / tunnel client で接続して tunnel を構成し、
+その tunnel を使って tcp client A と tcp server B を接続する。
+</p>
+
+<p>
+右は Reverse Tunnel の構成例である。
+分断されている network_A, network_B を、
+tunnel server / tunnel client で接続して tunnel を構成し、
+その tunnel を使って tcp client D と tcp server C を接続する。
+</p>
+
+<p>
+Tunnel と Revers Tunnel の違いは、
+tcp client/server の位置関係である。
+</p>
+
+<p>
+具体的には、
+Tunnel server と同じネットワークに tcp server が属する構成が Tunnel で、
+逆に Tunnel server と同じネットワークに tcp client が属する構成が Reverse Tunnel である。
+</p>
+
+<p>
+そして、 Tunnel server と client 間の通信経路として、
+websocket を利用して tunnel を構築するのが
+「Tunnel/Reverse Tunnel over websocket」である。
+</p>
+
+
+
+<p>
+plamtulm ソース
+</p>
+</div>
+</div>
+
+<div id="outline-container-org7d7efbf" class="outline-2">
+<h2 id="org7d7efbf"><span class="section-number-2">2</span> VPN</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+このような状況で VPN を構築できる SoftEther があったりするが、
+VPN ほど低レイヤーでネットワークを構築したい訳ではない。
+</p>
+
+<p>
+VPN は、その名の通り仮想的なネットワークを構築する。
+これによって、通常のネットワークと同様に扱えて便利ではあるが、
+通常のネットワークと同様であるが故、逆にリスクになる可能性がある。
+</p>
+
+<p>
+今回の目的は、proxy やファイヤーウォールで分断されている端末間の
+tcp 接続を実現することに絞ることで、不要なリスクを排除する。
+</p>
+</div>
+</div>
+
+<div id="outline-container-org8390349" class="outline-2">
+<h2 id="org8390349"><span class="section-number-2">3</span> 開発した背景</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+この目的を実現できないかどうか、当初はフリーのツールを探していたが、
+自分の環境は (A)/(B) 間のネットワーク環境が悪く、
+tunnel を確立しても、ある程度経過すると切断されてしまう問題があった。
+</p>
+
+<p>
+論理的には、tunnel が切断されても tunnel を再接続することで、
+tunnel 上の tcp 通信を継続させることは可能だが、
+検討していた幾つかのフリーのツールでは、
+tunnel が切断されると tcp 通信が継続できなかった。
+そもそも tunnel を接続すること自体、成功したり失敗したりしているような状況だった。
+</p>
+
+<p>
+そこで、フリーのツールを検討することは諦め、
+今回はスクラッチで開発することにした。
+</p>
+
+<p>
+なお今回開発した Tunnel ツール実行中の切断状況を確認したところ、
+次のようになった。
+</p>
+
+<ul class="org-ul">
+<li>1 接続は最大でも 15 分程度で切断される</li>
+<li>昼間は 30 秒程度で切断される</li>
+<li>接続の 7 割強は 1 分以内で切断される</li>
+</ul>
+
+<p>
+なんとも恐しいネットワーク環境だ。  
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgcb3e96d" class="outline-2">
+<h2 id="orgcb3e96d"><span class="section-number-2">4</span> 使用方法</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+このツールは Go で開発しているため、
+事前に Go(1.14.2) の環境を構築してあることが前提である。
+</p>
+</div>
+
+<div id="outline-container-org19f1ed3" class="outline-3">
+<h3 id="org19f1ed3"><span class="section-number-3">4.1</span> ビルド</h3>
+<div class="outline-text-3" id="text-4-1">
+<div class="org-src-container">
+<pre class="src src-sh">$ git clone --depth 1 https://github.com/ifritJP/tunnel.git
+$ cd tunnel
+$ make
+</pre>
+</div>
+
+<p>
+これで tunnel コマンドがカレントディレクトリに生成される。
+</p>
+</div>
+</div>
+
+<div id="outline-container-org75800d0" class="outline-3">
+<h3 id="org75800d0"><span class="section-number-3">4.2</span> tunnel コマンド</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+tunnel コマンドは tunnel の server と、 tunnel の client の両方の役割を持つ。
+</p>
+
+<ul class="org-ul">
+<li>server</li>
+</ul>
+
+<p>
+server のコマンド例を示す。
+</p>
+
+<pre class="example">
+$ tunnel -mode r-wsserver -server :6666 -port 8001 -remote localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+</pre>
+
+
+<p>
+これは次のサーバの実行を指定している。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">オプション</th>
+<th scope="col" class="org-left">意味</th>
+<th scope="col" class="org-left">サンプルの意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">-mode</td>
+<td class="org-left">client/server の種類</td>
+<td class="org-left">reverse websocket server</td>
+</tr>
+
+<tr>
+<td class="org-left">-server</td>
+<td class="org-left">tunnel サーバの情報</td>
+<td class="org-left">ポート 6666 を使用して websocket server を建てる</td>
+</tr>
+
+<tr>
+<td class="org-left">-port</td>
+<td class="org-left">tunnel で接続する際のポート番号</td>
+<td class="org-left">ポート 8001 を使用</td>
+</tr>
+
+<tr>
+<td class="org-left">-remote</td>
+<td class="org-left">tunnel で繋げる接続先</td>
+<td class="org-left">localhost の 22 ポートに接続</td>
+</tr>
+
+<tr>
+<td class="org-left">-pass</td>
+<td class="org-left">client の認証用パスワード</td>
+<td class="org-left">XXXXXXX</td>
+</tr>
+
+<tr>
+<td class="org-left">-encPass</td>
+<td class="org-left">client/server 間の通信路の暗号パスワード</td>
+<td class="org-left">YYYYYYYY</td>
+</tr>
+</tbody>
+</table>
+
+<ul class="org-ul">
+<li>client</li>
+</ul>
+
+<p>
+client のコマンド例を示す
+</p>
+
+<pre class="example">
+$ tunnel -mode r-wsclient -proxy http://user:pass@proxy.hoge.com:8080/ -server hoge.hoge.com:80 -pass XXXXXXX -encPass YYYYYYYY
+</pre>
+
+
+<p>
+これは次のクライアントの実行を指定している。
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">オプション</th>
+<th scope="col" class="org-left">意味</th>
+<th scope="col" class="org-left">サンプルの意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">-mode</td>
+<td class="org-left">client/server の種類</td>
+<td class="org-left">reverse websocket client</td>
+</tr>
+
+<tr>
+<td class="org-left">-proxy</td>
+<td class="org-left">proxy サーバの情報</td>
+<td class="org-left"><a href="http://proxy.hoge.com%3A:8080/">http://proxy.hoge.com%3A:8080/</a> に user, pass で接続</td>
+</tr>
+
+<tr>
+<td class="org-left">-server</td>
+<td class="org-left">tunnel サーバの情報</td>
+<td class="org-left">hoge.hoge.com の 80 に接続する</td>
+</tr>
+
+<tr>
+<td class="org-left">-pass</td>
+<td class="org-left">client の認証用パスワード</td>
+<td class="org-left">XXXXXXX</td>
+</tr>
+
+<tr>
+<td class="org-left">-encPass</td>
+<td class="org-left">client/server 間の通信路の暗号パスワード</td>
+<td class="org-left">YYYYYYYY</td>
+</tr>
+</tbody>
+</table>
+
+<ul class="org-ul">
+<li>tunnel への接続</li>
+</ul>
+
+<p>
+上記のサンプルは localhost の 22 番ポートに接続するための reverse tunnel を構築している。
+つまり、このサーバ側の 8001 ポートに繋げると、 client 側の ssh に接続されることになる。
+</p>
+
+<p>
+よって、サーバ側で次のコマンドを実行することで、クライアントの ssh に接続できる。
+</p>
+
+<pre class="example">
+$ ssh -p 8001 localhost
+</pre>
+</div>
+
+<div id="outline-container-org842e190" class="outline-4">
+<h4 id="org842e190"><span class="section-number-4">4.2.1</span> オプション一覧</h4>
+<div class="outline-text-4" id="text-4-2-1">
+<p>
+tunnel コマンドで使用可能なオプションについて説明する
+</p>
+</div>
+
+<ol class="org-ol">
+<li><a id="org99d874c"></a>基本<br />
+<div class="outline-text-5" id="text-4-2-1-1">
+<p>
+-mode string
+</p>
+<ul class="org-ul">
+<li>次のいずれかを指定する</li>
+<li>サーバ
+<ul class="org-ul">
+<li>server</li>
+<li>r-server</li>
+<li>wsserver</li>
+<li>r-wsserver</li>
+</ul></li>
+<li>クライアント
+<ul class="org-ul">
+<li>client</li>
+<li>r-client</li>
+<li>wsclient</li>
+<li>r-wsclient</li>
+</ul></li>
+<li>"r-" が付くものは、 reverse tunnel である。</li>
+<li>ws が付くものは、 over websocket である。</li>
+<li>ws が付かないものは、 tcp で直接接続する。</li>
+<li>"r-", "ws" は client/server で一致している必要がある。</li>
+</ul>
+<p>
+-server string
+</p>
+<ul class="org-ul">
+<li>server を示す。</li>
+<li>サーバ側で指定する場合は、ポート番号だけ指定する。 (:1234)</li>
+<li>クライアント側で指定する場合は、ホスト名を含めて指定する (hoge.com:1234)</li>
+</ul>
+<p>
+-port int
+</p>
+<ul class="org-ul">
+<li>構築した tunnel に接続するためのポート番号</li>
+<li>reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。</li>
+</ul>
+<p>
+-proxy string
+</p>
+<ul class="org-ul">
+<li>websocket server に接続するための proxy</li>
+<li>proxy 不要なら省略する。</li>
+<li>client 側で指定する</li>
+</ul>
+<p>
+-remote string
+</p>
+<ul class="org-ul">
+<li>tunnel で接続するリモートホスト  (hoge.com:1234)
+<ul class="org-ul">
+<li>最初に説明した (B) あるいは (C) のホスト</li>
+</ul></li>
+<li>localhost 等を指定した場合、 reverse とそうでないかによって意味が異なる。
+<ul class="org-ul">
+<li>例えば reverse tunnel の場合はクライアント自信が接続先になり、
+通常の tunnel の場合はサーバ自信が接続先になる。</li>
+</ul></li>
+<li>reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。</li>
+</ul>
+<p>
+-UA string
+</p>
+<ul class="org-ul">
+<li>Proxy に接続する際の User Agent を指定する</li>
+<li>websocket の client で有効</li>
+</ul>
+</div>
+</li>
+
+<li><a id="org0e66e9f"></a>セキュリティ関連<br />
+<div class="outline-text-5" id="text-4-2-1-2">
+<p>
+-pass string
+</p>
+<ul class="org-ul">
+<li>client 認証で使用する。</li>
+<li>client/server で共通のものを指定する必要がある。</li>
+<li>client 認証は challenge/respose で行なう。</li>
+</ul>
+<p>
+-encPass string
+</p>
+<ul class="org-ul">
+<li>client/server 間通信の暗号パスワード。</li>
+<li>client/server で共通のものを指定する必要がある。</li>
+</ul>
+<p>
+-encCount int
+</p>
+<ul class="org-ul">
+<li>client/server 間の暗号処理回数。
+<dl class="org-dl">
+<dt>-1</dt><dd>infinity</dd>
+<dt>0</dt><dd>plain</dd>
+<dt>N</dt><dd>packet count (default 1000)</dd>
+</dl></li>
+<li>client/server 間の通信を暗号化するが、tunnel 内を通すのが ssh などの場合、
+二度の暗号が走ることになり、client/server 間の暗号は無駄になる。
+そこで、client/server 間の暗号化回数を指定することで、暗号化にかかる負荷軽減を可能にする。</li>
+<li>回数は tunnel の通信パケット単位</li>
+<li>暗号アルゴリズムは AES256 CFB を使用している。</li>
+</ul>
+<p>
+-ip string
+</p>
+<ul class="org-ul">
+<li>server に接続可能な client の、 IP アドレスパターンを正規表現で指定する。</li>
+<li>このオプションを省略した場合、 client の IP を限定しない。</li>
+</ul>
+</div>
+</li>
+</ol>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org646356b" class="outline-2">
+<h2 id="org646356b"><span class="section-number-2">5</span> 注意事項</h2>
+<div class="outline-text-2" id="text-5">
+<ul class="org-ul">
+<li>client/server の暗号化や、client 認証を実装しているが、
+セキュリティの素人が開発しているため、
+過信せずに tunnel 内は ssh などで接続すること。</li>
+<li>tunnel server は常駐させず、必要な時にだけ起動するように運用すること。</li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org3201ebe" class="outline-2">
+<h2 id="org3201ebe"><span class="section-number-2">6</span> 開発に関して</h2>
+<div class="outline-text-2" id="text-6">
+<p>
+これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。
+</p>
+</div>
+
+<div id="outline-container-org8fe9ba4" class="outline-3">
+<h3 id="org8fe9ba4"><span class="section-number-3">6.1</span> 開発言語</h3>
+<div class="outline-text-3" id="text-6-1">
+<p>
+この Tunnel ツールの開発には、次の技術が不可欠である。
+</p>
+
+<ul class="org-ul">
+<li>TCP</li>
+<li>Proxy Client</li>
+<li>HTTP Client/Server</li>
+<li>WebSocket Client/Server</li>
+</ul>
+
+<p>
+これら技術との相性の良さという意味では、
+node.js が一番始めに候補に上りそうな気がするが、
+今回は Go の勉強中ということもあり Go で開発を行なった。
+</p>
+
+<p>
+Go では、次のパッケージを利用している。
+</p>
+
+<ul class="org-ul">
+<li>標準
+<ul class="org-ul">
+<li>container/list</li>
+<li>container/ring</li>
+<li>crypto/aes</li>
+<li>crypto/cipher</li>
+<li>crypto/sha256</li>
+<li>encoding/base64</li>
+<li>encoding/binary</li>
+<li>encoding/json</li>
+<li>flag</li>
+<li>fmt</li>
+<li>net/http</li>
+<li>net/url</li>
+<li>net/url</li>
+<li>os</li>
+<li>regexp</li>
+<li>strconv</li>
+<li>strings</li>
+</ul></li>
+<li>非標準
+<ul class="org-ul">
+<li>golang.org/x/net/proxy
+<ul class="org-ul">
+<li>proxy Client で使用としたが、実際にはほとんど使っていないので、そのうち削除予定</li>
+</ul></li>
+<li>golang.org/x/net/websocket
+<ul class="org-ul">
+<li>ネットで調べると Go の websocket 実装は 3 つのパッケージがメジャーだが、
+他のパッケージでは websocket の io 回りがイマイチだったり、
+proxy のカスタマイズがイマイチだったりしたので、
+このパッケージを選択した。</li>
+</ul></li>
+</ul></li>
+</ul>
+
+<p>
+上記の websocket と proxy パッケージの使いこなしで苦労したので、
+気が向いたら別のネタとして書く予定。
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgcd0699d" class="outline-3">
+<h3 id="orgcd0699d"><span class="section-number-3">6.2</span> 設計</h3>
+<div class="outline-text-3" id="text-6-2">
+</div>
+<div id="outline-container-orgc245f3c" class="outline-4">
+<h4 id="orgc245f3c"><span class="section-number-4">6.2.1</span> ファイル</h4>
+<div class="outline-text-4" id="text-6-2-1">
+<ul class="org-ul">
+<li>main.go
+<ul class="org-ul">
+<li>主にコマンドオプション解析を実施</li>
+</ul></li>
+<li>client.go
+<ul class="org-ul">
+<li>tunnel client のコネクション処理</li>
+</ul></li>
+<li>common.go
+<ul class="org-ul">
+<li>tunnel client/server 処理
+<ul class="org-ul">
+<li>tunnel の暗号化・複合</li>
+<li>client/server のネゴシエーション</li>
+</ul></li>
+</ul></li>
+<li>server.go
+<ul class="org-ul">
+<li>tunnel server のコネクション処理</li>
+</ul></li>
+<li>session.go
+<ul class="org-ul">
+<li>tunnel 内を通す tcp 通信のセッション処理</li>
+</ul></li>
+<li>websocket.go
+<ul class="org-ul">
+<li>websocket cliet のコネクション処理</li>
+<li>proxy 処理</li>
+</ul></li>
+</ul>
+</div>
+</div>
+
+<div id="outline-container-org24fe9b4" class="outline-4">
+<h4 id="org24fe9b4"><span class="section-number-4">6.2.2</span> 構造体</h4>
+<div class="outline-text-4" id="text-6-2-2">
+<p>
+この Tunnel ツールは次を実現する。
+</p>
+
+<ul class="org-ul">
+<li>tcp のデータを通す tunnel の確立</li>
+<li>tunnel が切断されても、tunnel を再接続することで tunnel 内の tcp 通信を継続させる</li>
+</ul>
+
+<p>
+これを実現するために、主に次の構造体を定義している。
+</p>
+
+<ul class="org-ul">
+<li>ConnInfo</li>
+<li>SessionInfo</li>
+</ul>
+</div>
+
+<ol class="org-ol">
+<li><a id="org4e8845b"></a>ConnInfo<br />
+<div class="outline-text-5" id="text-6-2-2-1">
+<p>
+ConnInfo は、 tunnel 内に流れる TCP コネクションの情報を管理する。
+</p>
+
+<p>
+具体的な定義は次の通りである。
+</p>
+
+<div class="org-src-container">
+<pre class="src src-go"><span style="color: #fa8072;">type</span> <span style="color: #00ced1;">ConnInfo</span> <span style="color: #fa8072;">struct</span> {
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#12467;&#12493;&#12463;&#12471;&#12519;&#12531;</span>
+    Conn <span style="color: #00ced1;">io.ReadWriteCloser</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#26263;&#21495;&#21270;&#24773;&#22577;</span>
+    CryptCtrlObj *<span style="color: #00ced1;">CryptCtrl</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#12475;&#12483;&#12471;&#12519;&#12531;&#24773;&#22577;</span>
+    SessionInfo *<span style="color: #00ced1;">SessionInfo</span>
+}
+</pre>
+</div>
+
+<p>
+Conn が TCP の stream で、 CryptCtrlObj はそれを暗号化・複合し、
+SessionInfo はどの tunnel 内を流れる TCP のセッションを管理する。
+</p>
+</div>
+</li>
+
+
+<li><a id="org05aebf1"></a>SessionInfo<br />
+<div class="outline-text-5" id="text-6-2-2-2">
+<p>
+SessionInfo は、 tunnel 内に流れる TCP のセッションを管理する。
+</p>
+
+<p>
+具体的な定義は次の通りである。
+</p>
+
+<div class="org-src-container">
+<pre class="src src-go"><span style="color: #fa8072;">type</span> <span style="color: #00ced1;">SessionInfo</span> <span style="color: #fa8072;">struct</span> {
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#12475;&#12483;&#12471;&#12519;&#12531;&#12434;&#35672;&#21029;&#12377;&#12427; ID</span>
+    SessionId <span style="color: #00ced1;">int</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#12371;&#12398;&#12475;&#12483;&#12471;&#12519;&#12531;&#12391; read &#12375;&#12383;&#12497;&#12465;&#12483;&#12488;&#12398;&#25968;</span>
+    ReadNo <span style="color: #00ced1;">int64</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#12371;&#12398;&#12475;&#12483;&#12471;&#12519;&#12531;&#12391; write &#12375;&#12383;&#12497;&#12465;&#12483;&#12488;&#12398;&#25968;</span>
+    WriteNo <span style="color: #00ced1;">int64</span>
+
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#36865;&#20449;&#12375;&#12383; SessionPacket &#12398;&#12522;&#12473;&#12488;&#12290;</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#30452;&#36817; PACKET_NUM &#20998;&#12398; SessionPacket &#12434;&#20445;&#25345;&#12377;&#12427;&#12290;</span>
+    WritePackList *<span style="color: #00ced1;">list.List</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">WritePackList &#12395;&#36865;&#12426;&#30452;&#12377;&#12497;&#12465;&#12483;&#12488;&#12434;&#20445;&#25345;&#12377;&#12427;&#12383;&#12417;&#12289;</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#12497;&#12465;&#12483;&#12488;&#12398;&#12496;&#12483;&#12501;&#12449;&#12434;&#12522;&#12531;&#12463;&#12391;&#20445;&#25345;&#12375;&#12390;&#12362;&#12367;</span>
+    BufRing *<span style="color: #00ced1;">ring.Ring</span>
+
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">&#36865;&#12426;&#30452;&#12377;&#12497;&#12465;&#12483;&#12488;&#30058;&#21495;&#12290;</span>
+    <span style="color: #ffff00;">// </span><span style="color: #98fb98;">-1 &#12398;&#22580;&#21512;&#12399;&#36865;&#12426;&#30452;&#12375;&#12399;&#28961;&#12375;&#12290;</span>
+    ReWriteNo <span style="color: #00ced1;">int64</span>
+}
+</pre>
+</div>
+
+<p>
+ここで特に重要なのが ReadNo/WriteNo/ReWriteNo である。
+</p>
+
+<p>
+これが、 tunnel 切断時に tunnel を再接続することで
+tcp 通信を継続させるために無くてはならない情報だ。
+</p>
+
+<p>
+この情報が重要である理由を説明する前に、
+tunnel を再接続しただけでは tcp 通信を継続できない理由を次節で説明する。
+</p>
+</div>
+</li>
+</ol>
+</div>
+
+<div id="outline-container-org240e5ba" class="outline-4">
+<h4 id="org240e5ba"><span class="section-number-4">6.2.3</span> tunnel 切断の問題</h4>
+<div class="outline-text-4" id="text-6-2-3">
+<p>
+tunnel が切断されても、
+tunnel を再接続すれば tunnel 内に流れる tcp セッションは継続通信可能である。
+<i>ただし、tcp 通信のタイムアウト以内に再接続出来れる必要がある。</i>
+</p>
+
+<p>
+しかし、そう単純にはいかないケースがある。
+それは『送信したつもりになっているパケットが相手に届いていないことがある』からだ。
+</p>
+
+<p>
+「tcp は udp と違って再送制御などを行なって信頼性を確保しているんじゃないのか？」
+と思う人もいるだろう。私も最初はそう思っていた。
+しかし、実際はそうではない。
+なぜなら、再送制御などはあくまでも TCP セッションが続いている場合に行なわれることで、
+TCP セッションが切断された場合は再送制御なども当然破棄される。
+</p>
+
+<p>
+つまり、強制的にセッションが切断された場合は、
+送ったつもりが相手に届いていないことが普通にありえる。
+</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2020-05-29</p>
+<p class="author">Author: ifritJP</p>
+<p class="date">Created: 2020-06-03 水 22:14</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

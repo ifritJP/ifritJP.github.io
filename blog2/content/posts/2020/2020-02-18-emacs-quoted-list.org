@@ -1,0 +1,72 @@
+#+TITLE: emacs lisp の quote
+#+DATE: 2020-02-18
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: emacs org-mode
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+emacs lisp の quote でハマったのでネタに書いておく。
+
+#+BEGIN_SRC lisp
+(defvar hoge-val nil)
+(defun hoge-init ()
+  (setq hoge-val '(:val nil))
+  )
+(defun hoge-set ()
+  (plist-put hoge-val :val "1"))
+#+END_SRC
+
+上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、
+次のようにコールすると。
+
+#+BEGIN_SRC lisp
+(let (val1 val2 val3)
+   (hoge-init)
+   (setq val1 (plist-get hoge-val :val))
+   (hoge-set)
+   (setq val2 (plist-get hoge-val :val))
+   (hoge-init)
+   (setq val3 (plist-get hoge-val :val))
+   (message (format "%s %s %s" val1 val2 val3)))
+#+END_SRC
+
+最後の (message (format "%s %s %s" val1 val2 val3)) で "nil 1 1" が出力される。
+
+てっきり、 "nil 1 nil" が出力されるものだと思っていた。
+なぜなら、val3 をセットする直前に hoge-init を実行しており、
+この hoge-init は hoge-val を '(:val nil) で初期化する関数なので、
+(plist-get hoge-val :val) は nil を返すと考えたからだ。
+
+しかし実際には、最後の (plist-get hoge-val :val) は "1" になる。
+
+
+なぜこのような結果になるかと言うと、
+'() は定数として扱い、
+関数 hoge-init を実行する際には新しくリストを生成せず、
+defun を評価した時の値そのものが使い続けられる。
+
+そして (plist-put) でリストの中身を操作した場合、その定数自体が書き変わり、
+hoge-init 関数は変数に書き変わった定数を代入しているため初期化できない。
+
+
+
+一方で、 hoge-init の処理に list 関数を使うと、"nil 1 nil" となる。
+
+#+BEGIN_SRC lisp
+(defun hoge-init ()
+  (setq hoge-val (list :val nil))
+  )
+#+END_SRC
+
+(list) は評価されるたび新規にリストを生成しているため、変数を初期化出来る。
+
+
+よく考えてみると納得できるけど、
+実際の動きと見た目のギャップにどうにもこうにも意味不明だった。
+
+
+これまで一度も意識せずにきたのが不思議なくらい、かなり基本的な内容だと思う。
+
+quote した値の変更は、要注意ってことで。

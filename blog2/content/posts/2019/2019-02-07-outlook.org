@@ -1,0 +1,92 @@
+#+LAYOUT: post
+#+DATE: 2019-02-07
+#+TITLE: Outlook で送信された日本語メールを Mew で受信すると文字化けする問題の対応
+#+TAGS: mew outlook
+
+Outlook は当初から評判が良くないため個人的には使用していません。
+もうず〜〜〜〜〜と、 PC のメール環境は Mew を使用しています。
+
+しかし、自分のメール送信・受信環境は好きなものを選べますが、
+相手のメール送信・受信環境は選べません。
+
+そしてつい先日も、 Outlook から送信されたメールで文字化けメールを受信しました。
+
+どうして化けたのか気になったので、調べてみました。
+
+- メールの MIME に示されているコードは "*gb2312*" となっている
+- 同じメールを Outlook で受信している人に聞いてみると、文字化けしていないと言う
+- emacs のコード変換で化けたのか？と思い、
+  メールを保存してブラウザの表示言語を簡体字中国語設定で表示してみると文字化けしなかった。
+  - この時のブラウザのテキストエンコーディングを見てみると "*GBK*" だった
+- emacs で利用可能な文字コードを見てみると "*gb2312*" と "*GBK*" は別ものとして存在している。
+- 試しに文字化けしたメールを、 emacs の "*GBK*" を指定して開くと文字化けしなかった
+- Wikipedia を見ると "*GBK*" は "*gb2312*" を拡張したものということが分った
+  - また、 Microsoft が GBK を Windows コードページ 936 として定義した、との記載がある。
+- MS も Outlook で送信すると文字コード判定が間違えることを認識している
+  - 次の URL に記載されている「方法3」が、まさにそれの対処方法
+  - <https://support.microsoft.com/ja-jp/help/881816>
+
+以上のことから、次の事が考えられます。
+
+- Outlook で所定の文字を含むメールを送信する際、
+  Outlook の自動文字コード判定によって WCP936 として認識される。
+- WCP936 は本来 GBK であるが、メールの MIME には charset="gb2312" として宣言される
+- メールを受信した Mew は、 MIME の情報を見て gb2312 として処理するが、
+  実際のメールは gb2312 ではなく GBK でエンコーディングされているため、文字化けする。
+
+  
+* Mew での対応
+
+Outlook のダメさ加減を嘆いてもしようがないので、
+ここでは Mew で受信した時に化けずに表示できる対応をします。
+
+対応コードは以下です。
+
+#+BEGIN_SRC el
+(defun my-mew-change-gb2312-for-outlook ()
+  "outlook 対応。 Outlook の gb2312 は gbk になっている。。。"
+  (setq mew-cs-database-for-decoding
+	(mapcar (lambda (X)
+		  (if (equal (car X) "gb2312")
+		      (list (car X) 'gbk)
+		    X))
+		mew-cs-database-for-decoding)))
+
+(eval-after-load "mew"
+  '(my-mew-change-gb2312-for-outlook))
+#+END_SRC
+
+以下で上記処理の説明をします。
+
+
+Mew は MIME の charset と、
+emacs の coding-system の紐付けを *mew-cs-database-for-decoding* で管理しています。
+
+こんな感じ。
+
+#+BEGIN_SRC txt
+(defvar mew-cs-database-for-decoding
+  `(("us-ascii"          nil)
+    ("iso-8859-1"        iso-8859-1)
+    ("iso-8859-2"        iso-8859-2)
+    ("iso-8859-3"        iso-8859-3)
+    ("iso-8859-4"        iso-8859-4)
+    ("iso-8859-5"        iso-8859-5)
+    ("iso-8859-6"        iso-8859-6)
+    ("iso-8859-7"        iso-8859-7)
+    ("iso-8859-8"        iso-8859-8)
+    ("iso-8859-8-i"      iso-8859-8) ;; temporary solution
+    ("iso-8859-9"        iso-8859-9)
+    ("iso-8859-15"       iso-8859-15)
+    ("iso-2022-cn"       iso-2022-cn)
+    ("iso-2022-cn-ext"   iso-2022-cn-ext)
+    ("gbk"               gbk)
+    ("gb2312"            cn-gb-2312) ;; should be before cn-gb
+    ("cn-gb"             cn-gb-2312)
+#+END_SRC
+
+この設定では、 MIME の gb2312 を cn-gb-2312 に紐付けしているので、
+gb2312 を gbk の紐付けに変更しているのが先ほどのコードとなります。
+
+中国語圏とメールのやり取りしたときに何か問題がおこるかもですが、
+自分にはそんな予定はないのでとりあえずこれで十分かな、と。

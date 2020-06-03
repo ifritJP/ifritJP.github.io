@@ -1,0 +1,118 @@
+#+TITLE: org-mode 9.3.5 で babel(dot/plantuml) が動かなかった
+#+DATE: 2020-02-13
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: emacs org-mode
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+emacs の org-mode では、
+.org ファイル内に C や python 等ソースコードを書いて、
+export 時にそのソースコードを色付けした状態で載せることができる。
+
+この機能を babel と言う。
+
+babel では、ソースコードの色付けだけでなく、
+dot や plantuml 等のグラフ生成言語を利用することで、
+.org ファイル内に書いたグラフ生成言語からグラフを生成して、
+所定位置にグラフを挿入することもできる。
+
+
+今回、 org-mode 9.3.5 の babel を使って dot の画像を出力しようとしたところ、
+エラーしたので原因を追ってみた。
+
+* エラー箇所
+
+エラーは次の関数で発生していた。
+  
+#+BEGIN_SRC lisp
+(defun org-babel-chomp (string &optional regexp)
+  "Strip a trailing space or carriage return from STRING.
+The default regexp used is \"[ \\f\\t\\n\\r\\v]\" but another one
+can be specified as the REGEXP argument."
+  (let ((regexp (or regexp "[ \f\t\n\r\v]")))
+    (while (and (> (length string) 0)
+                (string-match regexp (substring string -1)))
+      (setq string (substring string 0 -1)))
+    string))
+#+END_SRC
+
+エラーの内容は次のものだった。
+
+#+BEGIN_SRC txt
+Debugger entered--Lisp error: (wrong-type-argument stringp nil)
+  string-match(nil "c")
+  (and (> (length string) 0) (string-match regexp (substring string -1)))
+  (while (and (> (length string) 0) (string-match regexp (substring string -1))) (setq string (substring string 0 -1)))
+  (let ((regexp (or regexp "[ \f\011\n\015\013]"))) (while (and (> (length string) 0) (string-match regexp (substring string -1))) (setq string (substring string 0 -1))) string)
+#+END_SRC
+
+このエラーは、
+上記の org-babel-chomp 関数の regexp 引数が nil だった場合に発生する。
+
+* エラーの修正
+
+このエラーに対し、  
+次のように let で宣言する変数を別名(regexp-work)で定義することで回避した。
+
+#+BEGIN_SRC lisp
+(defun org-babel-chomp (string &optional regexp)
+  "Strip a trailing space or carriage return from STRING.
+The default regexp used is \"[ \\f\\t\\n\\r\\v]\" but another one
+can be specified as the REGEXP argument."
+  (let ((regexp-work (or regexp "[ \f\t\n\r\v]")))
+    (while (and (> (length string) 0)
+                (string-match regexp-work (substring string -1)))
+      (setq string (substring string 0 -1)))
+    string))
+#+END_SRC
+  
+* エラーの原因
+
+エラーの原因を確認するため、
+エラーを再現する処理を抜き出して書き換えると次になる。
+
+#+BEGIN_SRC lisp
+;;; -*- lexical-binding: t; -*-
+(defun hoge (regexp)
+  (let ((regexp (or regexp "a")))
+    (string-match regexp "b")))
+#+END_SRC
+
+上記の hoge 関数の引数 regexp に nil をセットしてコールすると同じエラーになる。
+なお、この現象は lexical-binding を有効にしている時だけ発生する。
+
+
+上記関数の処理を説明すると次のようになる。
+
+- let で新しく変数 regexp を宣言する
+  - このとき、引数 regexp が nil 以外なら、引数 regexp の値を変数 regexp にセットする
+  - 引数 regexp が nil なら、 "a" を変数 regexp にセットする。
+
+つまり、let で宣言している変数 regexp には必ず nil 以外がセットされるはずである。
+
+しかし、実際には string-match に渡される regexp には nil がセットされている。
+
+何故このような結果になるか原因を想像すると、
+
+「string-match でアクセスするシンボル regexp は、
+  let で宣言している regexp ではなく、関数の引数 regexp が参照されるため」
+
+と考えるのが妥当だろう。
+
+string-match は let のスコープなので、
+普通に考えれば string-match の regexp は let で宣言している変数 regexp であるはず。
+しかし、実際には何故か関数の引数 regexp になっている。
+
+これが emacs lisp の仕様なのか、はたまた仕様外の動作なのかは良く分からない。
+
+ちなみに、これが発生している環境は emacs 26.2 だが、
+他の環境で発生するかどうかは確認していない。
+
+org-mode の履歴を追ってみたが、 
+この関数の処理は lexical-binding を使うようになる前から変っていないので、
+lexical-binding にした事による影響だろう。
+
+
+以上。

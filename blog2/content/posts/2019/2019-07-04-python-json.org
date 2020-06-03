@@ -1,0 +1,60 @@
+#+TITLE: python のクラスを JSON 化
+#+DATE: 2019-07-04
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: python
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+[[https://github.com/ifritJP/game-message-tts][コレ]] を作るにあたって、データの serialize/deserialize の方法を調べた結果、
+[[https://pypi.org/project/marshmallow-dataclass/][marshmallow_dataclass]] に落ち着きました。
+
+いくつか調べた中で、パッと見、直感的に出来そうだった、というだけの理由ですが。。
+
+実際、面倒な処理はほとんど無く、 serialize/deserialize が可能になりました。
+
+* 使い型
+
+[[https://pypi.org/project/marshmallow-dataclass/][marshmallow_dataclass]] は、
+クラスを宣言する際に =@dataclass= デコレータを付けて宣言し、
+メンバの型を宣言するのが基本です。
+
+こんな感じ。
+
+#+BEGIN_SRC py
+@dataclass
+class LogItem:
+    # ゲームタイトル
+    title:str
+    # 日付
+    date:int
+    # テキスト
+    text:str
+    # テキスト長
+    len:int
+#+END_SRC
+
+メンバの宣言が python っぽくないと思う方もいるかもしれませんが、
+静的型付け言語になれていると、こっちの方が馴染み易い気がします。
+
+JSON 化する場合は、
+次のようにクラスメソッドに JSON 化するクラスのインスタンスを渡すだけです。
+
+: item = LogItem( "title", time.time(), "text", len( "text" ) )
+: print( marshmallow_dataclass.class_schema( LogItem )().dumps( item ) )
+
+逆に JSON からクラスインスタンスを生成するには、
+次のようにクラスメソッドに渡すだけです。
+
+: marshmallow_dataclass.class_schema( LogItem )().loads( text )
+
+とても簡単です。
+
+
+ただ、躓いた点があったので、気をつけるべき点として書いておきます。
+
+- python3.7 以降を使用する
+- =@dataclass= デコレータを付けたクラスに次を宣言してはならない
+  - コンストラクタ __init__
+  - @staticmethod load()

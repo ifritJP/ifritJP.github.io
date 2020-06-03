@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+        stream は rewind/seek できる？ - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="これは seekable な stream と none_seekable な stream の使い分けに関する記事です。 使い分けが十分出来ている人は読まなくても大丈夫です。 皆さんは bitstream という単語をご存知でしょうか？" />
+    <meta name="generator" content="Hugo 0.71.1 with theme pure" />
+    <title>stream は rewind/seek できる？ - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog/css/style.min.785a8cbec99e60735f569c253eb979c0a43335b708d4cab5c44844d3e25e74ba.css">
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog/css/custom.css" async>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <meta property="og:title" content="stream は rewind/seek できる？" />
+<meta property="og:description" content="これは seekable な stream と none_seekable な stream の使い分けに関する記事です。 使い分けが十分出来ている人は読まなくても大丈夫です。 皆さんは bitstream という単語をご存知でしょうか？" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/posts/2019/2019-07-10-stream/" />
+<meta property="article:published_time" content="2019-07-10T00:00:00+00:00" />
+<meta property="article:modified_time" content="2019-07-10T00:00:00+00:00" />
+<meta itemprop="name" content="stream は rewind/seek できる？">
+<meta itemprop="description" content="これは seekable な stream と none_seekable な stream の使い分けに関する記事です。 使い分けが十分出来ている人は読まなくても大丈夫です。 皆さんは bitstream という単語をご存知でしょうか？">
+<meta itemprop="datePublished" content="2019-07-10T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2019-07-10T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="3959">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="stream は rewind/seek できる？"/>
+<meta name="twitter:description" content="これは seekable な stream と none_seekable な stream の使い分けに関する記事です。 使い分けが十分出来ている人は読まなくても大丈夫です。 皆さんは bitstream という単語をご存知でしょうか？"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+      <![endif]-->
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="Search" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder="Type something..."
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-categories">
+                <a href="/blog/categories/">
+                    <i class="icon icon-folder"></i>
+                  <span class="menu-title">Categories</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">Board</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> Categories</h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> Tags</h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86%E7%B3%BB/" class="tag-list-link">言語処理系</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-05-29-tunnel/" class="title">Tunnel/Reverse Tunnel over websocket を作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-05-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-05-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-03-29-hugo-org/" class="title">Hugo を org-mode で使う時の注意点</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-03-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-03-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-21-raspberrypi-mount/" class="title">raspberry pi の USB MASS STORAGE 自動マウントを無効化する</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-21 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-21</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-18-emacs-quoted-list/" class="title">emacs lisp の quote</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-18</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-13-emacs-org-9.3.5/" class="title">org-mode 9.3.5 で babel(dot/plantuml) が動かなかった</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-13 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-13</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title">Catalogue</h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog/posts/2019/2019-07-10-stream/"
+    >stream は rewind/seek できる？</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog/posts/2019/2019-07-10-stream/" class="article-date">
+  <time datetime="2019-07-10 00:00:00 &#43;0000 UTC" itemprop="datePublished">2019-07-10</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog/posts/2019/2019-07-10-stream/#comments"
+            class="article-comment-link">Comments</a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">Word Count: 3959words</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">Read Count: 8minutes </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+<strong>これは seekable な stream と none_seekable な stream の使い分けに関する記事です。</strong>
+</p>
+<p>
+<strong>使い分けが十分出来ている人は読まなくても大丈夫です。</strong>
+</p>
+<p>
+皆さんは bitstream という単語をご存知でしょうか？
+</p>
+<p>
+AV (Audio&amp;Visual) が好きな人や、
+それらの業界に関係のある人ならそこそこ聞く単語だと思いますが、
+一般的にはあまり馴染の無い単語でしょうか。
+</p>
+<p>
+馴染の無い人の為に身近な HDD レコーダを例に挙げて説明すると、
+HDD レコーダはデジタル放送の電波に乗っているデータをそのまま記録していますが、
+このデータが bitstream です。
+HDD レコーダは、デジタル放送の bitstream を HDD に記録し、
+記録した bitstream を再生する装置と言えます。
+もちろん、実際にはそんな単純ではないですが、概ね間違ったことは言ってません。
+</p>
+<h2 id="headline-1">
+stream
+</h2>
+<p>
+プログラムでデータを扱う時、stream という概念を使って制御します。
+</p>
+<table>
+<thead>
+<tr>
+<th>言語</th>
+<th>stream (入力)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Java</td>
+<td>InputStream</td>
+</tr>
+<tr>
+<td>Swift</td>
+<td>InputStream</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>io.Reader</td>
+</tr>
+</tbody>
+</table>
+<p>
+上記は言語毎の入力系 stream の例です。
+</p>
+<p>
+ちなみに入力系の stream とは何かというと、
+流れてくるデータを読み出すためのものです。
+</p>
+<p>
+例えば、先ほどの HDD レコーダの例で説明すると、
+</p>
+<ul>
+<li>
+<p>
+デジタル放送の電波に乗っている bitstream を読み取る部分
+</p>
+</li>
+<li>
+<p>
+HDD に記録されている bitstream を読み込む部分
+</p>
+</li>
+</ul>
+<p>
+が入力系の stream です。
+</p>
+<p>
+また、上記言語の stream (InputStream,io.Reader)には共通することがあります。
+</p>
+<p>
+それは、データの流れが一方通行で遡ることが出来ない、ということです。
+</p>
+<p>
+プログラム的に言うと、上記の stream は seek や rewind をサポートしていません。
+</p>
+<p>
+これを、先ほどの HDD レコーダの例で説明すると、
+「過去に放送された番組の録画はできない」ということです。
+</p>
+<p>
+24 時間全ての番組を常に録画し続けて、
+「1週間前に放送された任意の番組を再生する」機能を持つ HDD レコーダはありますが、
+それはあくまで録画してあるものを再生しているのであって、
+過去に放送された番組を録画することは出来ません。
+もしそれが出来るなら、
+本当の意味でのタイムマシーンを作ることが出来ることと同義になります。
+</p>
+<p>
+なお、「過去に放送された番組の録画はできない」ですが、
+「録画した番組」の逆再生などは出来ます。
+</p>
+<p>
+先ほど説明した通り、次のどちらもの入力 stream です。
+</p>
+<ul>
+<li>
+<p>
+デジタル放送の電波に乗っている bitstream を読み取る部分
+</p>
+<ul>
+<li>
+<p>
+過去に放送された番組の録画はできない
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+HDD に記録されている bitstream を読み込む部分
+</p>
+<ul>
+<li>
+<p>
+録画した番組は逆再生など出来る
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+これはつまり、 stream には次の 2 つのタイプが存在することを意味します。
+</p>
+<ul>
+<li>
+<p>
+流れが一方通行で遡ることが出来ない stream
+</p>
+</li>
+<li>
+<p>
+流れを遡ることが出来る stream
+</p>
+</li>
+</ul>
+<p>
+これ以降、上記をそれぞれ none_seekable と seekable とします。
+</p>
+<h2 id="headline-2">
+none_seekable と seekable の使い分け
+</h2>
+<p>
+上記の通り、stream には none_seekable と seekable の 2 つのタイプが存在します。
+</p>
+<p>
+では、実際のプログラムでは stream はどう使い分けるべきか？ と考えた場合、
+seekable である必要がない場合は極力 none_seekable を使うべきです。
+</p>
+<p>
+なぜならば、
+seekable は none_seekable を包括する概念であり、
+seekable な stream は none_seekable として使用することが出来ますが、
+none_seekable な stream は seekable として使用することが出来ないからです。
+</p>
+<p>
+次に、疑似言語を使って説明します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">fn funcA( data: seekable ) {
+  sub( data );
+}
+fn funcB( data: none_seekable ) {
+  sub( data );
+}</code></pre></div>
+</div>
+<p>
+上記は、 seekable な引数を持つ関数 funcA と、
+none_seekable な引数を持つ関数 funcB を定義する疑似言語コードです。
+また sub() は、 none_seekable な引数を持つ関数とします。
+</p>
+<p>
+ここで、この関数 funcA は seekable な stream でしか使用できないのに対し、
+この関数 funcB は seekable, none_seekable どちらでも使用できることになり、
+funcB は funcA よりも汎用性が高いと言えます。
+</p>
+<p>
+関数の汎用性が高いことが良いプログラムである、とは一概には言えませんが、
+ミドルウェアなどのライブラリでは、汎用性が高い方が良いとされます。
+</p>
+<p>
+つまり、 stream を入力に持つ関数の処理においては、
+seek や rewind の使用は極力避け、
+none_seekable の stream で処理可能にすべきである、と言えます。
+</p>
+<p>
+ただし例外として、 seek や rewind を使用しないと目標のパフォーマンスが出ないとか、
+必要なワークメモリが規定を越えてしまう、等の問題がある場合は、
+無理に none_seekable で処理する必要はありません。
+</p>
+<p>
+とはいえ、あくまでも原則は、
+seekable ではなく none_seekable で処理できるかどうかを検討するべきです。
+</p>
+<p>
+言語の組込みの型として seekable と none_seekable が分かれていない言語は、
+結構あると思います。
+</p>
+<p>
+そのような言語でも、 
+seekable と none_seekable の考え方自体は有効なので実践してください。
+</p>
+<h2 id="headline-3">
+none_seekable で処理することのメリット
+</h2>
+<p>
+seekable ではなく none_seekable で処理することのメリットとして、
+Web ブラウザでの処理を例に挙げて説明します。
+</p>
+<p>
+もしもブラウザの処理が全て seekable であった場合、
+ブラウジングスピードが遅くなることが予想されます。
+</p>
+<p>
+なぜなら、Web ブラウザは、サーバから HTML をダウンロードし、
+HTML 内のリンクを抽出し、そのリンクをさらにダウンロードします。
+そしてリンクが画像の場合、画像をデコードして表示します。
+</p>
+<p>
+画像のデコード処理が none_seekable であるならば、
+画像データのダウンロード開始と同時にデコード処理が開始でき、
+画像データのダウンロード終了とほぼ同時にデコード処理を完了できます。
+</p>
+<p>
+一方でもしも画像のデコード処理が seekable だった場合、
+画像データをダウンロード終了してからデコード処理を行なわなければならず、
+その分タイムロスになります。
+さらに欠点はタイムロスだけでなく、
+画像データの全てをダウンロードして一旦 RAM やストレージに格納しておく必要があり、
+その分のリソースを消費することになります。
+</p>
+<p>
+画像データのサイズなんてイマドキのハードウェアスペックなら無視できる、
+という意見もあるかもしれませんが、例えば 8K の低圧縮画像などは軽く数 10MB を越えます。
+こういった画像のデータを全てダウンロードしてからデコードするなんてしてたら、
+無駄にリソースを消費することが分かると思います。
+</p>
+<p>
+また、最近はほとんど使われていませんが、
+progressive JPEG なんて画像フォーマットが使われていた時期がありましたが、
+これは none_seekable で処理して始めて意味のあるものです。
+</p>
+<p>
+progressive JPEG を簡単に説明すると、
+画像データの一部をダウンロードするだけで、低解像度の画像をデコードできる技術で、
+ダウンロードが進むごとにデコード結果の解像度が上がるというものです。
+</p>
+<p>
+これは、ネットワークの通信速度が低速なころに使用されていた画像フォーマットで、
+いまではほとんど使われなくなったものですが、
+none_seekable で処理しなければ全く意味のないものです。
+</p>
+<p>
+他にも none_seekable で処理することのメリットとして、
+動画配信に代表されるストリーミングサービスがあります。
+</p>
+<p>
+あれも、 none_seekable が前提にあるからこそ可能なサービスです。
+</p>
+<p>
+「ストリーミングサービスが none_seekable だ」と書くと
+「Youtube はシークできるぞ」とかツッコミがあると思うので一応補足しておきます。
+</p>
+<p>
+たしかに Youtube などの動画配信サービスはシークできるのが当たり前です。
+しかし、通常再生時は none_seekable で処理していて、
+シークなどの操作が入った時だけ、
+サーバからデータをダウンロードしなおして処理しています。
+つまり、基本は none_seekable です。
+</p>
+<p>
+もしも動画データが seekable 前提だった場合、
+動画データを全てダウンロードしてからでないと再生できないか、
+seek 処理が大量に発生してサーバ間の通信負荷が非常に高くなることが予想されます。
+</p>
+<p>
+また、seekable(randam access) は none_seekable(sequential) と比べて
+非常にパフォーマンスが悪くなるのが一般的です。
+</p>
+<p>
+例えば HDD の randam access は sequential と比べて 2 桁以上のパフォーマンス劣化、
+SSD でも 1 桁以上劣化します。
+RAM であっても、randam access することでキャッシュミスが発生しやすくなり、
+パフォーマンス劣化からは逃れられません。
+現代ではほとんど使われませんが、
+テープデバイスなんて使った日には、どれほどかかるか想像すら出来ません。
+</p>
+<h2 id="headline-4">
+データフォーマット
+</h2>
+<p>
+stream を処理する際に、
+それを none_seekable として扱うには、
+stream に流れるデータのフォーマットが none_seekable として
+扱い易い構造になっている必要があります。
+</p>
+<p>
+データフォーマットが none_seekable として扱い難い構造の場合、
+上記のように「目標のパフォーマンスが出ない」、「必要なワークメモリが規定を越えてしまう」
+という問題が発生する可能性があります。
+</p>
+<p>
+ある程度の大きさになるデータフォーマットを定義する時は、
+必ず none_seekable で処理することを考えて定義しましょう。
+</p>
+<p>
+なお、 stream で処理することが多い画像や音声などのデータフォーマットは、
+基本的には none_seekable で処理できるように定義されています。
+</p>
+<p>
+もしもそうでなければ、放送や動画配信でデジタルデータを扱うことは出来ません。
+</p>
+<p>
+ちなみに、データの encode と decode の none_seekable での扱い易さは、
+相反することがあります。
+</p>
+<p>
+その場合、どちらかを優先するか、折衷案の検討が必要です。
+一つ言えることは、作業バッファを 0 にすることはまず不可能なので、
+どの程度の作業バッファサイズなら妥当かを判断することが重要です。
+</p>
+<h2 id="headline-5">
+例外
+</h2>
+<p>
+none_seekable で処理することで、
+ダウンロードとデコードを同時に処理できるため高速に処理できる、と説明しましたが、
+一部例外があります。
+</p>
+<p>
+それは、専用ハードウェアを使用してデコードする場合です。
+</p>
+<p>
+HDD レコーダなどの家電製品では、
+動画や音声を処理する専用ハードウェアを搭載しています。
+それら専用ハードウェアは、データを渡すと高速に処理して結果を返してくれますが、
+処理するデータは全て揃えてから渡さなければならない、
+という制約があることがほとんどです。
+</p>
+<p>
+その場合は、none_seekable でダウンロードとデコードを同時に処理するよりも、
+専用ハードウェアを使用して処理する方が高速に処理できます。
+</p>
+<p>
+ただし、当然専用ハードウェアであるため、処理できるデータは限られていますし、
+そのような専用ハードウェアが利用できる環境は限られています。
+</p>
+<h2 id="headline-6">
+まとめ
+</h2>
+<p>
+stream を扱う際は、次を注意する必要があります。
+</p>
+<ul>
+<li>
+<p>
+極力 none_seekable で扱う
+</p>
+</li>
+<li>
+<p>
+データフォーマットを決める時点で、 none_seekable で扱えることを考慮する
+</p>
+</li>
+</ul>
+<h2 id="headline-7">
+最後に
+</h2>
+<p>
+なんでこんなことを書いたかというと、
+最近とある画像コーデックのライブラリを扱うことがあったんですが、
+そのライブラリへの入力が seekable であることを前提としていてムカついた、
+という経験をしたためです。
+</p>
+<p>
+データ streaming 処理を行なう場合の基本的な考えなので、
+必ずこれらを考慮に入れて設計するようにお願いします。
+</p>
+<p>
+以上。
+</p>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog/posts/2019/2019-07-04-python-json/" title="python のクラスを JSON 化"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;Older</span></a>
+            </li>
+            <li class="next">
+                <a href="https://ifritjp.github.io/blog/posts/2019/2019-07-19-font/"
+                    title="emacs26.2 で矢印(→)等の一部のフォントが半角表示されるようになった"><span>Newer&nbsp;&nbsp;</span><i
+                        class="icon icon-angle-right" aria-hidden="true"></i></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="Catalogue" role="button">
+                    <span>[&nbsp;</span><span>Catalogue</span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter"
+                data-mobile-sites="weibo,qq,qzone"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2020
+    <div class="publishby">
+        Theme by <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a>base on<a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/highlight.min.js"></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/python.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/javascript.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/lisp.min.js" defer></script><script>
+    hljs.configure({
+        tabReplace: '    ', 
+        classPrefix: ''     
+        
+    })
+    hljs.initHighlightingOnLoad();
+</script>
+<script src="https://ifritjp.github.io/blog/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: 'Posts',
+                PAGES: 'Pages',
+                CATEGORIES: 'Categories',
+                TAGS: 'Tags',
+                UNTITLED: '(Untitled)',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

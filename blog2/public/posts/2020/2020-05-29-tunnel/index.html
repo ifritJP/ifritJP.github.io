@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+        Tunnel/Reverse Tunnel over websocket を作った - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので開発した。 「Tunnel/Reverse Tunnel over webso" />
+    <meta name="generator" content="Hugo 0.71.1 with theme pure" />
+    <title>Tunnel/Reverse Tunnel over websocket を作った - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog/css/style.min.785a8cbec99e60735f569c253eb979c0a43335b708d4cab5c44844d3e25e74ba.css">
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog/css/custom.css" async>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <meta property="og:title" content="Tunnel/Reverse Tunnel over websocket を作った" />
+<meta property="og:description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので開発した。 「Tunnel/Reverse Tunnel over webso" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/posts/2020/2020-05-29-tunnel/" />
+<meta property="article:published_time" content="2020-05-29T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-05-29T00:00:00+00:00" />
+<meta itemprop="name" content="Tunnel/Reverse Tunnel over websocket を作った">
+<meta itemprop="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので開発した。 「Tunnel/Reverse Tunnel over webso">
+<meta itemprop="datePublished" content="2020-05-29T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2020-05-29T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="3871">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Tunnel/Reverse Tunnel over websocket を作った"/>
+<meta name="twitter:description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので開発した。 「Tunnel/Reverse Tunnel over webso"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+      <![endif]-->
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="Search" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder="Type something..."
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-categories">
+                <a href="/blog/categories/">
+                    <i class="icon icon-folder"></i>
+                  <span class="menu-title">Categories</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">Board</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> Categories</h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> Tags</h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86%E7%B3%BB/" class="tag-list-link">言語処理系</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-05-29-tunnel/" class="title">Tunnel/Reverse Tunnel over websocket を作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-05-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-05-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-03-29-hugo-org/" class="title">Hugo を org-mode で使う時の注意点</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-03-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-03-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-21-raspberrypi-mount/" class="title">raspberry pi の USB MASS STORAGE 自動マウントを無効化する</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-21 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-21</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-18-emacs-quoted-list/" class="title">emacs lisp の quote</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-18</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-13-emacs-org-9.3.5/" class="title">org-mode 9.3.5 で babel(dot/plantuml) が動かなかった</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-13 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-13</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title">Catalogue</h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog/posts/2020/2020-05-29-tunnel/"
+    >Tunnel/Reverse Tunnel over websocket を作った</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog/posts/2020/2020-05-29-tunnel/" class="article-date">
+  <time datetime="2020-05-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-05-29</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog/posts/2020/2020-05-29-tunnel/#comments"
+            class="article-comment-link">Comments</a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">Word Count: 3871words</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">Read Count: 8minutes </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので開発した。
+</p>
+<p>
+「Tunnel/Reverse Tunnel over websocket」 が何かというと、
+「websocket を tunnel にして別の TCP 通信を通すもの」だ。
+</p>
+<h2 id="headline-1">
+「Tunnel/Reverse Tunnel over websocket」 とは
+</h2>
+<p>
+「Tunnel/Reverse Tunnel over websocket」を少し具体的にいうと、
+次のような構成で通信を可能にするモノだ。
+</p>
+<pre class="example">
+(1) tcp client (A) --&gt;&gt; [ tunnel client --&gt;&gt; tunnel websocket server ] --&gt;&gt; tcp server (A)
+(2) tcp server (C) &lt;&lt;-- [ tunnel client --&gt;&gt; tunnel websocket server ] &lt;&lt;-- tcp client (D)
+</pre>
+<p>
+まず、tcp 通信を行なわせたい tcp client (A) と tcpc server (B) がある。
+しかし、(A) と (B) はそれぞれ異なるネットワークに属しており、
+proxy やファイヤーウォールで通信が制限され、
+直接的には tcp 通信が行なえない状況にある。
+</p>
+<p>
+この (A),(B) 間の通信を実現するのが、 tunnel といわれる技術である。
+通信路を構築し、その通信路上で通信を行なう。
+その「通信路」が tunnel である。
+</p>
+<p>
+ここでまた、上記 (1), (2) の構成について補足する。
+(A) と (B) それぞれが属するネットワークがある。
+ここで (A) が tcp client で、(B) が tcp server とする。
+そして、 (A) 側の環境に proxy/firewall があり、(B) とは直接通信できないとする。
+この時に (B) 側に tunnel server を建て、 (A) 側から tunnel client で接続し、
+(A) と (B) の通信を確立するのが (1) の Tunnel である。
+</p>
+<p>
+(2) は、(1) tcp client と tcp server の位置関係が逆になっている。
+この逆の関係の通信を確立するのが Reverse Tunnel である。
+</p>
+<p>
+そして、それを実現する手段として websocket を利用して tunnel を構築するのが、
+「Tunnel/Reverse Tunnel over websocket」だ。
+</p>
+<h2 id="headline-2">
+VPN
+</h2>
+<p>
+このような状況で VPN を構築できる SoftEther があったりするが、
+VPN ほど低レイヤーでネットワークを構築したい訳ではない。
+</p>
+<p>
+VPN は、その名の通り仮想的なネットワークを構築する。
+これによって、通常のネットワークと同様に扱えて便利ではあるが、
+通常のネットワークと同様であるが故、逆にリスクになる可能性がある。
+</p>
+<p>
+今回の目的は、proxy やファイヤーウォールで分断されている端末間の
+tcp 接続を実現することに絞ることで、不要なリスクを排除する。
+</p>
+<h2 id="headline-3">
+開発した背景
+</h2>
+<p>
+この目的を実現できないかどうか、当初はフリーのツールを探していたが、
+自分の環境は (A)/(B) 間のネットワーク環境が悪く、
+tunnel を確立しても、ある程度経過すると切断されてしまう問題があった。
+</p>
+<p>
+論理的には、tunnel が切断されても tunnel を再接続することで、
+tunnel 上の tcp 通信を継続させることは可能だが、
+検討していた幾つかのフリーのツールでは、
+tunnel が切断されると tcp 通信が継続できなかった。
+そもそも tunnel を接続すること自体、成功したり失敗したりしているような状況だった。
+</p>
+<p>
+そこで、フリーのツールを検討することは諦め、
+今回はスクラッチで開発することにした。
+</p>
+<p>
+なお今回開発した Tunnel ツール実行中の切断状況を確認したところ、
+次のようになった。
+</p>
+<ul>
+<li>
+<p>
+1 接続は最大でも 15 分程度で切断される
+</p>
+</li>
+<li>
+<p>
+昼間は 30 秒程度で切断される
+</p>
+</li>
+<li>
+<p>
+接続の 7 割強は 1 分以内で切断される
+</p>
+</li>
+</ul>
+<p>
+なんとも恐しいネットワーク環境だ。  
+</p>
+<h2 id="headline-4">
+使用方法
+</h2>
+<p>
+このツールは Go で開発しているため、
+事前に Go(1.14.2) の環境を構築してあることが前提である。
+</p>
+<h3 id="headline-5">
+ビルド
+</h3>
+<div class="src src-sh">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ git clone --depth <span style="color:#ae81ff">1</span> https://github.com/ifritJP/tunnel.git
+$ cd tunnel
+$ make</code></pre></div>
+</div>
+<p>
+これで tunnel コマンドがカレントディレクトリに生成される。
+</p>
+<h3 id="headline-6">
+tunnel コマンド
+</h3>
+<p>
+tunnel コマンドは tunnel の server と、 tunnel の client の両方の役割を持つ。
+</p>
+<ul>
+<li>
+<p>
+server
+</p>
+</li>
+</ul>
+<p>
+server のコマンド例を示す。
+</p>
+<pre class="example">
+$ tunnel -mode r-wsserver -server :6666 -port 8001 -remote localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+</pre>
+<p>
+これは次のサーバの実行を指定している。
+</p>
+<table>
+<thead>
+<tr>
+<th>オプション</th>
+<th>意味</th>
+<th>サンプルの意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-mode</td>
+<td>client/server の種類</td>
+<td>reverse websocket server</td>
+</tr>
+<tr>
+<td>-server</td>
+<td>tunnel サーバの情報</td>
+<td>ポート 6666 を使用して websocket server を建てる</td>
+</tr>
+<tr>
+<td>-port</td>
+<td>tunnel で接続する際のポート番号</td>
+<td>ポート 8001 を使用</td>
+</tr>
+<tr>
+<td>-remote</td>
+<td>tunnel で繋げる接続先</td>
+<td>localhost の 22 ポートに接続</td>
+</tr>
+<tr>
+<td>-pass</td>
+<td>client の認証用パスワード</td>
+<td>XXXXXXX</td>
+</tr>
+<tr>
+<td>-encPass</td>
+<td>client/server 間の通信路の暗号パスワード</td>
+<td>YYYYYYYY</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p>
+client
+</p>
+</li>
+</ul>
+<p>
+client のコマンド例を示す
+</p>
+<pre class="example">
+$ tunnel -mode r-wsclient -proxy http://user:pass@proxy.hoge.com:8080/ -server hoge.hoge.com:80 -pass XXXXXXX -encPass YYYYYYYY
+</pre>
+<p>
+これは次のクライアントの実行を指定している。
+</p>
+<table>
+<thead>
+<tr>
+<th>オプション</th>
+<th>意味</th>
+<th>サンプルの意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>-mode</td>
+<td>client/server の種類</td>
+<td>reverse websocket client</td>
+</tr>
+<tr>
+<td>-proxy</td>
+<td>proxy サーバの情報</td>
+<td><a href="http://proxy.hoge.com::8080/">http://proxy.hoge.com::8080/</a> に user, pass で接続</td>
+</tr>
+<tr>
+<td>-server</td>
+<td>tunnel サーバの情報</td>
+<td>hoge.hoge.com の 80 に接続する</td>
+</tr>
+<tr>
+<td>-pass</td>
+<td>client の認証用パスワード</td>
+<td>XXXXXXX</td>
+</tr>
+<tr>
+<td>-encPass</td>
+<td>client/server 間の通信路の暗号パスワード</td>
+<td>YYYYYYYY</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p>
+tunnel への接続
+</p>
+</li>
+</ul>
+<p>
+上記のサンプルは localhost の 22 番ポートに接続するための reverse tunnel を構築している。
+つまり、このサーバ側の 8001 ポートに繋げると、 client 側の ssh に接続されることになる。
+</p>
+<p>
+よって、サーバ側で次のコマンドを実行することで、クライアントの ssh に接続できる。
+</p>
+<pre class="example">
+$ ssh -p 8001 localhost
+</pre>
+<h4 id="headline-7">
+オプション一覧
+</h4>
+<p>
+tunnel コマンドで使用可能なオプションについて説明する
+</p>
+<h5 id="headline-8">
+基本
+</h5>
+<p>
+-mode string
+</p>
+<ul>
+<li>
+<p>
+次のいずれかを指定する
+</p>
+</li>
+<li>
+<p>
+サーバ
+</p>
+<ul>
+<li>
+<p>
+server
+</p>
+</li>
+<li>
+<p>
+r-server
+</p>
+</li>
+<li>
+<p>
+wsserver
+</p>
+</li>
+<li>
+<p>
+r-wsserver
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+クライアント
+</p>
+<ul>
+<li>
+<p>
+client
+</p>
+</li>
+<li>
+<p>
+r-client
+</p>
+</li>
+<li>
+<p>
+wsclient
+</p>
+</li>
+<li>
+<p>
+r-wsclient
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+&#34;r-&#34; が付くものは、 reverse tunnel である。
+</p>
+</li>
+<li>
+<p>
+ws が付くものは、 over websocket である。
+</p>
+</li>
+<li>
+<p>
+ws が付かないものは、 tcp で直接接続する。
+</p>
+</li>
+<li>
+<p>
+&#34;r-&#34;, &#34;ws&#34; は client/server で一致している必要がある。
+</p>
+</li>
+</ul>
+<p>
+-server string
+</p>
+<ul>
+<li>
+<p>
+server を示す。
+</p>
+</li>
+<li>
+<p>
+サーバ側で指定する場合は、ポート番号だけ指定する。 (:1234)
+</p>
+</li>
+<li>
+<p>
+クライアント側で指定する場合は、ホスト名を含めて指定する (hoge.com:1234)
+</p>
+</li>
+</ul>
+<p>
+-port int
+</p>
+<ul>
+<li>
+<p>
+構築した tunnel に接続するためのポート番号
+</p>
+</li>
+<li>
+<p>
+reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
+</p>
+</li>
+</ul>
+<p>
+-proxy string
+</p>
+<ul>
+<li>
+<p>
+websocket server に接続するための proxy
+</p>
+</li>
+<li>
+<p>
+proxy 不要なら省略する。
+</p>
+</li>
+<li>
+<p>
+client 側で指定する
+</p>
+</li>
+</ul>
+<p>
+-remote string
+</p>
+<ul>
+<li>
+<p>
+tunnel で接続するリモートホスト  (hoge.com:1234)
+</p>
+<ul>
+<li>
+<p>
+最初に説明した (B) あるいは (C) のホスト
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+localhost 等を指定した場合、 reverse とそうでないかによって意味が異なる。
+</p>
+<ul>
+<li>
+<p>
+例えば reverse tunnel の場合はクライアント自信が接続先になり、
+通常の tunnel の場合はサーバ自信が接続先になる。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
+</p>
+</li>
+</ul>
+<p>
+-UA string
+</p>
+<ul>
+<li>
+<p>
+Proxy に接続する際の User Agent を指定する
+</p>
+</li>
+<li>
+<p>
+websocket の client で有効
+</p>
+</li>
+</ul>
+<h5 id="headline-9">
+セキュリティ関連    
+</h5>
+<p>
+-pass string
+</p>
+<ul>
+<li>
+<p>
+client 認証で使用する。
+</p>
+</li>
+<li>
+<p>
+client/server で共通のものを指定する必要がある。
+</p>
+</li>
+<li>
+<p>
+client 認証は challenge/respose で行なう。
+</p>
+</li>
+</ul>
+<p>
+-encPass string
+</p>
+<ul>
+<li>
+<p>
+client/server 間通信の暗号パスワード。
+</p>
+</li>
+<li>
+<p>
+client/server で共通のものを指定する必要がある。
+</p>
+</li>
+</ul>
+<p>
+-encCount int
+</p>
+<ul>
+<li>
+<p>
+client/server 間の暗号処理回数。
+</p>
+<dl>
+<dt>
+-1
+</dt>
+<dd>
+<p>
+infinity
+</p>
+</dd>
+<dt>
+0
+</dt>
+<dd>
+<p>
+plain
+</p>
+</dd>
+<dt>
+N
+</dt>
+<dd>
+<p>
+packet count (default 1000)
+</p>
+</dd>
+</dl>
+</li>
+<li>
+<p>
+client/server 間の通信を暗号化するが、tunnel 内を通すのが ssh などの場合、
+二度の暗号が走ることになり、client/server 間の暗号は無駄になる。
+そこで、client/server 間の暗号化回数を指定することで、暗号化にかかる負荷軽減を可能にする。
+</p>
+</li>
+<li>
+<p>
+回数は tunnel の通信パケット単位
+</p>
+</li>
+<li>
+<p>
+暗号アルゴリズムは AES256 CFB を使用している。
+</p>
+</li>
+</ul>
+<p>
+-ip string
+</p>
+<ul>
+<li>
+<p>
+server に接続可能な client の、 IP アドレスパターンを正規表現で指定する。
+</p>
+</li>
+<li>
+<p>
+このオプションを省略した場合、 client の IP を限定しない。
+</p>
+</li>
+</ul>
+<h2 id="headline-10">
+注意事項
+</h2>
+<ul>
+<li>
+<p>
+client/server の暗号化や、client 認証を実装しているが、
+セキュリティの素人が開発しているため、
+過信せずに tunnel 内は ssh などで接続すること。
+</p>
+</li>
+<li>
+<p>
+tunnel server は常駐させず、必要な時にだけ起動するように運用すること。
+</p>
+</li>
+</ul>
+<h2 id="headline-11">
+開発に関して
+</h2>
+<p>
+これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。
+</p>
+<h3 id="headline-12">
+開発言語
+</h3>
+<p>
+この Tunnel ツールの開発には、次の技術が不可欠である。
+</p>
+<ul>
+<li>
+<p>
+TCP 
+</p>
+</li>
+<li>
+<p>
+Proxy Client
+</p>
+</li>
+<li>
+<p>
+HTTP Client/Server
+</p>
+</li>
+<li>
+<p>
+WebSocket Client/Server
+</p>
+</li>
+</ul>
+<p>
+これら技術との相性の良さという意味では、
+node.js が一番始めに候補に上りそうな気がするが、
+今回は Go の勉強中ということもあり Go で開発を行なった。
+</p>
+<p>
+Go では、次のパッケージを利用している。
+</p>
+<ul>
+<li>
+<p>
+標準
+</p>
+<ul>
+<li>
+<p>
+container/list
+</p>
+</li>
+<li>
+<p>
+container/ring
+</p>
+</li>
+<li>
+<p>
+crypto/aes
+</p>
+</li>
+<li>
+<p>
+crypto/cipher
+</p>
+</li>
+<li>
+<p>
+crypto/sha256
+</p>
+</li>
+<li>
+<p>
+encoding/base64
+</p>
+</li>
+<li>
+<p>
+encoding/binary
+</p>
+</li>
+<li>
+<p>
+encoding/json
+</p>
+</li>
+<li>
+<p>
+flag
+</p>
+</li>
+<li>
+<p>
+fmt
+</p>
+</li>
+<li>
+<p>
+net/http
+</p>
+</li>
+<li>
+<p>
+net/url
+</p>
+</li>
+<li>
+<p>
+net/url
+</p>
+</li>
+<li>
+<p>
+os
+</p>
+</li>
+<li>
+<p>
+regexp
+</p>
+</li>
+<li>
+<p>
+strconv
+</p>
+</li>
+<li>
+<p>
+strings
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+非標準
+</p>
+<ul>
+<li>
+<p>
+golang.org/x/net/proxy
+</p>
+<ul>
+<li>
+<p>
+proxy Client で使用としたが、実際にはほとんど使っていないので、そのうち削除予定
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+golang.org/x/net/websocket
+</p>
+<ul>
+<li>
+<p>
+ネットで調べると Go の websocket 実装は 3 つのパッケージがメジャーだが、
+他のパッケージでは websocket の io 回りがイマイチだったり、
+proxy のカスタマイズがイマイチだったりしたので、
+このパッケージを選択した。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+上記の websocket と proxy パッケージの使いこなしで苦労したので、
+気が向いたら別のネタとして書く予定。
+</p>
+<h3 id="headline-13">
+設計
+</h3>
+<h4 id="headline-14">
+ファイル   
+</h4>
+<ul>
+<li>
+<p>
+main.go
+</p>
+<ul>
+<li>
+<p>
+主にコマンドオプション解析を実施
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+client.go
+</p>
+<ul>
+<li>
+<p>
+tunnel client のコネクション処理
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+common.go
+</p>
+<ul>
+<li>
+<p>
+tunnel client/server 処理
+</p>
+<ul>
+<li>
+<p>
+tunnel の暗号化・複合
+</p>
+</li>
+<li>
+<p>
+client/server のネゴシエーション
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+server.go
+</p>
+<ul>
+<li>
+<p>
+tunnel server のコネクション処理
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+session.go
+</p>
+<ul>
+<li>
+<p>
+tunnel 内を通す tcp 通信のセッション処理
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+websocket.go
+</p>
+<ul>
+<li>
+<p>
+websocket cliet のコネクション処理
+</p>
+</li>
+<li>
+<p>
+proxy 処理
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h4 id="headline-15">
+構造体
+</h4>
+<p>
+この Tunnel ツールは次を実現する。
+</p>
+<ul>
+<li>
+<p>
+tcp のデータを通す tunnel の確立
+</p>
+</li>
+<li>
+<p>
+tunnel が切断されても、tunnel を再接続することで tunnel 内の tcp 通信を継続させる
+</p>
+</li>
+</ul>
+<p>
+これを実現するために、主に次の構造体を定義している。
+</p>
+<ul>
+<li>
+<p>
+ConnInfo
+</p>
+</li>
+<li>
+<p>
+SessionInfo
+</p>
+<h5 id="headline-16">
+ConnInfo
+</h5>
+</li>
+</ul>
+<p>
+ConnInfo は、 tunnel 内に流れる TCP コネクションの情報を管理する。
+</p>
+<p>
+具体的な定義は次の通りである。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ConnInfo</span> <span style="color:#66d9ef">struct</span> {
+    <span style="color:#75715e">// コネクション
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">Conn</span> <span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">ReadWriteCloser</span>
+    <span style="color:#75715e">// 暗号化情報
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">CryptCtrlObj</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">CryptCtrl</span>
+    <span style="color:#75715e">// セッション情報
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">SessionInfo</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SessionInfo</span>
+}</code></pre></div>
+</div>
+<p>
+Conn が TCP の stream で、 CryptCtrlObj はそれを暗号化・複合し、
+SessionInfo はどの tunnel 内を流れる TCP のセッションを管理する。
+</p>
+<h5 id="headline-17">
+SessionInfo
+</h5>
+<p>
+SessionInfo は、 tunnel 内に流れる TCP のセッションを管理する。
+</p>
+<p>
+具体的な定義は次の通りである。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SessionInfo</span> <span style="color:#66d9ef">struct</span> {
+    <span style="color:#75715e">// セッションを識別する ID
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">SessionId</span> <span style="color:#66d9ef">int</span>
+    <span style="color:#75715e">// このセッションで read したパケットの数
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">ReadNo</span> <span style="color:#66d9ef">int64</span>
+    <span style="color:#75715e">// このセッションで write したパケットの数
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WriteNo</span> <span style="color:#66d9ef">int64</span>
+
+    <span style="color:#75715e">// 送信した SessionPacket のリスト。
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 直近 PACKET_NUM 分の SessionPacket を保持する。
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WritePackList</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">List</span>
+    <span style="color:#75715e">// WritePackList に送り直すパケットを保持するため、
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// パケットのバッファをリンクで保持しておく
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">BufRing</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">ring</span>.<span style="color:#a6e22e">Ring</span>
+
+    <span style="color:#75715e">// 送り直すパケット番号。
+</span><span style="color:#75715e"></span>    <span style="color:#75715e">// -1 の場合は送り直しは無し。
+</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">ReWriteNo</span> <span style="color:#66d9ef">int64</span>
+}</code></pre></div>
+</div>
+<p>
+ここで特に重要なのが ReadNo/WriteNo/ReWriteNo である。
+</p>
+<p>
+これが、 tunnel 切断時に tunnel を再接続することで
+tcp 通信を継続させるために無くてはならない情報だ。
+</p>
+<p>
+この情報が重要である理由を説明する前に、
+tunnel を再接続しただけでは tcp 通信を継続できない理由を次節で説明する。
+</p>
+<h4 id="headline-18">
+tunnel 切断の問題
+</h4>
+<p>
+tunnel が切断されても、
+tunnel を再接続すれば tunnel 内に流れる tcp セッションは継続通信可能である。
+<em>ただし、tcp 通信のタイムアウト以内に再接続出来れる必要がある。</em>
+</p>
+<p>
+しかし、そう単純にはいかないケースがある。
+それは『送信したつもりになっているパケットが相手に届いていないことがある』からだ。
+</p>
+<p>
+「tcp は udp と違って再送制御などを行なって信頼性を確保しているんじゃないのか？」
+と思う人もいるだろう。私も最初はそう思っていた。
+しかし、実際はそうではない。
+なぜなら、再送制御などはあくまでも TCP セッションが続いている場合に行なわれることで、
+TCP セッションが切断された場合は再送制御なども当然破棄される。
+</p>
+<p>
+つまり、強制的にセッションが切断された場合は、
+送ったつもりが相手に届いていないことが普通にありえる。
+</p>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog/posts/2020/2020-03-29-hugo-org/" title="Hugo を org-mode で使う時の注意点"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;Older</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="Catalogue" role="button">
+                    <span>[&nbsp;</span><span>Catalogue</span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter"
+                data-mobile-sites="weibo,qq,qzone"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2020
+    <div class="publishby">
+        Theme by <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a>base on<a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/highlight.min.js"></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/python.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/javascript.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/lisp.min.js" defer></script><script>
+    hljs.configure({
+        tabReplace: '    ', 
+        classPrefix: ''     
+        
+    })
+    hljs.initHighlightingOnLoad();
+</script>
+<script src="https://ifritjp.github.io/blog/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: 'Posts',
+                PAGES: 'Pages',
+                CATEGORIES: 'Categories',
+                TAGS: 'Tags',
+                UNTITLED: '(Untitled)',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

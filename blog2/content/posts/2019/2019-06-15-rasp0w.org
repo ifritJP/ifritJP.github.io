@@ -1,0 +1,259 @@
+#+TITLE: Raspberry pi zero w で Bluetooth 色々(ファイル転送:obex、 IP over BT:PAN )
+#+DATE: 2019-06-15
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: raspi
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+だいぶ前に買って放置していた Raspberry pi zero w をセットアップしました。
+
+Raspberry pi zero w と言えば「小型軽量」が売りなんで、
+今回はポータブルな IOT デバイスとして使う事を目的として、
+ Bluetooth の機能(ファイル転送、 IP over Bluetooth) のセットアップをしました。
+
+イマドキ Bluetooth なんて、
+最新のイメージでセットアップすればすぐに使えるだろうと思って余裕でした。
+しかし、実際には目的の機能が動作するまでに、かなりの時間が掛ってしまいました。
+
+少なくとも、パッケージをインストールするだけでは済まず、
+いくつかのファイルを編集 & コマンド実行が必要です。
+
+
+そんな訳で、次に同じことをする時のために備忘録を残しておきます。
+
+
+この記事で扱うメインは以下の通りです。
+
+- Raspberry pi zero w を USB 接続のみでセットアップ
+- Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現
+- IP over Bluetooth (PAN) による、PC との SSH 接続確立
+
+スムースにいけば、 作業時間は 10 〜 20分程度で完了します。
+(OS イメージ書き込みや apt 更新などの待ち時間は除く)
+
+なお、 Raspberry pi の設定を行なうホスト環境は Ubuntu 18.04.2 LTS とします。
+
+Ubuntu が Native で動作する PC でも、 
+Windows 上の Gest OS の Ubuntu でも構いません。
+ただし、 Windows 10 の subsystem の linux は対象外です。
+
+* Raspberry pi zero w を USB 接続のみでセットアップ
+
+** SD カードに OS Image を書き込む
+
+公式サイトから OS Image を落して SD カードに書き込みます。
+
+今回は Raspbian Stretch with desktop and recommended software の
+2019-04-08 を使用しました。
+
+以前 raspi で Bluetooth を扱った時、
+Lite では意図する動作にならなかったトラウマがあるため、今回はこれを使用します。
+
+
+イメージを書いたら、ssh と IP over USB (RNDIS) を有効化するため、
+SD カードをマウントした直下の次のファイルを編集します。
+
+- ssh
+- config.txt
+- cmdline.txt  
+  
+編集内容については、次の URL を参考に。
+
+<https://qiita.com/mt08/items/ce5e3911d74d7fad4563#%E6%89%8B%E9%A0%86>
+
+念の為要点だけをまとめておくと、
+
+- 空の ssh ファイルを作成
+- config.txt に次を追加
+
+: dtoverlay=dwc2
+
+- cmdline.txt  
+  - rootwaitとquietの間に次を挿入
+    
+: modules-load=dwc2,g_ether
+  
+
+** RNDIS 設定
+
+Ubuntu では、Raspberry pi zero w (以降 raspi) を
+USB (2つある USB コネクタのうち、 HDMI コネクタ側の方)で接続すれば、
+運が良ければ特になにもせずに IP over USB (RNDIS) で raspi と通信可能になります。
+
+通信可能かどうかは、次の方法で確認できます。
+
+#+BEGIN_SRC txt
+$ ip a
+#+END_SRC
+
+ここで enp0s20u1 的なデバイスが表示されていて、
+IP アドレスが取れていることを確認します。
+
+IP アドレスが取れている場合、次のコマンドで raspi の IP を確認します。
+
+#+BEGIN_SRC txt
+$ ip n
+#+END_SRC
+
+同じサブネットのアドレスがあれば、それが raspi の IP。
+
+raspi の IP が分かったら、 ssh すれば OK。
+
+#+BEGIN_SRC txt
+$ ssh -Y pi@10.42.0.100
+#+END_SRC
+
+ちなみにデフォルトパスワードは raspberry.
+
+
+大抵の場合、運が良くないので上記の確認では期待した結果にならない。
+
+そのため、次のネットワーク設定が必要になる。
+
+まず、ネットワーク設定を行なう前に、現在のネットワークの状況を確認します。
+
+#+BEGIN_SRC txt
+$ ip a
+#+END_SRC
+
+このコマンドで表示される「デバイス名」と「MAC アドレス」をメモっておきます。
+
+メモった後に、次のコマンドを実行します。
+
+#+BEGIN_SRC txt
+$ sudo nmtui
+#+END_SRC
+
+起動すると、いくつかの Ethernet 設定がリストで表示されるので、
+編集を選択します。
+
+編集を選択すると、デバイスの欄に「デバイス名」あるいは「MAC アドレス」が
+表示されているので、
+USB の方の情報が表示されている Ethernet 設定を見つけます。
+
+設定を見つけたら、一旦その設定自体を消します。
+USB のデバイスに関する設定が複数ある場合は、全て削除します。
+
+そして、新しく設定を追加します。
+
+このときの設定内容は次の通りです。
+
+- 接続タイプ Ethernet
+- デバイス名を enp0s20u1 *(実際のデバイス名に合せる)* 
+- IP4 config を share にする
+- Require IPv4 addression for this connection をチェック
+  
+設定後、connection を activate する。
+
+これで再度 =ip a= から確認してください。
+これでも上手く動作しない場合、
+deactivate と activate を何度か繰り返すと解消されることがあります。
+
+
+ちなみに Windows をホストに作業する場合、野良ドライバのインストールが必要です。
+個人的には、Windows への野良ドライバインストールはオススメできません。
+
+
+以降は、 raspi に ssh 接続した状態で作業します。
+
+まずは、次のコマンドで apt を更新しておきます。
+
+: $ sudo apt-get update
+: $ sudo apt-get install bluez-tools pulseaudio-module-bluetooth
+
+本来 pulseaudio-module-bluetooth は、 audio sink 用のものなので、
+今回の目的には不要のはずなんですが、
+これがないとペアリング後の接続すら出来なかったので入れておきます。
+
+
+
+次に、 raspi のホスト名を変更します。
+このホスト名が、 bluetooth のペアリングのときに使用されます。
+
+次のコマンドを実行し、 Network Options -> Hostname で適当に変更します。
+
+: $ sudo raspi-config
+
+
+* Bluetooth によるファイル送受信機能(OBEX File Transfer)の実現
+
+Bluetooth のファイル送受信には、 追加で obex 系の設定が必要となります。
+
+#+BEGIN_SRC txt
+$ sudo apt install obexpushd
+#+END_SRC
+
+obex 系の処理を動かすには、 bluetoothd に --compat オプションを必要です。
+
+
+オプションの指定は次のように /etc/init.d/bluetooth に --compat を追加します。
+
+#+NAME: /etc/init.d/bluetooth
+#+BEGIN_SRC txt
+#SSD_OPTIONS="--oknodo --quiet --exec $DAEMON -- $NOPLUGIN_OPTION"
+SSD_OPTIONS="--oknodo --quiet --exec $DAEMON -- --compat $NOPLUGIN_OPTION"
+#+END_SRC
+
+あるいは、
+/etc/systemd/system/bluetooth.target.wants/bluetooth.service に追加するケースもあります。
+
+#+NAME: /etc/systemd/system/bluetooth.target.wants/bluetooth.service
+#+BEGIN_SRC txt
+#ExecStart=/usr/lib/bluetooth/bluetoothd
+ExecStart=/usr/lib/bluetooth/bluetoothd --compat
+#+END_SRC
+
+ファイル編集後 --compat オプションを反映させます。
+
+: $ sudo systemctl daemon-reload
+: $ sudo /etc/init.d/bluetooth restart
+: $ sudo systemctl restart bluetooth
+
+
+次に Bluetooth ファイル受信用ディレクトリを作成します。
+
+: $ mkdir ~/bluetooth
+
+そして次のコマンドを実行します。
+
+: $ sudo /usr/bin/obexpushd -B -n -o /home/pi/bluetooth
+
+これでホスト PC からファイルを送信すると、 /home/pi/bluetooth にファイルを受信します。
+
+
+なお、obexpushd は次のようにサービスとして登録します。
+
+/etc/systemd/system/bt-obexpushd.service に次の内容をもつファイルを作成。
+
+#+NAME: /etc/systemd/system/bt-obexpushd.service
+#+BEGIN_SRC txt
+[Unit]
+Description=Bluetooth obexpushd
+After = bluetooth.service
+
+[Service]
+ExecStartPre=/bin/sleep 4
+ExecStart=/usr/bin/obexpushd -B -n -o /home/pi/bluetooth
+Type=simple
+
+[Install]
+WantedBy=multi-user.target
+#+END_SRC
+
+サービスを有効化
+
+: $ sudo systemctl enable bt-obexpushd
+: $ sudo systemctl start bt-obexpushd
+
+  
+* IP over Bluetooth (PAN) による、PC との SSH 接続確立
+
+PAN の設定は、次の URL の回答をそのまま設定すれば OK です。
+
+ 
+<https://raspberrypi.stackexchange.com/questions/29504/how-can-i-set-up-a-bluetooth-pan-connection-with-a-raspberry-pi-and-an-ipod>
+
+
+なお、上記 URL の内容を設定後、再度ペアリングをやり直してください。

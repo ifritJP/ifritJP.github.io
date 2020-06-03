@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>
+        emacs lisp の quote - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="emacs lisp の quote でハマったのでネタに書いておく。 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &amp;#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &amp;#34;1&amp;#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のように" />
+    <meta name="generator" content="Hugo 0.71.1 with theme pure" />
+    <title>emacs lisp の quote - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog/css/style.min.785a8cbec99e60735f569c253eb979c0a43335b708d4cab5c44844d3e25e74ba.css">
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog/css/custom.css" async>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <meta property="og:title" content="emacs lisp の quote" />
+<meta property="og:description" content="emacs lisp の quote でハマったのでネタに書いておく。 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &#34;1&#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のように" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog/posts/2020/2020-02-18-emacs-quoted-list/" />
+<meta property="article:published_time" content="2020-02-18T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-02-18T00:00:00+00:00" />
+<meta itemprop="name" content="emacs lisp の quote">
+<meta itemprop="description" content="emacs lisp の quote でハマったのでネタに書いておく。 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &#34;1&#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のように">
+<meta itemprop="datePublished" content="2020-02-18T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2020-02-18T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="551">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="emacs lisp の quote"/>
+<meta name="twitter:description" content="emacs lisp の quote でハマったのでネタに書いておく。 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &#34;1&#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のように"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+      <![endif]-->
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="Search" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder="Type something..."
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-categories">
+                <a href="/blog/categories/">
+                    <i class="icon icon-folder"></i>
+                  <span class="menu-title">Categories</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title">Board</h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> Categories</h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> Tags</h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog/tags/%E8%A8%80%E8%AA%9E%E5%87%A6%E7%90%86%E7%B3%BB/" class="tag-list-link">言語処理系</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-05-29-tunnel/" class="title">Tunnel/Reverse Tunnel over websocket を作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-05-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-05-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-03-29-hugo-org/" class="title">Hugo を org-mode で使う時の注意点</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-03-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-03-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-21-raspberrypi-mount/" class="title">raspberry pi の USB MASS STORAGE 自動マウントを無効化する</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-21 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-21</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-18-emacs-quoted-list/" class="title">emacs lisp の quote</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-18</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-13-emacs-org-9.3.5/" class="title">org-mode 9.3.5 で babel(dot/plantuml) が動かなかった</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2020-02-13 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-13</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title">Catalogue</h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog/posts/2020/2020-02-18-emacs-quoted-list/"
+    >emacs lisp の quote</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog/posts/2020/2020-02-18-emacs-quoted-list/" class="article-date">
+  <time datetime="2020-02-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2020-02-18</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog/posts/2020/2020-02-18-emacs-quoted-list/#comments"
+            class="article-comment-link">Comments</a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">Word Count: 551words</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">Read Count: 2minutes </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      <p>
+emacs lisp の quote でハマったのでネタに書いておく。
+</p>
+<div class="src src-lisp">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-lisp" data-lang="lisp">(defvar hoge-val <span style="color:#66d9ef">nil</span>)
+(defun hoge-init ()
+  (<span style="color:#66d9ef">setq</span> hoge-val <span style="color:#f92672">&#39;</span>(<span style="color:#e6db74">:val</span> <span style="color:#66d9ef">nil</span>))
+  )
+(defun hoge-set ()
+  (plist-put hoge-val <span style="color:#e6db74">:val</span> <span style="color:#e6db74">&#34;1&#34;</span>))</code></pre></div>
+</div>
+<p>
+上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、
+次のようにコールすると。
+</p>
+<div class="src src-lisp">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-lisp" data-lang="lisp">(<span style="color:#66d9ef">let</span> (val1 val2 val3)
+   (hoge-init)
+   (<span style="color:#66d9ef">setq</span> val1 (plist-get hoge-val <span style="color:#e6db74">:val</span>))
+   (hoge-set)
+   (<span style="color:#66d9ef">setq</span> val2 (plist-get hoge-val <span style="color:#e6db74">:val</span>))
+   (hoge-init)
+   (<span style="color:#66d9ef">setq</span> val3 (plist-get hoge-val <span style="color:#e6db74">:val</span>))
+   (message (<span style="color:#a6e22e">format</span> <span style="color:#e6db74">&#34;%s %s %s&#34;</span> val1 val2 val3)))</code></pre></div>
+</div>
+<p>
+最後の (message (format &#34;%s %s %s&#34; val1 val2 val3)) で &#34;nil 1 1&#34; が出力される。
+</p>
+<p>
+てっきり、 &#34;nil 1 nil&#34; が出力されるものだと思っていた。
+なぜなら、val3 をセットする直前に hoge-init を実行しており、
+この hoge-init は hoge-val を &#39;(:val nil) で初期化する関数なので、
+(plist-get hoge-val :val) は nil を返すと考えたからだ。
+</p>
+<p>
+しかし実際には、最後の (plist-get hoge-val :val) は &#34;1&#34; になる。
+</p>
+<p>
+なぜこのような結果になるかと言うと、
+&#39;() は定数として扱い、
+関数 hoge-init を実行する際には新しくリストを生成せず、
+defun を評価した時の値そのものが使い続けられる。
+</p>
+<p>
+そして (plist-put) でリストの中身を操作した場合、その定数自体が書き変わり、
+hoge-init 関数は変数に書き変わった定数を代入しているため初期化できない。
+</p>
+<p>
+一方で、 hoge-init の処理に list 関数を使うと、&#34;nil 1 nil&#34; となる。
+</p>
+<div class="src src-lisp">
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-lisp" data-lang="lisp">(defun hoge-init ()
+  (<span style="color:#66d9ef">setq</span> hoge-val (<span style="color:#a6e22e">list</span> <span style="color:#e6db74">:val</span> <span style="color:#66d9ef">nil</span>))
+  )</code></pre></div>
+</div>
+<p>
+(list) は評価されるたび新規にリストを生成しているため、変数を初期化出来る。
+</p>
+<p>
+よく考えてみると納得できるけど、
+実際の動きと見た目のギャップにどうにもこうにも意味不明だった。
+</p>
+<p>
+これまで一度も意識せずにきたのが不思議なくらい、かなり基本的な内容だと思う。
+</p>
+<p>
+quote した値の変更は、要注意ってことで。
+</p>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-13-emacs-org-9.3.5/" title="org-mode 9.3.5 で babel(dot/plantuml) が動かなかった"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;Older</span></a>
+            </li>
+            <li class="next">
+                <a href="https://ifritjp.github.io/blog/posts/2020/2020-02-21-raspberrypi-mount/"
+                    title="raspberry pi の USB MASS STORAGE 自動マウントを無効化する"><span>Newer&nbsp;&nbsp;</span><i
+                        class="icon icon-angle-right" aria-hidden="true"></i></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="Catalogue" role="button">
+                    <span>[&nbsp;</span><span>Catalogue</span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="weibo,qq,wechat,facebook,twitter"
+                data-mobile-sites="weibo,qq,qzone"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2020
+    <div class="publishby">
+        Theme by <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a>base on<a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/highlight.min.js"></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/python.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/javascript.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/lisp.min.js" defer></script><script>
+    hljs.configure({
+        tabReplace: '    ', 
+        classPrefix: ''     
+        
+    })
+    hljs.initHighlightingOnLoad();
+</script>
+<script src="https://ifritjp.github.io/blog/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: 'Posts',
+                PAGES: 'Pages',
+                CATEGORIES: 'Categories',
+                TAGS: 'Tags',
+                UNTITLED: '(Untitled)',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

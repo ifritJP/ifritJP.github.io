@@ -1,0 +1,432 @@
+#+TITLE: Tunnel/Reverse Tunnel over websocket を作った
+#+DATE: 2020-05-29
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: raspberrypi
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。
+
+「Tunnel/Reverse Tunnel over websocket」 が何かというと、
+「websocket を tunnel にして別の TCP 通信を通すもの」だ。
+
+* 「Tunnel/Reverse Tunnel over websocket」 とは
+
+「Tunnel/Reverse Tunnel over websocket」を少し具体的にいうと、
+次のような構成で通信を可能にするモノだ。
+
+[[../tunnel.svg]]
+
+上の図は network_1, network_2, network_A, network_B の
+4 つのネットワークを表わしている。
+
+このネットワーク間で通信を行なうポートが制限されているような場合、
+その開放されているポートに接続したセッションに仮想的な Tunnel を構築する。
+そして、その Tunnel 内にポートの制限を受けない通信を実現する。
+
+
+左は Tunnel の構成例である。
+分断されている network_1, network_2 を、
+tunnel server / tunnel client で接続して tunnel を構成し、
+その tunnel を使って tcp client A と tcp server B を接続する。
+
+右は Reverse Tunnel の構成例である。
+分断されている network_A, network_B を、
+tunnel server / tunnel client で接続して tunnel を構成し、
+その tunnel を使って tcp client D と tcp server C を接続する。
+
+Tunnel と Revers Tunnel の違いは、
+tcp client/server の位置関係である。
+
+具体的には、
+Tunnel server と同じネットワークに tcp server が属する構成が Tunnel で、
+逆に Tunnel server と同じネットワークに tcp client が属する構成が Reverse Tunnel である。
+
+そして、 Tunnel server と client 間の通信経路として、
+websocket を利用して tunnel を構築するのが
+「Tunnel/Reverse Tunnel over websocket」である。
+
+
+
+上記の図の plamtulm ソース
+
+/ブログシステム上、非表示に出来ないようなので表示しておく。内容を確認する必要はない。/
+
+#+BEGIN_SRC plantuml :file tunnel.svg :results silent
+frame tunnelの例 {
+rectangle network_1 {
+node tcp_client_A
+node tunnel_client_1
+}
+rectangle network_2 {
+node tunnel_server_1
+node tcp_server_B
+}
+}
+
+tcp_client_A --> tunnel_client_1
+tunnel_client_1 --> tunnel_server_1
+tunnel_server_1 --> tcp_server_B
+
+
+frame reverse_tunnelの例 {
+rectangle network_A {
+node tcp_server_C
+node tunnel_client_2
+}
+rectangle network_B {
+node tunnel_server_2
+node tcp_client_D
+}
+}
+
+tcp_server_C <-- tunnel_client_2
+tunnel_client_2 --> tunnel_server_2
+tunnel_server_2 <-- tcp_client_D
+
+#+END_SRC
+
+* VPN (Virtual Private Network)
+
+このようなネットワーク間で通信路を構築する方法として低レイヤー VPN がある。
+
+低レイヤー VPN は、その名の通り仮想的なネットワークを低レイヤーで構築する。
+これによって、通常のネットワークと同様に扱えて便利ではあるが、
+通常のネットワークと同様であるが故、逆にリスクになる可能性がある。
+
+この Tunnel は、制限した TCP セッションだけを通すことで、
+不要なリスクを排除する。
+
+* 開発した背景
+
+この目的を実現できないかどうか、当初はフリーのツールを探していたが、
+自分の環境は (A)/(B) 間のネットワーク環境が悪く、
+tunnel を確立しても、ある程度経過すると切断されてしまう問題があった。
+
+本来ならば、tunnel が切断されても tunnel を再接続することで、
+tunnel 内の tcp 通信を継続させることは可能だ。
+しかし、検討していた幾つかのフリーのツールでは、
+tunnel が切断されると tunnel を再接続しても tcp 通信が継続できなかった。
+そもそも tunnel を接続すること自体、
+成功したり失敗したりしているような状況だった。
+
+そこで、今回はフリーのツールを検討することは諦め、
+スクラッチで開発することにした。
+
+* Tunnel が切断される理由
+
+今回開発した Tunnel ツール実行中の Tunnel 間通信の強制切断状況を確認したところ、
+次のようになった。
+
+- (a) :: 1 接続は最大でも 15 分程度で切断される
+- (b) :: 昼間は 30 秒程度で切断される
+- (c) :: 接続の 7 割強は 1 分以内で切断される
+
+(a) について、
+どうやら自分の環境では http 通信は 15 分程度でセッションが強制切断されるらしい。
+
+(b), (c) について、
+30 〜 60 秒程度で強制切断されるのは、無通信が続くのが原因のようなので、
+20 秒毎にトンネル間でダミーの通信を行なうようにすることで回避できた。
+
+ただ、それでも通信負荷が高くなると数分で切断されることがある。
+
+* 使用方法
+
+このツールは Go で開発しているため、
+事前に Go(1.14.2) の環境を構築してあることが前提である。
+
+** 注意事項
+
+- client/server の暗号化や、client 認証を実装しているが、
+  tunnel 内は raw な tcp 接続はせずに、 ssh などで接続すること。
+- tunnel server は常駐させず、必要な時にだけ起動するように運用すること。
+- pass , encPass オプションを必ず指定し、適切な期間で変更すること。
+- ip オプションを指定し、接続可能な client を制限すること。
+
+** ビルド
+
+#+BEGIN_SRC sh
+$ git clone --depth 1 https://github.com/ifritJP/tunnel.git
+$ cd tunnel
+$ make
+#+END_SRC
+
+これで tunnel コマンドがカレントディレクトリに生成される。
+
+** tunnel コマンド
+
+tunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
+オプションで切り替える。
+
+- server
+
+server のコマンド例を示す。
+
+: $ tunnel -mode r-wsserver -server :6666 -port 8001 -remote localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+
+これは次のサーバの実行を指定している。
+
+| option | 意味                                     | サンプルの意味                                   |
+|------------+------------------------------------------+--------------------------------------------------|
+| -mode      | client/server の種類                     | reverse websocket server                         |
+| -server    | tunnel サーバの情報                      | ポート 6666 を使用して websocket server を建てる |
+| -port      | tunnel で接続する際のポート番号          | ポート 8001 を使用                               |
+| -remote    | tunnel で繋げる接続先                    | localhost の 22 ポートに接続                     |
+| -pass      | client の認証用パスワード                | XXXXXXX                                          |
+| -encPass   | client/server 間の通信路の暗号パスワード | YYYYYYYY                                         |
+  
+- client
+
+client のコマンド例を示す
+
+: $ tunnel -mode r-wsclient -proxy http://user:pass@proxy.hoge.com:8080/ -server hoge.hoge.com:80 -pass XXXXXXX -encPass YYYYYYYY
+
+これは次のクライアントの実行を指定している。
+
+| option | 意味                                     | サンプルの意味                                    |
+|------------+------------------------------------------+---------------------------------------------------|
+| -mode      | client/server の種類                     | reverse websocket client                          |
+| -proxy     | proxy サーバの情報                       | http://proxy.hoge.com::8080/ に user, pass で接続 |
+| -server    | tunnel サーバの情報                      | hoge.hoge.com の 80 に接続する                    |
+| -pass      | client の認証用パスワード                | XXXXXXX                                           |
+| -encPass   | client/server 間の通信路の暗号パスワード | YYYYYYYY                                          |
+  
+- tunnel への接続
+
+上記のサンプルは localhost の 22 番ポートに接続するための reverse tunnel を構築している。
+つまり、このサーバ側の 8001 ポートに繋げると、 client 側の ssh に接続されることになる。
+
+よって、サーバ側で次のコマンドを実行することで、クライアントの ssh に接続できる。
+
+: $ ssh -p 8001 localhost
+  
+*** オプション一覧
+
+tunnel コマンドで使用可能なオプションについて説明する
+
+**** 基本
+
+- -mode string
+  - 次のいずれかを指定する
+  - サーバ
+    - server
+    - r-server
+    - wsserver
+    - r-wsserver
+  - クライアント
+    - client
+    - r-client
+    - wsclient
+    - r-wsclient
+  - "r-" が付くものは、 reverse tunnel である。
+  - ws が付くものは、 over websocket である。
+  - ws が付かないものは、 tcp で直接接続する。
+    - tcp による接続は、実験的なサポートだ。
+    - tcp で接続できる環境なら、 このツールを使わずに ssh した方が良いだろう。
+  - "r-", "ws" は client/server で一致している必要がある。
+- -server string
+  - server を示す。
+  - サーバ側で指定する場合は、ポート番号だけ指定する。 (:1234)
+  - クライアント側で指定する場合は、ホスト名を含めて指定する (hoge.com:1234)
+- -port int
+  - 構築した tunnel に接続するためのポート番号
+  - reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
+- -proxy string
+  - websocket server に接続するための proxy
+  - proxy 不要なら省略する。
+  - client 側で指定する
+- -remote string
+  - tunnel で接続するリモートホスト  (hoge.com:1234)
+    - 最初に説明した (B) あるいは (C) のホスト
+  - localhost 等を指定した場合、 reverse とそうでないかによって意味が異なる。
+    - 例えば reverse tunnel の場合はクライアント自信が接続先になり、
+      通常の tunnel の場合はサーバ自信が接続先になる。
+  - reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
+- -UA string
+  - Proxy に接続する際の User Agent を指定する
+  - websocket の client で有効
+
+**** セキュリティ関連    
+    
+- -pass string
+  - client 認証で使用する。
+  - client/server で共通のものを指定する必要がある。
+  - client 認証は challenge/respose で行なう。
+- -encPass string
+  - client/server 間通信の暗号パスワード。
+  - client/server で共通のものを指定する必要がある。
+- -encCount int
+  - client/server 間の暗号処理回数。
+    - -1 : infinity
+    - 0 : plain, no encrypt.
+    - N : packet count (default 1000)
+  - client/server 間の通信を暗号化するが、tunnel 内を通すのが ssh などの場合、
+    二度の暗号が走ることになり、client/server 間の暗号は無駄になる。
+    そこで、client/server 間の暗号化回数を指定することで、暗号化にかかる負荷軽減を可能にする。
+  - 回数は tunnel の通信パケット単位
+  - 暗号アルゴリズムは AES256 CFB を使用している。
+- -ip string
+  - server に接続可能な client の、 IP アドレスパターンを正規表現で指定する。
+  - このオプションを省略した場合、 client の IP を限定しない。
+
+* 開発に関して
+
+これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。
+
+** 開発言語
+
+この Tunnel ツールの開発には、次の技術が不可欠である。
+
+- TCP 
+- Proxy Client
+- HTTP Client/Server
+- WebSocket Client/Server
+
+これら技術との相性の良さという意味では、
+node.js が一番始めに候補に上りそうな気がするが、
+今回は Go の勉強中ということもあり Go で開発を行なった。
+
+Go では、次のパッケージを利用している。
+
+- 標準
+  - container/list
+  - container/ring
+  - crypto/aes
+  - crypto/cipher
+  - crypto/sha256
+  - encoding/base64
+  - encoding/binary
+  - encoding/json
+  - flag
+  - fmt
+  - net/http
+  - net/url
+  - net/url
+  - os
+  - regexp
+  - strconv
+  - strings
+- 非標準
+  - golang.org/x/net/proxy
+    - proxy Client で使用としたが、実際にはほとんど使っていないので、そのうち削除予定
+  - golang.org/x/net/websocket
+    - ネットで調べると Go の websocket 実装は 3 つのパッケージがメジャーだが、
+      他のパッケージでは websocket の io 回りがイマイチだったり、
+      proxy のカスタマイズがイマイチだったりしたので、
+      このパッケージを選択した。
+    
+上記の websocket と proxy パッケージの使いこなしで苦労したので、
+気が向いたら別のネタとして書く予定。
+
+** 設計
+
+*** ファイル   
+   
+- main.go
+  - 主にコマンドオプション解析を実施
+- client.go
+  - tunnel client のコネクション処理
+- common.go
+  - tunnel client/server 処理
+    - tunnel の暗号化・複合
+    - client/server のネゴシエーション
+- server.go
+  - tunnel server のコネクション処理
+- session.go
+  - tunnel 内を通す tcp 通信のセッション処理
+- websocket.go
+  - websocket cliet のコネクション処理
+  - proxy 処理
+
+*** 構造体
+
+この Tunnel ツールは次を実現する。
+
+- tcp のデータを通す tunnel の確立
+- tunnel が切断されても、tunnel を再接続することで tunnel 内の tcp 通信を継続させる
+
+これを実現するために、主に次の構造体を定義している。
+
+- ConnInfo
+- SessionInfo
+
+**** ConnInfo
+
+ConnInfo は、 tunnel 内に流れる TCP コネクションの情報を管理する。
+
+具体的な定義は次の通りである。
+
+#+BEGIN_SRC go
+type ConnInfo struct {
+    // コネクション
+    Conn io.ReadWriteCloser
+    // 暗号化情報
+    CryptCtrlObj *CryptCtrl
+    // セッション情報
+    SessionInfo *SessionInfo
+}
+#+END_SRC
+
+Conn が TCP の stream で、 CryptCtrlObj はそれを暗号化・複合し、
+SessionInfo はどの tunnel 内を流れる TCP のセッションを管理する。
+
+
+**** SessionInfo
+  
+SessionInfo は、 tunnel 内に流れる TCP のセッションを管理する。
+
+具体的な定義は次の通りである。
+
+#+BEGIN_SRC go
+type SessionInfo struct {
+    // セッションを識別する ID
+    SessionId int
+    // このセッションで read したパケットの数
+    ReadNo int64
+    // このセッションで write したパケットの数
+    WriteNo int64
+
+    // 送信した SessionPacket のリスト。
+    // 直近 PACKET_NUM 分の SessionPacket を保持する。
+    WritePackList *list.List
+    // WritePackList に送り直すパケットを保持するため、
+    // パケットのバッファをリンクで保持しておく
+    BufRing *ring.Ring
+
+    // 送り直すパケット番号。
+    // -1 の場合は送り直しは無し。
+    ReWriteNo int64
+}
+#+END_SRC
+
+ここで特に重要なのが ReadNo/WriteNo/ReWriteNo である。
+
+これが、 tunnel 切断時に tunnel を再接続することで
+tcp 通信を継続させるために無くてはならない情報だ。
+
+この情報が重要である理由を説明する前に、
+tunnel を再接続しただけでは tcp 通信を継続できない理由を次節で説明する。
+
+*** tunnel 切断の問題
+
+tunnel が切断されても、
+tunnel を再接続すれば tunnel 内に流れる tcp セッションは継続通信可能である。
+
+/ただし、tcp 通信のタイムアウト以内に再接続できる必要がある。/
+
+tunnel を再接続すれば tcp セッションは継続通信可能だ。
+しかし、そう単純にはいかないケースがある。
+それは『送信したつもりになっているパケットが相手に届いていないことがある』からだ。
+
+「tcp は udp と違って再送制御などを行なって信頼性を確保しているんじゃないのか？」
+と思う人もいるだろう。私も最初はそう思っていた。
+しかし、実際はそうではない。
+なぜなら、再送制御などはあくまでも TCP セッションが続いている場合に行なわれることで、
+TCP セッションが切断された場合は再送制御なども当然破棄される。
+
+つまり、強制的にセッションが切断された場合は、
+送ったつもりが相手に届いていないことが普通にありえる。
+

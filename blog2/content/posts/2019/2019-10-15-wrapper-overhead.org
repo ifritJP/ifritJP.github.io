@@ -1,0 +1,187 @@
+#+TITLE: C 言語のラッパー関数オーバーヘッド
+#+DATE: 2019-10-15
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: C
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+
+
+プログラムを組む際、ラッパー関数を作ることは良くある。
+
+このラッパー関数のオーバーヘッドが気になったので簡単に調べてみた。
+
+計測用サンプルは次の通り。
+
+#+BEGIN_SRC c
+#include<stdio.h>
+typedef void (func_t)( int val1, int val2 );
+void func( int val1, int val2 )
+{
+    printf( "%d %d", val1, val2 );
+}
+void wrapper0( int val1, int val2 )
+{
+    func( val1, val2 );
+}
+void wrapper1( func_t * pFunc, int val1, int val2 )
+{
+    pFunc( val1, val2 );
+}
+void wrapper2( int val1, int val2, func_t * pFunc )
+{
+    pFunc( val1, val2 );
+}
+main() {
+    wrapper0( 0, 1 );
+    wrapper1( func, 0, 1 );
+    wrapper2( 0, 1, func );
+}
+#+END_SRC
+
+関数 func() をコールする 3 種類のラッパー関数 wrapper0, wrapper1, wrapper2 を用意した。
+
+それぞれのラッパー関数は次の形になっている。
+
+| ラッパー | 引数                                       |
+|----------+--------------------------------------------|
+| wrapper0 | 呼び出し先と同じ引数                       |
+| wrapper1 | ラッパー独自引数の後に呼び出し先と同じ引数 |
+| wrapper2 | 呼び出し先と同じ引数の後にラッパー独自引数 |
+
+
+これを gcc の x64 で -O の最適化した結果が次になる。
+(func の処理は省略)
+
+#+BEGIN_SRC asm
+0000000000000021 <wrapper0>:
+  21:	48 83 ec 08          	sub    $0x8,%rsp
+  25:	e8 00 00 00 00       	callq  2a <wrapper0+0x9>
+  2a:	48 83 c4 08          	add    $0x8,%rsp
+  2e:	c3                   	retq   
+
+000000000000002f <wrapper1>:
+  2f:	48 83 ec 08          	sub    $0x8,%rsp
+  33:	48 89 f8             	mov    %rdi,%rax
+  36:	89 f7                	mov    %esi,%edi
+  38:	89 d6                	mov    %edx,%esi
+  3a:	ff d0                	callq  *%rax
+  3c:	48 83 c4 08          	add    $0x8,%rsp
+  40:	c3                   	retq   
+
+0000000000000041 <wrapper2>:
+  41:	48 83 ec 08          	sub    $0x8,%rsp
+  45:	ff d2                	callq  *%rdx
+  47:	48 83 c4 08          	add    $0x8,%rsp
+  4b:	c3                   	retq   
+
+000000000000004c <main>:
+  4c:	48 83 ec 08          	sub    $0x8,%rsp
+  50:	be 01 00 00 00       	mov    $0x1,%esi
+  55:	bf 00 00 00 00       	mov    $0x0,%edi
+  5a:	e8 00 00 00 00       	callq  5f <main+0x13>
+  5f:	ba 01 00 00 00       	mov    $0x1,%edx
+  64:	be 00 00 00 00       	mov    $0x0,%esi
+  69:	bf 00 00 00 00       	mov    $0x0,%edi
+  6e:	e8 00 00 00 00       	callq  73 <main+0x27>
+  73:	ba 00 00 00 00       	mov    $0x0,%edx
+  78:	be 01 00 00 00       	mov    $0x1,%esi
+  7d:	bf 00 00 00 00       	mov    $0x0,%edi
+  82:	e8 00 00 00 00       	callq  87 <main+0x3b>
+  87:	b8 00 00 00 00       	mov    $0x0,%eax
+  8c:	48 83 c4 08          	add    $0x8,%rsp
+  90:	c3                   	retq   
+#+END_SRC
+
+上記通り wrapper0 と wrapper2 は、ほぼ同じコードになっており、
+wrapper1 は引数をずらす処理が余分に入っている。
+
+想像通りの結果といえば想像通りだが、
+ちゃんと最適化された処理になっている。
+
+以上のことから言えることは、
+ラッパー関数独自の引数は、先頭ではなく末尾にもっていった方が良いということだ。
+
+ただし、ここまで最適化が効くケースは、
+ラッパー関数内での目的の関数コールが先頭にある場合に限られるので、
+目的の関数コールを先頭に持ってこれない場合は、気にしないで良いだろう。
+
+
+なお、 -O2 で最適化をかけると wrapper1, wrapper2 は次の処理に最適化された。 
+
+#+BEGIN_SRC asm
+0000000000000030 <wrapper1>:
+  30:	48 89 f8             	mov    %rdi,%rax
+  33:	89 f7                	mov    %esi,%edi
+  35:	89 d6                	mov    %edx,%esi
+  37:	ff e0                	jmpq   *%rax
+  39:	0f 1f 80 00 00 00 00 	nopl   0x0(%rax)
+
+0000000000000040 <wrapper2>:
+  40:	ff e2                	jmpq   *%rdx
+#+END_SRC
+
+個人的には、こっちの方が納得がいく。
+
+
+
+
+また、次のようにラッパー関数に static 宣言を付加して、
+外部からコールされないことを明示すると、
+
+#+BEGIN_SRC c
+#include<stdio.h>
+typedef void (func_t)( int val1, int val2 );
+void func( int val1, int val2 )
+{
+    printf( "%d %d", val1, val2 );
+}
+static void wrapper0( int val1, int val2 )
+{
+    func( val1, val2 );
+}
+static void wrapper1( func_t * pFunc, int val1, int val2 )
+{
+    pFunc( val1, val2 );
+}
+static void wrapper2( int val1, int val2, func_t * pFunc )
+{
+    pFunc( val1, val2 );
+}
+main() {
+    wrapper0( 0, 1 );
+    wrapper1( func, 0, 1 );
+    wrapper2( 0, 1, func );
+}
+#+END_SRC
+
+出力結果は次のように、 ラッパーがインライン展開され、
+ラッパーの引数の違いによる差分は無くなった。
+
+#+BEGIN_SRC asm
+0000000000000021 <main>:
+  21:	48 83 ec 08          	sub    $0x8,%rsp
+  25:	be 01 00 00 00       	mov    $0x1,%esi
+  2a:	bf 00 00 00 00       	mov    $0x0,%edi
+  2f:	e8 00 00 00 00       	callq  34 <main+0x13>
+  34:	be 01 00 00 00       	mov    $0x1,%esi
+  39:	bf 00 00 00 00       	mov    $0x0,%edi
+  3e:	e8 00 00 00 00       	callq  43 <main+0x22>
+  43:	be 01 00 00 00       	mov    $0x1,%esi
+  48:	bf 00 00 00 00       	mov    $0x0,%edi
+  4d:	e8 00 00 00 00       	callq  52 <main+0x31>
+  52:	b8 00 00 00 00       	mov    $0x0,%eax
+  57:	48 83 c4 08          	add    $0x8,%rsp
+  5b:	c3                   	retq   
+#+END_SRC
+
+
+基本的に、ソースコードはメンテナンス性や可読性を優先すべきだが、
+ソースコードを自動生成するような場合は、
+このような細かいことも意識しておいた方が良いだろう。
+
+
+
+以上。

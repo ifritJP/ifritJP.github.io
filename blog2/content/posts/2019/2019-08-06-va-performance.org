@@ -1,0 +1,181 @@
+#+TITLE: C 言語の可変長引数 (va_list) 処理のオーバーヘッド
+#+DATE: 2019-08-06
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: LuneScript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+以前 C 言語の関数ポインタによる関数コールのオーバーヘッドがどの程度なのか調べたが、
+今回は可変長引数(va_list)処理のオーバーヘッドについて調べてみた。
+
+* 結果
+
+初めに結果から書くと、
+
+: 可変長引数(va_list)処理のオーバーヘッドは、めちゃめちゃ掛る。
+: また、引数の数に応じて時間が増加する。
+
+
+
+* 所感
+
+今回の実験によって、 va_list 処理には当初の想定を遥かに越えたオーバーヘッドが
+かかることが分った。
+
+個人的には、コンパイラがもっと賢くやってくれているものだと思っていたが、
+実際には全く賢くなかった。
+
+C 言語で可変長引数を積極的に使用することはあまりないとは思うが、
+可変長引数の使用はオーバーヘッドを十分考慮に入れて慎重に検討するべきだということが判った。
+
+この可変長引数のオーバーヘッドを調べたのは、
+LuneScript のメソッド呼び出し処理を C 言語にトランスコンパイルした際に
+可変長引数を利用しようと思ったからなのだが、
+この結果から可変長引数は使えないことが分った。
+
+対応する前に結果が分って良かったが、
+可変長引数が使えなくなったのは当初の目論見が崩れてしまった。
+
+
+* 実験詳細
+
+ここでは、今回の実験方法について説明する。
+
+** コード
+
+実験用に次の C 言語コードを作成した。
+
+#+BEGIN_SRC c
+int func( int val1, int val2 ) {
+    return val1 + val2;
+}
+int sub( int dummy, int val1, int val2 ) {
+    return func( val1, val2 );
+}
+
+
+int funcv2( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    return val1 + val2;
+}
+int subv2( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv2( ap );
+    
+    va_end( ap );
+    return val;
+}
+#+END_SRC
+
+func, sub は、可変長引数を使用しないパターン。
+funcv2, subv2 は、可変長引数を使用しするパターン。
+
+ちなみにコードの全体は次の通りである。
+
+#+BEGIN_SRC c
+#include <sys/time.h>
+#include <time.h>
+#include <stdio.h>
+#include <stdarg.h>
+
+int func( int val1, int val2 ) {
+    return val1 + val2;
+}
+
+int sub( int dummy, int val1, int val2 ) {
+    return func( val1, val2 );
+}
+
+
+int funcv2( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    return val1 + val2;
+}
+
+int subv2( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv2( ap );
+    
+    va_end( ap );
+    return val;
+}
+
+int funcv3( va_list ap ) {
+    int val1 = va_arg( ap, int );
+    int val2 = va_arg( ap, int );
+    int val3 = va_arg( ap, int );
+    return val1 + val2 + val3;
+}
+
+int subv3( int dummy, ... ) {
+    int val;
+    va_list ap;
+    va_start( ap, dummy );
+
+    val = funcv3( ap );
+    
+    va_end( ap );
+    return val;
+}
+
+
+double getTime( void ) {
+    struct timeval tm;
+    gettimeofday( &tm, NULL );
+    return tm.tv_sec + tm.tv_usec / 1000000.0;
+}
+
+
+main( int argc, const char * argv[] ) {
+    long long loop = strtoll( argv[ 1 ], NULL, 10 ) * 1000ll;
+    long long count = 0;
+    int sum = 0;
+
+    double prev = getTime();
+    if ( strcmp( argv[ 2 ], "1" ) == 0 ) {
+        for ( count = 0; count < loop; count++ ) {
+            sum += sub( 0, 1, 2 );
+        }
+    }
+    else if ( strcmp( argv[ 2 ], "2" ) == 0 ) {
+        for ( count = 0; count < loop; count++ ) {
+            sum += subv2( 0, 1, 2 );
+        }
+    }
+    else {
+        for ( count = 0; count < loop; count++ ) {
+            sum += subv3( 0, 1, 2, 3 );
+        }
+    }
+    printf( "%s: %lld time = %g, %d\n", argv[ 2 ], loop, getTime() - prev, sum );
+}
+
+#+END_SRC
+
+このプログラムは、コマンドラインの引数によって
+sub, subv2, subv3 を指定の回数分実行し、実行時間を表示する。
+
+** 計測結果
+
+|                           | 時間(秒) |
+|---------------------------+----------|
+| 固定長引数(sub: 2 引数)   |     0.62 |
+| 可変長引数(subv2: 2 引数) |    11.95 |
+| 可変長引数(subv3: 3 引数) |    16.16 |
+
+
+上記結果を見ると分かる通り、可変長引数は処理時間の桁が違う。
+
+また、引数の数に応じて時間が増加する。
+
+以上
