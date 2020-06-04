@@ -1,0 +1,91 @@
+#+TITLE: go の proxy server (github.com/elazarl/goproxy) の使い方
+#+DATE: 2020-06-04
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: emacs reviewboard
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+go で proxy server を建てるには、
+github.com/elazarl/goproxy を使うと簡単に実現できる。
+
+https://github.com/elazarl/goproxy
+
+github の readme を見れば、簡単な使い方が載っているので特に問題はないだろう。
+
+ただ、一点だけハマったポイントがあるので書いておく。
+
+* proxy 環境下で goproxy を使う場合の注意点
+
+#+BEGIN_SRC go
+package main
+
+import (
+    "github.com/elazarl/goproxy"
+    "log"
+    "net/http"
+)
+
+func main() {
+    proxy := goproxy.NewProxyHttpServer()
+    proxy.Verbose = true
+    log.Fatal(http.ListenAndServe(":8080", proxy))
+}
+#+END_SRC
+
+github の readme にサンプルとして上記コードが載っている。
+
+基本的にこれで問題ないのだが、 proxy 環境下で動かす場合には注意が必要だ。
+
+多くの場合、 proxy 環境下では環境変数に次のような設定をしているだろう。
+
+#+BEGIN_SRC sh
+export HTTP_PROXY=http://proxy.hoge.com:80/
+export HTTPS_PROXY=http://proxy.hoge.com:80/
+#+END_SRC
+
+このような設定を行なっている場合、
+上記サンプルコードを動かすと、
+goproxy はさらに proxy.hoge.com を使って接続を行なおうとする。
+
+つまり、 goproxy を使って localhost:80 にアクセスしようとすると、次のような形になる。
+
+: client --> goproxy --> proxy.hoge.com:80 --> localhost:80
+
+ここで問題なのは、
+proxy.hoge.com:80 が間に挟まることで通信が確立できなくなる可能性がある、
+ということだ。
+
+少なくとも、goproxy にとっての localhost と、
+proxy.hoge.com にとっての localhost は意味が異なるし、
+プライベートアドレス IP 指定を受けつけない proxy も多いだろう。
+
+** 対応策
+
+前述した proxy 環境下の問題を回避するには、次の 2 つがある。
+
+- goproxy を使用する際に上記環境変数の設定を消す
+- goproxy を使うコードを修正する
+
+
+goproxy を使うコードを修正するには、
+次のように ~proxy.ConnectDial = nil~ を追加すれば良い。
+
+#+BEGIN_SRC go
+package main
+
+import (
+    "github.com/elazarl/goproxy"
+    "log"
+    "net/http"
+)
+
+func main() {
+    proxy := goproxy.NewProxyHttpServer()
+    proxy.Verbose = true
+    proxy.ConnectDial = nil // これを追加
+    log.Fatal(http.ListenAndServe(":8080", proxy))
+}
+#+END_SRC
+   
