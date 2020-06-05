@@ -24,11 +24,11 @@
     <meta name="generator" content="Hugo 0.71.1 with theme pure" />
     <title>Outlook で送信された日本語メールを Mew で受信すると文字化けする問題の対応 - hoge blog</title>
     
+    <link rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.3/styles/atom-one-dark-reasonable.min.css" async>
     
-    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.785a8cbec99e60735f569c253eb979c0a43335b708d4cab5c44844d3e25e74ba.css">
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
     <meta property="og:title" content="Outlook で送信された日本語メールを Mew で受信すると文字化けする問題の対応" />
 <meta property="og:description" content="Outlook は当初から評判が良くないため個人的には使用していません。 もうず〜〜〜〜〜と、 PC のメール環境は Mew を使用しています。 しかし、自分のメール送信・" />
@@ -56,6 +56,7 @@
         <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
       <![endif]-->
+
   </head>
 
   
@@ -413,17 +414,17 @@ Outlook のダメさ加減を嘆いてもしようがないので、
 対応コードは以下です。
 </p>
 <div class="src src-el">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-el" data-lang="el">(defun my-mew-change-gb2312-for-outlook ()
-  <span style="color:#e6db74">&#34;outlook 対応。 Outlook の gb2312 は gbk になっている。。。&#34;</span>
-  (setq mew-cs-database-for-decoding
-	(<span style="color:#a6e22e">mapcar</span> (lambda (X)
-		  (if (<span style="color:#a6e22e">equal</span> (<span style="color:#a6e22e">car</span> X) <span style="color:#e6db74">&#34;gb2312&#34;</span>)
-		      (<span style="color:#a6e22e">list</span> (<span style="color:#a6e22e">car</span> X) <span style="color:#e6db74">&#39;gbk</span>)
-		    X))
-		mew-cs-database-for-decoding)))
+<div class="highlight"><pre class="chroma"><code class="language-el" data-lang="el"><span class="p">(</span><span class="nb">defun</span> <span class="nv">my-mew-change-gb2312-for-outlook</span> <span class="p">()</span>
+  <span class="s">&#34;outlook 対応。 Outlook の gb2312 は gbk になっている。。。&#34;</span>
+  <span class="p">(</span><span class="nb">setq</span> <span class="nv">mew-cs-database-for-decoding</span>
+	<span class="p">(</span><span class="nf">mapcar</span> <span class="p">(</span><span class="nb">lambda</span> <span class="p">(</span><span class="nv">X</span><span class="p">)</span>
+		  <span class="p">(</span><span class="nb">if</span> <span class="p">(</span><span class="nf">equal</span> <span class="p">(</span><span class="nf">car</span> <span class="nv">X</span><span class="p">)</span> <span class="s">&#34;gb2312&#34;</span><span class="p">)</span>
+		      <span class="p">(</span><span class="nf">list</span> <span class="p">(</span><span class="nf">car</span> <span class="nv">X</span><span class="p">)</span> <span class="ss">&#39;gbk</span><span class="p">)</span>
+		    <span class="nv">X</span><span class="p">))</span>
+		<span class="nv">mew-cs-database-for-decoding</span><span class="p">)))</span>
 
-(eval-after-load <span style="color:#e6db74">&#34;mew&#34;</span>
-  <span style="color:#f92672">&#39;</span>(my-mew-change-gb2312-for-outlook))</code></pre></div>
+<span class="p">(</span><span class="nv">eval-after-load</span> <span class="s">&#34;mew&#34;</span>
+  <span class="o">&#39;</span><span class="p">(</span><span class="nv">my-mew-change-gb2312-for-outlook</span><span class="p">))</span></code></pre></div>
 </div>
 <p>
 以下で上記処理の説明をします。
@@ -436,7 +437,7 @@ emacs の coding-system の紐付けを <strong>mew-cs-database-for-decoding</st
 こんな感じ。
 </p>
 <div class="src src-txt">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">(defvar mew-cs-database-for-decoding
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">(defvar mew-cs-database-for-decoding
   `((&#34;us-ascii&#34;          nil)
     (&#34;iso-8859-1&#34;        iso-8859-1)
     (&#34;iso-8859-2&#34;        iso-8859-2)
@@ -524,10 +525,11 @@ gb2312 を gbk の紐付けに変更しているのが先ほどのコードと�
 <script>
     window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/highlight.min.js"></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/python.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/javascript.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/lisp.min.js" defer></script><script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/highlight.min.js"></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/python.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/javascript.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/lisp.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/go.min.js" defer></script><script>
     hljs.configure({
         tabReplace: '    ', 
         classPrefix: ''     

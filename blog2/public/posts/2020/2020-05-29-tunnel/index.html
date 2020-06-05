@@ -24,11 +24,11 @@
     <meta name="generator" content="Hugo 0.71.1 with theme pure" />
     <title>Tunnel/Reverse Tunnel over websocket を作った - hoge blog</title>
     
+    <link rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.3/styles/atom-one-dark-reasonable.min.css" async>
     
-    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.785a8cbec99e60735f569c253eb979c0a43335b708d4cab5c44844d3e25e74ba.css">
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
     <meta property="og:title" content="Tunnel/Reverse Tunnel over websocket を作った" />
 <meta property="og:description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs" />
@@ -40,7 +40,7 @@
 <meta itemprop="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs">
 <meta itemprop="datePublished" content="2020-05-29T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-05-29T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="4228">
+<meta itemprop="wordCount" content="5106">
 
 
 
@@ -56,6 +56,7 @@
         <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
       <![endif]-->
+
   </head>
 
   
@@ -291,8 +292,8 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-05-29-tunnel/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">4228</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">9 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">5106</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">11 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
@@ -319,19 +320,19 @@
 4 つのネットワークを表わしている。
 </p>
 <p>
-このネットワーク間で通信を行なうポートが制限されているような場合、
-その開放されているポートに接続したセッションに仮想的な Tunnel を構築する。
+このネットワーク間でポート制限されているような場合、
+その開放されているポートで接続し、そのセッションに仮想的な Tunnel を構築する。
 そして、その Tunnel 内にポートの制限を受けない通信を実現する。
 </p>
 <p>
 左は Tunnel の構成例である。
-分断されている network_1, network_2 を、
+ポート制限されている network_1, network_2 を、
 tunnel server / tunnel client で接続して tunnel を構成し、
 その tunnel を使って tcp client A と tcp server B を接続する。
 </p>
 <p>
 右は Reverse Tunnel の構成例である。
-分断されている network_A, network_B を、
+ポート制限されている network_A, network_B を、
 tunnel server / tunnel client で接続して tunnel を構成し、
 その tunnel を使って tcp client D と tcp server C を接続する。
 </p>
@@ -350,10 +351,10 @@ websocket を利用して tunnel を構築するのが
 「Tunnel/Reverse Tunnel over websocket」である。
 </p>
 <h3 id="headline-2">
-上記の図の plamtulm ソース
+上記の図の plamtulm コード
 </h3>
 <p>
-<em>ブログシステム上、非表示に出来ないようなので表示しておく。内容を確認する必要はない。</em>
+<em>上図は org ファイルに埋め込んだ plamtulm コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。</em>
 </p>
 <div class="src src-plantuml">
 <pre><code class="language-plantuml" data-lang="plantuml">frame tunnelの例 {
@@ -391,28 +392,38 @@ tunnel_server_2 &lt;-- tcp_client_D</code></pre>
 VPN (Virtual Private Network)
 </h2>
 <p>
-このようなネットワーク間で通信路を構築する方法として低レイヤー VPN がある。
+このような制限されたネットワーク間で通信路を構築する方法として、
+WireGuard や OpenVPN などの低レイヤー VPN がある。
 </p>
 <p>
 低レイヤー VPN は、その名の通り仮想的なネットワークを低レイヤーで構築する。
-これによって、通常のネットワークと同様に扱えて便利ではあるが、
+これによって、通常のネットワークと同様に扱えて利便性が高いが、
 通常のネットワークと同様であるが故、逆にリスクになる可能性がある。
 </p>
 <p>
-この Tunnel は、制限した TCP セッションだけを通すことで、
-不要なリスクを排除する。
+今回は VPN ではなく、Tunnel を実現するのが目的である。
+</p>
+<p>
+なお、ここでは「レイヤー 2 あるいは 3 を仮想化する技術」を VPN とし、
+「ネットワーク間で TCP セッションを転送する技術」を Tunnel とする。
 </p>
 <h2 id="headline-4">
 開発した背景
 </h2>
 <p>
-この目的を実現できないかどうか、当初はフリーのツールを探していたが、
-自分の環境は (A)/(B) 間のネットワーク環境が悪く、
-tunnel を確立しても、ある程度経過すると切断されてしまう問題があった。
+制限されたネットワーク間での通信を確立できないかどうか、
+当初はフリーのツールを探していて、幾つか tunnel ソフトを試してみたが、
+tunnel が接続できなかったり、接続できてもすぐに切れてしまったりで
+イマイチ希望したものとは違った。
 </p>
 <p>
-本来ならば、tunnel が切断されても tunnel を再接続することで、
-tunnel 内の tcp 通信を継続させることは可能だ。
+特に自分の環境は (A)/(B) 間のネットワーク環境が悪く、
+tunnel を確立しても、ある程度経過すると切断されてしまう問題があったため、
+再接続して tcp セッションを継続できる機能は必須だ。
+</p>
+<p>
+tunnel が切断されても tunnel を再接続することで、
+tunnel 内の tcp 通信を継続させることは論理的に可能だ。
 しかし、検討していた幾つかのフリーのツールでは、
 tunnel が切断されると tunnel を再接続しても tcp 通信が継続できなかった。
 そもそも tunnel を接続すること自体、
@@ -420,13 +431,17 @@ tunnel が切断されると tunnel を再接続しても tcp 通信が継続で
 </p>
 <p>
 そこで、今回はフリーのツールを検討することは諦め、
-スクラッチで開発することにした。
+自分の勉強も兼てスクラッチで開発することにした。
+</p>
+<p>
+多くの場合、WireGuard や OpenVPN を使うのがベストだろう。
 </p>
 <h2 id="headline-5">
-Tunnel が切断される理由
+ネットワーク環境
 </h2>
 <p>
-今回開発した Tunnel ツール実行中の Tunnel 間通信の強制切断状況を確認したところ、
+今回開発した Tunnel ツールを使って、
+自分のネットワーク環境の Tunnel 間通信強制切断状況を確認したところ、
 次のようになった。
 </p>
 <dl>
@@ -435,7 +450,7 @@ Tunnel が切断される理由
 </dt>
 <dd>
 <p>
-1 接続は最大でも 15 分程度で切断される
+接続は最大でも 15 分程度で切断される
 </p>
 </dd>
 <dt>
@@ -461,11 +476,11 @@ Tunnel が切断される理由
 </p>
 <p>
 (b), (c) について、
-30 〜 60 秒程度で強制切断されるのは、無通信が続くのが原因のようなので、
-20 秒毎にトンネル間でダミーの通信を行なうようにすることで回避できた。
+無通信が続くと 30 〜 60 秒程度で強制切断されるようなので、
+無通信を回避するために 20 秒毎にトンネル間でダミーの通信を行なうよう対応した。
 </p>
 <p>
-ただ、それでも通信負荷が高くなると数分で切断されることがある。
+ただ、これでも通信負荷が高くなると数分で切断されることがある。
 </p>
 <h2 id="headline-6">
 使用方法
@@ -477,11 +492,14 @@ Tunnel が切断される理由
 <h3 id="headline-7">
 注意事項
 </h3>
+<p>
+tunnel 間の通信がインターネットを経由する場合、セキュリティには十分注意すること。
+</p>
 <ul>
 <li>
 <p>
-client/server の暗号化や、client 認証を実装しているが、
-tunnel 内は raw な tcp 接続はせずに、 ssh などで接続すること。
+tunnel client/server 間通信の暗号化や、client 認証を実装しているが、
+tunnel 内の TCP セッションは raw な tcp 接続をせずに、 ssh などで接続すること。
 </p>
 </li>
 <li>
@@ -503,14 +521,15 @@ ip オプションを指定し、接続可能な client を制限すること。
 <h3 id="headline-8">
 ビルド
 </h3>
+<p>
+次のコマンドを実行することで、
+tunnel ディレクトリ内に tunnel コマンドがカレントディレクトリに生成される。
+</p>
 <div class="src src-sh">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-sh" data-lang="sh">$ git clone --depth <span style="color:#ae81ff">1</span> https://github.com/ifritJP/tunnel.git
-$ cd tunnel
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ git clone --depth <span class="m">1</span> https://github.com/ifritJP/tunnel.git
+$ <span class="nb">cd</span> tunnel
 $ make</code></pre></div>
 </div>
-<p>
-これで tunnel コマンドがカレントディレクトリに生成される。
-</p>
 <h3 id="headline-9">
 tunnel コマンド
 </h3>
@@ -529,7 +548,7 @@ server
 server のコマンド例を示す。
 </p>
 <pre class="example">
-$ tunnel -mode r-wsserver -server :6666 -port 8001 -remote localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+$ tunnel -mode r-wsserver -server :6666 -port :8001 -remote localhost:22 -pass XXXXXXX -encPass YYYYYYYY
 </pre>
 <p>
 これは次のサーバの実行を指定している。
@@ -671,22 +690,22 @@ tunnel コマンドで使用可能なオプションについて説明する
 <ul>
 <li>
 <p>
-server
-</p>
-</li>
-<li>
-<p>
-r-server
-</p>
-</li>
-<li>
-<p>
 wsserver
 </p>
 </li>
 <li>
 <p>
 r-wsserver
+</p>
+</li>
+<li>
+<p>
+server
+</p>
+</li>
+<li>
+<p>
+r-server
 </p>
 </li>
 </ul>
@@ -698,22 +717,22 @@ r-wsserver
 <ul>
 <li>
 <p>
-client
-</p>
-</li>
-<li>
-<p>
-r-client
-</p>
-</li>
-<li>
-<p>
 wsclient
 </p>
 </li>
 <li>
 <p>
 r-wsclient
+</p>
+</li>
+<li>
+<p>
+client
+</p>
+</li>
+<li>
+<p>
+r-client
 </p>
 </li>
 </ul>
@@ -735,7 +754,7 @@ ws が付かないものは、 tcp で直接接続する。
 <ul>
 <li>
 <p>
-tcp による接続は、実験的なサポートだ。
+tcp による接続は、実験的なサポートである。
 </p>
 </li>
 <li>
@@ -764,7 +783,7 @@ server を示す。
 </li>
 <li>
 <p>
-サーバ側で指定する場合は、ポート番号だけ指定する。 (:1234)
+サーバ側で指定する場合は、開放するポートを指定する。 (:1234 or localhost:1234)
 </p>
 </li>
 <li>
@@ -776,12 +795,12 @@ server を示す。
 </li>
 <li>
 <p>
--port int
+-port string
 </p>
 <ul>
 <li>
 <p>
-構築した tunnel に接続するためのポート番号
+構築した tunnel に接続するためのポート (:1234 or localhost:1234)
 </p>
 </li>
 <li>
@@ -804,6 +823,11 @@ websocket server に接続するための proxy
 <li>
 <p>
 proxy 不要なら省略する。
+</p>
+</li>
+<li>
+<p>
+認証が必要な proxy の場合、 <a href="http://user:pass@proxy.hoge.com:port/">http://user:pass@proxy.hoge.com:port/</a> の形式で指定する。
 </p>
 </li>
 <li>
@@ -918,7 +942,7 @@ client/server で共通のものを指定する必要がある。
 <ul>
 <li>
 <p>
-client/server 間の暗号処理回数。
+client/server 間の暗号処理回数を指定する。
 </p>
 <ul>
 <li>
@@ -940,9 +964,9 @@ N : packet count (default 1000)
 </li>
 <li>
 <p>
-client/server 間の通信を暗号化するが、tunnel 内を通すのが ssh などの場合、
-二度の暗号が走ることになり、client/server 間の暗号は無駄になる。
-そこで、client/server 間の暗号化回数を指定することで、暗号化にかかる負荷軽減を可能にする。
+このツールは tunnel client/server 間の通信を暗号化するが、tunnel 内を通すのが ssh などの場合、
+二度の暗号化が走ることになり、tunnel client/server 間の暗号は無駄になる。
+そこで、tunnel client/server 間の暗号化回数を指定することで、暗号化にかかる負荷軽減を可能にする。
 </p>
 </li>
 <li>
@@ -982,6 +1006,146 @@ server に接続可能な client の、 IP アドレスパターンを正規表�
 これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。
 </p>
 <h3 id="headline-14">
+スレッド
+</h3>
+<p>
+この Tunnel ツールは、通信効率を上げるために、
+1 つの TCP セッションにつき 5 つのスレッドを持つ。
+</p>
+<ul>
+<li>
+<p>
+tunnel session 制御
+</p>
+</li>
+<li>
+<p>
+tunnel → host のパケット転送制御 (tunnel2Stream)
+</p>
+</li>
+<li>
+<p>
+host → tunnel のパケット転送制御 (stream2Tunnel)
+</p>
+</li>
+<li>
+<p>
+tunnel へのパケット送信制御 (packetWriter)
+</p>
+</li>
+<li>
+<p>
+無通信が一定時間続かないようにするダミーパケット送信制御 (keepalive)
+</p>
+</li>
+</ul>
+<p>
+下図は、各スレッドの役割を図示している。
+</p>
+<p>
+<img src="../tunnel_thread.svg" alt="../tunnel_thread.svg" title="../tunnel_thread.svg" />
+</p>
+<ul>
+<li>
+<p>
+tunnel2Stream が tunnel からデータを読み取り host に送る
+</p>
+</li>
+<li>
+<p>
+stream2Tunnel が host からデータを読み取り Queue に送る
+</p>
+</li>
+<li>
+<p>
+packetWriter が Queue からデータを読み取り tunnel に送る
+</p>
+</li>
+<li>
+<p>
+keepalive が Queue にダミーデータを送る
+</p>
+<h4 id="headline-15">
+上図の dot コード
+</h4>
+</li>
+</ul>
+<p>
+<em>上図は org ファイルに埋め込んだ dot コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。</em>    
+</p>
+<div class="src src-dot">
+<pre><code class="language-dot" data-lang="dot">digraph G {
+rankdir = RL;
+
+tunnel [shape=doublecircle];
+host [shape=box3d];
+subgraph cluster {
+tunnel2Stream [shape=rect; margin=0.2;];
+stream2Tunnel [shape=rect; margin=0.2;];
+packetWriter [shape=rect; margin=0.2;];
+keepalive [shape=rect; margin=0.2;];
+
+Queue
+}
+
+tunnel -&gt; tunnel2Stream
+tunnel2Stream -&gt; host
+host -&gt; stream2Tunnel
+stream2Tunnel -&gt; Queue 
+Queue -&gt; packetWriter
+packetWriter -&gt; tunnel
+keepalive -&gt; Queue
+}</code></pre>
+</div>
+<p>
+スレッド多す過ぎという気もするが、
+メニーコア時代な現代であれば、
+少ないスレッドで複雑なコードを書くよりも、
+処理毎にスレッドを分けた方がメンテナンス性も性能も良いんじゃないだろうか？
+</p>
+<h3 id="headline-16">
+Tunnel の再接続
+</h3>
+<p>
+tunnel が切断されても、
+tunnel を再接続すれば tunnel 内に流れる tcp セッションは継続通信可能である。
+</p>
+<p>
+<em>ただし、tcp 通信のタイムアウト以内に再接続できることが条件である。</em>
+</p>
+<p>
+tunnel を再接続すれば tcp セッションは継続通信可能だ。
+しかし、そう単純にはいかないケースがある。
+それは『送信したつもりになっているパケットが、相手に届いていないことがある』からだ。
+この場合、相手に届いていないパケットを送信しなおす必要がある。
+</p>
+<p>
+「tcp は udp と違って再送制御などを行なって信頼性を確保しているんじゃないのか？」
+と思う人もいるだろう。私も最初はそう思っていた。
+しかし、実際はそうではない。
+なぜなら、再送制御などはあくまでも TCP セッションが続いている場合に行なわれることで、
+TCP セッションが切断された場合は再送制御なども当然破棄される。
+</p>
+<p>
+つまり、強制的にセッションが切断された場合は、
+送ったつもりのデータが相手に届いていないことが普通にありえる。
+</p>
+<p>
+このような「送ったつもりが相手に届いていないデータ」がある場合、
+TCP セッションを継続させるにはそのデータを再送してやる必要がある。
+この処理は、 packetWriter スレッドが実行する。
+</p>
+<h4 id="headline-17">
+再接続後のデータ再送信
+</h4>
+<p>
+前述の通り、再接続後は送信側と受信側とでデータの不整合を確認し、
+受信されていないデータの再送信が必要になる。
+</p>
+<p>
+これを実現するには、送信済みデータを保持しておく必要がある。
+</p>
+<h3 id="headline-18">
 開発言語
 </h3>
 <p>
@@ -1149,10 +1313,10 @@ proxy のカスタマイズがイマイチだったりしたので、
 上記の websocket と proxy パッケージの使いこなしで苦労したので、
 気が向いたら別のネタとして書く予定。
 </p>
-<h3 id="headline-15">
+<h3 id="headline-19">
 設計
 </h3>
-<h4 id="headline-16">
+<h4 id="headline-20">
 ファイル   
 </h4>
 <ul>
@@ -1211,7 +1375,7 @@ server.go
 <ul>
 <li>
 <p>
-tunnel server のコネクション処理
+tunnel server の LISTEN 処理
 </p>
 </li>
 </ul>
@@ -1246,7 +1410,7 @@ proxy 処理
 </ul>
 </li>
 </ul>
-<h4 id="headline-17">
+<h4 id="headline-21">
 構造体
 </h4>
 <p>
@@ -1277,7 +1441,7 @@ ConnInfo
 <p>
 SessionInfo
 </p>
-<h5 id="headline-18">
+<h5 id="headline-22">
 ConnInfo
 </h5>
 </li>
@@ -1289,20 +1453,20 @@ ConnInfo は、 tunnel 内に流れる TCP コネクションの情報を管理�
 具体的な定義は次の通りである。
 </p>
 <div class="src src-go">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">ConnInfo</span> <span style="color:#66d9ef">struct</span> {
-    <span style="color:#75715e">// コネクション
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">Conn</span> <span style="color:#a6e22e">io</span>.<span style="color:#a6e22e">ReadWriteCloser</span>
-    <span style="color:#75715e">// 暗号化情報
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">CryptCtrlObj</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">CryptCtrl</span>
-    <span style="color:#75715e">// セッション情報
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">SessionInfo</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">SessionInfo</span>
-}</code></pre></div>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">ConnInfo</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="c1">// コネクション
+</span><span class="c1"></span>    <span class="nx">Conn</span> <span class="nx">io</span><span class="p">.</span><span class="nx">ReadWriteCloser</span>
+    <span class="c1">// 暗号化情報
+</span><span class="c1"></span>    <span class="nx">CryptCtrlObj</span> <span class="o">*</span><span class="nx">CryptCtrl</span>
+    <span class="c1">// セッション情報
+</span><span class="c1"></span>    <span class="nx">SessionInfo</span> <span class="o">*</span><span class="nx">SessionInfo</span>
+<span class="p">}</span></code></pre></div>
 </div>
 <p>
 Conn が TCP の stream で、 CryptCtrlObj はそれを暗号化・複合し、
 SessionInfo はどの tunnel 内を流れる TCP のセッションを管理する。
 </p>
-<h5 id="headline-19">
+<h5 id="headline-23">
 SessionInfo
 </h5>
 <p>
@@ -1312,25 +1476,25 @@ SessionInfo は、 tunnel 内に流れる TCP のセッションを管理する�
 具体的な定義は次の通りである。
 </p>
 <div class="src src-go">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-go" data-lang="go"><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">SessionInfo</span> <span style="color:#66d9ef">struct</span> {
-    <span style="color:#75715e">// セッションを識別する ID
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">SessionId</span> <span style="color:#66d9ef">int</span>
-    <span style="color:#75715e">// このセッションで read したパケットの数
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">ReadNo</span> <span style="color:#66d9ef">int64</span>
-    <span style="color:#75715e">// このセッションで write したパケットの数
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WriteNo</span> <span style="color:#66d9ef">int64</span>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SessionInfo</span> <span class="kd">struct</span> <span class="p">{</span>
+    <span class="c1">// セッションを識別する ID
+</span><span class="c1"></span>    <span class="nx">SessionId</span> <span class="kt">int</span>
+    <span class="c1">// このセッションで read したパケットの数
+</span><span class="c1"></span>    <span class="nx">ReadNo</span> <span class="kt">int64</span>
+    <span class="c1">// このセッションで write したパケットの数
+</span><span class="c1"></span>    <span class="nx">WriteNo</span> <span class="kt">int64</span>
 
-    <span style="color:#75715e">// 送信した SessionPacket のリスト。
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// 直近 PACKET_NUM 分の SessionPacket を保持する。
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">WritePackList</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">List</span>
-    <span style="color:#75715e">// WritePackList に送り直すパケットを保持するため、
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// パケットのバッファをリンクで保持しておく
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">BufRing</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">ring</span>.<span style="color:#a6e22e">Ring</span>
+    <span class="c1">// 送信した SessionPacket のリスト。
+</span><span class="c1"></span>    <span class="c1">// 直近 PACKET_NUM 分の SessionPacket を保持する。
+</span><span class="c1"></span>    <span class="nx">WritePackList</span> <span class="o">*</span><span class="nx">list</span><span class="p">.</span><span class="nx">List</span>
+    <span class="c1">// WritePackList に送り直すパケットを保持するため、
+</span><span class="c1"></span>    <span class="c1">// パケットのバッファをリンクで保持しておく
+</span><span class="c1"></span>    <span class="nx">BufRing</span> <span class="o">*</span><span class="nx">ring</span><span class="p">.</span><span class="nx">Ring</span>
 
-    <span style="color:#75715e">// 送り直すパケット番号。
-</span><span style="color:#75715e"></span>    <span style="color:#75715e">// -1 の場合は送り直しは無し。
-</span><span style="color:#75715e"></span>    <span style="color:#a6e22e">ReWriteNo</span> <span style="color:#66d9ef">int64</span>
-}</code></pre></div>
+    <span class="c1">// 送り直すパケット番号。
+</span><span class="c1"></span>    <span class="c1">// -1 の場合は送り直しは無し。
+</span><span class="c1"></span>    <span class="nx">ReWriteNo</span> <span class="kt">int64</span>
+<span class="p">}</span></code></pre></div>
 </div>
 <p>
 ここで特に重要なのが ReadNo/WriteNo/ReWriteNo である。
@@ -1338,37 +1502,6 @@ SessionInfo は、 tunnel 内に流れる TCP のセッションを管理する�
 <p>
 これが、 tunnel 切断時に tunnel を再接続することで
 tcp 通信を継続させるために無くてはならない情報だ。
-</p>
-<p>
-この情報が重要である理由を説明する前に、
-tunnel を再接続しただけでは tcp 通信を継続できない理由を次節で説明する。
-</p>
-<h4 id="headline-20">
-tunnel 切断の問題
-</h4>
-<p>
-tunnel が切断されても、
-tunnel を再接続すれば tunnel 内に流れる tcp セッションは継続通信可能である。
-</p>
-<p>
-<em>ただし、tcp 通信のタイムアウト以内に再接続できる必要がある。</em>
-</p>
-<p>
-tunnel を再接続すれば tcp セッションは継続通信可能だ。
-しかし、そう単純にはいかないケースがある。
-それは『送信したつもりになっているパケットが、相手に届いていないことがある』からだ。
-この場合、相手に届いていないパケットを送信しなおす必要がある。
-</p>
-<p>
-「tcp は udp と違って再送制御などを行なって信頼性を確保しているんじゃないのか？」
-と思う人もいるだろう。私も最初はそう思っていた。
-しかし、実際はそうではない。
-なぜなら、再送制御などはあくまでも TCP セッションが続いている場合に行なわれることで、
-TCP セッションが切断された場合は再送制御なども当然破棄される。
-</p>
-<p>
-つまり、強制的にセッションが切断された場合は、
-送ったつもりが相手に届いていないことが普通にありえる。
 </p>
 
     </div>
@@ -1431,10 +1564,11 @@ TCP セッションが切断された場合は再送制御なども当然破棄�
 <script>
     window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/highlight.min.js"></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/python.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/javascript.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/lisp.min.js" defer></script><script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/highlight.min.js"></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/python.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/javascript.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/lisp.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/go.min.js" defer></script><script>
     hljs.configure({
         tabReplace: '    ', 
         classPrefix: ''     

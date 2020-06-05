@@ -24,11 +24,11 @@
     <meta name="generator" content="Hugo 0.71.1 with theme pure" />
     <title>emacs 更新に伴なう gdb の設定 - hoge blog</title>
     
+    <link rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.3/styles/atom-one-dark-reasonable.min.css" async>
     
-    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.785a8cbec99e60735f569c253eb979c0a43335b708d4cab5c44844d3e25e74ba.css">
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
     <meta property="og:title" content="emacs 更新に伴なう gdb の設定" />
 <meta property="og:description" content="とある事情で使い続けていた emacs23.4 (2012/1) を、 先日 emacs26.2 (2019/4) にアップデートした。 このとき gdb 周りの設定を変更する必要があったので、備忘録としてまとめておく。 *2019-06-12: my-gud-stop," />
@@ -56,6 +56,7 @@
         <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
       <![endif]-->
+
   </head>
 
   
@@ -326,41 +327,41 @@
 emacs の gdb 設定
 </h2>
 <div class="src src-el">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-el" data-lang="el"><span style="color:#75715e">;; gud-overlay-arrow-position が nil だとエラーするので。。</span>
-(setq gud-tooltip-display
-      <span style="color:#f92672">&#39;</span>((and gud-overlay-arrow-position
-	     (<span style="color:#a6e22e">eq</span> (tooltip-event-buffer gud-tooltip-event)
-		 (<span style="color:#a6e22e">marker-buffer</span> gud-overlay-arrow-position)))))
+<div class="highlight"><pre class="chroma"><code class="language-el" data-lang="el"><span class="c1">;; gud-overlay-arrow-position が nil だとエラーするので。。</span>
+<span class="p">(</span><span class="nb">setq</span> <span class="nv">gud-tooltip-display</span>
+      <span class="o">&#39;</span><span class="p">((</span><span class="nb">and</span> <span class="nv">gud-overlay-arrow-position</span>
+	     <span class="p">(</span><span class="nf">eq</span> <span class="p">(</span><span class="nv">tooltip-event-buffer</span> <span class="nv">gud-tooltip-event</span><span class="p">)</span>
+		 <span class="p">(</span><span class="nf">marker-buffer</span> <span class="nv">gud-overlay-arrow-position</span><span class="p">)))))</span>
 
-<span style="color:#75715e">;; gdb バッファの C-c C-c で、プログラムを停止させる。</span>
-(setq gdb-gud-control-all-threads <span style="color:#66d9ef">nil</span>)
+<span class="c1">;; gdb バッファの C-c C-c で、プログラムを停止させる。</span>
+<span class="p">(</span><span class="nb">setq</span> <span class="nv">gdb-gud-control-all-threads</span> <span class="no">nil</span><span class="p">)</span>
 
-<span style="color:#75715e">;; input/output バッファが勝手に表示されるのはウザいので、抑制</span>
-(setq gdb-display-io-nopopup <span style="color:#66d9ef">t</span>)
+<span class="c1">;; input/output バッファが勝手に表示されるのはウザいので、抑制</span>
+<span class="p">(</span><span class="nb">setq</span> <span class="nv">gdb-display-io-nopopup</span> <span class="no">t</span><span class="p">)</span>
 
-<span style="color:#75715e">;; input/output バッファが dedicate されるのはウザいので、抑制</span>
-(defadvice gdb-display-buffer (around gdb-display-buffer)
-  (let (window)
-    (setq window ad-do-it)
-    (<span style="color:#a6e22e">set-window-dedicated-p</span> window <span style="color:#66d9ef">nil</span>)
-    window
-  ))
-(ad-activate <span style="color:#e6db74">&#39;gdb-display-buffer</span>)
+<span class="c1">;; input/output バッファが dedicate されるのはウザいので、抑制</span>
+<span class="p">(</span><span class="nb">defadvice</span> <span class="nv">gdb-display-buffer</span> <span class="p">(</span><span class="nv">around</span> <span class="nv">gdb-display-buffer</span><span class="p">)</span>
+  <span class="p">(</span><span class="nb">let</span> <span class="p">(</span><span class="nv">window</span><span class="p">)</span>
+    <span class="p">(</span><span class="nb">setq</span> <span class="nv">window</span> <span class="nv">ad-do-it</span><span class="p">)</span>
+    <span class="p">(</span><span class="nf">set-window-dedicated-p</span> <span class="nv">window</span> <span class="no">nil</span><span class="p">)</span>
+    <span class="nv">window</span>
+  <span class="p">))</span>
+<span class="p">(</span><span class="nv">ad-activate</span> <span class="ss">&#39;gdb-display-buffer</span><span class="p">)</span>
 
 
-<span style="color:#75715e">;; gdb バッファの C-c C-c ではプログラムが停止しなかったので、修正</span>
-(defun my-gud-stop ()
-  (interactive)
-  (comint-interrupt-subjob)
-  (gud-stop-subjob)
-  )
+<span class="c1">;; gdb バッファの C-c C-c ではプログラムが停止しなかったので、修正</span>
+<span class="p">(</span><span class="nb">defun</span> <span class="nv">my-gud-stop</span> <span class="p">()</span>
+  <span class="p">(</span><span class="nb">interactive</span><span class="p">)</span>
+  <span class="p">(</span><span class="nv">comint-interrupt-subjob</span><span class="p">)</span>
+  <span class="p">(</span><span class="nv">gud-stop-subjob</span><span class="p">)</span>
+  <span class="p">)</span>
 
-<span style="color:#75715e">;; 上記 my-gud-stop 関数を C-cC-c に登録する関数</span>
-(defun my-gud-mode-func ()
-  (<span style="color:#a6e22e">define-key</span> (<span style="color:#a6e22e">current-local-map</span>) <span style="color:#e6db74">&#34;\C-c\C-c&#34;</span> <span style="color:#e6db74">&#39;my-gud-stop</span>)
-  )
-<span style="color:#75715e">;; フックに登録</span>
-(add-hook <span style="color:#e6db74">&#39;gud-mode-hook</span> <span style="color:#e6db74">&#39;my-gud-mode-func</span>)</code></pre></div>
+<span class="c1">;; 上記 my-gud-stop 関数を C-cC-c に登録する関数</span>
+<span class="p">(</span><span class="nb">defun</span> <span class="nv">my-gud-mode-func</span> <span class="p">()</span>
+  <span class="p">(</span><span class="nf">define-key</span> <span class="p">(</span><span class="nf">current-local-map</span><span class="p">)</span> <span class="s">&#34;\C-c\C-c&#34;</span> <span class="ss">&#39;my-gud-stop</span><span class="p">)</span>
+  <span class="p">)</span>
+<span class="c1">;; フックに登録</span>
+<span class="p">(</span><span class="nv">add-hook</span> <span class="ss">&#39;gud-mode-hook</span> <span class="ss">&#39;my-gud-mode-func</span><span class="p">)</span></code></pre></div>
 </div>
 <p>
 以降で、上記の設定について説明する。
@@ -526,10 +527,11 @@ dedicate されないように gdb-display-buffer の処理をかえる。
 <script>
     window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/highlight.min.js"></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/python.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/javascript.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/lisp.min.js" defer></script><script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/highlight.min.js"></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/python.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/javascript.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/lisp.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/go.min.js" defer></script><script>
     hljs.configure({
         tabReplace: '    ', 
         classPrefix: ''     

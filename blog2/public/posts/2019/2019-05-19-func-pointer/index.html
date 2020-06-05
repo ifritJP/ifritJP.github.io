@@ -24,11 +24,11 @@
     <meta name="generator" content="Hugo 0.71.1 with theme pure" />
     <title>関数ポインタのオーバーヘッド - hoge blog</title>
     
+    <link rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.3/styles/atom-one-dark-reasonable.min.css" async>
     
-    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.785a8cbec99e60735f569c253eb979c0a43335b708d4cab5c44844d3e25e74ba.css">
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
     <meta property="og:title" content="関数ポインタのオーバーヘッド" />
 <meta property="og:description" content="現在 LuneScript の C 言語へのトランスコンパイル処理を対応中だが、 トランスコンパイルする際に関数ポインタによる関数コールのオーバーヘッドが どの程度なのか" />
@@ -56,6 +56,7 @@
         <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
       <![endif]-->
+
   </head>
 
   
@@ -370,14 +371,14 @@
 実験用に次の C 言語コードを作成した。
 </p>
 <div class="src src-c">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#66d9ef">void</span> <span style="color:#a6e22e">sub</span>( <span style="color:#66d9ef">void</span> ) {
-}
-<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">func_direct</span>( func_t <span style="color:#f92672">*</span> pFunc ) {
-    sub();
-}
-<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">func_indirect</span>( func_t <span style="color:#f92672">*</span> pFunc ) {
-    pFunc();
-}</code></pre></div>
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">func_direct</span><span class="p">(</span> <span class="n">func_t</span> <span class="o">*</span> <span class="n">pFunc</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="n">sub</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">func_indirect</span><span class="p">(</span> <span class="n">func_t</span> <span class="o">*</span> <span class="n">pFunc</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="n">pFunc</span><span class="p">();</span>
+<span class="p">}</span></code></pre></div>
 </div>
 <p>
 func_direct() は sub() 関数を直接コールする関数で、
@@ -390,55 +391,55 @@ func_indirect() は sub() 関数を関数ポインタでコールする関数だ
 ちなみにコードの全体は次の通りである。
 </p>
 <div class="src src-c">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-c" data-lang="c"><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/time.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;time.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
-</span><span style="color:#75715e"></span>
-<span style="color:#66d9ef">typedef</span> <span style="color:#a6e22e">void</span> (func_t)( <span style="color:#66d9ef">void</span> );
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;sys/time.h&gt;</span><span class="cp">
+</span><span class="cp">#include</span> <span class="cpf">&lt;time.h&gt;</span><span class="cp">
+</span><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="k">typedef</span> <span class="nf">void</span> <span class="p">(</span><span class="n">func_t</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">);</span>
 
-<span style="color:#66d9ef">double</span> <span style="color:#a6e22e">getTime</span>( <span style="color:#66d9ef">void</span> ) {
-    <span style="color:#66d9ef">struct</span> timeval tm;
-    gettimeofday( <span style="color:#f92672">&amp;</span>tm, NULL );
-    <span style="color:#66d9ef">return</span> tm.tv_sec <span style="color:#f92672">+</span> tm.tv_usec <span style="color:#f92672">/</span> <span style="color:#ae81ff">1000000.0</span>;
-}
-<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">sub</span>( <span style="color:#66d9ef">void</span> ) {
-}
-<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">func_direct</span>( func_t <span style="color:#f92672">*</span> pFunc ) {
-    sub();
-}
-<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">func_indirect</span>( func_t <span style="color:#f92672">*</span> pFunc ) {
-    pFunc();
-}
-<span style="color:#66d9ef">void</span> <span style="color:#a6e22e">func_none</span>( func_t <span style="color:#f92672">*</span> pFunc ) {
-}
-<span style="color:#66d9ef">int</span> <span style="color:#a6e22e">main</span>( <span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> argv[] ) {
-    <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> loop;
-    <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> pMode;
+<span class="kt">double</span> <span class="nf">getTime</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="k">struct</span> <span class="n">timeval</span> <span class="n">tm</span><span class="p">;</span>
+    <span class="n">gettimeofday</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">tm</span><span class="p">,</span> <span class="nb">NULL</span> <span class="p">);</span>
+    <span class="k">return</span> <span class="n">tm</span><span class="p">.</span><span class="n">tv_sec</span> <span class="o">+</span> <span class="n">tm</span><span class="p">.</span><span class="n">tv_usec</span> <span class="o">/</span> <span class="mf">1000000.0</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">func_direct</span><span class="p">(</span> <span class="n">func_t</span> <span class="o">*</span> <span class="n">pFunc</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="n">sub</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">func_indirect</span><span class="p">(</span> <span class="n">func_t</span> <span class="o">*</span> <span class="n">pFunc</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="n">pFunc</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="kt">void</span> <span class="nf">func_none</span><span class="p">(</span> <span class="n">func_t</span> <span class="o">*</span> <span class="n">pFunc</span> <span class="p">)</span> <span class="p">{</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[]</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="kt">long</span> <span class="kt">long</span> <span class="n">loop</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">pMode</span><span class="p">;</span>
 
-    <span style="color:#66d9ef">double</span> prev <span style="color:#f92672">=</span> getTime();
-    <span style="color:#66d9ef">switch</span> ( argc ) {
-    <span style="color:#66d9ef">case</span> <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>
-        pMode <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;indirect&#34;</span>;
-        <span style="color:#66d9ef">for</span> ( loop <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; loop <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>; loop<span style="color:#f92672">++</span> ) {
-            func_indirect( sub );
-        }
-        <span style="color:#66d9ef">break</span>;
-    <span style="color:#66d9ef">case</span> <span style="color:#ae81ff">2</span><span style="color:#f92672">:</span>
-        pMode <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;direct&#34;</span>;
-        <span style="color:#66d9ef">for</span> ( loop <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; loop <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>; loop<span style="color:#f92672">++</span> ) {
-            func_direct( sub );
-        }
-        <span style="color:#66d9ef">break</span>;
-    <span style="color:#66d9ef">case</span> <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>
-        pMode <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;none&#34;</span>;
-        <span style="color:#66d9ef">for</span> ( loop <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; loop <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000</span> <span style="color:#f92672">*</span> <span style="color:#ae81ff">2</span>; loop<span style="color:#f92672">++</span> ) {
-            func_none( sub );
-        }
-        <span style="color:#66d9ef">break</span>;
-    }
-    printf( <span style="color:#e6db74">&#34;%s: time = %g</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, pMode, getTime() <span style="color:#f92672">-</span> prev );
-    <span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>;
-}</code></pre></div>
+    <span class="kt">double</span> <span class="n">prev</span> <span class="o">=</span> <span class="n">getTime</span><span class="p">();</span>
+    <span class="k">switch</span> <span class="p">(</span> <span class="n">argc</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="mi">1</span><span class="o">:</span>
+        <span class="n">pMode</span> <span class="o">=</span> <span class="s">&#34;indirect&#34;</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span> <span class="n">loop</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">loop</span> <span class="o">&lt;</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">loop</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="n">func_indirect</span><span class="p">(</span> <span class="n">sub</span> <span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">2</span><span class="o">:</span>
+        <span class="n">pMode</span> <span class="o">=</span> <span class="s">&#34;direct&#34;</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span> <span class="n">loop</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">loop</span> <span class="o">&lt;</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">loop</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="n">func_direct</span><span class="p">(</span> <span class="n">sub</span> <span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">3</span><span class="o">:</span>
+        <span class="n">pMode</span> <span class="o">=</span> <span class="s">&#34;none&#34;</span><span class="p">;</span>
+        <span class="k">for</span> <span class="p">(</span> <span class="n">loop</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">loop</span> <span class="o">&lt;</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span> <span class="n">loop</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+            <span class="n">func_none</span><span class="p">(</span> <span class="n">sub</span> <span class="p">);</span>
+        <span class="p">}</span>
+        <span class="k">break</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">printf</span><span class="p">(</span> <span class="s">&#34;%s: time = %g</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pMode</span><span class="p">,</span> <span class="n">getTime</span><span class="p">()</span> <span class="o">-</span> <span class="n">prev</span> <span class="p">);</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
 </div>
 <p>
 このプログラムは、コマンドラインの引数によって
@@ -453,7 +454,7 @@ func_direct(), func_indirect(), func_none()  のいずれかを
 計測結果
 </h3>
 <div class="src src-txt">
-<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-txt" data-lang="txt">indirect: time = 11.4617
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">indirect: time = 11.4617
 indirect: time = 11.2905
 indirect: time = 11.2595
 indirect: time = 11.3391
@@ -581,10 +582,11 @@ none: time = 7.63887</code></pre></div>
 <script>
     window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/highlight.min.js"></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/python.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/javascript.min.js" defer></script>
-<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/10.0.3/languages/lisp.min.js" defer></script><script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/highlight.min.js"></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/python.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/javascript.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/lisp.min.js" defer></script>
+<script type="text/javascript" src="https://cdn.staticfile.org/highlight.js/9.15.10/languages/go.min.js" defer></script><script>
     hljs.configure({
         tabReplace: '    ', 
         classPrefix: ''     
