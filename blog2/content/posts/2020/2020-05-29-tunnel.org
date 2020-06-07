@@ -17,6 +17,38 @@
 「Tunnel/Reverse Tunnel over websocket」を少し具体的にいうと、
 次のような構成で通信を可能にするモノだ。
 
+#+BEGIN_SRC plantuml :file tunnel.svg :results silent
+frame tunnelの例 {
+rectangle network_1 {
+node tcp_client_A
+node tunnel_client_1
+}
+rectangle network_2 {
+node tunnel_server_1
+node tcp_server_B
+}
+}
+
+tcp_client_A --> tunnel_client_1
+tunnel_client_1 --> tunnel_server_1
+tunnel_server_1 --> tcp_server_B
+
+frame reverse_tunnelの例 {
+rectangle network_A {
+node tcp_server_C
+node tunnel_client_2
+}
+rectangle network_B {
+node tunnel_server_2
+node tcp_client_D
+}
+}
+
+tcp_server_C <-- tunnel_client_2
+tunnel_client_2 --> tunnel_server_2
+tunnel_server_2 <-- tcp_client_D
+#+END_SRC
+
 [[../tunnel.svg]]
 
 上の図は network_1, network_2, network_A, network_B の
@@ -48,44 +80,6 @@ Tunnel server と同じネットワークに tcp server が属する構成が Tu
 websocket を利用して tunnel を構築するのが
 「Tunnel/Reverse Tunnel over websocket」である。
 
-
-** 上記の図の plamtulm コード
-
-/上図は org ファイルに埋め込んだ plamtulm コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。/
-
-#+BEGIN_SRC plantuml :file tunnel.svg :results silent
-frame tunnelの例 {
-rectangle network_1 {
-node tcp_client_A
-node tunnel_client_1
-}
-rectangle network_2 {
-node tunnel_server_1
-node tcp_server_B
-}
-}
-
-tcp_client_A --> tunnel_client_1
-tunnel_client_1 --> tunnel_server_1
-tunnel_server_1 --> tcp_server_B
-
-
-frame reverse_tunnelの例 {
-rectangle network_A {
-node tcp_server_C
-node tunnel_client_2
-}
-rectangle network_B {
-node tunnel_server_2
-node tcp_client_D
-}
-}
-
-tcp_server_C <-- tunnel_client_2
-tunnel_client_2 --> tunnel_server_2
-tunnel_server_2 <-- tcp_client_D
-
-#+END_SRC
 
 * VPN (Virtual Private Network)
 
@@ -292,58 +286,129 @@ tunnel コマンドで使用可能なオプションについて説明する
 
 ** スレッド
 
-この Tunnel ツールは、通信効率を上げるために、
-1 つの TCP セッションにつき 5 つのスレッドを持つ。
+この Tunnel ツールは、1 つの TCP セッションにつき 5 つのスレッドを持つ。
 
 - tunnel session 制御
-- tunnel → host のパケット転送制御 (tunnel2Stream)
-- host → tunnel のパケット転送制御 (stream2Tunnel)
-- tunnel へのパケット送信制御 (packetWriter)
+- WriteQeue → tunnel のパケット送信制御 (packetWriter)
+- tunnel → ReadQueue のパケット受信制御 (packetReader)
+- ReadQueue → host のパケット転送制御 (tunnel2Stream)
+- WriteQeue → tunnel のパケット転送制御 (stream2Tunnel)
 - 無通信が一定時間続かないようにするダミーパケット送信制御 (keepalive)
 
+スレッド多す過ぎという気もするが、
+メニーコア時代な現代であれば、
+少ないスレッドで複雑なコードを書くよりも、
+処理毎にスレッドを分けた方がメンテナンス性も性能も良いんじゃないだろうか？
+  
+
 下図は、各スレッドの役割を図示している。
-
-[[../tunnel_thread.svg]]
-
-- tunnel2Stream が tunnel からデータを読み取り host に送る
-- stream2Tunnel が host からデータを読み取り Queue に送る
-- packetWriter が Queue からデータを読み取り tunnel に送る
-- keepalive が Queue にダミーデータを送る
-
-*** 上図の dot コード
-
-/上図は org ファイルに埋め込んだ dot コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。/    
 
 #+begin_src dot :file tunnel_thread.svg :cache yes
 digraph G {
 rankdir = RL;
 
 tunnel [shape=doublecircle];
-host [shape=box3d];
-subgraph cluster {
-tunnel2Stream [shape=rect; margin=0.2;];
-stream2Tunnel [shape=rect; margin=0.2;];
+subgraph clusterA {
+
 packetWriter [shape=rect; margin=0.2;];
+packetReader [shape=rect; margin=0.2;];
 keepalive [shape=rect; margin=0.2;];
 
-Queue
-}
+WriteQueue
 
-tunnel -> tunnel2Stream
+tunnel2Stream [shape=rect; margin=0.2;];
+stream2Tunnel [shape=rect; margin=0.2;];
+ReadQueue
+
+{rank = max; packetReader; packetWriter}
+{rank = same; WriteQueue; ReadQueue}
+{rank = min; tunnel2Stream; stream2Tunnel; keepalive}
+}
+host [shape=box3d];
+
+tunnel -> packetReader
+packetReader -> ReadQueue
+ReadQueue -> tunnel2Stream
+stream2Tunnel -> WriteQueue 
+WriteQueue -> packetWriter
+packetWriter -> tunnel
+keepalive -> WriteQueue
 tunnel2Stream -> host
 host -> stream2Tunnel
-stream2Tunnel -> Queue 
-Queue -> packetWriter
-packetWriter -> tunnel
-keepalive -> Queue
+
+{rank=min;host}
+
+
 }
 #+end_src
-  
 
-スレッド多す過ぎという気もするが、
-メニーコア時代な現代であれば、
-少ないスレッドで複雑なコードを書くよりも、
-処理毎にスレッドを分けた方がメンテナンス性も性能も良いんじゃないだろうか？
+[[../tunnel_thread.svg]]
+
+- packetReader は tunnel からデータを読み取り ReadQueue に送る
+- tunnel2Stream が ReadQueue からデータを読み取り host に送る
+- stream2Tunnel が host からデータを読み取り WriteQueue に送る
+- packetWriter は WriteQueue からデータを読み取り tunnel に送る
+- keepalive が WriteQueue にダミーデータを送る
+
+
+*** tunnel 内に複数の TCP セッションを通す場合
+
+tunnel 内の TCP セッション毎に次の構成が増える
+- tunnel2Stream
+- stream2Tunnel
+- ReadQueue
+
+これらをまとめて CITI (connection in tunnel information ) とすると、
+2 つの TCP セッションを通す場合は次のような構成になる。
+
+#+begin_src dot :file tunnel_thread_multi.svg :cache yes
+digraph G {
+rankdir = RL;
+
+tunnel [shape=doublecircle];
+subgraph clusterA {
+
+packetWriter [shape=rect; margin=0.2;];
+packetReader [shape=rect; margin=0.2;];
+keepalive [shape=rect; margin=0.2;];
+
+WriteQueue
+
+CITI1 [shape=component; margin=0.2;];
+CITI2 [shape=component; margin=0.2;];
+
+
+{rank = max; packetReader; packetWriter}
+{rank = same; WriteQueue; }
+{rank = min; CITI1; CITI2; keepalive}
+}
+host1 [shape=box3d];
+host2 [shape=box3d];
+
+tunnel -> packetReader
+WriteQueue -> packetWriter
+packetWriter -> tunnel
+keepalive -> WriteQueue
+
+packetReader -> CITI1
+CITI1 -> host1
+CITI1 -> WriteQueue 
+host1 -> CITI1
+
+packetReader -> CITI2
+CITI2 -> host2
+CITI2 -> WriteQueue 
+host2 -> CITI2
+
+{rank=min;host1;host2}
+
+
+}
+#+end_src
+
+[[../tunnel_thread_multi.svg]]
+    
+
 
 ** Tunnel の再接続
 

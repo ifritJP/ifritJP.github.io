@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2020-06-05 -->
+<!-- 2020-06-07 日 21:38 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Tunnel/Reverse Tunnel over websocket を作った</title>
@@ -194,28 +194,50 @@
   /*]]>*/-->
 </style>
 <script type="text/javascript">
-// @license magnet:?xt=urn:btih:1f739d935676111cfff4b4693e3816e664797050&dn=gpl-3.0.txt GPL-v3-or-Later
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2020 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
 <!--/*--><![CDATA[/*><!--*/
-     function CodeHighlightOn(elem, id)
-     {
-       var target = document.getElementById(id);
-       if(null != target) {
-         elem.cacheClassElem = elem.className;
-         elem.cacheClassTarget = target.className;
-         target.className = "code-highlighted";
-         elem.className   = "code-highlighted";
-       }
-     }
-     function CodeHighlightOff(elem, id)
-     {
-       var target = document.getElementById(id);
-       if(elem.cacheClassElem)
-         elem.className = elem.cacheClassElem;
-       if(elem.cacheClassTarget)
-         target.className = elem.cacheClassTarget;
-     }
-    /*]]>*///-->
-// @license-end
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
 </script>
 </head>
 <body>
@@ -225,38 +247,38 @@
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#org237afa6">1. 「Tunnel/Reverse Tunnel over websocket」 とは</a>
+<li><a href="#org845f096">1. 「Tunnel/Reverse Tunnel over websocket」 とは</a></li>
+<li><a href="#org8cbbd79">2. VPN (Virtual Private Network)</a></li>
+<li><a href="#orge055fe9">3. 開発した背景</a></li>
+<li><a href="#orgc3423be">4. ネットワーク環境</a></li>
+<li><a href="#orge95f500">5. 使用方法</a>
 <ul>
-<li><a href="#org4ed0367">1.1. 上記の図の plamtulm コード</a></li>
-</ul>
-</li>
-<li><a href="#orgd51de0e">2. VPN (Virtual Private Network)</a></li>
-<li><a href="#org1947d97">3. 開発した背景</a></li>
-<li><a href="#org56f18f9">4. ネットワーク環境</a></li>
-<li><a href="#org53383a9">5. 使用方法</a>
+<li><a href="#orgfec97af">5.1. 注意事項</a></li>
+<li><a href="#orgf5690fd">5.2. ビルド</a></li>
+<li><a href="#org3b2472a">5.3. tunnel コマンド</a>
 <ul>
-<li><a href="#orgab11f99">5.1. 注意事項</a></li>
-<li><a href="#org7be57c2">5.2. ビルド</a></li>
-<li><a href="#orgb985328">5.3. tunnel コマンド</a>
-<ul>
-<li><a href="#orgc36bca3">5.3.1. オプション一覧</a></li>
+<li><a href="#org9a917eb">5.3.1. オプション一覧</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><a href="#org6069202">6. 開発に関して</a>
+<li><a href="#org0a1ac44">6. 開発に関して</a>
 <ul>
-<li><a href="#org44b2919">6.1. スレッド</a>
+<li><a href="#org22fa313">6.1. スレッド</a>
 <ul>
-<li><a href="#orgee84f69">6.1.1. 上図の dot コード</a></li>
+<li><a href="#org5cfc89e">6.1.1. tunnel 内に複数の TCP セッションを通す場合</a></li>
 </ul>
 </li>
-<li><a href="#orgd946270">6.2. Tunnel の再接続</a></li>
-<li><a href="#org1aa7684">6.3. 開発言語</a></li>
-<li><a href="#org432c1ac">6.4. 設計</a>
+<li><a href="#org03ff088">6.2. Tunnel の再接続</a>
 <ul>
-<li><a href="#org1fb6e17">6.4.1. ファイル</a></li>
-<li><a href="#orgdcd2f86">6.4.2. 構造体</a></li>
+<li><a href="#org65d3157">6.2.1. 再接続後のデータ再送信</a></li>
+</ul>
+</li>
+<li><a href="#orgc4b6e7c">6.3. 開発言語</a></li>
+<li><a href="#org661d207">6.4. 設計</a>
+<ul>
+<li><a href="#org3ab7cbf">6.4.1. ファイル</a></li>
+<li><a href="#org8bb2537">6.4.2. 構造体</a></li>
 </ul>
 </li>
 </ul>
@@ -273,8 +295,8 @@
 「websocket を tunnel にして別の TCP 通信を通すもの」だ。
 </p>
 
-<div id="outline-container-org237afa6" class="outline-2">
-<h2 id="org237afa6"><span class="section-number-2">1</span> 「Tunnel/Reverse Tunnel over websocket」 とは</h2>
+<div id="outline-container-org845f096" class="outline-2">
+<h2 id="org845f096"><span class="section-number-2">1</span> 「Tunnel/Reverse Tunnel over websocket」 とは</h2>
 <div class="outline-text-2" id="text-1">
 <p>
 「Tunnel/Reverse Tunnel over websocket」を少し具体的にいうと、
@@ -331,24 +353,15 @@ websocket を利用して tunnel を構築するのが
 「Tunnel/Reverse Tunnel over websocket」である。
 </p>
 </div>
-
-
-
-<div id="outline-container-org4ed0367" class="outline-3">
-<h3 id="org4ed0367"><span class="section-number-3">1.1</span> 上記の図の plamtulm コード</h3>
-<div class="outline-text-3" id="text-1-1">
-<p>
-<i>上図は org ファイルに埋め込んだ plamtulm コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。</i>
-</p>
-</div>
-</div>
 </div>
 
-<div id="outline-container-orgd51de0e" class="outline-2">
-<h2 id="orgd51de0e"><span class="section-number-2">2</span> VPN (Virtual Private Network)</h2>
+
+<div id="outline-container-org8cbbd79" class="outline-2">
+<h2 id="org8cbbd79"><span class="section-number-2">2</span> VPN (Virtual Private Network)</h2>
 <div class="outline-text-2" id="text-2">
 <p>
-このような制限されたネットワーク間で通信路を構築する方法として低レイヤー VPN がある。
+このような制限されたネットワーク間で通信路を構築する方法として、
+WireGuard や OpenVPN などの低レイヤー VPN がある。
 </p>
 
 <p>
@@ -358,14 +371,18 @@ websocket を利用して tunnel を構築するのが
 </p>
 
 <p>
-この Tunnel は、制限した TCP セッションだけを通すことで、
-不要なリスクを排除する。
+今回は VPN ではなく、Tunnel を実現するのが目的である。
+</p>
+
+<p>
+なお、ここでは「レイヤー 2 あるいは 3 を仮想化する技術」を VPN とし、
+「ネットワーク間で TCP セッションを転送する技術」を Tunnel とする。
 </p>
 </div>
 </div>
 
-<div id="outline-container-org1947d97" class="outline-2">
-<h2 id="org1947d97"><span class="section-number-2">3</span> 開発した背景</h2>
+<div id="outline-container-orge055fe9" class="outline-2">
+<h2 id="orge055fe9"><span class="section-number-2">3</span> 開発した背景</h2>
 <div class="outline-text-2" id="text-3">
 <p>
 制限されたネットワーク間での通信を確立できないかどうか、
@@ -391,13 +408,17 @@ tunnel が切断されると tunnel を再接続しても tcp 通信が継続で
 
 <p>
 そこで、今回はフリーのツールを検討することは諦め、
-スクラッチで開発することにした。
+自分の勉強も兼てスクラッチで開発することにした。
+</p>
+
+<p>
+多くの場合、WireGuard や OpenVPN を使うのがベストだろう。
 </p>
 </div>
 </div>
 
-<div id="outline-container-org56f18f9" class="outline-2">
-<h2 id="org56f18f9"><span class="section-number-2">4</span> ネットワーク環境</h2>
+<div id="outline-container-orgc3423be" class="outline-2">
+<h2 id="orgc3423be"><span class="section-number-2">4</span> ネットワーク環境</h2>
 <div class="outline-text-2" id="text-4">
 <p>
 今回開発した Tunnel ツールを使って、
@@ -428,8 +449,8 @@ tunnel が切断されると tunnel を再接続しても tcp 通信が継続で
 </div>
 </div>
 
-<div id="outline-container-org53383a9" class="outline-2">
-<h2 id="org53383a9"><span class="section-number-2">5</span> 使用方法</h2>
+<div id="outline-container-orge95f500" class="outline-2">
+<h2 id="orge95f500"><span class="section-number-2">5</span> 使用方法</h2>
 <div class="outline-text-2" id="text-5">
 <p>
 このツールは Go で開発しているため、
@@ -437,8 +458,8 @@ tunnel が切断されると tunnel を再接続しても tcp 通信が継続で
 </p>
 </div>
 
-<div id="outline-container-orgab11f99" class="outline-3">
-<h3 id="orgab11f99"><span class="section-number-3">5.1</span> 注意事項</h3>
+<div id="outline-container-orgfec97af" class="outline-3">
+<h3 id="orgfec97af"><span class="section-number-3">5.1</span> 注意事項</h3>
 <div class="outline-text-3" id="text-5-1">
 <p>
 tunnel 間の通信がインターネットを経由する場合、セキュリティには十分注意すること。
@@ -454,8 +475,8 @@ tunnel 内の TCP セッションは raw な tcp 接続をせずに、 ssh な�
 </div>
 </div>
 
-<div id="outline-container-org7be57c2" class="outline-3">
-<h3 id="org7be57c2"><span class="section-number-3">5.2</span> ビルド</h3>
+<div id="outline-container-orgf5690fd" class="outline-3">
+<h3 id="orgf5690fd"><span class="section-number-3">5.2</span> ビルド</h3>
 <div class="outline-text-3" id="text-5-2">
 <p>
 次のコマンドを実行することで、
@@ -471,8 +492,8 @@ $ make
 </div>
 </div>
 
-<div id="outline-container-orgb985328" class="outline-3">
-<h3 id="orgb985328"><span class="section-number-3">5.3</span> tunnel コマンド</h3>
+<div id="outline-container-org3b2472a" class="outline-3">
+<h3 id="org3b2472a"><span class="section-number-3">5.3</span> tunnel コマンド</h3>
 <div class="outline-text-3" id="text-5-3">
 <p>
 tunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
@@ -596,7 +617,7 @@ $ tunnel -mode r-wsclient -proxy http://user:pass@proxy.hoge.com:8080/ -server h
 <tr>
 <td class="org-left">-proxy</td>
 <td class="org-left">proxy サーバの情報</td>
-<td class="org-left"><a href="http://proxy.hoge.com::8080/">http://proxy.hoge.com::8080/</a> に user, pass で接続</td>
+<td class="org-left"><a href="http://proxy.hoge.com%3A:8080/">http://proxy.hoge.com%3A:8080/</a> に user, pass で接続</td>
 </tr>
 
 <tr>
@@ -637,8 +658,8 @@ $ ssh -p 8001 localhost
 </pre>
 </div>
 
-<div id="outline-container-orgc36bca3" class="outline-4">
-<h4 id="orgc36bca3"><span class="section-number-4">5.3.1</span> オプション一覧</h4>
+<div id="outline-container-org9a917eb" class="outline-4">
+<h4 id="org9a917eb"><span class="section-number-4">5.3.1</span> オプション一覧</h4>
 <div class="outline-text-4" id="text-5-3-1">
 <p>
 tunnel コマンドで使用可能なオプションについて説明する
@@ -646,7 +667,7 @@ tunnel コマンドで使用可能なオプションについて説明する
 </div>
 
 <ol class="org-ol">
-<li><a id="orge4e3b1f"></a>基本<br />
+<li><a id="org52704cc"></a>基本<br />
 <div class="outline-text-5" id="text-5-3-1-1">
 <ul class="org-ul">
 <li>-mode string
@@ -690,7 +711,7 @@ tunnel コマンドで使用可能なオプションについて説明する
 <ul class="org-ul">
 <li>websocket server に接続するための proxy</li>
 <li>proxy 不要なら省略する。</li>
-<li>認証が必要な proxy の場合、 <a href="http://user:pass@proxy.hoge.com:port/">http://user:pass@proxy.hoge.com:port/</a> の形式で指定する。</li>
+<li>認証が必要な proxy の場合、 <a href="http://user:pass@proxy.hoge.com%3Aport/">http://user:pass@proxy.hoge.com%3Aport/</a> の形式で指定する。</li>
 <li>client 側で指定する</li>
 </ul></li>
 <li>-remote string
@@ -715,7 +736,7 @@ tunnel コマンドで使用可能なオプションについて説明する
 </div>
 </li>
 
-<li><a id="org60497e7"></a>セキュリティ関連<br />
+<li><a id="org9522f36"></a>セキュリティ関連<br />
 <div class="outline-text-5" id="text-5-3-1-2">
 <ul class="org-ul">
 <li>-pass string
@@ -756,54 +777,40 @@ tunnel コマンドで使用可能なオプションについて説明する
 </div>
 </div>
 
-<div id="outline-container-org6069202" class="outline-2">
-<h2 id="org6069202"><span class="section-number-2">6</span> 開発に関して</h2>
+<div id="outline-container-org0a1ac44" class="outline-2">
+<h2 id="org0a1ac44"><span class="section-number-2">6</span> 開発に関して</h2>
 <div class="outline-text-2" id="text-6">
 <p>
 これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。
 </p>
 </div>
 
-<div id="outline-container-org44b2919" class="outline-3">
-<h3 id="org44b2919"><span class="section-number-3">6.1</span> スレッド</h3>
+<div id="outline-container-org22fa313" class="outline-3">
+<h3 id="org22fa313"><span class="section-number-3">6.1</span> スレッド</h3>
 <div class="outline-text-3" id="text-6-1">
 <p>
-この Tunnel ツールは、通信効率を上げるために、
-1 つの TCP セッションにつき 5 つのスレッドを持つ。
+この Tunnel ツールは、1 つの TCP セッションにつき 5 つのスレッドを持つ。
 </p>
 
 <ul class="org-ul">
 <li>tunnel session 制御</li>
-<li>tunnel → host のパケット転送制御 (tunnel2Stream)</li>
-<li>host → tunnel のパケット転送制御 (stream2Tunnel)</li>
-<li>tunnel へのパケット送信制御 (packetWriter)</li>
+<li>WriteQeue → tunnel のパケット送信制御 (packetWriter)</li>
+<li>tunnel → ReadQueue のパケット受信制御 (packetReader)</li>
+<li>ReadQueue → host のパケット転送制御 (tunnel2Stream)</li>
+<li>WriteQeue → tunnel のパケット転送制御 (stream2Tunnel)</li>
 <li>無通信が一定時間続かないようにするダミーパケット送信制御 (keepalive)</li>
 </ul>
 
 <p>
-下図は、各スレッドの役割を図示している。
+スレッド多す過ぎという気もするが、
+メニーコア時代な現代であれば、
+少ないスレッドで複雑なコードを書くよりも、
+処理毎にスレッドを分けた方がメンテナンス性も性能も良いんじゃないだろうか？
 </p>
 
 
-<div class="figure">
-<p><object type="image/svg+xml" data="../tunnel_thread.svg" class="org-svg">
-Sorry, your browser does not support SVG.</object>
-</p>
-</div>
-
-<ul class="org-ul">
-<li>tunnel2Stream が tunnel からデータを読み取り host に送る</li>
-<li>stream2Tunnel が host からデータを読み取り Queue に送る</li>
-<li>packetWriter が Queue からデータを読み取り tunnel に送る</li>
-<li>keepalive が Queue にダミーデータを送る</li>
-</ul>
-</div>
-
-<div id="outline-container-orgee84f69" class="outline-4">
-<h4 id="orgee84f69"><span class="section-number-4">6.1.1</span> 上図の dot コード</h4>
-<div class="outline-text-4" id="text-6-1-1">
 <p>
-<i>上図は org ファイルに埋め込んだ dot コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。</i>    
+下図は、各スレッドの役割を図示している。
 </p>
 
 
@@ -814,18 +821,60 @@ Sorry, your browser does not support SVG.</object>
 </div>
 
 
+<div class="figure">
+<p><object type="image/svg+xml" data="../tunnel_thread.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+<ul class="org-ul">
+<li>packetReader は tunnel からデータを読み取り ReadQueue に送る</li>
+<li>tunnel2Stream が ReadQueue からデータを読み取り host に送る</li>
+<li>stream2Tunnel が host からデータを読み取り WriteQueue に送る</li>
+<li>packetWriter は WriteQueue からデータを読み取り tunnel に送る</li>
+<li>keepalive が WriteQueue にダミーデータを送る</li>
+</ul>
+</div>
+
+
+<div id="outline-container-org5cfc89e" class="outline-4">
+<h4 id="org5cfc89e"><span class="section-number-4">6.1.1</span> tunnel 内に複数の TCP セッションを通す場合</h4>
+<div class="outline-text-4" id="text-6-1-1">
 <p>
-スレッド多す過ぎという気もするが、
-メニーコア時代な現代であれば、
-少ないスレッドで複雑なコードを書くよりも、
-処理毎にスレッドを分けた方がメンテナンス性も性能も良いんじゃないだろうか？
+tunnel 内の TCP セッション毎に次の構成が増える
+</p>
+<ul class="org-ul">
+<li>tunnel2Stream</li>
+<li>stream2Tunnel</li>
+<li>ReadQueue</li>
+</ul>
+
+<p>
+これらをまとめて CITI (connection in tunnel information ) とすると、
+2 つの TCP セッションを通す場合は次のような構成になる。
+</p>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="tunnel_thread_multi.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
+</p>
+</div>
+
+
+<div class="figure">
+<p><object type="image/svg+xml" data="../tunnel_thread_multi.svg" class="org-svg">
+Sorry, your browser does not support SVG.</object>
 </p>
 </div>
 </div>
 </div>
+</div>
 
-<div id="outline-container-orgd946270" class="outline-3">
-<h3 id="orgd946270"><span class="section-number-3">6.2</span> Tunnel の再接続</h3>
+
+
+<div id="outline-container-org03ff088" class="outline-3">
+<h3 id="org03ff088"><span class="section-number-3">6.2</span> Tunnel の再接続</h3>
 <div class="outline-text-3" id="text-6-2">
 <p>
 tunnel が切断されても、
@@ -859,10 +908,24 @@ TCP セッションが切断された場合は再送制御なども当然破棄�
 <p>
 このような「送ったつもりが相手に届いていないデータ」がある場合、
 TCP セッションを継続させるにはそのデータを再送してやる必要がある。
-この処理を行なうのが packetWriter スレッドだ。
+この処理は、 packetWriter スレッドが実行する。
+</p>
+</div>
+
+<div id="outline-container-org65d3157" class="outline-4">
+<h4 id="org65d3157"><span class="section-number-4">6.2.1</span> 再接続後のデータ再送信</h4>
+<div class="outline-text-4" id="text-6-2-1">
+<p>
+前述の通り、再接続後は送信側と受信側とでデータの不整合を確認し、
+受信されていないデータの再送信が必要になる。
+</p>
+
+<p>
+これを実現するには、送信済みデータを保持しておく必要がある。
 </p>
 </div>
 </div>
+</div>
 
 
 
@@ -871,8 +934,10 @@ TCP セッションを継続させるにはそのデータを再送してやる�
 
 
 
-<div id="outline-container-org1aa7684" class="outline-3">
-<h3 id="org1aa7684"><span class="section-number-3">6.3</span> 開発言語</h3>
+
+
+<div id="outline-container-orgc4b6e7c" class="outline-3">
+<h3 id="orgc4b6e7c"><span class="section-number-3">6.3</span> 開発言語</h3>
 <div class="outline-text-3" id="text-6-3">
 <p>
 この Tunnel ツールの開発には、次の技術が不可欠である。
@@ -939,12 +1004,12 @@ proxy のカスタマイズがイマイチだったりしたので、
 </div>
 </div>
 
-<div id="outline-container-org432c1ac" class="outline-3">
-<h3 id="org432c1ac"><span class="section-number-3">6.4</span> 設計</h3>
+<div id="outline-container-org661d207" class="outline-3">
+<h3 id="org661d207"><span class="section-number-3">6.4</span> 設計</h3>
 <div class="outline-text-3" id="text-6-4">
 </div>
-<div id="outline-container-org1fb6e17" class="outline-4">
-<h4 id="org1fb6e17"><span class="section-number-4">6.4.1</span> ファイル</h4>
+<div id="outline-container-org3ab7cbf" class="outline-4">
+<h4 id="org3ab7cbf"><span class="section-number-4">6.4.1</span> ファイル</h4>
 <div class="outline-text-4" id="text-6-4-1">
 <ul class="org-ul">
 <li>main.go
@@ -980,8 +1045,8 @@ proxy のカスタマイズがイマイチだったりしたので、
 </div>
 </div>
 
-<div id="outline-container-orgdcd2f86" class="outline-4">
-<h4 id="orgdcd2f86"><span class="section-number-4">6.4.2</span> 構造体</h4>
+<div id="outline-container-org8bb2537" class="outline-4">
+<h4 id="org8bb2537"><span class="section-number-4">6.4.2</span> 構造体</h4>
 <div class="outline-text-4" id="text-6-4-2">
 <p>
 この Tunnel ツールは次を実現する。
@@ -1003,7 +1068,7 @@ proxy のカスタマイズがイマイチだったりしたので、
 </div>
 
 <ol class="org-ol">
-<li><a id="org3ecf5ad"></a>ConnInfo<br />
+<li><a id="org86aaac8"></a>ConnInfo<br />
 <div class="outline-text-5" id="text-6-4-2-1">
 <p>
 ConnInfo は、 tunnel 内に流れる TCP コネクションの情報を管理する。
@@ -1033,7 +1098,7 @@ SessionInfo はどの tunnel 内を流れる TCP のセッションを管理す�
 </li>
 
 
-<li><a id="org5bfadb9"></a>SessionInfo<br />
+<li><a id="org5924bb9"></a>SessionInfo<br />
 <div class="outline-text-5" id="text-6-4-2-2">
 <p>
 SessionInfo は、 tunnel 内に流れる TCP のセッションを管理する。
@@ -1084,7 +1149,7 @@ tcp 通信を継続させるために無くてはならない情報だ。
 <div id="postamble" class="status">
 <p class="date">Date: 2020-05-29</p>
 <p class="author">Author: ifritJP</p>
-<p class="date">Created: 2020-06-05</p>
+<p class="date">Created: 2020-06-07 日 21:38</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
