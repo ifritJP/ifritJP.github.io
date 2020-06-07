@@ -40,7 +40,7 @@
 <meta itemprop="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs">
 <meta itemprop="datePublished" content="2020-05-29T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-05-29T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="5106">
+<meta itemprop="wordCount" content="5160">
 
 
 
@@ -292,7 +292,7 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-05-29-tunnel/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">5106</span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">5160</span>
 		<span class="post-readcount hidden-xs" itemprop="timeRequired">11 </span>
       </div>
     </div>
@@ -312,6 +312,37 @@
 「Tunnel/Reverse Tunnel over websocket」を少し具体的にいうと、
 次のような構成で通信を可能にするモノだ。
 </p>
+<div class="src src-plantuml">
+<pre><code class="language-plantuml" data-lang="plantuml">frame tunnelの例 {
+rectangle network_1 {
+node tcp_client_A
+node tunnel_client_1
+}
+rectangle network_2 {
+node tunnel_server_1
+node tcp_server_B
+}
+}
+
+tcp_client_A --&gt; tunnel_client_1
+tunnel_client_1 --&gt; tunnel_server_1
+tunnel_server_1 --&gt; tcp_server_B
+
+frame reverse_tunnelの例 {
+rectangle network_A {
+node tcp_server_C
+node tunnel_client_2
+}
+rectangle network_B {
+node tunnel_server_2
+node tcp_client_D
+}
+}
+
+tcp_server_C &lt;-- tunnel_client_2
+tunnel_client_2 --&gt; tunnel_server_2
+tunnel_server_2 &lt;-- tcp_client_D</code></pre>
+</div>
 <p>
 <img src="../tunnel.svg" alt="../tunnel.svg" title="../tunnel.svg" />
 </p>
@@ -350,45 +381,7 @@ Tunnel server と同じネットワークに tcp server が属する構成が Tu
 websocket を利用して tunnel を構築するのが
 「Tunnel/Reverse Tunnel over websocket」である。
 </p>
-<h3 id="headline-2">
-上記の図の plamtulm コード
-</h3>
-<p>
-<em>上図は org ファイルに埋め込んだ plamtulm コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。</em>
-</p>
-<div class="src src-plantuml">
-<pre><code class="language-plantuml" data-lang="plantuml">frame tunnelの例 {
-rectangle network_1 {
-node tcp_client_A
-node tunnel_client_1
-}
-rectangle network_2 {
-node tunnel_server_1
-node tcp_server_B
-}
-}
-
-tcp_client_A --&gt; tunnel_client_1
-tunnel_client_1 --&gt; tunnel_server_1
-tunnel_server_1 --&gt; tcp_server_B
-
-
-frame reverse_tunnelの例 {
-rectangle network_A {
-node tcp_server_C
-node tunnel_client_2
-}
-rectangle network_B {
-node tunnel_server_2
-node tcp_client_D
-}
-}
-
-tcp_server_C &lt;-- tunnel_client_2
-tunnel_client_2 --&gt; tunnel_server_2
-tunnel_server_2 &lt;-- tcp_client_D</code></pre>
-</div>
-<h2 id="headline-3">
+<h2 id="headline-2">
 VPN (Virtual Private Network)
 </h2>
 <p>
@@ -407,7 +400,7 @@ WireGuard や OpenVPN などの低レイヤー VPN がある。
 なお、ここでは「レイヤー 2 あるいは 3 を仮想化する技術」を VPN とし、
 「ネットワーク間で TCP セッションを転送する技術」を Tunnel とする。
 </p>
-<h2 id="headline-4">
+<h2 id="headline-3">
 開発した背景
 </h2>
 <p>
@@ -436,7 +429,7 @@ tunnel が切断されると tunnel を再接続しても tcp 通信が継続で
 <p>
 多くの場合、WireGuard や OpenVPN を使うのがベストだろう。
 </p>
-<h2 id="headline-5">
+<h2 id="headline-4">
 ネットワーク環境
 </h2>
 <p>
@@ -482,14 +475,14 @@ tunnel が切断されると tunnel を再接続しても tcp 通信が継続で
 <p>
 ただ、これでも通信負荷が高くなると数分で切断されることがある。
 </p>
-<h2 id="headline-6">
+<h2 id="headline-5">
 使用方法
 </h2>
 <p>
 このツールは Go で開発しているため、
 事前に Go(1.14.2) の環境を構築してあることが前提である。
 </p>
-<h3 id="headline-7">
+<h3 id="headline-6">
 注意事項
 </h3>
 <p>
@@ -518,7 +511,7 @@ ip オプションを指定し、接続可能な client を制限すること。
 </p>
 </li>
 </ul>
-<h3 id="headline-8">
+<h3 id="headline-7">
 ビルド
 </h3>
 <p>
@@ -530,7 +523,7 @@ tunnel ディレクトリ内に tunnel コマンドがカレントディレク�
 $ <span class="nb">cd</span> tunnel
 $ make</code></pre></div>
 </div>
-<h3 id="headline-9">
+<h3 id="headline-8">
 tunnel コマンド
 </h3>
 <p>
@@ -663,13 +656,13 @@ tunnel への接続
 <pre class="example">
 $ ssh -p 8001 localhost
 </pre>
-<h4 id="headline-10">
+<h4 id="headline-9">
 オプション一覧
 </h4>
 <p>
 tunnel コマンドで使用可能なオプションについて説明する
 </p>
-<h5 id="headline-11">
+<h5 id="headline-10">
 基本
 </h5>
 <ul>
@@ -892,7 +885,7 @@ websocket の client で有効
 </ul>
 </li>
 </ul>
-<h5 id="headline-12">
+<h5 id="headline-11">
 セキュリティ関連    
 </h5>
 <ul>
@@ -999,18 +992,17 @@ server に接続可能な client の、 IP アドレスパターンを正規表�
 </ul>
 </li>
 </ul>
-<h2 id="headline-13">
+<h2 id="headline-12">
 開発に関して
 </h2>
 <p>
 これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。
 </p>
-<h3 id="headline-14">
+<h3 id="headline-13">
 スレッド
 </h3>
 <p>
-この Tunnel ツールは、通信効率を上げるために、
-1 つの TCP セッションにつき 5 つのスレッドを持つ。
+この Tunnel ツールは、1 つの TCP セッションにつき 5 つのスレッドを持つ。
 </p>
 <ul>
 <li>
@@ -1020,17 +1012,22 @@ tunnel session 制御
 </li>
 <li>
 <p>
-tunnel → host のパケット転送制御 (tunnel2Stream)
+WriteQeue → tunnel のパケット送信制御 (packetWriter)
 </p>
 </li>
 <li>
 <p>
-host → tunnel のパケット転送制御 (stream2Tunnel)
+tunnel → ReadQueue のパケット受信制御 (packetReader)
 </p>
 </li>
 <li>
 <p>
-tunnel へのパケット送信制御 (packetWriter)
+ReadQueue → host のパケット転送制御 (tunnel2Stream)
+</p>
+</li>
+<li>
+<p>
+WriteQeue → tunnel のパケット転送制御 (stream2Tunnel)
 </p>
 </li>
 <li>
@@ -1040,70 +1037,157 @@ tunnel へのパケット送信制御 (packetWriter)
 </li>
 </ul>
 <p>
+スレッド多す過ぎという気もするが、
+メニーコア時代な現代であれば、
+少ないスレッドで複雑なコードを書くよりも、
+処理毎にスレッドを分けた方がメンテナンス性も性能も良いんじゃないだろうか？
+</p>
+<p>
 下図は、各スレッドの役割を図示している。
-</p>
-<p>
-<img src="../tunnel_thread.svg" alt="../tunnel_thread.svg" title="../tunnel_thread.svg" />
-</p>
-<ul>
-<li>
-<p>
-tunnel2Stream が tunnel からデータを読み取り host に送る
-</p>
-</li>
-<li>
-<p>
-stream2Tunnel が host からデータを読み取り Queue に送る
-</p>
-</li>
-<li>
-<p>
-packetWriter が Queue からデータを読み取り tunnel に送る
-</p>
-</li>
-<li>
-<p>
-keepalive が Queue にダミーデータを送る
-</p>
-<h4 id="headline-15">
-上図の dot コード
-</h4>
-</li>
-</ul>
-<p>
-<em>上図は org ファイルに埋め込んだ dot コードで生成しているが、ブログシステム上、非表示に出来ないようなのでそのまま表示しておく。内容を確認する必要はない。</em>    
 </p>
 <div class="src src-dot">
 <pre><code class="language-dot" data-lang="dot">digraph G {
 rankdir = RL;
 
 tunnel [shape=doublecircle];
-host [shape=box3d];
-subgraph cluster {
-tunnel2Stream [shape=rect; margin=0.2;];
-stream2Tunnel [shape=rect; margin=0.2;];
+subgraph clusterA {
+
 packetWriter [shape=rect; margin=0.2;];
+packetReader [shape=rect; margin=0.2;];
 keepalive [shape=rect; margin=0.2;];
 
-Queue
-}
+WriteQueue
 
-tunnel -&gt; tunnel2Stream
+tunnel2Stream [shape=rect; margin=0.2;];
+stream2Tunnel [shape=rect; margin=0.2;];
+ReadQueue
+
+{rank = max; packetReader; packetWriter}
+{rank = same; WriteQueue; ReadQueue}
+{rank = min; tunnel2Stream; stream2Tunnel; keepalive}
+}
+host [shape=box3d];
+
+tunnel -&gt; packetReader
+packetReader -&gt; ReadQueue
+ReadQueue -&gt; tunnel2Stream
+stream2Tunnel -&gt; WriteQueue 
+WriteQueue -&gt; packetWriter
+packetWriter -&gt; tunnel
+keepalive -&gt; WriteQueue
 tunnel2Stream -&gt; host
 host -&gt; stream2Tunnel
-stream2Tunnel -&gt; Queue 
-Queue -&gt; packetWriter
-packetWriter -&gt; tunnel
-keepalive -&gt; Queue
+
+{rank=min;host}
+
+
 }</code></pre>
 </div>
 <p>
-スレッド多す過ぎという気もするが、
-メニーコア時代な現代であれば、
-少ないスレッドで複雑なコードを書くよりも、
-処理毎にスレッドを分けた方がメンテナンス性も性能も良いんじゃないだろうか？
+<img src="../tunnel_thread.svg" alt="../tunnel_thread.svg" title="../tunnel_thread.svg" />
 </p>
-<h3 id="headline-16">
+<ul>
+<li>
+<p>
+packetReader は tunnel からデータを読み取り ReadQueue に送る
+</p>
+</li>
+<li>
+<p>
+tunnel2Stream が ReadQueue からデータを読み取り host に送る
+</p>
+</li>
+<li>
+<p>
+stream2Tunnel が host からデータを読み取り WriteQueue に送る
+</p>
+</li>
+<li>
+<p>
+packetWriter は WriteQueue からデータを読み取り tunnel に送る
+</p>
+</li>
+<li>
+<p>
+keepalive が WriteQueue にダミーデータを送る
+</p>
+</li>
+</ul>
+<h4 id="headline-14">
+tunnel 内に複数の TCP セッションを通す場合
+</h4>
+<p>
+tunnel 内の TCP セッション毎に次の構成が増える
+</p>
+<ul>
+<li>
+<p>
+tunnel2Stream
+</p>
+</li>
+<li>
+<p>
+stream2Tunnel
+</p>
+</li>
+<li>
+<p>
+ReadQueue
+</p>
+</li>
+</ul>
+<p>
+これらをまとめて CITI (connection in tunnel information ) とすると、
+2 つの TCP セッションを通す場合は次のような構成になる。
+</p>
+<div class="src src-dot">
+<pre><code class="language-dot" data-lang="dot">digraph G {
+rankdir = RL;
+
+tunnel [shape=doublecircle];
+subgraph clusterA {
+
+packetWriter [shape=rect; margin=0.2;];
+packetReader [shape=rect; margin=0.2;];
+keepalive [shape=rect; margin=0.2;];
+
+WriteQueue
+
+CITI1 [shape=component; margin=0.2;];
+CITI2 [shape=component; margin=0.2;];
+
+
+{rank = max; packetReader; packetWriter}
+{rank = same; WriteQueue; }
+{rank = min; CITI1; CITI2; keepalive}
+}
+host1 [shape=box3d];
+host2 [shape=box3d];
+
+tunnel -&gt; packetReader
+WriteQueue -&gt; packetWriter
+packetWriter -&gt; tunnel
+keepalive -&gt; WriteQueue
+
+packetReader -&gt; CITI1
+CITI1 -&gt; host1
+CITI1 -&gt; WriteQueue 
+host1 -&gt; CITI1
+
+packetReader -&gt; CITI2
+CITI2 -&gt; host2
+CITI2 -&gt; WriteQueue 
+host2 -&gt; CITI2
+
+{rank=min;host1;host2}
+
+
+}</code></pre>
+</div>
+<p>
+<img src="../tunnel_thread_multi.svg" alt="../tunnel_thread_multi.svg" title="../tunnel_thread_multi.svg" />
+</p>
+<h3 id="headline-15">
 Tunnel の再接続
 </h3>
 <p>
@@ -1135,7 +1219,7 @@ TCP セッションが切断された場合は再送制御なども当然破棄�
 TCP セッションを継続させるにはそのデータを再送してやる必要がある。
 この処理は、 packetWriter スレッドが実行する。
 </p>
-<h4 id="headline-17">
+<h4 id="headline-16">
 再接続後のデータ再送信
 </h4>
 <p>
@@ -1145,7 +1229,7 @@ TCP セッションを継続させるにはそのデータを再送してやる�
 <p>
 これを実現するには、送信済みデータを保持しておく必要がある。
 </p>
-<h3 id="headline-18">
+<h3 id="headline-17">
 開発言語
 </h3>
 <p>
@@ -1313,10 +1397,10 @@ proxy のカスタマイズがイマイチだったりしたので、
 上記の websocket と proxy パッケージの使いこなしで苦労したので、
 気が向いたら別のネタとして書く予定。
 </p>
-<h3 id="headline-19">
+<h3 id="headline-18">
 設計
 </h3>
-<h4 id="headline-20">
+<h4 id="headline-19">
 ファイル   
 </h4>
 <ul>
@@ -1410,7 +1494,7 @@ proxy 処理
 </ul>
 </li>
 </ul>
-<h4 id="headline-21">
+<h4 id="headline-20">
 構造体
 </h4>
 <p>
@@ -1441,7 +1525,7 @@ ConnInfo
 <p>
 SessionInfo
 </p>
-<h5 id="headline-22">
+<h5 id="headline-21">
 ConnInfo
 </h5>
 </li>
@@ -1466,7 +1550,7 @@ ConnInfo は、 tunnel 内に流れる TCP コネクションの情報を管理�
 Conn が TCP の stream で、 CryptCtrlObj はそれを暗号化・複合し、
 SessionInfo はどの tunnel 内を流れる TCP のセッションを管理する。
 </p>
-<h5 id="headline-23">
+<h5 id="headline-22">
 SessionInfo
 </h5>
 <p>
