@@ -55,7 +55,7 @@ tunnel_server_2 <-- tcp_client_D
 4 つのネットワークを表わしている。
 
 このネットワーク間でポート制限されているような場合、
-その開放されているポートで接続し、そのセッションに仮想的な Tunnel を構築する。
+開放されているポートで接続し、そのセッション上に仮想的な Tunnel を構築する。
 そして、その Tunnel 内にポートの制限を受けない通信を実現する。
 
 
@@ -98,7 +98,7 @@ WireGuard や OpenVPN などの低レイヤー VPN がある。
 * 開発した背景
 
 制限されたネットワーク間での通信を確立できないかどうか、
-当初はフリーのツールを探していて、幾つか tunnel ソフトを試してみたが、
+当初はフリーのツールを探していて幾つか tunnel ソフトを試してみたが、
 tunnel が接続できなかったり、接続できてもすぐに切れてしまったりで
 イマイチ希望したものとは違った。
 
@@ -116,7 +116,8 @@ tunnel が切断されると tunnel を再接続しても tcp 通信が継続で
 そこで、今回はフリーのツールを検討することは諦め、
 自分の勉強も兼てスクラッチで開発することにした。
 
-多くの場合、WireGuard や OpenVPN を使うのがベストだろう。
+ただし、ネットワーク間を接続することが目的であれば、
+WireGuard や OpenVPN を使うことが多くの場合ベストだろう。
 
 * ネットワーク環境
 
@@ -237,14 +238,23 @@ tunnel コマンドで使用可能なオプションについて説明する
 - -server string
   - server を示す。
   - サーバ側で指定する場合は、開放するポートを指定する。 (:1234 or localhost:1234)
+    - この port に接続可能なネットワークを制限する場合は、
+      そのネットワークを指定する。
+      例えば localhost に制限する場合は =localhost:1234= として指定する。
   - クライアント側で指定する場合は、ホスト名を含めて指定する (hoge.com:1234)
 - -port string
   - 構築した tunnel に接続するためのポート (:1234 or localhost:1234)
   - reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
+  - この port に接続可能なネットワークを制限する場合は、
+    そのネットワークを指定する。
+    例えば localhost に制限する場合は =localhost:1234= として指定する。
+    
+    
 - -proxy string
   - websocket server に接続するための proxy
   - proxy 不要なら省略する。
   - 認証が必要な proxy の場合、 http://user:pass@proxy.hoge.com:port/ の形式で指定する。
+  - 現状は HTTP proxy のみ対応している。
   - client 側で指定する
 - -remote string
   - tunnel で接続するリモートホスト  (hoge.com:1234)
@@ -353,7 +363,9 @@ host -> stream2Tunnel
 
 *** tunnel 内に複数の TCP セッションを通す場合
 
-tunnel 内の TCP セッション毎に次の構成が増える
+tunnel には複数の TCP セッションを通すことができる。    
+次の要素は、tunnel 内の TCP セッション毎に増える。
+
 - tunnel2Stream
 - stream2Tunnel
 - ReadQueue
@@ -433,23 +445,158 @@ TCP セッションが切断された場合は再送制御なども当然破棄�
 
 このような「送ったつもりが相手に届いていないデータ」がある場合、
 TCP セッションを継続させるにはそのデータを再送してやる必要がある。
-この処理は、 packetWriter スレッドが実行する。
+この再送処理は、 packetWriter スレッドが実行する。
 
-*** 再接続後のデータ再送信
+*** フロー制御
 
 前述の通り、再接続後は送信側と受信側とでデータの不整合を確認し、
 受信されていないデータの再送信が必要になる。
 
 これを実現するには、送信済みデータを保持しておく必要がある。
+しかし、全ての送信済みのデータを保持しておく訳にもいかないので、
+保持可能なパケット数を決めておく。
+そして保持可能なパケット数と相手が受信していないパケット数のバランスが
+崩れないようにフロー制御を行なう。
+
+もっとも単純なのは、送信するたびに相手の受信を持ってから次の送信を行なうことだが、
+これだと通信効率が悪すぎる。
+そこで、保持可能なパケット数の半分づつ確認を行なっている。
+
+#+BEGIN_SRC plantuml :file tunnel-flow.svg :results silent
+participant stream2Tunnel_client
+participant packetReader_client
+participant packetWriter_client
+participant packetWriter_server
+participant packetReader_server
+participant tunnel2Stream_server
 
 
+stream2Tunnel_client -> stream2Tunnel_client : check the count send packets.
+stream2Tunnel_client ->> packetWriter_client : write the packet to client queue
+packetWriter_client ->> packetReader_server : write the packet
+packetReader_server ->> tunnel2Stream_server : read the packet to server queue
+tunnel2Stream_server -> tunnel2Stream_server : count received packets.
+tunnel2Stream_server ->> packetWriter_server : write the sync to server queue
+packetWriter_server ->> packetReader_client : write the sync
+#+END_SRC
+
+[[../tunnel-flow.svg]]
+
+- stream2Tunnel は、パケットを queue に書き込む前に送信済みパケット数を確認する。
+  - 保持可能なパケット数の半分であれば、 sync を待つ
+- tunnel2Stream は、受信したパケット数をカウントし、
+  保持可能なパケット数の半分であれば sync を queue に入れる
+
+*** リングバッファ
+
+前述の通り再送信のデータ保持のためにフロー制御を行なっている。
+このデータ保持用のバッファは、
+保持可能なパケット数分のバッファを通信開始時に用意しておき、
+それをリングバッファにして使い回している。
+
+#+begin_src dot :file tunnel_ring.svg :cache yes
+digraph G {
+rankdir = TB;
+
+node0 [shape=rect; label = "buf"]
+node1 [shape=rect; label = "buf"]
+node2 [shape=rect; label = "buf"]
+node3 [shape=rect; label = "buf"]
+node4 [shape=rect; label = "buf"]
+node5 [shape=rect; label = "buf"]
+
+node0 -> node1
+node1 -> node2
+node2 -> node3
+node3 -> node4
+node4 -> node5
+node5 -> node0
 
 
+{rank=same; node1;node5}
+{rank=same; node2;node4}
+}
+#+end_src
+
+[[../tunnel_ring.svg]]
 
 
+*** 送信パケットの結合
+
+tunnel は 2 つの Host の間のパケットを中継する。
+一つのパケットは、MTU サイズに近いほど効率よく送信することができる。
+
+そこで、細かいパケットを 1 つのパケットに結合して送信する処理を行なう。
+
+次の図で示す通り tunnel に送信するパケットは stream2Tunnel から WriteQueue に入れられる。
+そして packetWriter でパケットを取り出して tunnel に送信する。
+
+[[../tunnel_thread.svg]]
+
+この packetWriter でパケットを取り出す時に、
+WriteQueue に複数のパケットが入っている場合、
+そのパケットを結合して送信する。
+
+パケットを結合するために、積極的にパケットが溜るのを待つことはない。
+これによって、通信のリアルタイム性が損なわれることはない。
 
 
+** protocol
+
+ここでは tunnel client/server 間で通信を開始する時の protocol について説明する。
+
+protocol は 3 つの情報をやり取りする。
+
+#+BEGIN_SRC plantuml :file tunnel-auth.svg :results silent
+participant server
+participant client
+
+server ->> client : AuthCallenge
+server <<- client : AuthResponse
+server ->> client : AuthResult
+#+END_SRC
+
+[[../tunnel-auth.svg]]
+
+この protocol の後は、-port オプションで指定されたポートをリスニングし、
+アクセス毎に TCP 接続セッションを開始する。
+
+*** AuthCallenge
+
+AuthCallenge は、次の情報を client に通知する。
+
+- Challenge/Response 認証の Challenge 情報
+- バージョン
+- サーバの動作モード
+
+client は、この情報から Challenge/Response の Response 情報を生成する。
+
+*** AuthResponse
+
+AuthResponse は、次の情報を server に通知する。
    
+- Challenge/Response 認証の Response 情報
+- セッションID
+  - 新規接続か、切断時の再接続かを示す。
+  - 新規の場合 0。再接続の場合、再接続先を示すセッションID。
+- client 側パケットの WriteNo/ReadNo
+  - 再接続する時、再送信が必要かどうかを確認するためのパケット情報
+- 制御コード
+  - 特殊な処理を行なう場合に指定する。
+  - 例えば tunnel 間のラウンドトリップタイムを計測するモードを指定できる。
+
+server は、この情報から client 認証を行なう。
+
+*** AuthResult ( server -> client )
+
+AuthResult は、次の情報を client に通知する。
+
+- 認証結果
+- セッションID
+  - どのセッション ID を使用して通信を行なうかを示す。
+- Server 側パケットの WriteNo/ReadNo
+
+以上で、 tunnel の client/server 間の接続が確立する。
 
 ** 開発言語
 
@@ -461,124 +608,5 @@ TCP セッションを継続させるにはそのデータを再送してやる�
 - WebSocket Client/Server
 
 これら技術との相性の良さという意味では、
-node.js が一番始めに候補に上りそうな気がするが、
-今回は Go の勉強中ということもあり Go で開発を行なった。
-
-Go では、次のパッケージを利用している。
-
-- 標準
-  - container/list
-  - container/ring
-  - crypto/aes
-  - crypto/cipher
-  - crypto/sha256
-  - encoding/base64
-  - encoding/binary
-  - encoding/json
-  - flag
-  - fmt
-  - net/http
-  - net/url
-  - net/url
-  - os
-  - regexp
-  - strconv
-  - strings
-- 非標準
-  - golang.org/x/net/proxy
-    - proxy Client で使用としたが、実際にはほとんど使っていないので、そのうち削除予定
-  - golang.org/x/net/websocket
-    - ネットで調べると Go の websocket 実装は 3 つのパッケージがメジャーだが、
-      他のパッケージでは websocket の io 回りがイマイチだったり、
-      proxy のカスタマイズがイマイチだったりしたので、
-      このパッケージを選択した。
-    
-上記の websocket と proxy パッケージの使いこなしで苦労したので、
-気が向いたら別のネタとして書く予定。
-
-** 設計
-
-*** ファイル   
-   
-- main.go
-  - 主にコマンドオプション解析を実施
-- client.go
-  - tunnel client のコネクション処理
-- common.go
-  - tunnel client/server 処理
-    - tunnel の暗号化・複合
-    - client/server のネゴシエーション
-- server.go
-  - tunnel server の LISTEN 処理
-- session.go
-  - tunnel 内を通す tcp 通信のセッション処理
-- websocket.go
-  - websocket cliet のコネクション処理
-  - proxy 処理
-
-*** 構造体
-
-この Tunnel ツールは次を実現する。
-
-- tcp のデータを通す tunnel の確立
-- tunnel が切断されても、tunnel を再接続することで tunnel 内の tcp 通信を継続させる
-
-これを実現するために、主に次の構造体を定義している。
-
-- ConnInfo
-- SessionInfo
-
-**** ConnInfo
-
-ConnInfo は、 tunnel 内に流れる TCP コネクションの情報を管理する。
-
-具体的な定義は次の通りである。
-
-#+BEGIN_SRC go
-type ConnInfo struct {
-    // コネクション
-    Conn io.ReadWriteCloser
-    // 暗号化情報
-    CryptCtrlObj *CryptCtrl
-    // セッション情報
-    SessionInfo *SessionInfo
-}
-#+END_SRC
-
-Conn が TCP の stream で、 CryptCtrlObj はそれを暗号化・複合し、
-SessionInfo はどの tunnel 内を流れる TCP のセッションを管理する。
-
-
-**** SessionInfo
-  
-SessionInfo は、 tunnel 内に流れる TCP のセッションを管理する。
-
-具体的な定義は次の通りである。
-
-#+BEGIN_SRC go
-type SessionInfo struct {
-    // セッションを識別する ID
-    SessionId int
-    // このセッションで read したパケットの数
-    ReadNo int64
-    // このセッションで write したパケットの数
-    WriteNo int64
-
-    // 送信した SessionPacket のリスト。
-    // 直近 PACKET_NUM 分の SessionPacket を保持する。
-    WritePackList *list.List
-    // WritePackList に送り直すパケットを保持するため、
-    // パケットのバッファをリンクで保持しておく
-    BufRing *ring.Ring
-
-    // 送り直すパケット番号。
-    // -1 の場合は送り直しは無し。
-    ReWriteNo int64
-}
-#+END_SRC
-
-ここで特に重要なのが ReadNo/WriteNo/ReWriteNo である。
-
-これが、 tunnel 切断時に tunnel を再接続することで
-tcp 通信を継続させるために無くてはならない情報だ。
-
+node.js が一番始めに候補に上りそうな気がする。
+しかし、今は Go の勉強中ということもあり Go で開発を行なった。
