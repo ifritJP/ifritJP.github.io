@@ -32,6 +32,7 @@ node tcp_server_B
 tcp_client_A --> tunnel_client_1
 tunnel_client_1 --> tunnel_server_1
 tunnel_server_1 --> tcp_server_B
+tcp_client_A ..> tcp_server_B
 
 frame reverse_tunnelの例 {
 rectangle network_A {
@@ -47,6 +48,7 @@ node tcp_client_D
 tcp_server_C <-- tunnel_client_2
 tunnel_client_2 --> tunnel_server_2
 tunnel_server_2 <-- tcp_client_D
+tcp_client_D ..> tcp_server_C
 #+END_SRC
 
 [[../tunnel.svg]]
@@ -54,7 +56,12 @@ tunnel_server_2 <-- tcp_client_D
 上の図は network_1, network_2, network_A, network_B の
 4 つのネットワークを表わしている。
 
-このネットワーク間でポート制限されているような場合、
+*このネットワーク間でポートが制限されていると、
+tcp_client_A は tcp_server_B と直接通信が出来ない(図の点線)。*
+
+
+
+
 開放されているポートで接続し、そのセッション上に仮想的な Tunnel を構築する。
 そして、その Tunnel 内にポートの制限を受けない通信を実現する。
 
@@ -296,7 +303,7 @@ tunnel コマンドで使用可能なオプションについて説明する
 
 ** スレッド
 
-この Tunnel ツールは、1 つの TCP セッションにつき 5 つのスレッドを持つ。
+この Tunnel ツールは、主に次の 6 つのスレッドで構成される。
 
 - tunnel session 制御
 - WriteQeue → tunnel のパケット送信制御 (packetWriter)
@@ -355,10 +362,10 @@ host -> stream2Tunnel
 [[../tunnel_thread.svg]]
 
 - packetReader は tunnel からデータを読み取り ReadQueue に送る
-- tunnel2Stream が ReadQueue からデータを読み取り host に送る
-- stream2Tunnel が host からデータを読み取り WriteQueue に送る
+- tunnel2Stream は ReadQueue からデータを読み取り host に送る
+- stream2Tunnel は host からデータを読み取り WriteQueue に送る
 - packetWriter は WriteQueue からデータを読み取り tunnel に送る
-- keepalive が WriteQueue にダミーデータを送る
+- keepalive は WriteQueue にダミーデータを送る
 
 
 *** tunnel 内に複数の TCP セッションを通す場合
@@ -537,8 +544,8 @@ tunnel は 2 つの Host の間のパケットを中継する。
 WriteQueue に複数のパケットが入っている場合、
 そのパケットを結合して送信する。
 
-パケットを結合するために、積極的にパケットが溜るのを待つことはない。
-これによって、通信のリアルタイム性が損なわれることはない。
+packetWriter は、パケットを結合するために積極的にパケットが溜るのを待つことはない。
+よって、通信のリアルタイム性が損なわれることはない。
 
 
 ** protocol
@@ -587,7 +594,7 @@ AuthResponse は、次の情報を server に通知する。
 
 server は、この情報から client 認証を行なう。
 
-*** AuthResult ( server -> client )
+*** AuthResult
 
 AuthResult は、次の情報を client に通知する。
 
