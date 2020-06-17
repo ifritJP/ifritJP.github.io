@@ -40,7 +40,7 @@
 <meta itemprop="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs">
 <meta itemprop="datePublished" content="2020-05-29T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-05-29T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="5800">
+<meta itemprop="wordCount" content="5781">
 
 
 
@@ -302,7 +302,7 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-05-29-tunnel/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">5800</span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">5781</span>
 		<span class="post-readcount hidden-xs" itemprop="timeRequired">12 </span>
       </div>
     </div>
@@ -546,145 +546,16 @@ tunnel コマンド
 tunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
 オプションで切り替える。
 </p>
-<ul>
-<li>
 <p>
-server
-</p>
-</li>
-</ul>
-<p>
-server のコマンド例を示す。
+tunnel コマンドは、次の書式をもつ。
 </p>
 <pre class="example">
-$ tunnel -mode r-wsserver -server :6666 -port :8001 -remote localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+$ tunnel &lt;mode&gt; [forward] [options]
 </pre>
-<p>
-これは次のサーバの実行を指定している。
-</p>
-<table>
-<thead>
-<tr>
-<th>option</th>
-<th>意味</th>
-<th>サンプルの意味</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>-mode</td>
-<td>client/server の種類</td>
-<td>reverse websocket server</td>
-</tr>
-<tr>
-<td>-server</td>
-<td>tunnel サーバの情報</td>
-<td>ポート 6666 を使用して websocket server を建てる</td>
-</tr>
-<tr>
-<td>-port</td>
-<td>tunnel で接続する際のポート番号</td>
-<td>ポート 8001 を使用</td>
-</tr>
-<tr>
-<td>-remote</td>
-<td>tunnel で繋げる接続先</td>
-<td>localhost の 22 ポートに接続</td>
-</tr>
-<tr>
-<td>-pass</td>
-<td>client の認証用パスワード</td>
-<td>XXXXXXX</td>
-</tr>
-<tr>
-<td>-encPass</td>
-<td>client/server 間の通信路の暗号パスワード</td>
-<td>YYYYYYYY</td>
-</tr>
-</tbody>
-</table>
 <ul>
 <li>
 <p>
-client
-</p>
-</li>
-</ul>
-<p>
-client のコマンド例を示す
-</p>
-<pre class="example">
-$ tunnel -mode r-wsclient -proxy http://user:pass@proxy.hoge.com:8080/ -server hoge.hoge.com:80 -pass XXXXXXX -encPass YYYYYYYY
-</pre>
-<p>
-これは次のクライアントの実行を指定している。
-</p>
-<table>
-<thead>
-<tr>
-<th>option</th>
-<th>意味</th>
-<th>サンプルの意味</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>-mode</td>
-<td>client/server の種類</td>
-<td>reverse websocket client</td>
-</tr>
-<tr>
-<td>-proxy</td>
-<td>proxy サーバの情報</td>
-<td><a href="http://proxy.hoge.com::8080/">http://proxy.hoge.com::8080/</a> に user, pass で接続</td>
-</tr>
-<tr>
-<td>-server</td>
-<td>tunnel サーバの情報</td>
-<td>hoge.hoge.com の 80 に接続する</td>
-</tr>
-<tr>
-<td>-pass</td>
-<td>client の認証用パスワード</td>
-<td>XXXXXXX</td>
-</tr>
-<tr>
-<td>-encPass</td>
-<td>client/server 間の通信路の暗号パスワード</td>
-<td>YYYYYYYY</td>
-</tr>
-</tbody>
-</table>
-<ul>
-<li>
-<p>
-tunnel への接続
-</p>
-</li>
-</ul>
-<p>
-上記のサンプルは localhost の 22 番ポートに接続するための reverse tunnel を構築している。
-つまり、このサーバ側の 8001 ポートに繋げると、 client 側の ssh に接続されることになる。
-</p>
-<p>
-よって、サーバ側で次のコマンドを実行することで、クライアントの ssh に接続できる。
-</p>
-<pre class="example">
-$ ssh -p 8001 localhost
-</pre>
-<h4 id="headline-9">
-オプション一覧
-</h4>
-<p>
-tunnel コマンドで使用可能なオプションについて説明する
-</p>
-<h5 id="headline-10">
-基本
-</h5>
-<ul>
-<li>
-<p>
--mode string
+mode
 </p>
 <ul>
 <li>
@@ -782,7 +653,7 @@ tcp で接続できる環境なら、 このツールを使わずに ssh した�
 </li>
 <li>
 <p>
--server string
+server
 </p>
 <ul>
 <li>
@@ -813,12 +684,12 @@ server を示す。
 </li>
 <li>
 <p>
--port string
+forward
 </p>
 <ul>
 <li>
 <p>
-構築した tunnel に接続するためのポート (:1234 or localhost:1234)
+tunnel で forward するポートの情報。
 </p>
 </li>
 <li>
@@ -828,14 +699,165 @@ reverse tunnel の場合は、 server 側で指定する。tunnel の場合は c
 </li>
 <li>
 <p>
-この port に接続可能なネットワークを制限する場合は、
+&#34;localのポート,forward先のポート&#34; の書式で指定する。
+</p>
+</li>
+<li>
+<p>
+localのポートに接続可能なネットワークを制限する場合は、
 そのネットワークを指定する。
 例えば localhost に制限する場合は <code class="verbatim">localhost:1234</code> として指定する。
+</p>
+</li>
+<li>
+<p>
+forward 先のポート情報は、相手にそのまま伝わる。
+</p>
+<ul>
+<li>
+<p>
+例えば reverse tunnel で localhost を指定した場合、localhost は tunnel クライアント自身になり、
+通常の tunnel の場合、 localhost はサーバ自身になる。
 </p>
 </li>
 </ul>
 </li>
 </ul>
+</li>
+</ul>
+<p>
+次に代表的なコマンド例を示す。
+</p>
+<ul>
+<li>
+<p>
+server
+</p>
+</li>
+</ul>
+<p>
+server のコマンド例を示す。
+</p>
+<pre class="example">
+$ tunnel r-wsserver :6666 :8001,localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+</pre>
+<p>
+これは次のサーバの実行を指定している。
+</p>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>意味</th>
+<th>サンプルの意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>r-wsserver</td>
+<td>client/server の種類</td>
+<td>reverse websocket server</td>
+</tr>
+<tr>
+<td>:6666</td>
+<td>tunnel サーバの情報</td>
+<td>ポート 6666 を使用して websocket server を建てる</td>
+</tr>
+<tr>
+<td>:8001,localost:22</td>
+<td>tunnel で forward するポート番号</td>
+<td>8001 を localhost:22 に forward</td>
+</tr>
+<tr>
+<td>-pass</td>
+<td>client の認証用パスワード</td>
+<td>XXXXXXX</td>
+</tr>
+<tr>
+<td>-encPass</td>
+<td>client/server 間の通信路の暗号パスワード</td>
+<td>YYYYYYYY</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p>
+client
+</p>
+</li>
+</ul>
+<p>
+client のコマンド例を示す
+</p>
+<pre class="example">
+$ tunnel r-wsclient hoge.hoge.com:80 -proxy http://user:pass@proxy.hoge.com:8080/ -pass XXXXXXX -encPass YYYYYYYY
+</pre>
+<p>
+これは次のクライアントの実行を指定している。
+</p>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>意味</th>
+<th>サンプルの意味</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>r-wsclient</td>
+<td>client/server の種類</td>
+<td>reverse websocket client</td>
+</tr>
+<tr>
+<td>hoge.hoge.com:80</td>
+<td>tunnel サーバの情報</td>
+<td>hoge.hoge.com の 80 に接続する</td>
+</tr>
+<tr>
+<td>-proxy</td>
+<td>proxy サーバの情報</td>
+<td><a href="http://proxy.hoge.com::8080/">http://proxy.hoge.com::8080/</a> に user, pass で接続</td>
+</tr>
+<tr>
+<td>-pass</td>
+<td>client の認証用パスワード</td>
+<td>XXXXXXX</td>
+</tr>
+<tr>
+<td>-encPass</td>
+<td>client/server 間の通信路の暗号パスワード</td>
+<td>YYYYYYYY</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>
+<p>
+tunnel への接続
+</p>
+</li>
+</ul>
+<p>
+上記のサンプルは localhost の 22 番ポートに接続するための reverse tunnel を構築している。
+つまり、このサーバ側の 8001 ポートに繋げると、 client 側の ssh に接続されることになる。
+</p>
+<p>
+よって、サーバ側で次のコマンドを実行することで、クライアントの ssh に接続できる。
+</p>
+<pre class="example">
+$ ssh -p 8001 localhost
+</pre>
+<h4 id="headline-9">
+オプション一覧
+</h4>
+<p>
+tunnel コマンドで使用可能なオプションについて説明する
+</p>
+<h5 id="headline-10">
+基本
+</h5>
 <ul>
 <li>
 <p>
@@ -865,43 +887,6 @@ proxy 不要なら省略する。
 <li>
 <p>
 client 側で指定する
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
--remote string
-</p>
-<ul>
-<li>
-<p>
-tunnel で接続するリモートホスト  (hoge.com:1234)
-</p>
-<ul>
-<li>
-<p>
-最初に説明した (B) あるいは (C) のホスト
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-localhost 等を指定した場合、 reverse とそうでないかによって意味が異なる。
-</p>
-<ul>
-<li>
-<p>
-例えば reverse tunnel の場合はクライアント自信が接続先になり、
-通常の tunnel の場合はサーバ自信が接続先になる。
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
 </p>
 </li>
 </ul>
@@ -974,7 +959,7 @@ client/server で共通のものを指定する必要がある。
 <ul>
 <li>
 <p>
-client/server 間の暗号処理回数を指定する。
+client/server 間の暗号処理回数を指定する。  (default -1)
 </p>
 <ul>
 <li>
@@ -989,7 +974,7 @@ client/server 間の暗号処理回数を指定する。
 </li>
 <li>
 <p>
-N : packet count (default 1000)
+N &gt; 0 : packet count
 </p>
 </li>
 </ul>

@@ -176,55 +176,11 @@ $ make
 tunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
 オプションで切り替える。
 
-- server
+tunnel コマンドは、次の書式をもつ。
 
-server のコマンド例を示す。
+: $ tunnel <mode> [forward] [options]
 
-: $ tunnel -mode r-wsserver -server :6666 -port :8001 -remote localhost:22 -pass XXXXXXX -encPass YYYYYYYY
-
-これは次のサーバの実行を指定している。
-
-| option | 意味                                     | サンプルの意味                                   |
-|------------+------------------------------------------+--------------------------------------------------|
-| -mode      | client/server の種類                     | reverse websocket server                         |
-| -server    | tunnel サーバの情報                      | ポート 6666 を使用して websocket server を建てる |
-| -port      | tunnel で接続する際のポート番号          | ポート 8001 を使用                               |
-| -remote    | tunnel で繋げる接続先                    | localhost の 22 ポートに接続                     |
-| -pass      | client の認証用パスワード                | XXXXXXX                                          |
-| -encPass   | client/server 間の通信路の暗号パスワード | YYYYYYYY                                         |
-  
-- client
-
-client のコマンド例を示す
-
-: $ tunnel -mode r-wsclient -proxy http://user:pass@proxy.hoge.com:8080/ -server hoge.hoge.com:80 -pass XXXXXXX -encPass YYYYYYYY
-
-これは次のクライアントの実行を指定している。
-
-| option | 意味                                     | サンプルの意味                                    |
-|------------+------------------------------------------+---------------------------------------------------|
-| -mode      | client/server の種類                     | reverse websocket client                          |
-| -proxy     | proxy サーバの情報                       | http://proxy.hoge.com::8080/ に user, pass で接続 |
-| -server    | tunnel サーバの情報                      | hoge.hoge.com の 80 に接続する                    |
-| -pass      | client の認証用パスワード                | XXXXXXX                                           |
-| -encPass   | client/server 間の通信路の暗号パスワード | YYYYYYYY                                          |
-  
-- tunnel への接続
-
-上記のサンプルは localhost の 22 番ポートに接続するための reverse tunnel を構築している。
-つまり、このサーバ側の 8001 ポートに繋げると、 client 側の ssh に接続されることになる。
-
-よって、サーバ側で次のコマンドを実行することで、クライアントの ssh に接続できる。
-
-: $ ssh -p 8001 localhost
-  
-*** オプション一覧
-
-tunnel コマンドで使用可能なオプションについて説明する
-
-**** 基本
-
-- -mode string
+- mode
   - 次のいずれかを指定する
   - サーバ
     - wsserver
@@ -242,34 +198,80 @@ tunnel コマンドで使用可能なオプションについて説明する
     - tcp による接続は、実験的なサポートである。
     - tcp で接続できる環境なら、 このツールを使わずに ssh した方が良いだろう。
   - "r-", "ws" は client/server で一致している必要がある。
-- -server string
+- server
   - server を示す。
   - サーバ側で指定する場合は、開放するポートを指定する。 (:1234 or localhost:1234)
     - この port に接続可能なネットワークを制限する場合は、
       そのネットワークを指定する。
       例えば localhost に制限する場合は =localhost:1234= として指定する。
   - クライアント側で指定する場合は、ホスト名を含めて指定する (hoge.com:1234)
-- -port string
-  - 構築した tunnel に接続するためのポート (:1234 or localhost:1234)
+
+- forward
+  - tunnel で forward するポートの情報。
   - reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
-  - この port に接続可能なネットワークを制限する場合は、
+  - "localのポート,forward先のポート" の書式で指定する。
+  - localのポートに接続可能なネットワークを制限する場合は、
     そのネットワークを指定する。
     例えば localhost に制限する場合は =localhost:1234= として指定する。
-    
-    
+  - forward 先のポート情報は、相手にそのまま伝わる。
+    - 例えば reverse tunnel で localhost を指定した場合、localhost は tunnel クライアント自身になり、
+      通常の tunnel の場合、 localhost はサーバ自身になる。
+
+次に代表的なコマンド例を示す。
+
+- server
+
+server のコマンド例を示す。
+
+: $ tunnel r-wsserver :6666 :8001,localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+
+これは次のサーバの実行を指定している。
+
+| option            | 意味                                     | サンプルの意味                                   |
+|-------------------+------------------------------------------+--------------------------------------------------|
+| r-wsserver        | client/server の種類                     | reverse websocket server                         |
+| :6666             | tunnel サーバの情報                      | ポート 6666 を使用して websocket server を建てる |
+| :8001,localost:22 | tunnel で forward するポート番号         | 8001 を localhost:22 に forward                  |
+| -pass             | client の認証用パスワード                | XXXXXXX                                          |
+| -encPass          | client/server 間の通信路の暗号パスワード | YYYYYYYY                                         |
+  
+- client
+
+client のコマンド例を示す
+
+: $ tunnel r-wsclient hoge.hoge.com:80 -proxy http://user:pass@proxy.hoge.com:8080/ -pass XXXXXXX -encPass YYYYYYYY
+
+これは次のクライアントの実行を指定している。
+
+| option           | 意味                                     | サンプルの意味                                    |
+|------------------+------------------------------------------+---------------------------------------------------|
+| r-wsclient       | client/server の種類                     | reverse websocket client                          |
+| hoge.hoge.com:80 | tunnel サーバの情報                      | hoge.hoge.com の 80 に接続する                    |
+| -proxy           | proxy サーバの情報                       | http://proxy.hoge.com::8080/ に user, pass で接続 |
+| -pass            | client の認証用パスワード                | XXXXXXX                                           |
+| -encPass         | client/server 間の通信路の暗号パスワード | YYYYYYYY                                          |
+  
+- tunnel への接続
+
+上記のサンプルは localhost の 22 番ポートに接続するための reverse tunnel を構築している。
+つまり、このサーバ側の 8001 ポートに繋げると、 client 側の ssh に接続されることになる。
+
+よって、サーバ側で次のコマンドを実行することで、クライアントの ssh に接続できる。
+
+: $ ssh -p 8001 localhost
+  
+*** オプション一覧
+
+tunnel コマンドで使用可能なオプションについて説明する
+
+**** 基本
+
 - -proxy string
   - websocket server に接続するための proxy
   - proxy 不要なら省略する。
   - 認証が必要な proxy の場合、 http://user:pass@proxy.hoge.com:port/ の形式で指定する。
   - 現状は HTTP proxy のみ対応している。
   - client 側で指定する
-- -remote string
-  - tunnel で接続するリモートホスト  (hoge.com:1234)
-    - 最初に説明した (B) あるいは (C) のホスト
-  - localhost 等を指定した場合、 reverse とそうでないかによって意味が異なる。
-    - 例えば reverse tunnel の場合はクライアント自信が接続先になり、
-      通常の tunnel の場合はサーバ自信が接続先になる。
-  - reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
 - -UA string
   - Proxy に接続する際の User Agent を指定する
   - websocket の client で有効
@@ -284,10 +286,10 @@ tunnel コマンドで使用可能なオプションについて説明する
   - client/server 間通信の暗号パスワード。
   - client/server で共通のものを指定する必要がある。
 - -encCount int
-  - client/server 間の暗号処理回数を指定する。
+  - client/server 間の暗号処理回数を指定する。  (default -1)
     - -1 : infinity
     - 0 : plain, no encrypt.
-    - N : packet count (default 1000)
+    - N > 0 : packet count
   - このツールは tunnel client/server 間の通信を暗号化するが、tunnel 内を通すのが ssh などの場合、
     二度の暗号化が走ることになり、tunnel client/server 間の暗号は無駄になる。
     そこで、tunnel client/server 間の暗号化回数を指定することで、暗号化にかかる負荷軽減を可能にする。
