@@ -40,7 +40,7 @@
 <meta itemprop="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs">
 <meta itemprop="datePublished" content="2020-05-29T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-05-29T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="5798">
+<meta itemprop="wordCount" content="5994">
 
 
 
@@ -302,7 +302,7 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-05-29-tunnel/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">5798</span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">5994</span>
 		<span class="post-readcount hidden-xs" itemprop="timeRequired">12 </span>
       </div>
     </div>
@@ -444,7 +444,7 @@ tunnel 内を流れる tcp 通信が継続できなかった。
 <p>
 なお、ネットワーク間を接続することが目的であれば、
 WireGuard や OpenVPN などの低レイヤー VPN や、
-stunnel などの Tunnel を利用するのが多くの場合ベストだろう。
+stunnel などの Tunnel ツールを利用するのが多くの場合ベストだろう。
 </p>
 <h2 id="headline-4">
 ネットワーク環境
@@ -536,22 +536,22 @@ ip オプションを指定し、接続可能な client を制限すること。
 tunnel ディレクトリ内に tunnel コマンドがカレントディレクトリに生成される。
 </p>
 <div class="src src-sh">
-<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ git clone --depth <span class="m">1</span> https://github.com/ifritJP/tunnel.git
-$ <span class="nb">cd</span> tunnel
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ git clone --depth <span class="m">1</span> https://github.com/ifritJP/kptunnel.git
+$ <span class="nb">cd</span> kptunnel
 $ make build</code></pre></div>
 </div>
 <h3 id="headline-8">
-tunnel コマンド
+kptunnel コマンド
 </h3>
 <p>
-tunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
+kptunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
 オプションで切り替える。
 </p>
 <p>
-tunnel コマンドは、次の書式をもつ。
+kptunnel コマンドは、次の書式をもつ。
 </p>
 <pre class="example">
-$ tunnel &lt;mode&gt; [forward [forward [...]]] [options]
+$ kptunnel &lt;mode&gt; [forward [forward [...]]] [options]
 </pre>
 <ul>
 <li>
@@ -745,7 +745,7 @@ server
 server のコマンド例を示す。
 </p>
 <pre class="example">
-$ tunnel r-wsserver :6666 :8001,localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+$ kptunnel r-wsserver :6666 :8001,localhost:22 -pass XXXXXXX -encPass YYYYYYYY
 </pre>
 <p>
 これは次のサーバの実行を指定している。
@@ -797,7 +797,7 @@ client
 client のコマンド例を示す
 </p>
 <pre class="example">
-$ tunnel r-wsclient hoge.hoge.com:80 -proxy http://user:pass@proxy.hoge.com:8080/ -pass XXXXXXX -encPass YYYYYYYY
+$ kptunnel r-wsclient hoge.hoge.com:80 -proxy http://user:pass@proxy.hoge.com:8080/ -pass XXXXXXX -encPass YYYYYYYY
 </pre>
 <p>
 これは次のクライアントの実行を指定している。
@@ -859,7 +859,7 @@ $ ssh -p 8001 localhost
 オプション一覧
 </h4>
 <p>
-tunnel コマンドで使用可能なオプションについて説明する
+kptunnel コマンドで使用可能なオプションについて説明する
 </p>
 <h5 id="headline-10">
 基本
@@ -1023,12 +1023,97 @@ server に接続可能な client の、 IP アドレスパターンを正規表�
 </li>
 </ul>
 <h2 id="headline-12">
+動作デモ
+</h2>
+<p>
+次を実行しているデモ動画を示す。
+</p>
+<ul>
+<li>
+<p>
+remote と local と、それらを仲介する proxy がある。
+</p>
+</li>
+<li>
+<p>
+remote で tunnel の wsserver を起動
+</p>
+</li>
+<li>
+<p>
+proxy を起動
+</p>
+</li>
+<li>
+<p>
+local から wsclient を使って、proxy 経由で remote と tunnel を構築する
+</p>
+</li>
+<li>
+<p>
+local から tunnel 経由で remote と ssh 接続する
+</p>
+</li>
+<li>
+<p>
+ssh のコンソースから X11 アプリ (ico) を起動
+</p>
+</li>
+<li>
+<p>
+proxy を停止
+</p>
+<ul>
+<li>
+<p>
+tunnel が切断される
+</p>
+</li>
+<li>
+<p>
+X11 アプリ (ico) の更新が止まるが、 <strong>ssh のセッションは継続する</strong>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+proxy を起動
+</p>
+<ul>
+<li>
+<p>
+tunnel が再接続される
+</p>
+</li>
+<li>
+<p>
+ssh のセッションが再開する
+</p>
+</li>
+<li>
+<p>
+<strong>X11 アプリ (ico) の更新が再開する</strong>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+以降 proxy  停止、起動を繰り返し 
+</p>
+</li>
+</ul>
+<p>
+<img src="../tunnel.gif" alt="../tunnel.gif" title="../tunnel.gif" />
+</p>
+<h2 id="headline-13">
 開発に関して
 </h2>
 <p>
 これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。
 </p>
-<h3 id="headline-13">
+<h3 id="headline-14">
 スレッド
 </h3>
 <p>
@@ -1143,7 +1228,7 @@ keepalive は WriteQueue にダミーデータを送る
 </p>
 </li>
 </ul>
-<h4 id="headline-14">
+<h4 id="headline-15">
 tunnel 内に複数の TCP セッションを通す場合
 </h4>
 <p>
@@ -1218,7 +1303,7 @@ host2 -&gt; CITI2
 <p>
 <img src="../tunnel_thread_multi.svg" alt="../tunnel_thread_multi.svg" title="../tunnel_thread_multi.svg" />
 </p>
-<h3 id="headline-15">
+<h3 id="headline-16">
 Tunnel の再接続
 </h3>
 <p>
@@ -1250,7 +1335,7 @@ TCP セッションが切断された場合は再送制御なども当然破棄�
 TCP セッションを継続させるにはそのデータを再送してやる必要がある。
 この再送処理は、 packetWriter スレッドが実行する。
 </p>
-<h4 id="headline-16">
+<h4 id="headline-17">
 フロー制御
 </h4>
 <p>
@@ -1309,7 +1394,7 @@ tunnel2Stream は、受信したパケット数をカウントし、
 </p>
 </li>
 </ul>
-<h4 id="headline-17">
+<h4 id="headline-18">
 リングバッファ
 </h4>
 <p>
@@ -1344,7 +1429,7 @@ node5 -&gt; node0
 <p>
 <img src="../tunnel_ring.svg" alt="../tunnel_ring.svg" title="../tunnel_ring.svg" />
 </p>
-<h4 id="headline-18">
+<h4 id="headline-19">
 送信パケットの結合
 </h4>
 <p>
@@ -1370,7 +1455,7 @@ WriteQueue に複数のパケットが入っている場合、
 packetWriter は、パケットを結合するために積極的にパケットが溜るのを待つことはない。
 よって、通信のリアルタイム性が損なわれることはない。
 </p>
-<h3 id="headline-19">
+<h3 id="headline-20">
 protocol
 </h3>
 <p>
@@ -1394,7 +1479,7 @@ server -&gt;&gt; client : AuthResult</code></pre>
 この protocol の後は、-port オプションで指定されたポートをリスニングし、
 アクセス毎に TCP 接続セッションを開始する。
 </p>
-<h4 id="headline-20">
+<h4 id="headline-21">
 AuthCallenge
 </h4>
 <p>
@@ -1420,7 +1505,7 @@ Challenge/Response 認証の Challenge 情報
 <p>
 client は、この情報から Challenge/Response の Response 情報を生成する。
 </p>
-<h4 id="headline-21">
+<h4 id="headline-22">
 AuthResponse
 </h4>
 <p>
@@ -1482,7 +1567,7 @@ client 側パケットの WriteNo/ReadNo
 <p>
 server は、この情報から client 認証を行なう。
 </p>
-<h4 id="headline-22">
+<h4 id="headline-23">
 AuthResult
 </h4>
 <p>
@@ -1515,7 +1600,7 @@ Server 側パケットの WriteNo/ReadNo
 <p>
 以上で、 tunnel の client/server 間の接続が確立する。
 </p>
-<h3 id="headline-23">
+<h3 id="headline-24">
 開発言語
 </h3>
 <p>

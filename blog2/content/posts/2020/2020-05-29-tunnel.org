@@ -125,7 +125,7 @@ tunnel 内を流れる tcp 通信が継続できなかった。
 
 なお、ネットワーク間を接続することが目的であれば、
 WireGuard や OpenVPN などの低レイヤー VPN や、
-stunnel などの Tunnel を利用するのが多くの場合ベストだろう。
+stunnel などの Tunnel ツールを利用するのが多くの場合ベストだろう。
 
 * ネットワーク環境
 
@@ -167,19 +167,19 @@ tunnel 間の通信がインターネットを経由する場合、セキュリ�
 tunnel ディレクトリ内に tunnel コマンドがカレントディレクトリに生成される。
    
 #+BEGIN_SRC sh
-$ git clone --depth 1 https://github.com/ifritJP/tunnel.git
-$ cd tunnel
+$ git clone --depth 1 https://github.com/ifritJP/kptunnel.git
+$ cd kptunnel
 $ make build
 #+END_SRC
 
-** tunnel コマンド
+** kptunnel コマンド
 
-tunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
+kptunnel コマンドは tunnel server と、 tunnel client の両方の役割を持ち、
 オプションで切り替える。
 
-tunnel コマンドは、次の書式をもつ。
+kptunnel コマンドは、次の書式をもつ。
 
-: $ tunnel <mode> [forward [forward [...]]] [options]
+: $ kptunnel <mode> [forward [forward [...]]] [options]
 
 - mode
   - 次のいずれかを指定する
@@ -225,7 +225,7 @@ tunnel コマンドは、次の書式をもつ。
 
 server のコマンド例を示す。
 
-: $ tunnel r-wsserver :6666 :8001,localhost:22 -pass XXXXXXX -encPass YYYYYYYY
+: $ kptunnel r-wsserver :6666 :8001,localhost:22 -pass XXXXXXX -encPass YYYYYYYY
 
 これは次のサーバの実行を指定している。
 
@@ -241,7 +241,7 @@ server のコマンド例を示す。
 
 client のコマンド例を示す
 
-: $ tunnel r-wsclient hoge.hoge.com:80 -proxy http://user:pass@proxy.hoge.com:8080/ -pass XXXXXXX -encPass YYYYYYYY
+: $ kptunnel r-wsclient hoge.hoge.com:80 -proxy http://user:pass@proxy.hoge.com:8080/ -pass XXXXXXX -encPass YYYYYYYY
 
 これは次のクライアントの実行を指定している。
 
@@ -264,7 +264,7 @@ client のコマンド例を示す
   
 *** オプション一覧
 
-tunnel コマンドで使用可能なオプションについて説明する
+kptunnel コマンドで使用可能なオプションについて説明する
 
 **** 基本
 
@@ -300,6 +300,28 @@ tunnel コマンドで使用可能なオプションについて説明する
 - -ip string
   - server に接続可能な client の、 IP アドレスパターンを正規表現で指定する。
   - このオプションを省略した場合、 client の IP を限定しない。
+
+
+* 動作デモ
+
+次を実行しているデモ動画を示す。
+
+- remote と local と、それらを仲介する proxy がある。
+- remote で tunnel の wsserver を起動
+- proxy を起動
+- local から wsclient を使って、proxy 経由で remote と tunnel を構築する
+- local から tunnel 経由で remote と ssh 接続する
+- ssh のコンソースから X11 アプリ (ico) を起動
+- proxy を停止
+  - tunnel が切断される
+  - X11 アプリ (ico) の更新が止まるが、 *ssh のセッションは継続する*
+- proxy を起動
+  - tunnel が再接続される
+  - ssh のセッションが再開する
+  - *X11 アプリ (ico) の更新が再開する*
+- 以降 proxy  停止、起動を繰り返し 
+
+[[../tunnel.gif]]
 
 * 開発に関して
 
