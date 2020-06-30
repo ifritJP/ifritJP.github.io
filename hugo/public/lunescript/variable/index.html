@@ -34,7 +34,7 @@
 <meta itemprop="name" content="07. 変数 編">
 <meta itemprop="description" content="今回は LuneScript の変数について説明します。 変数 LuneScript は静的型付け言語であり、変数は型を持ちます。 変数は、次のように let で宣言します。 let val:int = 1; 上記の例は、初">
 
-<meta itemprop="wordCount" content="2794">
+<meta itemprop="wordCount" content="2868">
 
 
 
@@ -90,10 +90,8 @@ real の 1.0 をセットすると、型が違うためコンパイルエラー�
 初期値不要にすることを考えています。</del>
 </p>
 <p>
-変数宣言時の初期化は必須ではなくなりました。
-</p>
-<p>
-なお、初期化していない変数にアクセスした場合、コンパイルエラーになります。
+変数宣言時の初期化は必須ではありません。
+なお、初期化していない変数を参照した場合、コンパイルエラーになります。
 詳しくは後述します。
 </p>
 <p>
@@ -125,16 +123,25 @@ let val3 = &#34;abc&#34;; // str</code></pre>
 <p>
 nilable 型の変数の初期値に nil を設定する
 </p>
+<pre class="example">
+let mut val:int! = nil;
+</pre>
 </li>
 <li>
 <p>
-リスト型や、マップ型の変数の初期値にリテラルな値を設定する
+リスト型や、マップ型の変数の初期値に、リテラルな空の値 (<code class="verbatim">[]</code>, <code class="verbatim">{}</code> など)を設定する
 </p>
+<pre class="example">
+let mut val:List&lt;int&gt; = [];
+</pre>
 </li>
 <li>
 <p>
-スーパークラスの型の変数の初期値に、サブクラスのインスタンスを設定する
+次のようなクラス型の変数にサブクラスのインスタンスを設定する際、変数の型をスーパークラスの型としたい場合
 </p>
+<pre class="example">
+let val:Super = new Sub();
+</pre>
 </li>
 </ul>
 <h3 id="headline-3">
@@ -157,7 +164,7 @@ nilable 型の変数の初期値に nil を設定する
 フロー解析
 </h4>
 <p>
-変数初期化は、フローを解析して行ないます。
+変数初期化は、フローを解析して変数未初期化のパスがないかチェックします。
 </p>
 <p>
 例えば次の場合、エラーになります。
@@ -177,7 +184,7 @@ nilable 型の変数の初期値に nil を設定する
 false の場合は val が初期化されないためです。
 </p>
 <p>
-次のように、アクセスする前に全てのケースで初期化をする必要があります。
+次のように、アクセスする前に全てのパスで初期化をする必要があります。
 </p>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">fn func( flag:bool )
@@ -193,7 +200,7 @@ false の場合は val が初期化されないためです。
 }</code></pre>
 </div>
 <p>
-なおこの処理は、 val に対する初期化であり、
+なおこの処理は、 変数 val に対する初期化であり、
 val に対する書き換えではないため、
 後述する mut 宣言の必要はありません。
 </p>
@@ -226,7 +233,7 @@ val に対する書き換えではないため、
 </div>
 <p>
 少し分かり難いと思いますが、
-上記 ※ の位置で else の時に val が抜けているため、エラーとなります。
+上記 ※ の位置で else の時に val の初期化が抜けているため、print の val 参照がエラーとなります。
 </p>
 <p>
 なお、次の場合も print( val ) の箇所でエラーになります。 
@@ -305,7 +312,7 @@ shadowing
 LuneScript では、 同名の変数宣言を禁止しています。
 </p>
 <p>
-ここで同名とは、同一スコープ内での同名ではなく、
+ここで同名とは、同一スコープ内での同名に限らず、
 アクセス可能なスコープ内での同名を指します。
 </p>
 <p>
@@ -343,10 +350,10 @@ print( SubModule.val );</code></pre>
 </div>
 <p>
 ここで、
-SubModule は <code>pub let val = 1;</code> が宣言されている LuneScript のモジュール(SubModule.lns)です。
+SubModule は <code>pub let val = 1;</code> を宣言している LuneScript のモジュール(SubModule.lns)です。
 </p>
 <p>
-SubModule.val で、そのモジュール内で公開されているシンボルにアクセスします。
+この val にアクセスする場合、SubModule.val とすることでアクセスできます。
 </p>
 <p>
 変数を外部モジュールに公開する方法としては pub が基本ですが、
