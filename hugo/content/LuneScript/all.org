@@ -1,0 +1,7972 @@
+#+title: 全文検索用結合ファイル
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。
+-----
+* *トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+Lua は非常にコンパクトな言語でありながら、高い潜在能力を持つ言語です。
+
+プログラムに組み込まれる言語としては、
+最も使い易い言語の一つと言っても良いと思います。
+
+ただ「プログラムに組み込まれる言語としては使い易い」とはいえ、
+イマドキの言語と比べると、いろいろと気になるところがあるのも事実です。
+
+一方で、Lua をイマドキの言語に近づけるための機能進化は、
+「コンパクト」という Lua の大きな特徴の一つとトレードオフになる可能性があります。
+
+そこで、 Lua 自体には手を加えずに、
+Lua の気になる箇所をカバー出来るトランスコンパイラ LuneScript を紹介します。
+
+** LuneScript とは
+
+LuneScript とは、前述の通り Lua の気になる点をカバーする言語で、
+LuneScript で開発したコードを Lua のコードに変換することが可能な
+トランスコンパイラです。
+
+LuneScript は、次の特徴を持ちます。
+
+- NULL 安全 (null safety)。
+- 静的型付け言語であるため、型チェックにより単純なミスをコンパイル時に発見可能。
+- 型推論により、型宣言の手間を最小化。
+- generics により、型情報を保ったままの処理が可能。
+- 言語の文法としてクラス定義を対応。
+- マクロ により、ポリモーフィズム等の動的処理に頼らないデザインを実現可能。
+- JSON と互換なデータ表現をサポート。
+- トランスコンパイルした Lua コードは、外部ライブラリを前提とせずに単体で動作可能。
+- トランスコンパイルした Lua コードは、LuneScript で書いた処理そのままが出力されるので、
+  性能劣化がない。
+- 既存の Lua の外部モジュールを LuneScript から利用可能。
+- LuneScript は Lua 上で動作し、Lua 標準モジュール以外を必要としないため、導入が簡単。
+- Lua5.1, Lua5.2, 5.3 をサポート。
+  - Lua5.1 については次を参照してください。
+  - [[./crosscompile]]
+- LuneScript はセルフホスティングで開発している。
+- emacs でのコード補完に対応
+- glue コードの自動生成に対応
+- Lua と C の syntax を基調としているため、学習コストが低い。
+
+** LuneScript の使用方法
+
+LuneScript は github で開発しています。
+  
+<https://github.com/ifritJP/LuneScript>
+
+導入方法は次を参照してください。
+
+- 導入編
+  - [[./tutorial2.setup]]
+
+*** コマンド
+
+LuneScript を導入すると、lnsc コマンドがインストールされます。
+
+
+lnsc コマンドの使用方法については、次の記事を参考にしてください。
+
+- Hello world
+  - [[./tutorial3.hello]]
+    
+*** Lua バージョン間のクロスコンパイル
+
+LuneScript は Lua のバージョン間クロスコンパイルをサポートします。
+次の記事を参考にしてください。
+
+- Lua バージョン間のクロスコンパイル
+  - [[./crosscompile]]
+
+** LuneScript の仕様
+
+ここでは LuneScript の仕様について説明します。
+
+*** 値と型
+
+LuneScript で扱う値と型については次の記事を参考にしてください。
+
+- 値編
+  - [[value]]
+- enum 編
+  - [[enum]]
+
+*** コメント
+
+コメントは C++ スタイルを採用。
+一行コメント ~//~ 、 複数行コメント ~/* */~ を指定可能。
+
+#+BEGIN_SRC lns
+// 行末までコメント
+/* ここから〜
+ここまでコメント*/
+#+END_SRC
+
+*** 演算子
+
+原則的に、演算子 は Lua と同じものを利用する。
+
+Lua5.3 の //(切り捨て除算) は、LuneScript では 1 行コメントとなるので注意すること。
+
+なお LuneScript では、 int 同士の / は自動的に切り捨て除算となる。
+
+*** 変数宣言
+
+LuneScript の変数については次の記事を参考にしてください。
+
+- 変数 編
+  - [[variable]]
+
+   
+*** 一般制御文
+
+LuneScript の制御文については次を参考にしてください。
+
+- 一般分岐
+  - [[branch]]
+- 繰り返し構文 編
+  - [[loop]]
+
+
+*** 関数宣言
+
+LuneScript の関数については、次を参考にしてください。
+
+- 関数 編
+  - [[func]]
+
+*** nilable
+
+LuneScript は nil 安全 (NULL 安全) な言語です。
+
+LuneScript の nil 安全を実現する nilable については、
+次を参考にしてください。
+
+- nilable 編
+  - [[nilable]]
+
+
+*** クラス
+   
+LuneScript はオブジェクト指向プログラミングのためのクラスをサポートします。
+
+LuneScript のクラスは、次の制約を持ちます。
+
+- 多重継承はサポートしない。
+- +generics はサポートしない。+
+- 全てがオーバーライド可能なメソッドとなる。
+  - オーバーライドの抑制はできない。
+- 継承間で引数の異なる同名メソッドは定義できない。
+  - ただし、コンストラクタは例外で同じ名前( __init )。
+
+
+次の記事を参考にしてください。
+
+- クラス 基本 編
+  - [[class1]]
+- accessor 編
+  - [[class2accessor]]
+- クラス 継承 編
+  - [[classinherit]]
+- クラス advertise 編
+  - [[classadvertise]]
+- クラス override 編
+  - [[classoverride]]
+- インタフェース 編
+  - [[interface]]
+
+
+**** プロトタイプ宣言
+
+LuneScript は、スクリプトの上から順に解析する。
+
+スクリプトで参照するシンボルは、事前に定義されている必要がある。
+例えばクラス TEST 型の変数を宣言するには、事前にクラス TEST を定義する必要がある。
+
+また、交互に参照するクラスを定義するには、
+どちらかをプロトタイプ宣言する必要がある。
+
+次は、 ClassA, ClassB がそれぞれを参照する時の例である。
+
+#+BEGIN_SRC lns
+class Super {
+}
+pub proto class ClassB extend Super;
+class ClassA {
+  let val: ClassB;
+}
+pub class ClassB extend Super{
+  let val: ClassA;
+}
+#+END_SRC
+
+proto は上記のように宣言する。
+
+プロトタイプ宣言と実際の定義において、
+pub や extend など同じものを宣言しなければならない。
+
+
+*** Mapping
+
+LuneScript のクラスインスタンスは、
+Map オブジェクトとの相互変換が可能である。
+
+これを Mapping と呼ぶ。
+
+Mapping については次を参考にしてください。
+
+- mapping 編
+  - [[classmapping]]
+
+
+*** Generics
+
+LuneScript は Generics をサポートします。
+
+詳しくは次を参照してください。
+
+- generics 編
+  - [[generics]]
+
+*** nil 条件演算子
+
+nilable の値を簡単に扱う方法として、 nil 条件演算子をサポートしています。
+
+- nil 条件演算子 編
+  - [[nilcond]]   
+
+
+*** モジュール
+
+LuneScript のモジュール管理については、次を参考にしてください。
+   
+- import/provide 編  
+  - [[import]]
+- require/module 編    
+  - [[require]]
+  
+** ビルド
+
+LuneScript を使用したプロジェクトをビルドする方法については、次を参考にしてください。
+
+- ビルド 編
+  - [[make]]  
+
+*** _lune.lua モジュール
+
+前述している通り LuneScript で Lua へトランスコンパイルしたファイルは、
+Lua コマンドでそのまま実行できます。
+この時、外部モジュールを必要としません。
+
+これは、トランスコンパイルした Lua コード内に、
+処理に必要なコードを全て含めていることを示します。
+
+例えば次の処理コードをトランスコンパイルすると、
+
+#+BEGIN_SRC lns
+fn func( val:int! ):int {
+   return 1 + unwrap val default 0;
+}
+#+END_SRC
+
+
+Lua コードは次のようにだいぶ長くなります。
+
+#+BEGIN_SRC lua -n
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+if not _ENV._lune then
+   _lune = {}
+end
+function _lune.unwrap( val )
+   if val == nil then
+      __luneScript:error( 'unwrap val is nil' )
+   end
+   return val
+end 
+function _lune.unwrapDefault( val, defval )
+   if val == nil then
+      return defval
+   end
+   return val
+end
+
+local function func( val )
+   return 1 + _lune.unwrapDefault( val, 0)
+end
+
+return _moduleObj
+#+END_SRC
+
+この 4 〜 18 行目が unwrap に必要な処理となります。
+なお、このコードは全ての Lua ファイルに出力されます。
+
+このコード自体は共通処理であるため、
+トランスコンパイルする際に *-r* オプションを指定することで、
+別モジュールとして require して共通処理をまとめることができます。
+
+具体的には次のように -r オプションを指定します。
+
+#+BEGIN_SRC txt
+$ lua lune/base/base.lua -r src.lns save
+#+END_SRC
+
+この -r オプションを指定した場合、上記のコードは次のように変換され、
+かなりスッキリします。
+
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+_lune = require( "lune.base._lune" )
+local function func( val )
+   return 1 + _lune.unwrapDefault( val, 0)
+end
+
+return _moduleObj
+#+END_SRC
+
+なお、require( "lune.base._lune" ) が挿入されるため、
+このモジュールがロード出来るようにセットしておく必要があります。
+トランスコンパイラが動作する環境であれば意識する必要はありませんが、
+変換後の Lua ソースをどこか別の環境で実行するような場合は注意が必要です。
+
+
+*** マクロ
+
+LuneScript は簡易的なマクロを採用する。
+
+**** マクロの意義
+
+マクロは通常の関数と比べて幾つかの制限がある。
+またマクロで行なえう処理は、オブジェクト指向を駆使することで実現できることが多い。
+
+では、マクロを使う意義は何か？
+
+それは、「マクロを使うことで静的に動作が確定する」ことである。
+
+同じ処理をオブジェクト指向で実現した場合、動的な処理となってしまう。
+一方、マクロで実現すれば、静的な処理となる。
+
+これの何が嬉しいのか？
+
+それは、静的型付け言語が動的型付け言語よりも優れている点と同じである。
+
+静的に決まる情報を静的に処理することで、静的に解析できる。
+
+例えば、オブジェクト指向の関数オーバーライドの大部分は、
+マクロを利用することで静的に解決することができる。
+動的な関数オーバーライドではなく、静的な関数呼び出しにすることで、
+ソースコードを追い易くなる。
+
+無闇にマクロを多用するは良くないが、
+安易に関数オーバーライドなどの動的処理にするのも理想ではない。
+
+動的処理とマクロは適宜使い訳が必要である。
+
+**** マクロ定義
+
+マクロ定義については次の記事を参考にしてください。
+
+- マクロ 編
+  - [[macro]]
+
+
+*** 補足
+   
+補足記事は、ここにリンクを追加していきます。
+
+- Lua のトランスコンパイラ LuneScript の紹介 2 
+  - subfile, module, nil 条件演算子 の紹介
+  - [[introduce2]]
+- Lua のトランスコンパイラ LuneScript のイマドキな開発環境でもっと楽しよう
+  - 補完、syntax チェック、subfile の検索
+  - [[completion]]
+-----
+* *はじめに*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+皆さんは LuneScript をご存知ですか？
+
+知りませんよね？
+
+それが普通です。
+
+LuneScript は超マイナー言語の一つです。
+
+この記事は、そんなマイナー言語の導入ハードルを
+少しでも下げることを目的としたドキュメントです。
+
+後 3 分だけ我慢して記事の残りを読んでもらえば、
+エンジニア間での話のネタくらいにはなると思います。
+
+** LuneScript とは
+
+まず LuneScript ってなんじゃらほいっ、というと Lua 向けのトランスコンパイラです。
+
+じゃぁ Lua って何よ？って方も多いと思います。
+
+特に Qiita の読者層は、JavaScript や Python, Ruby などを母国語としている
+Web 系のエンジニアが多いと思うので、 Lua に触れる機会はあまり無いと思います。
+もちろん Web 系でも Lua は使えはしますが、 Web 系で敢えて Lua を使う利点は少ないです。
+
+また、 Lua 自体が話題になったのは 2010 年前後で、
+最近は話題になることも少ないと思います。
+
+ただこれは、Lua が廃れたということではなく、
+Lua を必要とするようなユーザの中では既に常識となって、
+敢えて話題にするようなことが無くなったことが大きな要因だと考えています。
+
+んで、 結局 Lua が何かと言いうと、
+C 言語のプログラムをホストとし、
+その機能を拡張することを想定して設計されたスクリプト言語です。
+
+どこにも Web 系に関連しそうなワードが無いですね。
+強いて上げればスクリプト言語ってところでしょうか。
+
+実際、 Qiita の記事で Lua のタグが付いているのは、
+今日現在で 400 弱しかありませんでした。
+Qiita のタグ一覧ページでは、4ページ目になってようやく出てくる程度です。
+
+ただでさえ存在感の薄い Lua の、
+さらにトランスコンパイラなんて誰が使うんだよ、的な感じですが、
+ここではそんなトランスコンパイラである LuneScript を扱っていきます。
+
+数年前に AltJS が栄枯盛衰して Web 界隈がざわついていたように、
+AltLua によって Lua 界隈がもう一度盛り上ってもイイじゃない。
+
+** LuneScript の特徴
+
+LuneScript は、Lua 向けトランスコンパイラであるため、
+Lua には無い様々な機能をサポートしています。
+
+その代表的なものとして次のものが挙げられます。
+
+- 静的型付け
+- 型推論
+- NULL 安全 (null safety)
+- generics
+- クラス定義
+- マクロ
+
+イマドキのプログラム言語機能として必要なものは、かなり取り入れられていると思います。
+
+これらの機能により、Lua コードを直接書くよりも、
+LuneScript を利用した方が規模の大きいコードを高い生産性で開発することが出来ます。
+
+ついでにセルフホスティングで開発していますが、それはあまり関係ないですね。
+
+そんなわけで、この記事は、
+
+- Lua でコードを書いた経験がある人
+- あるいは書く予定のある人
+- そしてプログラム言語好きな人
+- オレオレ言語に興味がある人  
+  
+そんな人に向けた記事です。
+
+LuneScript は、さまざまなプログラミング言語から仕様をパく、、inspire されて
+設計しています。
+言語の設計ポリシーは、出来るだけ「楽に」「安全に」です。
+
+
+明日以降の記事で実際に言語仕様を説明していきますが、
+その中で *エラー* と記載した場合、
+それは実行時エラーではなく、 *コンパイルエラー* を指します。
+
+LuneScript は「安全に」開発できるように、
+実行時エラーでなく、出来るだけコンパイル時にエラーするように設計しています。
+
+次回は LuneScript の導入方法について紹介します。
+
+興味と時間のある方は、次回以降もお付き合いください。
+
+
+** ちょっ
+
+なんとなく Google 翻訳で LuneScript を翻訳したら。。。
+
+嘘だと言ってよバーニィ!! 
+
+[[https://ifritjp.github.io/doc/LuneScript/ingo.png]]
+
+
+追記 2019/1/25
+
+いつのまにか脚本に進化した!
+
+[[https://ifritjp.github.io/doc/LuneScript/kyakuhon.png]]
+-----
+* *導入編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は、 LuneScript の導入方法についての紹介です。
+
+** LuneScript の導入方法
+
+LuneScript は Lua のトランスコンパイラです。
+また、LuneScript 自体も Lua のスクリプトとして動作します。
+
+よって、 LuneScript には Lua の実行環境が必要です。
+
+なお、 LuneScript が対応している Lua のバージョンは *5.1*, 5.2, 5.3 です。
+
+ただし Lua 5.1 で利用する場合、幾つかの制限があります。
+具体的な制限の内容については、別の記事で説明します。
+
+追記: 12/10 (*Lua 5.1* 対応について)
+
+システムにデフォルトでインストールされている Lua のバージョンは、
+多くの場合 5.1 系です。
+
+次のコマンドでインストールされている Lua のバージョンを確認してください。
+
+#+BEGIN_SRC txt
+$ lua -v 
+#+END_SRC
+
+*** Lua の導入
+
+Lua は次の URL からダウンロードできます。
+
+http://www.lua.org/download.html
+
+Linux であれば、パッケージ管理で簡単に導入できますが、
+Lua のバージョンには注意してください。
+
+例えば ubuntu 等の apt 系のパッケージ管理では、次のコマンドで導入できます。
+
+#+BEGIN_SRC sh
+$ sudo apt install lua5.3
+#+END_SRC
+
+**** Windows の場合
+
+Windows では、cygwin 版 Lua が必要です。
+
+トランスコンパイル後の Lua コードは、 cygwin 版でなくとも動作します。
+
+しかし、LuneScript 自体は linux 環境を想定しているため cygwin が必要になります。
+
+必ず cygwin 版 Lua を用意してください。
+
+Windows Subsystem for Linux で動作するかどうかは、後程確認します。
+
+*** LuneScript の導入
+
+前述している通り、LuneScript は Lua のスクリプトとして動作します。
+
+Lua のモジュール管理は非常に単純で、
+Lua が管理するモジュールディレクトリにファイルを置くだけです。
+
+LuneScript のモジュールは、github に公開しています。
+
+https://github.com/ifritJP/LuneScript
+
+
+手動でファイルコピーすることでもセットアップできますが、
+以降では LuneScript の setup.lua を使ったセットアップ方法について説明します。
+
+
+手動でファイルコピーする方法は、 Lua のモジュール管理を熟知していないと難しいです。
+
+**** LuneScript の導入方法
+
+LuneScript の setup.lua を実行します。
+
+手順は次の通りです。
+
+#+BEGIN_SRC sh
+$ git clone https://github.com/ifritJP/LuneScript.git
+$ cd LuneScript/src
+$ lua5.3 setup.lua -d
+$ sudo make install
+#+END_SRC
+
+これにより、 LuneScript がモジュールディレクトリにインストールされます。
+
+LuneScript をインストールする Lua のモジュールディレクトリを指定したい場合、
+~lua5.3 setup.lua -d~ の -d を外して実行してください。
+
+
+**** Lua が管理するモジュールディレクトリ
+
+Lua が管理するモジュールディレクトリは次のコマンドで確認できます。
+
+#+BEGIN_SRC sh
+$ lua5.3 -e 'print( package.path )'
+#+END_SRC
+
+上記コマンドの結果は、次のようになります。 (環境によって異なります)
+
+#+BEGIN_SRC sh
+/usr/local/share/lua/5.3/?.lua;/usr/local/share/lua/5.3/?/init.lua;/usr/local/lib/lua/5.3/?.lua;/usr/local/lib/lua/5.3/?/init.lua;/usr/share/lua/5.3/?.lua;/usr/share/lua/5.3/?/init.lua;./?.lua;./?/init.lua
+#+END_SRC
+
+これを ; で区切ると次になります。
+
+- /usr/local/share/lua/5.3/?.lua
+- /usr/local/share/lua/5.3/?/init.lua
+- /usr/local/lib/lua/5.3/?.lua
+- /usr/local/lib/lua/5.3/?/init.lua
+- /usr/share/lua/5.3/?.lua
+- /usr/share/lua/5.3/?/init.lua
+- ./?.lua
+- ./?/init.lua
+
+細かい説明は省きますが、
+次のディレクトリが Lua が管理するモジュールディレクトリになります。
+
+- /usr/local/share/lua/5.3
+- /usr/local/lib/lua/5.3
+- /usr/share/lua/5.3
+- ./
+  
+**ディレクトリは環境によって異なります。*
+  
+  
+環境変数によってもモジュールディレクトリを指定することは出来ますが、
+ここでの説明は割愛します。
+  
+** emacs の設定
+
+LuneScript は、emacs で開発するための emacs lisp を提供しています。
+  
+次の設定をしてください。
+
+#+BEGIN_SRC lisp
+  (add-to-list 'load-path "my-lune-path")  ;;; clone した LuneScript のパスを指定
+  (setq lns-lua-command "/usr/local/bin/lua")  ;;; lua のパス
+  (require 'lns-conf)
+  (require 'lns-flymake)
+  (require 'lns-auto-complete)
+  (require 'lns-helm)
+#+END_SRC
+
+これにより、次が利用できます。
+
+- .lns ファイルのインデント、色付け
+- flymake による構文チェック
+- auto-complete による補完
+
+構文チェックは flymake と flycheck をサポートしています。
+flycheck を利用したい場合 lns-flymake ではなく、 lns-flycheck を require してください。
+
+auto-complete, flycheck, flymake は、別途 M-x package-install してください。
+
+
+*** プロジェクトファイル
+
+emacs で LuneScript を扱う場合、プロジェクトファイルを作成する必要があります。
+
+プロジェクトファイルといっても、次の内容を持つ lune.js ファイルをプロジェクトの
+トップディレクトリに置くだけです。
+
+#+BEGIN_SRC js
+{}
+#+END_SRC
+
+このファイルを置いたディレクトリが、モジュールの起点ディレクトリとなります。
+
+例えば次のようなディレクトリ構成の場合、
+
+#+BEGIN_SRC txt
+foo/
+foo/lune.js
+foo/bar/
+foo/bar/mod1.lns
+#+END_SRC
+
+bar.mod1 が、mod1.lns のモジュールパスとなります。
+
+** まとめ
+
+Lua のモジュール管理は非常に単純なため、簡単に導入ができます。  
+
+
+次回は LuneScript による Hello World について紹介します。
+-----
+* *ello world*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は、 LuneScript を使った Hello world の紹介です。
+
+** lnsc コマンド
+
+LuneScript を導入すると、lnsc コマンドがインストールされます。
+
+lnsc コマンドは次のように利用します。
+
+#+BEGIN_SRC sh
+$ lnsc src.lns exe
+#+END_SRC
+
+ここで src.lns は、 LuneScript で作成したスクリプトのパスです。
+exe は lnsc のオプションで、 指定したスクリプトを実行することを意味します。
+
+** Hello world 
+
+では LuneScript を使って、伝統の Hello world を実行してみましょう。
+
+次の内容を持つファイル hello.lns を作成してください。
+
+#+BEGIN_SRC lns
+print( "Hello world." );
+#+END_SRC
+
+そして、次のコマンドを実行します。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns exe
+#+END_SRC
+
+これで "Hello world" が出力されました。
+
+これだけだと面白くもなんともないので、もう少し話を続けます。
+
+まずは、 hello.lns を次のように少し変更します。
+
+#+BEGIN_SRC lns
+let txt = "world";
+print( "Hello %s." ( txt ) );
+#+END_SRC
+
+このスクリプトの結果も ~Hello world.~ になります。
+
+では、次のコマンドを実行してみてください。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns lua
+#+END_SRC
+
+次が出力されたと思います。
+
+#+BEGIN_SRC lua
+--hello.lns
+local _moduleObj = {}
+local __mod__ = 'hello'
+if not _lune then
+   _lune = {}
+end
+local txt = "world"
+print( string.format( "Hello %s.", txt) )
+return _moduleObj
+#+END_SRC
+
+これは hello.lns を Lua に変換したコードです。
+
+なんだかゴチャゴチャしていますが、
+~print( string.format( "Hello %s.", txt) )~ が出力されているのが分かると思います。
+
+これは、 LuneScript で書いた ~print( "Hello %s." ( txt ) )~ が、
+Lua にトランスコンパイルする際に
+~print( string.format( "Hello %s.", txt) )~ に展開されていることを示します。
+
+では、次のコマンドを実行してください。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns save
+#+END_SRC
+
+これによって、 hello.lua ファイルが作成されました。
+hello.lua ファイルの内容は、先ほど出力した Lua のコードと同じものです。
+
+では、次のコマンドで hello.lua を実行してください。
+
+#+BEGIN_SRC sh
+$ lua5.3 hello.lua
+#+END_SRC
+
+~Hello world.~ が出力されているでしょう。
+Lua にトランスコンパイルしたコードは、
+LuneScript に依存しない Lua のコードになります。
+
+
+
+最初に実行した ~lnsc hello.lns exe~ は、
+LuneScript のスクリプトをトランスコンパイルし、実行まで行なうコマンドです。
+
+次に実行した ~lnsc hello.lns lua~ は、
+LuneScript のスクリプトをトランスコンパイルし、Lua コードを標準出力するコマンドです。
+
+最後に実行した ~lnsc hello.lns save~ は、
+LuneScript のスクリプトをトランスコンパイルし、Lua コードを保存するコマンドです。
+
+このドキュメントでは exe を利用しつつ、
+変換後のコードを確認する際は save コマンドを利用していきます。
+
+** エラーメッセージ
+
+LuneScript では、 区切り記号 =;= が必須です。
+次のように =;= を終端に入れていないとエラーになります。
+  
+#+BEGIN_SRC lns
+print( "Hello world." )
+#+END_SRC
+
+このとき、以下のエラーメッセージが出力されます。
+
+#+BEGIN_SRC txt
+mini.lns:1:23: error: EOF
+lua5.3: ./lune/base/Util.lua:176: has error
+stack traceback:
+	[C]: in function 'error'
+	./lune/base/Util.lua:176: in function 'lune.base.Util.err'
+	./lune/base/TransUnit.lua:3465: in method 'error'
+	./lune/base/TransUnit.lua:3538: in method 'getToken'
+	./lune/base/TransUnit.lua:11641: in method 'analyzeStatement'
+	./lune/base/TransUnit.lua:3710: in method 'analyzeStatementList'
+	./lune/base/TransUnit.lua:5430: in function <./lune/base/TransUnit.lua:5393>
+	(...tail calls...)
+	./lune/base/front.lua:848: in method 'loadFileToLuaCode'
+	./lune/base/front.lua:914: in method 'loadFile'
+	./lune/base/front.lua:1066: in method 'loadModule'
+	./lune/base/front.lua:1709: in method 'exec'
+	./lune/base/front.lua:1744: in function 'lune.base.front.exec'
+	lune/base/base.lua:1: in main chunk
+	[C]: in ?  
+#+END_SRC
+
+このエラー出力において、次のメッセージがコンパイルエラーを示します。
+
+: mini.lns:1:23: error: EOF
+
+このエラーは、 mini.lns の 1 行目の 23 バイト目で、
+予期しない EOF エラーが発生したことを示しています。
+
+これ以外のエラー出力は、 LuneScript 内部のエラーです。
+LuneScript 内部のエラー出力を抑制するには、
+次のオプション (diag --nodebug) を指定します。
+
+#+BEGIN_SRC sh
+$ lnsc hello.lns exe diag --nodebug
+mini.lns:1:23: error: EOF
+has error
+#+END_SRC
+
+** ランタイム
+
+ちょっと Hello world をネタにしている記事にしては重い内容ですが、
+出力した Lua のコードを見たついでにランタイムについて説明します。
+
+LuneScript から Lua に出力したコードには、
+そのコードを動作させるために必要なランタイムが付加されます。
+
+例えば、次の LuneScript のコードを Lua に変換すると、
+
+#+BEGIN_SRC lns
+fn add( val:int! ):int {
+   return 10 + unwrap val default 0;
+}
+print( add( 1 ) ); // 11
+print( add( nil ) ); // 10
+#+END_SRC
+
+
+次のようになります。
+
+#+SRCNAME: mini.lns
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = {}
+if _lune1 then
+   _lune = _lune1
+end
+function _lune.unwrap( val )
+   if val == nil then
+      __luneScript:error( 'unwrap val is nil' )
+   end
+   return val
+end
+function _lune.unwrapDefault( val, defval )
+   if val == nil then
+      return defval
+   end
+   return val
+end
+
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+そこそこの量のランタイムが出力されていることが分かると思います。
+ちなみに、 =local function add( val )= より上が、ランタイムです。
+
+なお、 LuneScript のコードによって挿入されるランタイムが増減し、
+ランタイム全てを出力すると、サイズは約 8KB となっています。
+
+このランタイムは、変換した全ての Lua コードに出力されます。
+
+Lua コードにランタイムのコードが挿入されることが気になる場合、
+lnsc のコマンドラインオプションに =-r= を指定することで、
+次のようにランタイムの展開を =require= に置き換えることが出来ます。
+
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = require( "lune.base._lune1" )
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+ただしこの場合、
+lune.base._lune1 を require することになるので、
+lune.base._lune1 にロードパスを通しておく必要があります。
+
+ここで、 _lune1 の 1 はランタイムのバージョンを示します。
+
+LuneScript が動作している環境であれば気にする必要はないですが、
+変換した Lua コードだけを別の環境で動かす場合は注意が必要です。
+
+なお、 =-r= オプションの代わりに =--runtime mod= オプションを指定することで、
+
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = require( "mod" )
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+上記のように lune.base._lune をロードする代わりに、
+指定の mod モジュールに切り替えることが出来ます。
+
+LuneScript のバージョンが変わると、LuneScript のランタイムも変わることがあります。
+もしも、異なるバージョンの LuneScript で変換した Lua モジュールが混在する場合、
+デフォルトの lune.base._lune を使用すると正常に動作しないことがあります。
+
+これを避けるために、 --runtime オプションを利用して、
+意図しないバージョンのランタイムがロードされることを防止します。
+
+
+なお、コマンドラインに =-mklunemod path= を指定することで、
+指定の path にランタイムのモジュールファイルを生成します。
+
+** コメント
+
+LuneScript におけるコメントは、 ~//~ と ~/* */~ です。  
+
+~//~ は行末までをコメントとし、
+~/* */~ は複数行をコメントとして扱います。
+
+
+
+次回は LuneScript で扱う値について説明します。
+
+-----
+* *ua バージョン間のクロスコンパイル*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は少し予定を変更して、LuneScript のクロスコンパイルについて説明します。
+
+** クロスコンパイル
+
+ここでいう「クロスコンパイル」とは、
+Lua のバージョン間の「クロスコンパイル」という意味です。
+
+LuneScript は、Lua へのトランスコンパイルを行なう際、
+LuneScript を実行している Lua のバージョンに合せたトランスコンパイルを行ないます。
+
+例えば、次のような制御を行ないます。
+
+- Lua5.2 で実行している場合、ビット演算は bit32 ライブラリを利用する。
+- Lua5.3 で実行している場合、ビット演算は Lua の組込み演算子を利用する。
+  
+クロスコンパイルは、出力する Lua のコードを、
+LuneScript を実行している Lua のバージョンではなく、
+指定の Lua バージョンにトランスコンパイルします。
+
+これにより、次のようなことが可能になります。
+
+  「LuneScript は Lua5.3 で実行し、トランスコンパイル先は Lua5.1 にする」
+
+*** 使用方法  
+  
+使用方法は、次のように -ol オプションでバージョンを指定するだけです。
+
+#+BEGIN_SRC sh
+$ lnsc src.lns lua -ol 51
+#+END_SRC
+
+上記の例は src.lns を lua5.1 用にトランスコンパイルし、
+結果を stdout に出力します。
+
+-ol オプションに指定する値は、次の通りです。
+
+| オプション | バージョン |
+|------------+------------|
+| 51         | Lua5.1     |
+| 52         | Lua5.2     |
+| 53         | Lua5.3     |
+
+-ol オプションは、 save, lua で指定可能です。
+
+** LuneScript の Lua5.1 対応
+
+これまで LuneScript は、実行に Lua5.2, Lua5.3 が必要でしたが、
+上記クロスコンパイル対応によって、 Lua5.1 でも実行できるようになりました。
+
+LuneScript は、それ自体を LuneScript で開発するセルフホスティングであるため、
+LuneScript 自体をクロスコンパイルすることで Lua5.1 対応しました。
+
+
+LuneScript で開発することにより、「生産性を上げる」ということ以外にも、
+「Lua のバージョン違いを *ある程度* 吸収できる」というメリットがあります。
+
+ただし、吸収できるのはあくまでも *ある程度* です。
+
+Lua5.1 は、次節で説明する制限があります。
+
+
+*** Lua5.1 の制限
+
+LuneScript を Lua5.1 にトランスコンパイルする場合、次の制限があります。
+
+/LuneScript の制限というよりは、 Lua5.1 の制限とも言えますが。。/
+
+- クラスのデストラクタが使用できない。
+- ビット演算が使用できない。  
+- find() などの文字クラスに %g が利用できない。
+- string.format() の書式に %s, %q を指定した場合、
+  文字列以外を指定できない。
+  
+上記において、デストラクタ、ビット演算に関しては、
+コンパイル時にエラー出力しますが、
+%g, %s, %q に関しては、コンパイル時にエラーを出力しませんので注意が必要です。
+
+ただし、 %s, %q に関しては、次のパターンではトランスコンパイル時に、
+tostring() を付加することでエラーしないように回避しています。
+
+#+BEGIN_SRC lns
+print( string.format( "%d,%s,%s,%s",  1, 1.0, {}, [] ) );
+#+END_SRC
+
+上記のように、リテラルな文字列を使った format 書式は、
+%s とそれに対応するデータの型を見て、
+str でなければ次のように tostring() を付加します。
+
+#+BEGIN_SRC lua
+print( string.format( "%d,%s,%s,%s", 1, tostring( 1.0), tostring( {}), tostring( {}) ) )
+#+END_SRC
+
+この変換が可能なのは、リテラル文字列を利用している時だけです。
+
+例えば、次の場合は変換できません。
+
+#+BEGIN_SRC lns
+let formatTxt = "%d,%s,%s,%s";
+print( string.format( formatTxt,  1, 1.0, {}, [] ) );
+#+END_SRC
+
+** まとめ
+
+LuneScript は、 Lua のバージョン間のクロスコンパイルをサポートします。
+
+これにより Lua5.1, Lua5.2, Lua5.3 での、実行をサポートします。
+
+ただし、 Lua5.1 には制限があります。
+
+次回はクラスについて説明します。
+-----
+* *値編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は、 LuneScript で扱える値について説明します。
+
+** 値の型
+
+LuneScript で扱える値の型と、トランスコンパイラ後の Lua の値との対応表を示します。
+
+| LuneScript | Lua          | 用途                             | LuneScript での定義方法 |
+|------------+--------------+----------------------------------+-------------------------|
+| nil, null  | nil          | nil                              | nil                     |
+| int        | 数値         | 整数                             | 0 1 2 3 ?A 0x10 -100    |
+| real       | 数値         | 実数                             | 0.0 1.0 0.001           |
+| str        | 文字列       | 文字列, バイナリデータ           | "abc" 'def'  ```hij```  |
+| bool       | 真偽値       | 真偽値                           | true false              |
+| List       | テーブル     | リスト                           | [1, 2, 3 ]              |
+| Array      | テーブル     | 配列(固定長)                     | [@ 1, 2, 3 ]            |
+| Map        | テーブル     | マップ                           | { "A":1, "BC": 100 }    |
+| Set        | テーブル     | セット                           | (@ 1, 2, 3)             |
+| class      | テーブル     | クラス                           | class Test {}           |
+| interface  | テーブル     | インタフェース                   | interface Test {}       |
+| fn         | function     | 関数                             | fn func() {}            |
+| enum       | 数値、文字列 | enum                             | enum Test { }           |
+| alge       | テーブル     | 代数データ                       | alge Test { }           |
+| stem       | 値           | nil 以外の全ての値を保持可能な型 |                         |
+
+**2019/3* Set 追加。
+
+
+上記の通り、 LuneScript では Lua の値を細分化してそれぞれを個別の型として扱います。
+
+細分化の意図は、 Lua の次の仕様を改善することです。
+
+- Lua の数値は全て実数であり、
+  慣れていないと数値が実数であることによる不具合が生じる。
+  例えば ~10/3~ の Lua の計算結果は、3 ではなく 3.3333 となる。
+- Lua のテーブルは、全てのキーが自然数となる *シーケンス* と、
+  キーが自然数とならない *非シーケンス* に分かれる。
+  - この違いによって、テーブル内のデータを列挙する際の関数が 
+    ipairs と pairs に分かれており、使い分けが必要になる。
+     - pairs だけを使っていれば問題ないとも言えるが。。。
+  - テーブルのサイズを取得する ~#~ 演算子は、シーケンスのサイズを返すものであり、
+    非シーケンスのサイズを返さないため、紛らわしい。
+    
+    
+*** nil
+
+nil は、 Lua の nil と同じです。
+
+LuneScript では null も利用できます。
+
+null は nil の alias です。
+
+null のサポートにより、 LuneScript で JSON をそのまま扱うことができます。
+
+*** 整数、 実数
+
+LuneScript は、整数と実数を分けて扱います。
+
+これにより 10/3 は 3 となり、 10/3.0 は 3.3333... となります。
+
+**** 数値リテラル
+
+数値リテラルは C89 ライクなものを採用します。
+
+- 整数は 10 進数と 16 進数表現をサポート
+- 実数は 10 進数と e による指数表現。
+
+**** 文字
+
+LuneScript は、
+~?~ を使用することで ~?~ に続く文字のコードを、
+int 型のプリミティブな値として扱えます。
+
+#+BEGIN_SRC lns
+print( ?a ) // 97  (0x61)
+#+END_SRC
+
+なお、 ' や " の文字のコードを得る場合、
+?\' のように \ でエスケープする必要があります。
+
+この方法で取得可能なコードは 1 バイトだけです。
+例えば ? に続く文字が UTF-8 などのマルチバイトコードだった場合、
+先頭の 1 バイトを取得し 2 バイト以降は LuneScript のコードとして解析し、
+parse エラーします。
+
+
+**** 四則演算
+
+数値の四則演算は Lua と同じものを採用します。
+
+2項演算の結果は次の通り型が変わります。
+
+- int と int の演算結果は int になる。
+- real と real の演算結果は real になる。
+- int と real の演算結果は real になる。
+  
+ただし、 int と int の演算結果が int の範囲外になった場合、
+実行時の内部的な値としては real になりますが、LuneScript 上の型は int のままです。
+演算結果を int に丸めるには、 ~@@int~ でキャストする必要があります。
+
+**** ビット演算
+
+ビット演算をサポートします。
+Lua5.1 では使用できません。
+
+
+ビット長は Lua5.2 では 32bit となります。
+Lua5.3 のビット長は、環境に依存します。
+
+- 論理積 (&)
+
+#+BEGIN_SRC lns
+1 & 3 == 1
+#+END_SRC
+  
+- 論理和  (|)
+  
+#+BEGIN_SRC lns
+1 | 2 == 3
+#+END_SRC
+  
+- 排他的論理和 (~)
+  
+#+BEGIN_SRC lns
+1 ~ 3 == 2
+#+END_SRC
+  
+- 論理シフト(左) (|<<)
+  
+#+BEGIN_SRC lns
+1 |<< 2 == 4
+#+END_SRC
+  
+- 論理シフト(右) (|>>)
+
+#+BEGIN_SRC lns
+0x10 |>> 2 == 4
+#+END_SRC
+
+- ビット反転 (~)
+  
+#+BEGIN_SRC lns
+~2 == 0xfffffffd  
+#+END_SRC
+
+
+
+*** 文字列
+
+" か ' で囲むと文字列になります。
+"" 内では ' が使用でき、 '' 内では " が使用できます。
+
+なお、 "", '' は改行を含めることはできません。
+改行を含める場合は "\n" とします。
+
+\n を使用せずに複数行の文字列を定義するには ``` を使用します。
+`````` 内の \n は、改行ではなくそのまま \n として文字列になります。
+
+
+文字列内の特定位置の文字を取得するには、 [N] を使用します。
+ここで指定する N は、文字列先頭が 1 を示します。
+
+#+BEGIN_SRC lns
+let txt = "abc";
+print( txt[ 2 ] );  // 98
+#+END_SRC
+
+N が文字列長を越えた場合の動作は、 *未定義* です。
+
+文字列長は # で取得します。
+
+: print( #"abc" ); // 3
+
+
+*** 真偽値(bool)
+
+true, false をもちます。    
+
+
+
+*** リスト
+
+リストは値を追加、削除可能な型です。
+
+#+BEGIN_SRC lns
+let mut list:List<int> = [];
+list.insert( 1 ); // [ 1 ]
+list.insert( 2 ); // [ 1, 2 ]
+list.insert( 3 ); // [ 1, 2, 3 ]
+list.remove(); // [ 1, 2 ]
+print( list[1] ) // 1
+#+END_SRC
+
+リストの要素には [index] でアクセスします。
+リストの先頭の index は 1 です。
+リストの範囲外をアクセスした場合の動作は *未定義* です。
+
+
+リストの長さを取得するのは ~#~ です。
+例えば ~#list~ は、 リスト型の変数 list の長さを取得します。
+
+値の追加は Lua と同じで insert(), 削除は remove() です。
+
+*** Map   
+    
+Map のリテラルは JSON フォーマットを拡張したフォーマットです。
+
+次のように JSON フォーマットを扱えます。
+
+#+BEGIN_SRC lns
+let map = {
+   "val1": 1,
+   "val2": 2,
+   "val3": 3
+};
+print( map.val1, map.val2, map.val3 ); // 1 2 3
+#+END_SRC
+
+次の点で JSON と違います。
+
+- キーと値に nil 以外の全ての値を使用できる
+
+#+BEGIN_SRC lns
+let mut test:Map<int,int> = {};
+let map = {
+   1: "val1",
+   2.0: "val2",
+   test: "val3"
+};
+print( map[ 1 ], map[ 2.0 ], map[ test ] ); // val1 val2 val3
+#+END_SRC
+
+また、 null を nil の alias としているため、
+JSON そのものを扱うことが出来ます。
+
+#+BEGIN_SRC lns
+let mut map:Map<str,int> = {};
+map[ "abc" ] = 1;
+map.xyz = 10;
+#+END_SRC
+
+Map の要素には [key] でアクセスします。
+key の型が str の場合、 .key としてもアクセスできます。
+
+例えば、次の [ "abc" ] と .abc は同じ要素にアクセスするため、
+次の例の print は true を出力します。
+
+#+BEGIN_SRC lns
+print( map[ "abc" ] == map.abc ); // true
+#+END_SRC
+
+なお、マップに対して ~#~ 演算子は使用できません。
+
+**** Map の注意
+
+Map を扱う際、次を注意してください。
+
+- マップのキーは、 int と real を区別することが出来ません。
+
+具体的には、下記の例で ~map[1]~ と ~map[1.0]~ が、何を返すかは *未定義* です。
+
+#+BEGIN_SRC lns
+let map = {
+   1: "val1",
+   1.0: "val2",
+};
+print( map[ 1 ], map[ 1.0 ] );
+#+END_SRC
+
+これは Lua 仕様由来の制限です。
+
+- キーに int, real, str 以外を使用した場合の、キーの同値判定
+
+次の例において、 list1, list2 はどちらも int の 1 を要素に持つリストです。
+この list1 をキーとして、 "aaa" を map に登録します。
+
+そして、 list1, list2 をキーとして、 map から値を取得すると、
+その結果は aaa と nil となります。
+
+#+BEGIN_SRC lns
+let mut map:Map<&List<int>,str> = {};
+let list1 = [ 1 ];
+let list2 = [ 1 ];
+map[ list1 ] = "aaa";
+print( map[ list1 ], map[ list2 ] );  // aaa nil
+#+END_SRC
+
+これは、 list1 と list2 が異なるキーとして判定されるためです。
+
+int, real, str 以外を map のキーに使用した場合、
+そのキーが等しいかどうかは、同じオブジェクトである必要があります。
+
+*** Set
+
+値の集合を扱います。
+
+詳しくは次の記事を参照してください。
+
+
+
+*** generics
+
+List, Array, Map は generics 対応しています。
+
+例えば、そえぞれ次のように宣言します。
+
+#+BEGIN_SRC lns
+let list:List<int> = [];  // int を要素に持つリスト
+let array:Array<real> = [@];  // real を要素に持つ配列
+let map:Map<str,int> = {}; // str をキー、int を値に持つマップ
+#+END_SRC
+
+
+*** リスト、マップコンストラクタの型
+
+#+BEGIN_SRC lns
+let list = [ 1, 2, 3 ];
+let map = { "A": 10, "B": 11, "C": 12 };
+#+END_SRC
+
+リスト、マップは、上記のようにリテラルを宣言できます。
+この時生成される リスト、マップの型は、 構成する値によって決まります。
+
+マップコンストラクタで利用されるキー、あるいは値が全て同じ型なら、
+マップのキー、値の型は、そのキー、値の型になります。
+いずれかが異なれば stem 型になります。
+
+具体的には、次のようになります。
+
+#+BEGIN_SRC lns
+let list1 = [ 1, 2, 3 ];			// List<int>
+let list2 = [ 'a', 'b', 'c' ];			// List<str>
+let list3 = [ 'a', 1, 'c' ];			// List<stem>
+let map1 = { "A": 10, "B": 11, "C": 12 };	// Map<str,int>
+let map2 = { "A": 10, "B": 11, "C": 12 };	// Map<str,int>
+let map3 = { "a": 'z', "b": 'y', "c": 'x' };	// Map<str,str>
+let map4 = { "a": 1, "b": 'Z' };		// Map<str,stem>
+#+END_SRC
+
+
+*** enum
+
+LuneScript は enum に対応しています。
+
+詳細は明日の記事を参照してください。
+
+
+*** stem
+
+stem は、nil 以外の全ての値を保持できる型です。
+
+LuneScript は、静的型付け言語であり、
+想定する型と異なる値を与えらた場合はコンパイルエラーします。
+
+対して stem 型は、nil 以外の全ての型を扱える型なので、
+nil 以外のどのような値を与えられてもコンパイルエラーしません。
+
+stem! は nil を含む全ての値を扱える型です。
+Lua の変数そのものと考えて問題ありません。
+
+*** form
+
+form は関数オブジェクトを扱う型です。
+
+関数については後述します。
+-----
+* *et 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+ここでは LuneScript の値の集合 Set の扱いについて説明します。
+
+** Set と Map の違い
+
+Set は値の集合を管理し、 Map は値と値の紐付けを管理します。
+
+どちらも Lua に変換した場合、テーブルとして管理するため、
+Map よりも Set を使った方が実行速度やメモリ面で優位ということはありません。
+
+Map ではなく Set を使うことで、次の効果があります。
+
+- データの用途が明確になる
+- 無駄に Map の value を扱う必要がない
+- リテラルな値が書き易い
+
+次の点において Set と Map は同じです。  
+
+- 格納する値の順序を保持しません。
+- nilable は格納できません。  
+
+** Set のコンストラクタ
+
+Set は次のように書くことでデータを生成します。
+
+#+BEGIN_SRC lns
+let obj = (@ 1, 2, 3, 4 ); // 1 2 3 4
+#+END_SRC
+
+これは、1,2,3,4 のデータを保持する Set です。
+
+Set は ~(@ )~ で値を括ります。
+
+なお、上記処理は型推論により型宣言を省略していますが、
+省略しない場合は次のように書きます。
+
+#+BEGIN_SRC lns
+let obj:Set<int> = (@ 1, 2, 3, 4 ); // 1 2 3 4
+#+END_SRC
+
+~Set<int>~ は、要素が int である Set を宣言します。
+
+空の Set を使用する場合は、型推論できないため型を明示する必要があります。
+
+#+BEGIN_SRC lns
+let obj:Set<int> = (@);
+#+END_SRC
+
+** Set の操作
+
+次の操作をサポートします。
+
+- 追加 add()
+- 削除 del()
+- 有無確認 has()
+- 要素数取得 len()  
+- 複製 clone()  
+
+Set への値の追加、削除は次のように行ないます。
+
+#+BEGIN_SRC lns
+let mut obj = (@ 1, 2, 3, 4 );
+obj.add( 0 );  // 0 1 2 3 4
+obj.del( 2 );  // 0 1 3 4
+#+END_SRC
+
+Set で管理する値の有無確認は、次のように行ないます。
+
+#+BEGIN_SRC lns
+let obj = (@ 1, 2, 3, 4 );
+print( obj.has( 0 ) );  // false
+print( obj.has( 1 ) );  // true
+#+END_SRC
+
+Set は、len() メソッドで要素の数を取得できます。
+ただし、 len() メソッドは要素を列挙して数を計算するため、計算量はサイズに比例します。
+
+#+BEGIN_SRC lns
+let mut obj = (@ 1, 2, 3, 4 );
+print( obj.len() );
+#+END_SRC
+
+同じ Set を生成するには clone() を使用します。
+
+#+BEGIN_SRC lns
+let obj = (@ 1, 2, 3, 4 );
+let obj2 = obj.clone();
+#+END_SRC
+
+** Set 間の操作
+
+次の操作をサポートします。
+
+- 合成  or()
+  - 二つの集合の和を残す
+- 共通  and()
+  - 二つの集合の共通部分を残す
+- 差分  sub()
+  - 現在の集合から引数の集合と共通しない部分を残す
+
+なお、この操作は対象の Set の内容を書き変えます。
+
+#+BEGIN_SRC lns
+let set1 = (@  1, 2, 3 );
+let set2 = (@  2, 3, 4 );
+let set3 = set1.clone().or(set2);   // 1 2 3 4
+let set4 = set1.clone().and(set2);  // 2 3 
+let set5 = set1.clone().sub(set2);  // 1
+#+END_SRC
+
+-----
+* *enum 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は、 LuneScript の enum 値について説明します。
+
+** enum
+
+LuneScript の enum は、値の集合に名前を付けて管理することが出来ます。
+
+enum として扱える値の型は次の通りです。
+
+- int
+- real
+- str  
+
+1 つの enum の値域は、複数の値から定義できますが、
+値の型は統一する必要があります。
+
+つまり、 int の値を持つ enum は、 real や str の値は定義できません。
+
+*** 定義方法
+
+enum は次のように定義します。
+   
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 );  // 0, 1, 2
+#+END_SRC
+
+この例では、 val0, val1, val2 を定義し、それぞれ 0, 1, 2 となります。
+
+
+enum の値を指定する場合は、次のように定義します。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0 = 10,
+  val1,
+  val2 = 20,
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 ); // 10, 11, 20
+#+END_SRC
+
+enum の値を省略した場合、次に従って値を assign します。
+
+- 直前の enum 値に 1 を加算した値を assign する。
+- 先頭の enum 値は 0 
+
+なお、 enum 値に文字列を assign する場合、値を省略することは出来ません。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0 = "abc",
+  val1 = "def",
+  val2 = "ghi",
+}
+print( TestEnum.val0, TestEnum.val1, TestEnum.val2 ); // abc def ghi
+#+END_SRC
+
+
+enum 値に設定する値には、式を指定出来ます。
+ただし、この式はプリミティブな値だけを使用している必要があります。
+
+例えば次のような場合、
+
+#+BEGIN_SRC lns
+fn func(): int {
+  return 100;
+}
+enum TestEnum {
+  val0,
+  val1 = val0 + 10,  // 10
+  val2 = func(),     // error
+}
+#+END_SRC
+
+~val = val0 + 10~ は、プリミティブな値を利用しているため指定可能ですが、
+~val2 = func()~ は、プリミティブな値ではないためエラーとなります。
+
+*** 使用方法
+
+定義した enum は、次のように型として利用できます。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+print( func( TestEnum.val1 ) ); // 101
+#+END_SRC
+
+ここで func() の引数 val は TestEnum 型です。
+これにより、 func() の引数 val は単なる int ではなく、
+値域が制限された int とすることが出来ます。
+
+enum 値を指定する場合は、
+~TestEnum.val~ のように ~enum 型シンボル.enum 値シンボル~ となります。
+
+*** 省略指定
+
+基本的に enum 値を指定するには、
+~enum 型シンボル.enum 値シンボル~ となりますが、
+代入先の型が enum 型であることが分っている場合、
+~enum 型シンボル~ を省略することが出来ます。
+
+例えば次の場合、 func() の引数は TestEnum 型であることが分っているので、
+TestEnum.val1 ではなく、 .val1 として指定できます。
+   
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+print( func( .val1 ) ); // 101
+#+END_SRC
+
+なお、 外部モジュールで定義されている enum 型を省略指定する場合、
+その外部モジュールを import している必要があります。
+
+import については後日説明します。
+
+*** enum 値の変換
+
+enum 値は、enum 値として以外に、定義した値としても利用できます。
+
+これは上の例の val + 100 を見ると分かると思いますが、
+val は TestEnum で定義した enum 値ですが、それは 0, 1, 2 のいずれかでもあります。
+(上の例では val1 を渡しているので 1 になる)。
+よって ~val + 100~ は、 1 + 100 となり結果的に 101 となります。
+
+一方で次の例を見てください。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( val ); // error
+#+END_SRC
+
+この例の ~func( val )~ はエラーとなります。
+
+この場合 val は 1 で、 TestEnum において val1 が 1 となりますが、
+val の型が int であり、 TestEnum とは型が異なるためエラーとなります。
+
+
+enum 値に assign している型の値から、
+対応する enum 値に変換するには、次のように _from() 関数を利用します。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( unwrap TestEnum._from( val ) );
+#+END_SRC
+
+ここで ~func( unwrap TestEnum._from( val ) )~ は、
+TestEnum._from() によって val に対応する TestEnum の enum 値 TestEnum.val1 を取得し、
+それを func() に渡しています。
+
+unwrap については後日説明します。
+
+
+*** enum 値名
+
+enum 値はシンボルに値を assign します。
+
+enum 値は $_txt によって、このシンボル名を動的に取得できます。
+
+例えば次の場合、TestEnum.val1 が出力されます。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ) {
+   print( val.$_txt ); 
+}
+func( .val1 ); // TestEnum.val1
+#+END_SRC
+
+$_txt によって、 enum 値のシンボル名を取得しています。
+
+$ については後述しますが、関数呼び出しのシンタックスシュガーです。
+
+**** $_txt の注意点
+
+$_txt には次の注意点があります。
+
+**「同値の enum 値が複数存在する場合、 $_txt がどの enum 値のシンボル名を返すか未定義」*
+
+例えば次の場合、print() が TestEnum.val1, TestEnum.val2 のどれを出力するかは未定義です。
+
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1 = 10,
+  val2 = 10,
+}
+fn func( val:TestEnum ) {
+   print( val.$_txt ); 
+}
+func( .val1 ); // TestEnum.???
+#+END_SRC
+
+また、 $_txt のフォーマットは将来変更する可能性があります。
+$_txt は、ログ出力目的の使用に制限し、
+$_txt の結果によって処理を切り替えるようなコードを書かないでください。
+
+*** 全 enum 値リスト
+
+$_allList で、enum が定義している全 enum のリストを取得できます。
+
+例えば次のコードの場合、 
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+foreach val in TestEnum.$_allList {
+   print( val.$_txt );
+}
+#+END_SRC
+
+次を出力します。
+
+#+BEGIN_SRC txt
+TestEnum.val0
+TestEnum.val1
+TestEnum.val2
+#+END_SRC
+
+** 代数的データ型
+
+enum 型は、 int, real, str のいずれか一種類の型をグルーピングして、
+値域を制限できますが、複数の型をグルーピングすることは出来ません。
+代数的データ型は enum 型をより一般的にしたもので、
+int, real, str に限らず全ての型をグルーピングすることが出来ます。
+
+詳しくは次の記事で説明しています。
+  
+[[../match]]
+
+** まとめ
+
+enum を利用することで、値域を簡単に定義することが出来、
+enum を楽に扱うイマドキな手段を提供しています。
+
+
+次回は、変数について説明します。
+-----
+* *match 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、代数的データ型とパターンマッチをサポートします。
+
+** 代数的データ型 (alge型)
+
+enum 型は、 int, real, str のいずれかの値をグルーピングして、値域を制限できます。
+
+一方、代数的データ型は enum 型をより一般的にしたもので、
+int, real, str に限らず全ての型をグルーピングすることが出来ます。
+
+代数的データ型は alge キーワードで宣言します。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Hoge {
+   pri let val:int {pub};
+}
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( num:int, txt:str ),
+}
+#+END_SRC
+
+この例では、 alge 型 Test を宣言しています。
+
+Test は、 Val1 〜 Val5 までの値域を持ちます。
+また、 Val1 〜 Val5 はそれぞれ次のパラメータを持ちます。
+
+| 値   | パラメータ |
+|------+------------|
+| Val1 | なし       |
+| Val2 | int        |
+| Val3 | str        |
+| Val4 | Hoge       |
+| Val5 | int, str   |
+
+パラメータの型に制限はありません。
+この例の場合、 Val4 は Hoge クラス型をパラメータに持ちます。
+
+パラメータの個数も制限はありません。
+この例の場合、 Val5 は int と str をパラメータに持ちます。
+
+パラメータには、型だけ指定する方法と、名前と型を指定する方法があります。
+この例の場合、 Val2 から Val4 は型だけ指定し、 Val5 はパラメータ名と型を指定しています。
+パラメータ名は、そのパラメータの意味を明瞭にする効果があるだけです。
+
+
+この alge 型の値を使用する場合、次のように書きます。
+
+#+BEGIN_SRC lns
+let val1 = Test.Val1;
+let val2 = Test.Val2( 1 );
+let val3 = Test.Val3( "abc" );
+let val4 = Test.Val4( new Hoge( 100 ) );
+let val5 = Test.Val5( 10, "xyz" );
+#+END_SRC
+
+それぞれの意味は次になります。
+
+- val1 は Test.Val1
+- val2 は 1 をパラメータに持つ Test.Val2
+- val3 は "abc" をパラメータに持つ Test.Val3 
+- val4 は new Hoge( 100 ) をパラメータに持つ Test.Val4
+- val5 は 10, "xyz" をパラメータに持つ Test.Val5
+  
+** match
+
+enum 型は、次のように元の値と同じように使用できます。
+
+#+BEGIN_SRC lns
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( unwrap TestEnum._from( val ) );
+#+END_SRC
+
+この例では、 関数 func() 内で TestEnum 型の値 + 100 をしていますが、
+これは TestEnum 型が int の数値としても利用できることを示しています。
+
+一方で alge 型の値は、特別な処理が必要です。
+その処理が match です。
+
+次に match の例を示します。
+
+#+BEGIN_SRC lns
+class Hoge {
+   pri let val:int {pub};
+}
+
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( int, str ),
+}
+
+fn func( test:Test ) {
+   match test {
+      case .Val1 {
+         print( test.$_txt );
+      }
+      case .Val2( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val3( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val4( x ) {
+         print( test.$_txt, x.$val );
+      }
+      case .Val5( x, y ) {
+         print( test.$_txt, x, y );
+      }
+   }
+}
+
+func( Test.Val1 ); // Test.Val1
+func( Test.Val2( 1 ) ); // Test.Val2 1
+func( Test.Val3( "abc" ) ); // Test.Val3 abc
+func( Test.Val4( new Hoge( 100 ) ) ); // Test.Val4  100
+func( Test.Val5( 10, "xyz" ) ); // Test.Val5 10 xyz
+#+END_SRC
+
+この例では、 func() 関数内で match を実行しています。
+
+case で Val1 〜 Val5 で分岐しています。
+また Val2 〜 Val5 は、それぞれパラメータを受け取る変数を宣言しています。
+
+例えば func( Test.Val2( 1 ) ) は、 ~Test.Val2( 1 )~ を func() に渡しています。
+ここで func() 内の match の ~case .Val2( x )~ にマッチします。
+そして、 x には 1 がセットされ、 ~print( test.$_txt, x )~ が実行されます。
+
+ここで ~test.$_txt~ は、 値域の Val2 を示す "Test.Val2" の文字列が展開されます。
+
+** alge 型の省略表記
+
+alge 型も enum 型と同じように省略表記を利用できます。
+
+次のような alge 型の Test と、その Test を引数に持つ関数があった場合、
+
+#+BEGIN_SRC lns
+alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   print( test );
+}
+#+END_SRC
+
+func() をコールする際、次のように Test を省略可能です。
+
+#+BEGIN_SRC lns
+func( .Val1 );
+func( .Val2 );
+func( .Val3( 10 ) );
+#+END_SRC
+
+なお、 外部モジュールで定義されている alge 型を省略指定する場合、
+その外部モジュールを import している必要があります。
+
+** alge型 の比較
+
+パラメータを持たない単純な alge 型の値は、次のように比較することが出来ます。
+
+#+BEGIN_SRC lns
+alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   if test == .Val1 {
+      print( "Val1" );
+   }
+   elseif test == .Val2 {
+      print( "Val2" );
+   }
+   elseif test == .Val3(1) {  // error
+      print( "Val3" );
+   }
+   else {
+      print( "no" );
+   }
+}
+func( .Val1 ); // Val1
+func( .Val2 ); // Val2
+#+END_SRC
+
+なお、パラメータを持つ値 (上記の場合 Val3) は、
+同じパラメータを与えても異なる値になるため注意が必要です。
+ちなみに、上記の ~test == .Val3(1)~ はエラーとなります。
+なぜならば、この式の結果は必ず「false」となるため、
+コンパイルエラーとすることで、実行時に意図しない結果になることを防ぎます。
+
+
+** alge の使用例
+
+alge を使うと JSON 構造を次のように書くことが出来ます。
+
+#+BEGIN_SRC lns
+alge JsonVal {
+   JNull,
+   JBool(bool),
+   JInt(int),
+   JReal(real),
+   JStr(str),
+   JArray(List<JsonVal>),
+   JObj(Map<str,JsonVal>),
+}
+fn dumpJson( stream:oStream, jval:JsonVal ) {
+   match jval {
+      case .JNull {
+         stream.write( "null" );
+      }
+      case .JBool( val ) {
+         stream.write( "%s" (val) );
+      }     
+      case .JInt( val ) {
+         stream.write( "%d" (val ) );
+      }        
+      case .JReal( val ) {
+         stream.write( "%g" (val ) );
+      }        
+      case .JStr( val ) {
+         stream.write( '"%s"' (val ) );
+      }        
+      case .JArray( list ) {
+         stream.write( "[" );
+         foreach val, index in list {
+            if index > 1 {
+               stream.write( "," );
+            }
+            dumpJson( stream, val );
+         }
+         stream.write( "]" );
+      }        
+      case .JObj( map ) {
+         stream.write( "{" );
+         let mut cont = false;
+         foreach val, key in map {
+            if cont {
+               stream.write( ',' );
+            }
+            else {
+               cont = true;
+            }
+            stream.write( '"%s":' (key) );
+            dumpJson( stream, val );
+         }
+         stream.write( "}" );
+      }
+   }
+}
+dumpJson( io.stdout,
+          JsonVal.JObj( { "foo": JsonVal.JInt( 1 ),
+                          "bar": JsonVal.JStr( "abc" ) } ) );
+#+END_SRC  
+
+alge を使用せずにキャストや継承などを利用すれば同じことは出来ます。
+しかし、キャストはもちろん、継承にも欠点があります。
+
+alge も万能ではありませんが、
+幾つかの場面ではキャストや継承を使用するよりも、
+より良い選択肢になると思います。
+
+次回はインタフェースを説明します。
+
+
+-----
+* *変数 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の変数について説明します。
+
+** 変数
+
+LuneScript は静的型付け言語であり、変数は型を持ちます。
+
+変数は、次のように let で宣言します。
+
+#+BEGIN_SRC lns
+let val:int = 1;
+#+END_SRC
+
+上記の例は、初期値として int の 1 を持つ変数 val を宣言しています。
+
+変数名の後には、型を指定します。
+
+
+なお、初期値が int の 1 ではなく、
+real の 1.0 をセットすると、型が違うためコンパイルエラーになります。
+
+#+BEGIN_SRC lns
+let val:int = 1.0;  // error
+#+END_SRC
+
++また、現在は変数宣言には初期値が必須です。+
+
++これは、未初期化変数へのアクセスを防ぐためです。+
++将来的には、変数が値を保持しているかどうかをフロー解析で判断できるようにして、
+初期値不要にすることを考えています。+
+
+変数宣言時の初期化は必須ではありません。
+なお、初期化していない変数を参照した場合、コンパイルエラーになります。
+詳しくは後述します。
+
+また、変数宣言時に初期化しない場合でも、型推論は可能です。
+
+*** 型推論
+
+LuneScript は型推論をサポートしています。
+
+変数にセットする初期値から、その変数の型を決定できます。
+これによって、次のように型を指定せずに変数を宣言できます。
+
+#+BEGIN_SRC lns
+let val1 = 1; // int 
+let val2 = 1.0; // real
+let val3 = "abc"; // str
+#+END_SRC
+
+この場合、 val1 は int, val2 は real, val3 は str であるとして処理します。
+
+
+型を明示する必要があるのは、次の場合などです。
+
+- nilable 型の変数の初期値に nil を設定する
+  : let mut val:int! = nil;
+- リスト型や、マップ型の変数の初期値に、リテラルな空の値 (=[]=, ={}= など)を設定する
+  : let mut val:List<int> = [];
+- 次のようなクラス型の変数にサブクラスのインスタンスを設定する際、変数の型をスーパークラスの型としたい場合
+  : let val:Super = new Sub();
+  
+*** 変数の初期化
+
+初期化していない変数にアクセスすると、コンパイルエラーになります。
+
+#+BEGIN_SRC lns
+{
+   let val;
+   print( "%s" ( val ) ); // error
+}
+#+END_SRC
+
+上記の print() では、未初期化の val にアクセスしていますが、
+ここでコンパイルエラーになります。
+
+**** フロー解析
+
+変数初期化は、フローを解析して変数未初期化のパスがないかチェックします。
+    
+例えば次の場合、エラーになります。
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   if flag {
+     val = 1;
+   }
+   print( val ); // error
+}
+#+END_SRC
+
+これは、 flag が true の場合は val が初期化されますが、
+false の場合は val が初期化されないためです。
+
+次のように、アクセスする前に全てのパスで初期化をする必要があります。
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   if flag {
+     val = 1;
+   }
+   else {
+     val = 2;
+   }
+   print( val ); // ok
+}
+#+END_SRC
+
+なおこの処理は、 変数 val に対する初期化であり、
+val に対する書き換えではないため、
+後述する mut 宣言の必要はありません。
+
+
+
+ちなみに次のような少し複雑な場合も、フローを解析します。
+
+#+BEGIN_SRC lns
+fn func( kind:int )
+{
+   let val;
+   if kind < 10 {
+      if kind > 0 {
+         val = 1;
+      }
+      else {
+         if kind == 0 {
+            val = 2;
+         }
+         elseif kind == 1 {
+            val = 3;
+         }
+         // ※ 
+      }
+   }
+   else {
+      val = 4;
+   }
+   print( val ); // error
+}
+#+END_SRC
+
+少し分かり難いと思いますが、
+上記 ※ の位置で else の時に val の初期化が抜けているため、print の val 参照がエラーとなります。
+
+
+なお、次の場合も print( val ) の箇所でエラーになります。 
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   fn sub() {
+      print( val ); // error
+   }
+   val = 1;
+   sub();
+}
+#+END_SRC
+
+本来は sub() を実行する時には val が初期化されるので、
+エラーになるべきではないですが、これは現在の仕様です。
+
+**** 型推論
+
+変数宣言時に初期化しない場合も、型推論は可能です。
+
+ただし、型推論はフロー解析で最初に代入された型が使用されます。
+
+例えば次の場合は、
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val;
+   if flag {
+      val = 1;
+   }
+   else {
+      val = 1.0; // error
+   }
+}
+#+END_SRC
+
+最初の ~val = 1~ で val は int 型になります。
+そして、次の ~val = 1.0~ の時には、
+int 型の val に real の 1.0 を代入しようとしているため、
+エラーとなります。
+
+
+上記のような場合は、次のように変数宣言時に型を宣言することで、
+エラーを回避できます。
+
+#+BEGIN_SRC lns
+fn func( flag:bool )
+{
+   let val:stem; // stem 型を宣言
+   if flag {
+      val = 1;
+   }
+   else {
+      val = "a";
+   }
+   print( val );
+}
+#+END_SRC
+
+stem 以外にも、型を宣言しなければならないケースはあります。
+例えばスーパークラスの型の変数を利用したい場合や、
+nilable 型の変数を利用したい場合などがあります。
+
+
+*** shadowing
+
+LuneScript では、 同名の変数宣言を禁止しています。
+
+ここで同名とは、同一スコープ内での同名に限らず、
+アクセス可能なスコープ内での同名を指します。
+
+具体的には、次の変数宣言はエラーとなります。
+
+#+BEGIN_SRC lns
+{
+   let val = 1;
+   {
+      let val = 1;  // error
+   }
+}
+#+END_SRC
+
+この仕様は賛否別れると思いますが、安全側に振ってこの仕様にしています。
+
+*** アクセス制御
+
+宣言した変数は、ローカル変数として処理されます。
+
+外部のモジュールに公開したい場合は、次のように pub を付加して宣言します。
+
+#+BEGIN_SRC lns
+pub let val = 1;
+#+END_SRC
+
+外部公開されている変数にアクセスする場合、次のように import を使用します。
+
+#+BEGIN_SRC lns
+import SubModule;
+print( SubModule.val );
+#+END_SRC
+
+ここで、
+SubModule は ~pub let val = 1;~ を宣言している LuneScript のモジュール(SubModule.lns)です。
+
+この val にアクセスする場合、SubModule.val とすることでアクセスできます。
+
+変数を外部モジュールに公開する方法としては pub が基本ですが、
+もう一つ global を使うことも出来ます。
+
+#+BEGIN_SRC lns
+pub let val1 = 1;
+global let val2 = 2;
+#+END_SRC
+
+pub と global の違いは、 名前空間の違いです。
+
+次の例を見ると分かり易いと思いますが、
+これは上記 val1, val2 を外部からアクセスしているサンプルです。
+
+#+BEGIN_SRC lns
+import SubModule;
+print( SubModule.val1 );
+print( val2 );
+#+END_SRC
+
+val1 は、 SubModule.val1 として SubModule の名前空間内の変数としてアクセスしますが、
+val2 は、最上位の名前空間の変数としてアクセスします。
+
+LuneScript だけでシステムを開発する際は、 
+global を利用することはまず無いと思います(というか global の使用を避けるべきです)が、
+他の Lua モジュールと連携して処理する際は、
+global を使用せざるを得ないこともあると思います。
+
+そのような互換性を保つことを目的として、 global をサポートしています。
+
+なお global の制約として、次があります。
+
+ *「global 宣言した変数は、 その変数を宣言したモジュールを import した時に有効になる。」*
+
+例えば次の例では val2 は、 SubModule になんの関係もなく存在しているように見えますが、
+
+#+BEGIN_SRC lns
+import SubModule;
+print( SubModule.val1 );
+print( val2 );
+#+END_SRC
+
+次の場合 SubModule を import していないため、val2 は存在しないのでエラーとなります。
+
+#+BEGIN_SRC lns
+print( val2 );
+#+END_SRC
+
+
+また外部公開する変数には、次の制約があります。
+
+ *「外部公開する変数は、スクリプトの最上位のスコープに宣言しなければならない」*
+
+例えば、次の val2 は最上位のスコープではないためエラーとなります。
+
+#+BEGIN_SRC lns
+pub let val = 1;
+{
+   pub let val2 = 1; // error
+}
+#+END_SRC
+
+*** mutable
+
+宣言した変数は、変更禁止の変数として扱います。
+
+例えば、次の ~val = 2~ はエラーとなります。
+
+#+BEGIN_SRC lns
+let val = 1;
+val = 2; // error
+#+END_SRC
+
+可変な変数(mutable)とする場合、次のように mut で宣言します。
+
+#+BEGIN_SRC lns
+let mut val = 1;
+val = 2;
+#+END_SRC
+
+*** 複数宣言
+
+LuneScript は、 Lua と同じで関数の戻り値に複数の値を返せます。
+
+この戻り値を変数宣言の初期値とするには、次のように宣言します。
+
+#+BEGIN_SRC lns
+let val1, val2 = func();
+let mut val3, mut val4 = func();
+#+END_SRC
+
+mut は各変数名の前に宣言します。
+
+*** 特殊シンボル
+
+次のシンボルは、特殊な値を保持します。
+
+| シンボル | 値           |
+|----------+--------------|
+| ~__mod__~ | モジュール名 |
+| ~__func__~ | 現在の関数名 |
+| ~__line__~ | 現在の行番号 |
+
+なお、 ~__mod__~, ~__func__~ が展開する名前の書式は、
+**将来変更する可能性* があります。
+
+** 型変換(キャスト)
+
+nil 以外の全ての値は、 stem 型の変数に代入できます。
+
+これには、暗黙的な型変換が行なわれています。
+
+#+BEGIN_SRC lns
+let mut val:stem = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+#+END_SRC
+
+一方、 stem 型の値から異なる型への代入はエラーします。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:int = val1; // error
+#+END_SRC
+
+明示的な型変換が必要な場合は、次の記事を参照してください。
+
+[[../cast]]
+
+*** まとめ
+
+LuneScript の変数には、次の要素を取り入れています。
+
+- 型推論
+- アクセス制御
+- mutable
+- 複数宣言
+
+Lua を静的片付けで扱う際に必要となる、最低限の機能を満しているつもりです。
+
+
+次回は、 LuneScript の分岐制御について説明します。
+-----
+* *一般分岐構文 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の一般分岐構文について説明します。
+
+** 構文一覧
+
+LuneScript は、次の一般分岐構文をサポートします。
+
+- if
+- switch
+
+ちなみに、ここであえて「一般」分岐制御としているのは、
+nilable 制御で別途分岐制御があるためです。
+
+*** if
+
+if 文は、次のように使用します。
+
+#+BEGIN_SRC lns
+let val = 1;
+if val == 1 {
+   print( "hoge" );
+}
+elseif val == 2 {
+   print( "foo" );
+}
+else {
+   print( "bar" );
+}
+#+END_SRC
+
+説明は不要かと思いますが、次のように処理されます。
+
+- if の式が成立している場合、 if のブロックが実行される。
+- if の式が不成立で elseif の式が成立している場合、elseif のブロックが実行される。
+- 全ての式が不成立の場合、else のブロックが実行される。
+- elseif は複数存在しても良い。
+- elseif, else は存在しなくてもよい。  
+- 式が *「不成立」* する条件は、その式の結果が nil か false の時。
+  
+  
+**** bool 値との比較
+
+LuneScript では、 bool 値との比較を推奨していません。
+
+具体的には次のようなオペレーションを推奨しません。
+
+#+BEGIN_SRC lns
+   let val1 = true;
+   if val1 == true {
+   }
+   if val1 == false {
+   }
+   if val1 ~= false {
+   }
+   if val1 ~= true {
+   }
+#+END_SRC
+
+上記のオペレーションは、近い将来廃止予定です。
+
+現在は、コンパイル時に warning メッセージを出力します。
+
+bool の真偽値によって処理を切り替える場合、
+次のようにしてください。
+
+#+BEGIN_SRC lns
+let exp = true;
+if exp {
+   print( "exp is true" );
+}
+else {
+   print( "exp is false" );
+}
+if not exp {
+   print( "exp is false" );
+}
+#+END_SRC
+
+
+*** switch
+
+switch 文は次のように使用します。
+
+#+BEGIN_SRC lns
+let val = 1;
+switch val {
+   case 1 {
+      print( "hoge" );
+   }
+   case 2 {
+      print( "foo" );
+   }
+   default {
+      print( "bar" );
+   }
+}
+#+END_SRC
+
+なおこのサンプルは、上記 if のサンプルと同義です。
+
+switch の case には、次のように複数の式を書けます。
+
+#+BEGIN_SRC lns
+let val = 1;
+switch val {
+   case 10, 20, 30 {
+      print( "hoge" );
+   }
+   default {
+      print( "bar" );
+   }
+}
+#+END_SRC
+
+これは次の if 文と同義で、いづれかの値に一致すると、そのブロックを実行します。
+
+#+BEGIN_SRC lns
+let val = 1;
+if val == 10 or val == 20 or val == 30 {
+   print( "hoge" );
+}
+else {
+   print( "bar" );
+}
+#+END_SRC
+
+switch 文で注意すべき点は、 C 言語などと違い break が不要であることです。
+
+例えば次の break は、 switch 文を抜けるのではなく for 文を抜けることになります。
+
+#+BEGIN_SRC lns
+for count = 1, 10 {
+   switch count {
+      case 5 {
+         break;
+      }
+   }
+}
+#+END_SRC
+
+** まとめ
+
+LuneScript の一般分岐構文は、 if と switch があります。
+
+goto はありません。
+
+
+
+次回は、繰り返し制御について説明します。
+-----
+* *繰り返し構文 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の繰り返し構文について説明します。
+
+** 構文一覧
+
+LuneScript は、次の繰り返し構文をサポートします。
+
+- while
+- repeat
+- for
+- apply
+- foreach
+- forsort  
+
+*** while, repeat
+
+while, repeat は次のように利用します。
+
+#+BEGIN_SRC lns
+let mut val = 1;
+while val < 10 {
+   val = val + 1;
+}
+print( val ); // 10
+repeat {
+   let mut endFlag = false;
+   val = val + 1;
+   if val >= 20 {
+      endFlag = true;
+   }
+} endFlag;
+print( val ); // 20
+#+END_SRC
+
+while は式が成立している間、ブロックを処理し、
+repeat は式が不成立の間、ブロックを処理します。
+
+repeat の式では、ブロック内部のスコープの変数を利用できます。
+
+*** 無限ループ
+
+無限ループを利用する場合、 while true {} を使用してください。
+ここで true はプリミティブな値である必要があります。
+
+例えば次のようにプリミティブな値ではなく、
+変数を使用している場合は無限ループとは扱いません。
+
+#+BEGIN_SRC lns
+let flag = true;
+while flag {
+}
+#+END_SRC
+
+無限ループと見做されないことに何の問題があるかというと、
+意図したフロー解析ができなくなる、ということです。
+
+例えば次のような場合、
+LuneScript では無限ループの後の print() 文は処理されないということを判定します。
+
+#+BEGIN_SRC lns
+while true {
+}
+print( "hoge" );
+#+END_SRC
+
+しかし、上記の true がプリミティブな値でない場合、
+無限ループではないと判断し、 print() 文は処理される可能性があるものとします。
+
+処理されないはずのものが処理されるものとして判定されてしまうと、
+本来コンパイルエラーとなるものがエラーにならず、コードの不具合を見逃す可能性があります。
+
+必ず無限ループには、プリミティブな true を使用してください。
+
+なお、 repeat {} false も無限ループとしては扱っていません。
+
+
+Rust のように無限ループ専用の命令を用意する方が良いかとも思いましたが、
+現状はこの仕様となっています。
+
+*** for
+
+次のように利用します。
+
+#+BEGIN_SRC lns
+for count = 1, 10, 1 {
+  print( count );
+}
+#+END_SRC
+
+基本的に Lua と同じ仕様です。
+上記の例では count を 1 から 10 まで 1 ずつインクリメントしてブロックを処理します。
+
+注意が必要なのは、 1, 10, 1 という値は、
+for 開始時に一度だけ評価されるということです。
+
+つまり、次のようなことをやると、期待と異なる動作になります。
+
+#+BEGIN_SRC lns
+let mut addVal = 1;
+for count = 1, 10, addVal {
+  addVal = addVal + 1;
+  print( count );
+}
+#+END_SRC
+
+なお、インクリメントする値を省略した場合は 1 が利用されます。
+
+*** apply
+
+apply は、Lua の for in との互換用命令です。
+
+次のように利用します。
+
+#+BEGIN_SRC lns
+apply txt of string.gmatch( modulePath, '[^%.]+' ) {
+   print( txt );
+}
+#+END_SRC
+
+なお、 ~apply val of exp {}~ の exp に与える式は、関数呼び出しでなければなりません。
+これは現状の制限です。
+
+*** foreach
+
+foreach は、リスト、配列、マップの要素を列挙する関数です。
+
+次のように利用します。
+
+#+BEGIN_SRC lns
+foreach val, index in [ 1, 2, 3 ] {
+   print( index, val );
+}
+foreach val, index in [@ 10, 20, 30 ] {
+   print( index, val );
+}
+foreach val, key in { "a":100, "b":200, "c":300 } {
+   print( key, val );
+}
+foreach val in (@ 1, 2, 3 ) {
+   print( val );
+}
+#+END_SRC
+
+**Set は 値のみ列挙します*
+
+なお リスト、配列の index, マップの key は、次のように省略することができます。
+
+#+BEGIN_SRC lns
+foreach val in [ 1, 2, 3 ] {
+   print( val );
+}
+foreach val in [@ 10, 20, 30 ] {
+   print( val );
+}
+foreach val in { "a":100, "b":200, "c":300 } {
+   print( val );
+}
+#+END_SRC
+
+*** forsort
+
+Set, Map を foreach で要素を列挙した場合、要素の列挙順は不定となります。
+
+forsort は、 Set, Map の要素を列挙する際に、キーでソート(昇順)した順で列挙します。
+
+#+BEGIN_SRC lns
+forsort val, key in { "b":200, "c":300, "a":100 } {
+   print( key, val );
+}
+forsort val in (@ 2, 4, 1, 0 ) {
+   print( val );
+}
+#+END_SRC
+
+Map の forsort は key を省略できます。
+
+#+BEGIN_SRC lns
+forsort val in { "b":200, "c":300, "a":100 } {
+   print( val );
+}
+#+END_SRC
+
+*** break
+
+break は、一番内側にある繰り返し制御文を抜けます。
+
+continue はありません。
+   
+
+** まとめ
+
+LuneScript の一般制御構文は、基本的に Lua と同じです。
+
+主な違いは、リスト等を処理する foreach, forsort を追加していることです。
+
+次回は関数を説明します。
+-----
+* *関数 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は、 LuneScript の関数について説明します。
+
+** 関数定義
+LuneScript の関数は次のように定義します。
+
+#+BEGIN_SRC lns
+fn add_sub( val1:int, val2:int ): int, int {
+   return val1 + val2, val1 - val2;
+}
+print( add_sub( 1, 2 ) ); // 3, -1
+#+END_SRC
+
+上記の例は、次の関数を定義しています。
+
+| 定義         |         |
+|--------------+---------|
+| 関数名       | add_sub |
+| 第一引数名   | val1    |
+| 第一引数型   | int     |
+| 第二引数名   | val2    |
+| 第二引数型   | int     |
+| 第一戻り値型 | int     |
+| 第二戻り値型 | int     | 
+
+LuneScript は、戻り値を複数返せます。
+
+**** 戻り値
+
+関数の戻り値は return 文を使用します。
+
+関数は、複数の値を返せます。
+
+多値の戻り値については次を参照してください。
+
+[[../multipleretval]]
+
+
+** 処理が戻らない関数
+
+関数によっては、処理を戻さないものがあります。
+
+次に例を示します。
+   
+#+BEGIN_SRC lns
+fn func(): __ {
+   while true {
+   }
+}
+func();
+print( 1 ); // error
+#+END_SRC
+
+この例では、 func() は無限ループです。
+よって、 func() は処理を返さないことになります。
+
+これを明示するため、 func() の戻り値の型は ~__~ となっています。
+~__~ は、処理を戻さない関数であることを示します。
+
+これによって、 func() の次の print() 文が処理されないことが分かり、
+エラーとなります。
+
+なお、 戻り値型を ~__~ とした関数は、
+処理を戻さないようにしなければなりません。
+
+例えば次のように break すると、ループを抜けてしまうため、
+func() から処理が戻ってきます。
+このような場合は、エラーとなります。
+
+#+BEGIN_SRC lns
+fn func(val:int): __ {
+   while true {
+      if val == 1 {
+         break;
+      }
+   }
+}
+#+END_SRC
+
+** 可変長引数、戻り値
+
+可変長引数、戻り値を利用できます。
+
+詳細は次の記事を参照してください。
+
+[[../arg]]
+
+** 定義場所
+
+関数は、 statement が書ける場所であればどこでも定義可能です。
+具体的には次のようにブロック内に定義できます。
+
+#+BEGIN_SRC lns
+fn sub():int {
+   let mut val = 0;
+   {
+      {
+         fn func(): int {
+            return 1;
+         }
+         val = val + func();
+      }
+      fn func(): int {
+         return 2;
+      }
+      val = val + func();
+   }
+   fn func(): int {
+      return 3;
+   }
+   return val + func();
+}
+print( sub() ); // 6
+#+END_SRC
+
+スコープが異なれば、同名関数を定義できます。
+
+** 公開関数
+
+関数も変数と同様、pub を使って外部公開できます。
+  
+#+BEGIN_SRC lns
+pub fn func(): int {
+   return 1;
+}
+#+END_SRC
+
+pub を指定することで、外部からアクセス可能な関数となります。
+
+global も利用できます。
+
+#+BEGIN_SRC lns
+global fn func(): int {
+   return 1;
+}
+#+END_SRC
+
+関数の global 宣言には、 変数の global 宣言と同じ制約があります。
+
+ *「global 宣言した関数は、 その関数を宣言したモジュールを import した時に有効になる。」*
+
+関数の外部公開には、次の制約があります。
+
+ *「外部公開する関数は、スクリプトの最上位のスコープに宣言しなければならない」*
+
+** form 型
+
+LuneScript は、関数オブジェクトを値として扱うことが出来ます。
+関数オブジェクトの汎用的な型として *form* を利用できます。
+
+次に form の使用例を示します。
+
+#+BEGIN_SRC lns
+fn test() {
+   print( "hoge" );
+}
+fn sub( func:form ) {
+  func();
+}
+sub( test ); // hoge
+#+END_SRC
+
+この例は、次の構成となります。
+
+- 関数 test を定義
+- 関数 sub は form 型の引数を持つ
+- 引数として test を指定して sub を実行
+  
+これによって、 sub 内で test が実行され、 hoge が出力されます。
+
+なお、 form 型は次の関数として扱います。
+
+#+BEGIN_SRC lns
+fn func(...):... {}
+#+END_SRC
+
+*** form 型に代入可能な関数型
+
+上記の通り、form は ~fn func(...):... {}~ と同義です。
+
+また、 =...= は 0 個以上の =stem!= を表わします。
+
+つまり、 stem! 型の引数を持つ関数が form 型に代入可能になり、
+非 stem! 型の引数を持つ関数は代入不可能になります。
+
+もしも代入できてしまうと、
+次の func2( nil ) のコールは func( nil ) をコールすることになり、
+不正動作となってしまいます。
+
+#+BEGIN_SRC lns
+fn func( val:int ) {
+   print( val + 1 );
+}
+let func2:form = func;
+func2( nil );
+#+END_SRC
+
+代入可能なケースと、代入不可能なケースの例を次に示します。
+
+#+BEGIN_SRC lns
+let form1:form = fn ( val1:stem! ) { };
+let form2:form = fn ( val1:stem ) { };  // error
+let form3:form = fn ( val1:stem!, val2:stem! ) { };
+let form4:form = fn ( val1:stem!, val2:stem ) { }; // error
+#+END_SRC
+
+上記の form1, form3 は代入可能で、form2, form4 は代入不可能です。
+
+
+*** form 宣言
+
+上記の通り、form で扱える関数の型は一部だけです。
+
+form で扱えない関数を扱うには、次のように form 宣言をします。
+
+#+BEGIN_SRC lns
+form funcform( val:int ):int;
+fn sub( func:funcform ) {
+   print( func( 1 ) + 1 );
+}
+sub( fn ( val:int ):int { return val + 1; } ); // 3
+#+END_SRC
+
+この例では、 funcform を form 宣言しています。
+
+form 宣言によって funcform は、引数に int 型の val を持ち、
+戻り値に int 型を持つ関数型となります。
+
+** anonymous 関数
+
+anonymous 関数は、名前を持たない関数を定義します。
+
+次は anonymous 関数の例です。
+
+#+BEGIN_SRC lns
+fn sub( func:form ) {
+  func( 1 );
+}
+sub( fn ( val:int! ) { print( val ); } );  // 1
+#+END_SRC
+
+この例では、 anonymous 関数 ~fn ( val:int ) { print( val ); }~ を定義しています。
+
+この anonymous 関数を sub() の引数に渡すことで、
+sub() 内で anonymous 関数が実行されます。
+
+anonymous 関数宣言は式です。
+
+** 関数呼び出し
+
+関数オブジェクトに ~()~ を付けることで、その関数が実行されます。
+
+関数の仮引数と実引数の型は一致しなければなりません。
+なお、省略した実引数は nil として扱います。
+もし省略した実引数に対応する仮引数が nilable でなかった場合、エラーとなります。
+
+*** 引数の省略  
+
+引数の省略については次の記事を確認してください。
+
+[[../defaultarg]]
+
+
+** 関数の制限
+
+LuneScript の関数は、引数の違いによるオーバーロードはできません。
+
+** まとめ
+
+LuneScript の関数をまとめると、
+
+- fn で宣言する
+- 複数の戻り値を持てる
+- 可変長の引数、戻り値をもてる
+- pub, global で外部モジュールに関数を公開する
+- 関数オブジェクトの型は、form 型と form 宣言を使用する
+- anonymous 関数がある
+- 省略した実引数には nil が入る
+- 関数オーバーロードはない
+  
+次回は nilable について説明します。
+-----
+* *多値の戻り値*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、多値の関数戻り値に対応しています。
+
+例えば、次のように関数は複数の値を返せます。
+
+#+BEGIN_SRC lns
+fn func(): int,int {
+   return 1, 2;
+}
+print( func() );  // 1 2
+#+END_SRC
+
+上記サンプルでは、 func() は 1 と 2 を返します。
+この多値の戻り値を、そのまま print() の引数として渡しています。
+
+多値の戻り値は非常に便利ですが、戻り値が多値である言語はまだまだ少ないです。
+また、戻り値の 2 番目以降の値は、オプション的な意味合いのケースが多いです。
+
+そのため、2 番目以降の戻り値の存在を忘れがちです。
+
+これによって、不具合が発生することがあります。
+
+
+** 多値の戻り値による不具合
+
+次のコードは LuneScript ではなく、 *Lua* のコードです。
+  
+#+BEGIN_SRC lua
+local function func1( txt ) 
+   print( string.byte( txt:gsub( "b", "B" ) ) )
+end
+local function func2( txt ) 
+   print( string.byte( (txt:gsub( "b", "B" )) ) )
+end
+func1( "abcb" ) -- 66
+func2( "abcb" ) -- 97
+#+END_SRC
+
+この func1() と func2() は、同じ引数 "abcb" を与えているのに異なる結果を出力します。
+何故そうなるか分かるでしょうか？
+
+ちなみに ~txt:gsub( "b", "B" )~ は、
+文字列 txt 内の "b" を "B" に変換した文字列を返す Lua の標準ライブラリで、
+~string.byte()~ は、 指定の文字列に含まれる値を返す標準ライブラリです。
+
+
+それでは問の答です。
+
+func1() は string.byte に ~txt:gsub( "b", "B" )~ の
+戻り値そのままを渡しているのに対し、
+func2() は ~()~ で括った ~(txt:gsub( "b", "B" ))~ を渡しています。
+
+これにより、
+func1() は string.byte() に ~txt:gsub( "b", "B" )~ の多値の値をそのまま渡しているのに対し、
+func2() は string.byte() に ~txt:gsub( "b", "B" )~ の多値の先頭の値である文字列だけを渡しています。
+
+~string.byte()~ は、 第2引数が渡された場合、
+第2引数が指定するインデックスの文字の値を返します。
+一方、第2引数が省略された場合、先頭の文字の値を返します。
+
+そして、 ~txt:gsub( "b", "B" )~ は多値を返す関数です。
+具体的には、変換後の文字列 str と何箇所変換したか int を返します。
+
+
+~txt:gsub( "b", "B" )~ が変換した文字列を返す関数であることは、
+多くの人が認識していることだと思います。
+一方で、この関数が多値を返す関数だと認識している人はどの程度いるでしょうか？
+
+また、認識していたとして、それが不具合につながるということに即座に気付く人は
+どれほどいるでしょうか？
+
+
+本来 ~txt:gsub( "b", "B" )~ の変換後の文字列だけを引数として使用したいのに、
+意図せずに渡された多値の戻り値によって、関数動作が変ってしまうことがあります。
+
+つまり、本来は func2() のように ~()~ を使って多値の先頭だけ使わなければならない時に、
+func1() のようにそのまま多値を使ってしまうことがあるのです。
+
+
+ここで冒頭で書いたことを思い出してください。
+
+- ~多値の戻り値は非常に便利ですが、戻り値が多値である言語はまだまだ少ないです。~
+- ~また、戻り値の 2 番目以降の値は、オプション的な意味合いのケースが多いです。~
+- ~そのため、2 番目以降の戻り値の存在を忘れがちです。~
+  
+多値の戻り値は便利ですが、このようなリスクもあるんです。
+
+
+** LuneScript の場合
+
+LuneScript では、このように問題を避けるため多値の戻り値を扱う際、
+明示することにしました。
+なお、明示しない場合は warning となります。
+
+ただ、多値を利用する際に明示するのは、それはそれで面倒です。
+
+そこで、明示が必要なケースとして、次のケースに限定します。
+
+多値の戻り値の利用先が
+
+- 関数の引数で、なおかつその引数が省略可能な場合
+- return に指定する値で、なおかつその値が省略可能な場合
+
+つまり、 let など直接変数に値を代入するような場合は、明示は不要です。
+わざわざ値を代入する変数を用意しているということ自体が、
+多値の第二引数以降を使用すると明示しているのと同様だと考えたためです。
+
+
+
+** 明示方法
+  
+具体的な明示方法は次になります。
+
+#+BEGIN_SRC lns
+fn func1(): int,int {
+   return 1, 2;
+}
+fn func2( val1:int, val2:int!) {
+   print( val1, val2 );
+}
+
+func2( func1()** );
+#+END_SRC
+
+上記 ~func1()**~ のように、関数コールの後に ~**~ を付加することで、
+その関数コールの多値を使用していることを明示します。
+-----
+* *引数の省略 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、nilable 型の引数は関数コール時に省略することが出来ます。
+
+例えば次の関数 func() は、引数を省略してコールできます。
+
+#+BEGIN_SRC lns
+fn func( val1:int!, val2:int! ):int {
+   when! val1, val2 {
+      return val1 + val2;
+   }
+   when! val1 {
+      return val1;
+   }
+   when! val2 {
+      return val2;
+   }
+   return 0;
+}
+print( func(1,2) );  // 3
+print( func(1) );    // 1
+print( func() );     // 0
+#+END_SRC
+
+ここで問題となるのが、 ~func(1)~ ならびに ~func()~ は意図して引数を省略したのか、
+それとも指定し忘れたのかが判断できない、ということです。
+
+引数を省略できること自体は、コーディングの手間を省ける有用な機能ですが、
+本来指定すべき引数を指定し忘れたときに、それを検知できなくなってしまう可能性があります。
+
+これを避けるため次のように引数を定義し、
+引数の省略を禁止することで指定し忘れを防止することが出来ます。
+
+- nilable 型の引数を使わない
+- nilable 型の引数の後に、非 nilable 型の引数を定義する
+  
+しかし、引数の省略自体を禁止してしまった場合、次の問題があります。
+
+- コーディングの手間が増えてしまう。
+- 無駄な引数指定が増え、コードの可読性が悪くなる。
+
+引数を省略しつつ、引数の指定し忘れの問題を回避するため、
+LuneScript は引数省略の明示を導入します。
+
+** 引数省略の明示
+
+LuneScript では、引数を省略する場合 ~##~ を使用します。
+
+上の func() をコールする場合、次のようになります。
+  
+#+BEGIN_SRC lns
+print( func(1,2) );  // 3
+print( func(1##) );  // 1
+print( func(##) );   // 0
+#+END_SRC
+
+引数を省略している箇所に ~##~ を付加することで、
+そこは引数を省略していることを明示します。
+
+なお ~##~ を指定せずに省略している場合、 warning となります。
+
+これにより、引数の省略と、引数の指定し忘れを防止しています。
+
+
+トランスコンパイル時に -Werror オプションを追加することで、
+warning を error として扱います。
+
+また、逆に ## の指定が面倒な場合、
+--disable-checking-define-abbr オプションを追加することで
+~##~ を指定せずに省略している場合の warning を抑制できます。
+
+
+-----
+* *nilable 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の nilable について説明します。
+
+** nilable とは
+
+LuneScript は、値に nil を持ちます。
+
+以前説明しましたが、 stem 型の変数は nil 以外の全ての型を保持できます。
+
+#+BEGIN_SRC lns
+let mut val:stem = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+val = nil; // error
+#+END_SRC
+
+では、どうすれば nil を保持できるのかというと、
+stem ではなく stem! を使用します。
+
+#+BEGIN_SRC lns
+let mut val:stem! = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+val = nil; // ok
+#+END_SRC
+
+このように、 nil を保持可能な型を nilable と言います。
+
+nilable は stem! だけでなく、
+一部を除く全ての型に nilable 型が存在します。
+
+例えば int! や str! は、 int の nilable 型、 str の nilable 型となります。
+
+型名の末尾に ! を付加することで、
+本来の型と nil を保持可能な nilable 型となります。
+
+#+BEGIN_SRC lns
+let mut val1:int = 1;
+val1 = nil;  // error
+
+let mut val2:int! = 1;
+val2 = nil;  // ok
+#+END_SRC
+
+nil は、他のどの値とも異なる値で、異常値として利用するのに便利な値です。
+しかし、 意図しないタイミングで変数の値が nil になることで、不具合の原因となる多くあります。
+
+LuneScript は、 nil を保持出来る nilable 型と、
+nil を保持できない非 nilable 型に分けることで、
+nil 安全(NULL 安全)を実現しています。
+
+** nilable 型の制限
+
+nilable 型は、そのままでは元の型として使用できないという制限があります。
+
+この説明だと何のことだか伝わり難いと思いますので、次の例を見てください。
+
+#+BEGIN_SRC lns
+let val:int! = 1;
+print( val + 1 );  // error
+#+END_SRC
+
+上記の val は int の nilable 型です。
+そして val + 1 を実行していますが、これはエラーとなります。
+
+なぜならば、 val は int ではなく int! なので、そのままでは int としては扱えないためです。
+
+
+では、なぜ nilable にこのような制限があるかというと、次の通りです。
+
+- nilable は nil を保持できる型
+- つまり、nilable 型は nil である可能性がある
+- 元の型として利用するには、 nil でないことを確認しなければならない
+  
+
+非 nilable の型には nil を代入出来ません。
+そして、 nilable 型はそのままで元の型として利用が出来ません。
+
+この制限によって、 ある変数が意図しないタイミングで nil になり、
+不具合となることを論理的に防止することが出来ます。
+
+これが多くの言語で取り入れられている nil 安全(NULL安全)の原理です。
+
+** nilable 型との比較
+
+前述している通り、nilable 型は、そのままでは非 nilable として利用できません。
+
+しかし、次のように比較すること出来ます。
+
+#+BEGIN_SRC lns
+fn check( val:int! ) {
+   if val == 1 {
+      print( "ok" );
+   }
+   else {
+      print( "ng" );
+   }
+}
+check( 1 ); // ok
+check( 2 ); // ng
+#+END_SRC
+
+上記サンプルでは val は int! で、 val == 1 で int と比較しています。
+このように nilable と 非 nilable を比較することは可能です。
+
+** nilable 型から非 nilable 型への変換
+
+次のように、非 nilable 型から nilable 型への変換は、暗黙的に行なわれます。
+
+#+BEGIN_SRC lns
+let val:int! = 1;   // int! <-- int
+#+END_SRC
+
+一方で nilable 型から非 nilable 型への変換は、明示的に行なう必要があります。
+
+
+LuneScript では、nilable 型から非 nilable 型への変換に、次のものを用意しています。
+
+- unwrap 
+- when!
+- if!
+- if! let
+- let!
+- unwrap!
+
+*** unwrap
+
+unwrap は、 nilable 型の式を、非 nilable 型へ変換します。
+
+例えば次のように使用します。
+
+#+BEGIN_SRC lns
+let val1:int! = 1;
+let val2:int = unwrap val1;
+#+END_SRC
+
+このサンプルで val1 は int! です。その val1 を unwrap することで、
+int! から int! に変換しています。
+
+なお、次のように unwrap する値が nil だった場合、
+そのプログラムは実行時エラーします。
+
+#+BEGIN_SRC lns
+let val1:int! = nil;
+let val2:int = unwrap val1;   // runtime error
+#+END_SRC
+
+unwrap は、変換対象の値が nil だった場合、実行時エラーします。
+
+この実行時エラーを防ぐのが unwrap default です。
+unwrap default は、変換対象の値が nil だった場合の値を指定します。
+
+次は default を使用した例です。
+
+#+BEGIN_SRC lns
+let val1:int! = nil;
+let val2:int = unwrap val1 default 0;
+#+END_SRC
+
+この例では val1 は nil となるため、 default の 0 が unwrap の評価結果となります。
+
+default のない unwrap の使用は、確実に nil ではないと判っている時のみにしてください。
+
+*** when!
+
+when! は、指定の nilable 型の *変数* が nil かどうかを判定し、分岐します。
+
+次に when! の例を示します。
+
+#+BEGIN_SRC lns
+fn func( val:int!, val2:int! ): int {
+   when! val, val2 {
+      return val + val2;
+   }
+   else {
+      return 0;
+   }
+}
+print( func( 1, 2 ) );      // 3
+print( func( nil, 2 ) );    // 0
+print( func( 1, nil ) );    // 0
+print( func( nil, nil ) );  // 0
+#+END_SRC
+
+この例では int! 型の val, val2 に対して when! で分岐しています。
+
+- val と val2 が 非 nil の場合、 ~return val + val2~ を実行
+- val あるいは val2 が nil の場合、 return 0 を実行
+
+when! は、指定の変数全てが非 nil の時に、最初のブロックを実行します。
+**このブロック内では、指定変数は非 nilable の型となります。*
+
+when! に指定した変数のいずれかが nil だった場合、
+else ブロックを実行します。
+else は省略可能です。
+
+なお、 when! に指定できるのは *変数だけ* です。 *式は書けません。*
+
+*** if!
+
+if! は、指定の *式* が nil かどうかを判定し、分岐します。
+
+次に if! の例を示します。
+
+#+BEGIN_SRC lns
+fn func( val:int! ): int! {
+   return val;
+}
+fn sub( val:int! ): int {
+   if! func( val ) {
+      return _exp + 10;
+   }  
+   else {
+      return 0;
+   }
+}
+print( sub( 1 ) ); // 11
+print( sub( nil ) ); // 0
+#+END_SRC
+
+この例では func() に対して if! で分岐しています。
+
+- func() が 非 nil の場合、 ~return _exp + 10;~ を実行
+- func() が nil の場合、 return 0 を実行
+
+if! は、指定の式が非 nil だった時に、最初のブロックを実行します。
+このブロック内では、式の結果を *_exp* としてアクセスできます。
+このとき、 _exp は *非 nilable 型* です。
+
+if! に指定した式が nil だった場合、
+else ブロックを実行します。
+else は省略可能です。
+
+ちなみに、 if! で指定した式が複数の値を返す場合、
+最初の戻り値だけが対象です。
+2 つ目以降の戻り値は無視します。
+
+なお、 if! は次のようなネストは出来ません。
+
+なぜならば、 内側の if! の _exp が、外側の if! の _exp によって、
+shadowing されるためです。
+
+#+BEGIN_SRC lns
+   if! func( val ) {
+      if! func( val ) {
+         return _exp + 10;
+      }  
+      else {
+         return 0;
+      }  
+   }  
+#+END_SRC
+
+これを防ぐためには、次の if! let を使用してください。
+
+*** if! let
+
+if! let は、 if! で判定する式の結果を格納する変数名を指定可能なバージョンです。
+
+次は if! let のサンプルです。
+
+#+BEGIN_SRC lns
+fn func( val1:int!, val2:int! ): int!, int! {
+   return val1, val2;
+}
+fn sub( val1:int!, val2:int! ): int {
+   if! let work1, work2 = func( val1, val2 ) {
+      return work1 + work2;
+   }  
+   else {
+      return 0;
+   }
+}
+print( sub( 1, 2 ) ); // 3
+print( sub( nil, 2 ) ); // 0
+print( sub( 1, nil ) ); // 0
+print( sub( nil, nil ) ); // 0
+#+END_SRC
+
+この例では ~if! let work1, work2 = func( val1, val2 )~ を実行しています。
+
+これは、 func() の結果を work1, work2 に代入し、
+全てが非 nil だった場合に最初のブロックを実行します。
+このブロック内では work1, work2 にアクセスできます。
+work1, work2 は、 非 nilable 型となります。
+if! let で宣言した変数のスコープは、最初のブロックです。
+
+何れかが nilable の場合、else ブロックを実行します。
+else は省略可能です。
+   
+*** let!
+
+let! は、nil 以外の初期値を持つ変数宣言を行ないます。
+
+次に let! のサンプルを示します。
+
+#+BEGIN_SRC lns
+fn func( val1:int!, val2:int! ): int!, int! {
+   return val1, val2;
+}
+fn sub( val1:int!, val2:int! ): int {
+   let mut work0 = 0;
+   let! work1, work2 = func( val1, val2 ) {
+      work1 = 0;
+      work2 = 0;
+   }
+   then {
+      work0 = 10;
+   };     
+   return work0 + work1 + work2;
+}
+print( sub( 1, 2 ) ); // 3
+print( sub( nil, 2 ) ); // 0
+print( sub( 1, nil ) ); // 0
+print( sub( nil, nil ) ); // 0
+#+END_SRC
+
+この例では、 ~let! work1, work2 = func( val1, val2 )~ を実行しています。
+
+- これは、 func() の結果を初期値とする work1, work2 を宣言しています。
+- work1, work2 *いずれかが nil* だった場合、最初のブロックを実行します。
+- 全てが非 nil だった場合、then ブロックを実行します。 then は省略可能です。
+  
+let の文には ; が必要です。
+上記のサンプルでは、 then ブロック終端に ~};~ として ; を付加されています。
+  
+
+最初のブロックには、次のいずれかを処理しなければならない制限があります。
+
+- let で宣言している変数全てに値を設定する。
+- let を宣言しているスコープから抜ける。
+
+上記の例では、 work1, work2 に値を設定していますが、
+return でこの関数を抜けるようにしても OK です。
+
+なお、上記制限が守られていない場合の動作は *未定義* です。
+
+
+*** unwrap!
+
+unwrap! は、 let! に似た制御です。異なるのは変数を宣言するのではなく、
+既にある変数に対して代入する点です。
+ 
+次は、 unwrap! の例です。
+   
+#+BEGIN_SRC lns
+fn test( arg:int! ) {
+  let mut val = 0;
+
+  unwrap! val = arg { print( 0 ); return; } then { val = val + 1; };
+  print( val );
+}
+test( 1 );  // print( 2 );
+test( 2 );  // print( 3 );
+test( nil );  // print( 0 );
+#+END_SRC
+
+上記例の val は、 int 型変数です。
+この変数に、unwrap! を使って int! 型の arg を代入しています。
+
+上記 ~unwrap! val = arg { print( 0 ); return; } then { val = val + 1; };~ は、
+次の処理を行ないます。
+
+- arg が nil の場合、 ~{ print( 0 ); return; }~ を実行する。
+- arg が非 nil の場合、 arg を val に代入する。さらに then ブロックを実行する。
+- then は省略可能です。
+  
+  
+** マップ型のアクセス
+
+Map 型データの要素にアクセスした場合、
+その結果は nilable となります。
+
+たとえば次の場合、
+
+#+BEGIN_SRC lns
+let val = { "abc": 1 };
+let val2 = val.abc;
+#+END_SRC
+
+val2 は int ではなく、 int! となります。
+
+なぜならば、 Map 型の要素が存在しない場合、
+その評価結果は nil になるためです。
+
+ちなみに、リスト、配列の要素アクセスは nilable にはなりません。
+
+#+BEGIN_SRC lns
+let val = [ 1, 2, 3 ];
+let val2 = val[ 1 ];
+#+END_SRC
+
+上の例では、 val2 は int! ではなく int になります。
+
+なお、 val[ 4 ] にアクセスした場合の動作は *未定義* です。
+
+リスト、配列にインデックスでアクセスする場合は、十分注意してください。
+
+リスト、配列のインデックスアクセス結果が nilable になるようにも考えましたが、
+やり過ぎな気がしたので実施していません。
+
+** まとめ
+
+LuneScript は、次の仕様によって nil 安全を実現しています。
+
+- nilable と非 nilable
+- unwrap 
+  
+
+次回はクラスについて説明します。
+-----
+* *クラス 基本 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、クラスによるオブジェクト指向プログラミングをサポートします。
+
+** クラスの仕様
+
+LuneScript のクラスは、次をサポートします。
+
+- アクセス制御  
+- accessor
+- 継承
+- abstract
+- override
+- advertise
+- Mapping
+- interface  
+
+今回は基本的なクラス定義を説明します。
+
+** 最小のクラス定義
+
+最小のクラス定義は次のように行ないます。
+
+#+BEGIN_SRC lns
+class Test {
+}
+#+END_SRC
+
+これは Test というクラスを定義しています。
+
++なお、クラス定義は最上位のスコープで行なう必要があります。+
+
+**(2019/6/24) 関数内でもクラス定義できるように対応しました。
+ただし、外部公開可能なクラスは最上位のスコープで宣言する必要があります。*
+
+*** 外部公開
+
+クラスを外部モジュールに公開するには、
+次のように pub を付加します。
+
+#+BEGIN_SRC lns
+pub class Test {
+}
+#+END_SRC
+
+** インスタンス生成
+
+クラスのインスタンス生成は、次のように new 演算子を使用します。
+
+#+BEGIN_SRC lsn
+class Test {
+}
+let test = new Test();
+#+END_SRC
+
+** メソッド定義
+
+メソッド定義は、ほぼ関数定義と同じです。
+
+#+BEGIN_SRC lns
+class Test {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+let test = new Test();
+test.func();  // Test.func
+#+END_SRC
+
+なお、メソッドは form 型にはセットできません。
+
+例えば、次の ~sub( test.func )~ はエラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+fn sub( foo:form ) {
+   foo();
+}
+
+let test = new Test();
+sub( test.func );  // error
+#+END_SRC
+
+これをエラーしないようにするには、
+次のように anonymous 関数を作成して sub() に渡します。
+
+#+BEGIN_SRC lns
+class Test {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+fn sub( foo:form ) {
+   foo();
+}
+
+let test = new Test();
+sub( fn() { test.func(); } );
+#+END_SRC
+
+
+*** アクセス制御
+
+アクセス制御は次の 3 つです。
+
+| 種別  | 意味                   |
+|-------+------------------------|
+| pub   | 外部公開               |
+| local | 同一モジュール内に公開 |
+| pro   | サブクラスに公開       |
+| pri   | 非公開                 |
+
+指定しない場合、デフォルトは pri です。
+
+
+*** self シンボル
+
+メソッド内では、 self シンボルを利用できます。
+
+self シンボルは、自分自身のインスタンスを表します。
+
+次の例では、公開メソッドの sub から、
+非公開メソッドの func() を self 使用してコールしています。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func() {
+      print( __func__ );
+   }
+   pub fn sub() {
+      self.func();
+   }
+}
+let test = new Test();
+test.sub();  // Test.func
+#+END_SRC
+
+*** 分離定義
+
+メソッドは、クラス定義と分離して定義することが出来ます。
+
+先ほどのメソッド定義は、次のようにも書けます。
+
+#+BEGIN_SRC lns
+class Test {
+}
+pub fn Test.func() {
+   print( __func__ );
+}
+let test = new Test();
+test.func();  // Test.func
+#+END_SRC
+
+ただし、別モジュールで定義しているクラスのメソッドを、
+import しているモジュール内で定義することは出来ません。
+
+*** プロトタイプ宣言
+
+メソッド定義は、クラス定義内に型だけを宣言し、実定義を分離することもできます。
+
+次の例では、 func() をプロトタイプ宣言し、実定義を分離しています。
+
+func() をプロトタイプ宣言することで、sub() 内で func() のコールが可能になります。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func();
+   pub fn sub() {
+      self.func();
+   }
+}
+pub fn Test.func() {
+   print( __func__ );
+}
+let test = new Test();
+test.sub();  // Test.func
+#+END_SRC
+
+当然、プロトタイプ宣言と実定義のメソッドの型は、一致させる必要があります。
+
+   
+*** クラスメソッド定義
+
+通常のメソッドはインスタンスに紐付いているためインスタンスがないと実行できませんが、
+クラスに紐付いたクラスメソッドはインスタンスがなくても実行できます。
+
+クラスメソッドの定義は、メソッド定義に static を付加するだけです。
+
+#+BEGIN_SRC lns
+class Test {
+   pub static fn sfunc() {
+      print( __func__ );
+   }
+}
+Test.sfunc(); // Test.sfunc
+#+END_SRC
+
+** メンバ定義
+
+メンバ定義は、ほぼ変数定義と同じですが、次の違いがあります。
+
+- 初期値の設定が出来ない
+- アクセス制御が追加
+- accessor 指定が可能
+
+
+次にメンバ定義の例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pri let val3:int;
+   pub fn func() {
+      print( self.val1, self.val2, self.val3 );
+   }
+
+}
+let test = new Test( 1, 2, 3 );
+test.func(); // 1 2 3 
+#+END_SRC
+
+クラス Test は、 val1, val2, val3 をメンバに持ちます。
+
+val1 の定義は ~pri let val1:int;~ となっています。
+
+これは、 これは通常の変数宣言に pri が付いただけなので問題ないと思います。
+
+pri はアクセス制御で、意味はメソッド定義と同じです。
+
+** mutable
+
+メンバ、メソッドにも mutable と immutable があります。
+
+メソッドの mutable と immutable の違いは次の通りです。
+
+- mutable なメソッドは、メンバを変更可能なメソッド
+- immutable なメソッドは、メンバを変更不可能なメソッド
+
+  
+次に mutable なメンバ、メソッドの例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val1:int;
+   pri let val2:int;
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+   pub fn add( val:int ) mut {
+      self.val1 = self.val1 + val;
+   }
+}
+let mut test = new Test( 1, 2 );
+test.func(); // 1 2
+test.add( 10 );
+test.func(); // 11 2
+#+END_SRC
+
+この例では、val1 が mutable で val2 が immutable です。
+また func() が immutable で、 add() が mutable です。
+
+mutable なメソッドは、引数宣言後に *mut* を宣言します。
+
+
+mutable のメソッド add() は、 メンバ val1 に値をセットしています。
+これはエラーせずにビルド可能です。
+
+では、次のように メソッド add() の mut 宣言を外した場合はどうなるかというと。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val1:int;
+   pri let val2:int;
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+   pub fn add( val:int ) {
+      self.val1 = self.val1 + val;  // error
+   }
+}
+#+END_SRC
+
+上記の例は、エラーとなります。
+
+mutable でないメソッド内からメンバを変更しようとした場合、エラーします。
+
+
+次の場合もエラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int;
+   pub fn increment() mut {
+      self.val = self.val + 1;
+   }
+   pub fn func() {
+      self.increment(); // error
+   }
+}
+#+END_SRC
+
+上記の例では、 func() から increment() をコールしていますが、
+immutable なメソッドから mutable なメソッドのコールは出来ません。
+
+
+** allmut メンバ
+
+前述の通り、 あるクラスのメンバが mutable であっても、
+そのクラスのインスタンスが immutable である場合、
+そのメンバは immutable となります。
+
+次の例では、 func() メソッド内から mutable なメンバ val にアクセスしていますが、
+func() メソッドは immutable であるため val もまた immutable となり、エラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int;
+   pub fn func() {
+      self.val = self.val + 1;  // error
+   }
+}
+#+END_SRC
+
+mutablity は、意図しないタイミングでの値の変化を防止するために必要な概念です。
+一方で、 immutable なメソッドからはいかなるメンバも変更できない、
+というのは非常に厳しいルールです。
+
+このルールが適応されてしまうと、
+例えば次のような場合、設計が難しくなってしまいます。
+
+- キーに紐付けて、読み取り専用データを管理するクラス Data を考える
+- Data クラスには、引数にキーを与えると、紐付けられたデータを返すメソッド get() を定義する
+- 管理する全てのデータを登録した Data インスタンスは、不要な変更を防ぐため immutable とする
+
+これは一般的な考え型だと思います。
+
+そして、開発が進んでから次の仕様を追加するとします。
+
+- 上記 get() メソッドの処理を高速化するため、
+  直前の引数キーと、そのキーに紐付けされたデータをキャッシュする
+  
+この「直前の引数キーと、そのキーに紐付けされたデータをキャッシュする」という処理は、
+データを書き換えることになります。
+つまり、 immutable ではなく mutable である必要があります。
+
+一方で、既に Data インスタンスは多くの箇所で immutable として宣言されています。
+つまり、キャッシュすることが出来ません。
+
+このような場合に利用するのが allmut です。
+allmut は、メンバの mutablity を宣言し、
+インスタンスの mutablity とは独立して常に mutable となります。
+
+次に allmut のサンプルを示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let allmut val:int;
+   pub fn func() {
+      self.val = self.val + 1;  // ok
+   }
+}
+#+END_SRC
+
+このように ~pri let allmut val:int;~  と宣言することで、
+val は常に mutable となります。
+これにより、 immutable なメソッド func() から、
+val を書き換えることが可能となります。
+
+
+
+
+** コンストラクタ定義
+
+コンストラクタは __init で定義できます。
+
+コンストラクタは、メソッド定義と次の点で異なります。
+
+- コンストラクタ名は __init でなければならない。
+- 戻り値の型を指定できない。
+- コンストラクタの定義は、全メンバ定義の後にしなければならない。
+- コンストラクタは、全メンバを初期化しなければならない。
+  - nilable 型のメンバを明示的に初期化しない場合、 初期値 nil となります。
+- コンストラクタ内の処理で全メンバを初期化してからでなければ、
+  そのクラスで定義するメソッドにアクセスできない。
+  - ただし static メソッド、 super クラスのメソッドにはアクセス可能。
+  - また、コンストラクタ内ので定義した関数オブジェクトからはメソッドにアクセス可能。
+- コンストラクタ内からは、プロトタイプ宣言しただけのメソッドはコールできない。
+- コンストラクタ内で return できない。
+
+次にコンストラクタの例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pub fn __init() {
+      self.val1 = 0;
+      self.val2 = 0;
+   }
+}
+let test = new Test();
+#+END_SRC
+
+なお、コンストラクタでは immutable なメンバにも初期値を設定可能です。
+
+*** コンストラクタの引数
+
+コンストラクタは引数を持てます。
+この引数は、new 演算子によって与えられます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+   pub fn __init( val1:int, val2:int ) {
+      self.val1 = val1 + 10;
+      self.val2 = val2 + 10;
+   }
+   pub fn func() {
+      print( self.val1, self.val2 );
+   }
+}
+let test = new Test( 1, 2 );
+test.func(); // 11 12
+#+END_SRC
+
+*** デフォルトコンストラクタ
+
+コンストラクタを定義しない場合、
+自動的に全メンバを設定するコンストラクタが生成されます。
+このコンストラクタをデフォルトコンストラクタと言います。
+
+デフォルトコンストラクタは、全メンバを設定するための引数を持ちます。
+引数の順番は、クラスのメンバの宣言順です。
+
+次のクラス宣言には、コンストラクタが宣言されていないため、
+デフォルトコンストラクタが内部的に生成されます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let val2:int;
+}
+#+END_SRC
+
+そのデフォルトコンストラクタは、次のように定義されます。
+
+#+BEGIN_SRC lns
+   pub fn __init( val1:int, val2:int ) {
+      self.val1 = val1;
+      self.val2 = val2;
+   }
+#+END_SRC
+
+デフォルトコンストラクタのアクセス制御は pub です。
+
+**** 派生クラスのデフォルトコンストラクタ
+
+派生クラスのデフォルトコンストラクタは、旧形式と現形式の 2 種類あります。
+
+***** 現形式
+     
+次のような派生クラス Sub の現形式デフォルトコンストラクタは、
+
+#+BEGIN_SRC lns
+class Test {
+   pro let val:int;
+}
+class Sub extend Test {
+   let val2:int;
+   pub fn func() {
+      print( self.val, self.val2 );
+   }
+}
+let sub = new Sub( 1, 2 );
+sub.func(); // 1, 2
+#+END_SRC
+
+上記の ~new Sub( 1, 2 )~ ように、
+super クラスのコンストラクタの引数 + 派生クラスの全メンバになります。
+
+***** 旧形式
+
+次のような派生クラス Sub の旧形式デフォルトコンストラクタは、
+     
+#+BEGIN_SRC lns
+class Test {
+   pro let val:int!;
+}
+class Sub extend Test {
+   let val2:int;
+   _lune_control default__init_old;
+   pub fn func() {
+      print( self.val, self.val2 );
+   }
+}
+let sub = new Sub( 2 );
+sub.func(); // nil, 2
+#+END_SRC     
+
+上記の ~new Sub( 2 )~ ように、
+派生クラスの全メンバになります。
+
+なお旧形式では、 super クラスの全ての引数は nilable でなければならないです。
+また、 ~_lune_control default__init_old;~ で旧形式のデフォルトコンストラクタを
+使用することを宣言する必要があります。
+この宣言は、全メンバを宣言した後に宣言する必要があります。
+
+
+**** デフォルトコンストラクタの明示
+
+デフォルトコンストラクタは、
+コンストラクタを定義しないと内部的に生成されます。
+
+しかしこの振舞いは、次のような処理を書いた時に問題になります。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int {pub};
+   pub static fn create(): Test {
+      return new Test( 1 );  // error
+   }
+}
+#+END_SRC
+
+上記は、 create() メソッド内で Test クラスのインスタンスを生成していますが、
+コンストラクタの宣言がないとしてエラーします。
+
+本来ならば、コンストラクタの定義がないのでデフォルトコンストラクタが
+生成されるのですが、
+デフォルトコンストラクタを定義するタイミングは、クラス定義終了時に行なうため、
+クラス定義内の create() メソッドでは、コンストラクタがありません。
+
+このような場合、明示的にデフォルトコンストラクタを使用することを宣言します。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val:int {pub};
+   _lune_control default__init;
+   pub static fn create(): Test {
+      return new Test( 1 );
+   }
+}
+#+END_SRC
+
+~_lune_control default__init;~ を宣言すると、
+デフォルトコンストラクタの使用を明示でき、
+このタイミングでデフォルトコンストラクタが生成されます。
+
+なお ~_lune_control default__init;~ は、通常のコンストラクタと同じように、
+全メンバの後に宣言する必要があります。
+    
+
+** クラスメンバ
+
+メソッドにクラスメソッドがあるように、メンバにもクラスメンバがあります。
+
+クラスメンバの定義も static を付けるだけです。
+
+クラスメンバの初期化は __init ブロックで行ないます。
+
+次はクラスメンバ定義の例です。
+
+#+BEGIN_SRC lns
+class Test {
+   pri static let val1:int;
+   pri static let val2:int;
+
+   __init {
+      Test.val1 = 1;
+      Test.val2 = 1;
+   }
+}
+#+END_SRC
+
+__init ブロックは、次の制限があります。
+
+- __init ブロックの定義は、全クラスメンバ定義の後にしなければならない。
+  - nilable 型のメンバを明示的に初期化しない場合、 初期値 nil となります。
+- __init ブロックは、全メンバを初期化しなければならない。
+- __init ブロック内で return できない。
+- __init ブロックからクラスメソッドをコールできるが、コールするクラスメソッドは、 
+  __init ブロックより前に宣言しなければならない。
+
+
+** まとめ
+
+LuneScript のクラス定義は、次をサポートします。
+
+- キーワード class でクラスを定義する
+- インスタンス生成は new
+- アクセス制御可能  
+- self シンボルで自分自身にアクセス
+- クラス定義とメソッド定義を分離可能
+- プロトタイプ宣言
+- static でクラスメソッド、クラスメンバ
+- コンストラクタは __init
+- コンストラクタを作成しない場合はデフォルトコンストラクタが作られる
+
+
+次回は、 accessor の生成方法について説明します。
+-----
+* *accessor 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回はメンバの accessor について説明します。
+
+** accessor
+
+メンバの accessor (get,set) を簡単に作成できます。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let val1:int;
+   pri let mut val2:int {pub,pub};
+   pri let val3:int {pub};
+}
+let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3
+test.set_val2( 10 );
+print( test.$val2, test.$val3 );  // 10 3
+#+END_SRC
+
+上記例で val2 の定義は、 ~pri let val2:int {pub,pub};~ としています。
+
+この ~{pub,pub}~ は、 val2 の accessor を定義しています。
+これは、 getter, setter のアクセス制御を指定します。
+この指定によって、次のメソッドが内部的に作成されます。
+
+#+BEGIN_SRC lns
+pub fn Test.get_val2(): int {
+   return self.val2;
+}
+pub fn Test.set_val2( val:int ) {
+   self.val2 = val;
+}
+#+END_SRC
+
+getter にアクセスする場合、 $ を使って次のようにアクセスします。
+
+#+BEGIN_SRC lns
+let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3
+#+END_SRC
+
+~test.$val2~ は、 ~test.get_val2()~ のシンタックスシュガーです。
+
+上記の通り、
+accessor は「getter のアクセス制御」、「setter のアクセス制御」の順で宣言します。
+
+setter が不要な場合、「setter のアクセス制御」を省略します。
+
+なお、getter が不要で setter が必要な場合は、次のように宣言します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut val1:int {non,pub};
+}
+#+END_SRC
+
+この機能は、 setter を自動で生成しつつ、 getter をカスタマイズする時などに利用できます。
+
+
+LuneScript の accessor は、普通のメソッドです。
+C# のプロパティのような別のものではありません。
+
+** getter の戻り値型
+
+getter の戻り値型は、通常そのメンバの型と一致します。
+
+例えば次の Test のメンバ list の getter は、 =List<int>= 型の戻り値を返します。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut list:List<int> {pub};
+}
+let test = new Test( [] );
+foreach val in test.$list { 
+   print( val );
+}
+#+END_SRC
+
+ここで、 =List<int>= 型は mutable な型であるので、
+外部操作でメンバ list の値を変更できることになります。
+
+しかし、外部操作での参照は許可しても変更を許可したくない場面が多くあります。
+
+そのような時、 getter の戻り値型を制御することが出来ます。
+制限する方法は次の 2 つあります。
+
+- immutable な型として返す
+- super クラスや interface の型として返す
+  
+*** immutable な型として返す
+
+getter を次のように宣言することで、
+mutable なメンバを immutable として返す getter を作成できます。
+
+#+BEGIN_SRC lns
+class Test {
+   pri let mut list:List<int> {pub&};
+}
+#+END_SRC
+
+この例では =pub&= としています。
+getterの「アクセス制御」に *&* を付加することで、その戻り値型は immutable になります。
+
+*** super クラスや interface の型として返す
+
+getter を次のように宣言することで、
+メンバの型そのものではなく、 super クラスや interface の型として返すことが出来ます。
+
+#+BEGIN_SRC lns
+class Val {
+}
+class ValSub extend Val {
+}
+
+class Test {
+   pri let val1:ValSub {pub};
+   pri let val2:ValSub {pub:Val};
+}
+let test = new Test( new ValSub(), new ValSub() );
+let val1 = test.$val1;
+let val2 = test.$val2;
+#+END_SRC
+
+ここで、 =Test.val1= の getter は *pub* ですが、
+Test.val2 の getter は *pub:Val* としています。
+
+これにより =test.$val1= は =ValSub= 型を返しますが、 =test.$val2= は Sub 型を返します。
+
+
+** accessor のカスタマイズ
+
+LuneScript の accessor は、 C# のプロパティのようなカスタマイズ機能
+(単純な setter/getter ではない処理を実装する機能)は用意していません。
+
+なぜならば、 LuneScript の accessor は、単なるメソッド宣言の簡略化機能であり、
+C# のプロパティのような「別物」ではないので、
+もしも独自処理を行なう accessor が必要ならばその処理を自分で作成すれば良いためです。
+
+なお、 独自の getter を定義した場合も $ は利用できます。
+
+$val は、get_val() のシンタックスシュガーで、accessor 専用ということではありません。
+
+** まとめ
+
+LuneScript の accessor は次の仕様です。
+
+- メンバ宣言と同時に宣言出来る
+- getter, setter の順に宣言する
+- getter にアクセスする場合、 メンバ名の前に $ を付加する。
+- accessor は簡易メソッド定義であり、メソッドと異なる概念ではない。
+
+
+次回は継承を説明します。
+-----
+* *クラス 継承 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、クラスの継承をサポートします。
+
+** クラスの継承
+
+次にクラスの継承例を示します。
+
+#+BEGIN_SRC lns
+class Super {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+class Sub extend Super {
+}
+let sub = new Sub();
+sub.func(); // Super.func
+#+END_SRC
+
+これは、 Super クラスを Sub クラスが継承する例です。
+
+継承は、クラス宣言時に extend を使用して継承する親クラスを指定します。
+
+継承可能なクラスは 1 つだけです。
+
+なお、コンストラクタのアクセス制御が pri の場合、
+そのクラスを継承することは出来ません。
+
+
+*** サブクラスのコンストラクタ
+
+親クラスのコンストラクタが引数を持つ場合、
+サブクラスはコンストラクタを宣言する必要があります。
+
+例えば次の例では、 Super クラスはコンストラクタを明示的に宣言していませんが、
+メンバ val を初期化する引数を持つデフォルトコンストラクタが内部的に生成されます。
+
+#+BEGIN_SRC lns
+class Super {
+   pro let val:int;
+}
+class Sub extend Super {
+   pub fn __init( val:int ){
+      super( val );
+   }
+   pub fn func() {
+      print( self.val );
+   }
+}
+let sub = new Sub( 1 );
+sub.func(); // 1
+#+END_SRC
+
+この時 Super を継承する Sub クラスは、親クラスが引数を持つコンストラクタを持つため、
+Sub クラスのコンストラクタを宣言する必要があります。
+また、Sub クラスのコンストラクタ内で 親クラス Super のコンストタクタを実行するため、
+super() を呼びます。この super() は、最初の行に書く必要があります。
+
+** まとめ
+
+LuneScript は次の仕様のクラス継承をサポートします。
+
+- 継承可能なクラスは 1 つだけ
+- サブクラスは、親クラスのコンストラクタをコールしなければならない。
+- 親クラスのコンストラクタ呼び出しは super() で行なう。
+- super() は、コンストラクタの最初の行に各必要があ。
+
+
+次回は、メソッドのオーバーライドについて説明します。
+-----
+* *クラス advertise 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、クラスが保持するメンバのメソッドに対して、
+透過的にアクセスさせることが出来ます。
+
+
+** advertise
+
+「透過的にアクセス」という表現では伝わり難いと思うので、次の例で説明します。
+
+#+BEGIN_SRC lns
+abstract class Test {
+   pub abstract fn foo(): str;
+   pub abstract fn bar(): str;
+}
+class TestSub1 extend Test {
+   pub override fn foo(): str {
+      return "foo";
+   }
+   pub override fn bar(): str {
+      return "bar";
+   }
+}
+class TestSub2 extend Test {
+   pri let sub:TestSub1;
+   advertise sub;
+   pub override fn bar(): str {
+      return "hoge" .. self.sub.bar();
+   }
+}
+fn func( test:Test ){
+   print( test.foo(), test.bar() );
+}
+func( new TestSub1() ); // foo, bar
+func( new TestSub2( new TestSub1() ) ); // foo, hogebar
+#+END_SRC
+
+TestSub2 は、 メンバ sub を advertise しています。
+
+これにより TestSub2 は、
+次のようにメンバ sub のメソッド (foo,bar) をコールする処理を内部的に生成します。
+
+#+BEGIN_SRC lns
+pub override fn TestSub2.foo(): str {
+   return self.sub.foo();
+}
+pub override fn TestSub2.bar(): str {
+   return self.sub.bar();
+}
+#+END_SRC
+
+この例の TestSub2 では、メソッド bar() を宣言しています。
+
+このように宣言したメソッドと、advertise で生成されるメソッドが同名の場合、
+宣言したメソッドが優先されます。
+
+*** 注意
+
+複数のメンバを advertise した時、
+そのメンバ間で同名のメソッドがある場合の動作は *未定義* です。
+
+** まとめ
+
+- advertise 宣言することで、メンバのメソッドを透過的にアクセスさせることが出来る
+- 複数のメンバを advertise する場合は注意が必要
+
+次回は、インタフェースについて説明します。
+-----
+* *クラス override 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、メソッドの override をサポートします。
+
+** メソッドの override
+
+クラスのメソッドは全て override 可能です。
+
+むしろ、現在は override を抑制することができません。
+
+メソッドの override の例を次に示します。
+
+#+BEGIN_SRC lns
+class Super {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+class Sub extend Super {
+   pub override fn func() {
+      print( __func__ );
+   }
+}
+fn test( obj:Super ) {
+   obj.func();
+}
+test( new Super() ); // Super.func
+test( new Sub() ); // Sub.func
+#+END_SRC
+
+ここで、 Sub クラスは Super クラスの func メソッドを override しています。
+
+override する Sub クラス側のメソッドは、
+override キーワードで明示する必要があります。
+
+** 親クラスのメソッド呼び出し
+
+override しているサブクラスから、親クラスのメソッドをコールするには、
+super() を使用します。
+
+次に super() の例を示します。
+
+#+BEGIN_SRC lns
+class Super {
+   pub fn func(): int {
+      return 1;
+   }
+}
+class Sub extend Super {
+   pub override fn func(): int {
+      return 10 + super();
+   }
+}
+fn test( obj:Super ) {
+   print( obj.func() );
+}
+test( new Sub() ); // 11
+#+END_SRC
+
+この例では、 Super クラスの func() メソッドを Sub クラスで override しています。
+そして、 Sub クラスの func() から super() を使用して、
+Super クラスの func() メソッドを呼び出しています。
+
+** abstract
+
+実体を持たない abstract メソッドを定義できます。
+
+次に abstract の例を示します。
+
+#+BEGIN_SRC lns
+abstract class Super {
+   pub abstract fn func(): int;
+}
+class Sub extend Super {
+   pub override fn func(): int {
+      return 10;
+   }
+}
+fn test( obj:Super ) {
+   print( obj.func() );
+}
+test( new Sub() );
+#+END_SRC
+
+この例で、 func() メソッドは実体を持たない abstract メソッドです。
+
+なお、 abstract メソッドを持つクラスは abstract クラスとして宣言する必要があります。
+
+abstract メソッドの実体は、 継承したクラスで定義されます。
+もしも、親クラスの全ての abstract メソッドを継承したクラスで override しないと、
+その継承したクラスは abstract として宣言する必要があります。
+
+abstract クラスは、それ単体ではインスタンスを生成できなくなります。
+
+
+** まとめ
+
+LuneScript のメソッド override/abstract の仕様は次の通りです。
+
+- 全てのメソッドは override 出来る
+- override するクラスは、 override を明示する必要がある
+- override しているメソッドから、 override 元のメソッドをコールするには super() を利用する。
+- 実体の持たない abstract メソッドを宣言できる
+- abstract メソッドを持つクラスは abstract クラスとなる
+- abstract メソッドは、サブクラスで override しなければならない
+- abstract クラスは、単体ではインスタンスを生成できない
+
+次回は、 class の advertise について説明します。
+-----
+* *インタフェース 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、クラスの多重継承をサポートしない代わりに、
+インタフェースをサポートします。
+
+** インタフェース
+
+Java や C# を使用していればお馴染だと思いますが、
+インタフェースは機能が制限されたクラスと考えて問題ないです。
+
+具体的には、インタフェースは、クラスと次の違いがあります。
+
+- 宣言は class ではなく interface。
+- メンバが持てない。
+- メソッドは全て abstract。 よってインタフェース単体ではインスタンスを生成できない。
+- インタフェースを実装するクラスは、extend に () を付ける
+- クラスは複数のインタフェースを実装できる
+- イタフェースを実装するクラスのメソッドには override を付けない。
+
+次にインタフェースの例を示します。
+
+#+BEGIN_SRC lns
+interface IF {
+   pub fn func();
+}
+class Test extend (IF) {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+fn sub( obj:IF ) {
+   obj.func();
+}
+sub( new Test() ); // Test.func
+#+END_SRC
+
+この例では、インタフェース IF を定義しています。
+
+次に 2 つのインタフェースを実装するクラスの例を示します。
+
+#+BEGIN_SRC lns
+interface IF1 {
+   pub fn func1();
+}
+interface IF2 {
+   pub fn func2();
+}
+class Test extend (IF1,IF2) {
+   pub fn func1() {
+      print( __func__ );
+   }
+   pub fn func2() {
+      print( __func__ );
+   }
+}
+fn sub( obj1:IF1, obj2:IF2 ) {
+   obj1.func1();
+   obj2.func2();
+}
+let mut test = new Test();
+sub( test, test ); // Test.func Test.func2
+#+END_SRC
+
+複数のインタフェースを実装する場合、 extend の後に () の中に続けて宣言します。
+
+ちなみに、複数のインタフェースを実装する場合の制限として、
+次のように実装するインタフェース内に、
+同名で異なる型のメソッドがある場合、エラーとなります。
+
+#+BEGIN_SRC lns
+interface IF1 {
+   pub fn func():int;
+}
+interface IF2 {
+   pub fn func():str;
+}
+class Test extend (IF1,IF2) { // mismatch IF1.func, IF2.func
+}
+#+END_SRC
+
+なお、現在のインタフェースの仕様として、メソッドのデフォルト処理はサポートしていません。
+
+** まとめ
+
+LuneScript は、クラスの多重継承をサポートしない代わりに、
+インタフェースをサポートします。
+
+次回は、Mapping について説明します。
+-----
+* *mapping 編*
+
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、クラスのインスタンスとマップとの相互変換をサポートします。
+
+** mapping
+
+LuneScript は、クラスのインスタンスとマップオブジェクトとの相互変換をサポートします。
+
+具体的には、次が可能です。
+
+- クラスのインスタンスからマップオブジェクトの生成
+- マップオブジェクトからクラスのインスタンスの生成
+  
+これによって、例えばクラスのインスタンスから JSON データを生成したり、
+逆に JSON データからクラスのインスタンスを生成できます。
+  
+この機能を mapping と呼びます。
+
+mapping を利用するには、
+クラス宣言時に実装するインタフェースとして Mapping を宣言する必要があります。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test extend (Mapping){
+   let val1:int {pub};
+   let val2:str {pub};
+}
+let test = new Test(1, "abc" );
+let map = test._toMap();
+print( map.val1, map.val2 ); // 1 abc
+let test2 = unwrap Test._fromMap( map );
+print( test2.$val1, test2.$val2 ); // 1 abc
+#+END_SRC
+
+上記の例では、 クラス Test が Mapping 実装を宣言しています。
+
+これにより、次のメソッドが内部的に生成されます。
+
+- fn _toMap():&Map<str,&stem>
+- static fn _fromMap(map:&Map<str,&stem>):Test!,str!
+
+_toMap() は、インスタンスからマップオブジェクトを生成するメソッドで、
+_fromMap() は、マップオブジェクトからインスタンスを生成するクラスメソッドです。
+
+なお _fromMap() は、マップオブジェクトがインスタンスを生成するための
+条件を満さない場合は nil を返します。
+
+具体的には、上記 Test の _fromMap() に、
+次のマップオブジェクトを渡した場合はインスタンスが生成されますが、
+
+#+BEGIN_SRC js
+{
+   "val1": 1,
+   "val2": "abc"
+}
+#+END_SRC
+
+次のマップオブジェクトを渡した場合は、インスタンスが生成されません。
+
+#+BEGIN_SRC js
+{
+   "val1": 1,
+   "val2": 2
+}
+#+END_SRC
+
+上記マップオブジェクトの場合、本来 val2 が str であるはずが、
+int になっていて不整合となるためです。
+
+
+さらに _fromMap() の注意点として、
+_fromMap() はメンバの型の不整合は確認しますが、値域は確認しません。
+
+たとえば、本来取り得ない値からでも、型さえあっていればインスタンスを生成します。
+ただし enum に関しては、マップオブジェクトの値が enum で定義していない値であれば、
+nil を返します。
+
+*** mapping の制限
+
+mapping を実装するクラスには、メンバに次の制限が付きます。
+
+- クラスインスタンスをメンバに持つ場合、そのクラスは mapping 可能でなければならない。
+- マップオブジェクトをメンバに持つ場合、キーは int, real, str のいずれかでなければならない。
+
+** まとめ
+
+mapping によって、
+クラスのインスタンスから JSON データの生成などが簡単に実現できます。
+
+
+次回は、nil 条件演算子について説明します。
+
+-----
+* *generics 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+ここでは、 LuneScript がサポートする Generics について説明します。
+
+LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、
+ユーザ定義の関数やクラスでも Generics をサポートしました。
+
+** 関数
+
+関数の Generics は次のように宣言します。
+
+#+BEGIN_SRC lns
+fn func<T>( val:T ) : Set<T> {
+   return (@ val);
+}
+#+END_SRC
+
+上記サンプルを見ればだいたい理解できると思いますが、
+関数宣言する際に 関数名 + ~<仮型パラメータ>~ で宣言します。
+
+ここで func<T>() は、引数の値を持つ Set<T> を生成する関数です。
+
+
+仮型パラメータは、複数指定することができます。
+
+#+BEGIN_SRC lns
+fn func<T1,T2>( val1:T1, val2:T2 ) : Set<T1>, List<T2> {
+   return (@ val1), [ val2 ];
+}
+#+END_SRC
+
+
+** nilable, mutable
+
+仮型パラメータは、通常の型と同じく nilable や mutable の概念を持ちます。
+
+これにより、次のような処理を書けます。
+
+#+BEGIN_SRC lsn
+fn func1<T>( val:T ) : T {
+   return val;
+}
+fn func2<T>( val:T ) : &T {
+   return val;
+}
+fn func3<T>( val:T ) : T! {
+   return val;
+}
+let mut test1 = func1( [ 1, 2 ] );
+test1.insert( 1 );
+let mut test2 = func2( [ 1, 2 ] );
+test2.insert( 1 ); // error test2 is not mutable
+let mut test3 = func3( [ 1, 2 ] );
+test3.insert( 1 ); // error test3 is nilable
+#+END_SRC
+
+- func1 は、引数をそのままの型 T で返します。
+- func2 は、引数を immutable 型 &T で返します。
+- func3 は、引数を nilable 型 T! で返します。
+
+これにより、 test1.insert() は可能ですが、
+test2, test3 はコンパイルエラーとなります。
+
+
+なお、ここで気を付けなければならないことは、
+仮型パラメータを使用する時は nilable や mutable を利用できますが、
+仮型パラメータ名を宣言するときは使用できません。
+つまり、次のような ~func1<T!>~ はエラーとなります。
+
+#+BEGIN_SRC lns
+fn func1<T!>( val:T ) : T {
+   return val;
+}
+#+END_SRC
+
+また、仮型パラメータに nilable は利用できません。
+つまり、次の場合エラーします。
+
+#+BEGIN_SRC lns
+fn func1<T>( val:T ) : T {
+   return val;
+}
+let val:int! = 1;
+print( func1( val ) ); // error type mismatch
+#+END_SRC
+
+この例では、 func1( val ) によって int! が func1() に与えられますが、
+~func1<T>(val:T)~ の val は T であり、
+仮型パラメータは nilable を利用できないためエラーとなります。
+
+このような処理を行ないたい場合は、次のように宣言します。
+
+#+BEGIN_SRC lns
+fn func1<T>( val:T! ) : T {
+   return unwrap val;
+}
+let val:int! = 1;
+print( func1( val ) ); // ok
+#+END_SRC
+
+つまり、 ~fn func1<T>( val:T! )~ とすることで、
+func1() の引数が nilable であることを宣言します。
+
+しかし、nilable の値を扱えないと不便なこともあります。
+そのような場合に備えて Nilable<T> を用意しています。
+
+これについては、後日別途説明します。
+
+*** サンプル
+
+Generics を利用すると、次のような処理が書けます。
+
+#+BEGIN_SRC lns
+fn func<T>( val:T ) : Set<T> {
+   return (@ val);
+}
+foreach val in func( "foo" ) {
+   print( val .. "bar" );  // foobar
+}
+foreach val in func( 1 ) {
+   print( val + 100 );  // 101
+}
+#+END_SRC
+
+func( "foo" ) は、 (@ "foo" ) の Set<str> を生成し、
+func( 1 ) は、 (@ 1 ) の Set<int> を生成します。
+
+上記を見ると分かる通り、コールした引数に応じて型パラメータを決定しています。
+
+**** 効果
+
+Generics ではなく、stem を利用することで次のように似たような処理を記載できます。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) : Set<stem> {
+   return (@ val);
+}
+foreach val in func( "foo" ) {
+   print( val@@str .. "bar" );
+}
+foreach val in func( 1 ) {
+   print( val@@int + 100 );
+}
+#+END_SRC
+
+しかしこの場合、 str や int などの型情報が stem に丸められてしまいます。
+stem に丸められてしまうので ~@@str~ や ~@@int~ のキャストが必要になります。
+
+キャストするのは不便ですし、なによりも非常に危険です。
+
+Generics を利用することで、キャストを使わずに安全にアクセスできます。
+
+
+** クラス
+
+クラスの Generics は次のように宣言します。
+
+#+BEGIN_SRC lns
+class Test<T> {
+   let val:T;
+   pub fn func() : List<T> {
+      return [ self.val ];
+   }
+}
+#+END_SRC
+
+クラスの場合、クラス宣言の名前を指定する際に仮型パラメータを指定します。
+
+なお、クラス宣言の外にメソッドを宣言する場合、
+次のように仮型パラメータの宣言は不要です。
+
+#+BEGIN_SRC lns
+pub fn Test.func2() : Set<T> {
+   return (@ self.val );
+}
+#+END_SRC
+
+Generics クラスのインスタンスは次のように生成します。
+
+#+BEGIN_SRC lns
+let test = new Test<str>( "abc" );
+#+END_SRC
+
+なお、コンストラクタの引数に全ての仮パラメータを使用している場合、
+次のように実型パラメータを省略することも可能です。
+#+BEGIN_SRC lns
+let test = new Test( "abc" );
+#+END_SRC
+
+** メソッド
+
+メソッドは、クラスの仮型パラメータと、メソッドの仮型パラメータを両方持てます。
+
+次のサンプルは Test.func() メソッドは、
+クラスの仮型パラメータ T と、メソッドの仮型パラメータ T2 を持っています。
+
+#+BEGIN_SRC lns
+class Test<T> {
+   let val:T;
+   pub fn func<T2>(val:T2) : Map<T,T2> {
+      return { self.val: val };
+   }
+}
+let test = new Test( "abc");
+foreach val, key in test.func( 1 ) {
+   print( key .. "xyz", val + 10 );
+}
+foreach val, key in test.func( "ABC" ) {
+   print( key .. "xyz", val .. "XYZ" );
+}
+#+END_SRC
+
+** 型パラメータの制約
+
+実型パラメータには、 nil 以外の全ての型を指定できます。
+
+このため、 Generics なクラスや関数内で仮型パラメータ型の値に対する処理は
+~==~ や =~== などの型に依存しない演算に限られます。
+
+これだと、Generics 内の処理で効果的な処理を書けません。
+
+そこで、型パラメータの制約を利用します。
+
+*** サンプル
+
+次は、型パラメータ制約のサンプルです。
+
+ここでは、 ~class Test<T:Val>~ と宣言することで、
+Test クラスの仮型パラメータは Val クラスに限られます。
+
+これにより、 Test.sub() メソッド内で val の値に対し、
+Val クラスのメソッド func() をコールできるようになります。
+
+#+BEGIN_SRC lns
+abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test<T:Val> {
+   let val:T;
+   pub fn sub() {
+      print( "this is " .. self.val.func() );
+   }
+}
+#+END_SRC
+
+次は、この Test クラスを使ったサンプルです。
+
+#+BEGIN_SRC lns
+abstract class Val {
+   pub abstract fn func(): str;
+}
+class Test<T:Val> {
+   let val:T;
+   pub fn sub() {
+      print( "this is " .. self.val.func() );
+   }
+}
+
+class Val1 extend Val {
+   pub override fn func(): str {
+      return "val1";
+   }
+}
+
+class Val2 extend Val {
+   pub override fn func(): str {
+      return  "val2";
+   }
+}
+
+fn func( test:Test ) {
+   test.sub();
+}
+
+func( new Test( new Val1() ) );  // this is val1
+func( new Test( new Val2() ) );  // this is val2
+#+END_SRC
+
+このサンプルの構成は次になります。
+
+- Val1, Val2 クラスは、Val クラスを継承したクラス
+- func() 関数は Test 型の引数 test を持ち、 test.sub() メソッドをコール。
+- ~new Test( new Val1() )~, ~new Test( new Val2() )~ によって、
+  Val1 と Val2 の実型パラメータの Test 型のインスタンスを生成し func() 関数をコール
+  
+これにより、 Val1.func(), Val2.func() がコールされ
+~this is val1~, ~this is val2~ が 出力される。
+
+なお、 ~Test<T:Val>~ の T は Val である必要があるので、
+例えば ~new Test<"abc">~ のような指定はエラーになります。
+
+なぜならば "abc" は str 型であり、 str 型は Val 型ではないからです。
+
+
+ちなみに仮型パラメータの制約の syntax は class の extend と同じです。
+
+つまり次のようになります。
+
+#+BEGIN_SRC lns
+class Hoge<T:SuperClass(IF,...)> {
+}
+#+END_SRC
+
+ここで SuperClass はクラスで、IF はインタフェースです。
+
+SuperClass, IF は、それぞれ省略可能です。
+
+** generics クラスの Mapping
+
+LuneScript は、
+クラスのインスタンスを Map オブジェクトに変換する Mapping 機能を持ちます。
+
+Mapping に関しては、次の記事を参照してください。
+
+[[../classmapping]]
+
+あるクラスを Mapping するには、
+そのクラスが Mapping インタフェースを extend する必要があります。
+
+次は簡単な例です。
+
+#+BEGIN_SRC lns
+class Test<T> extend (Mapping) {
+   let txt:str;
+   pub fn func( val:T ) {
+      print( self.txt, val );
+   }
+}
+
+let test = new Test<int>( "hoge" );
+let map = test._toMap();
+if! let test2 = Test<int>._fromMap( map ) {
+   test2.func( 1 );
+}
+#+END_SRC
+
+Test<T> クラスは Mapping を extend しています。
+これにより、Test<T> クラスは Mapping 可能になります。
+
+上記の場合は、 Generics でない通常のクラスの場合と何も変りません。
+これは、仮型パラメータ型のメンバに持たないためです。
+
+次のように仮型パラメータ型のメンバを持った場合は、エラーになります。
+
+#+BEGIN_SRC lns
+class Test<T> extend (Mapping) {
+   let txt:T;
+}
+#+END_SRC
+
+なぜならば、あるクラスが Mapping を extend するには、
+そのクラスが保持する全てのメンバが Mapping 可能でなければならないのに対し、
+メンバ txt の型である仮型パラメータ T は、nilable 以外の全ての型になり得るからです。
+
+これを回避するには、
+メンバの型として使用する仮型パラメータに Mapping の制約を設定します。
+
+
+具体的には次の通り ~Test<T:(Mapping)>~ とします。
+
+#+BEGIN_SRC lns
+class Test<T:(Mapping)> extend (Mapping) {
+   let val:T {pub};
+}
+
+let test = new Test( "abc" );
+let map = test._toMap();
+if! let test2 = Test<str>._fromMap( map ) {
+   print( test2.$val .. "xyz" );
+}
+#+END_SRC
+
+これにより、 Generics クラスが Mapping 可能になります。
+
+-----
+* *nil 条件演算子 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript の nil 条件演算子について説明します。
+
+** Map アクセス
+
+例えば次のような Map のデータがあった場合、
+
+#+BEGIN_SRC lns
+let json = {
+   "lv1": {
+      "lv2": {
+         "lv3": {
+            "lv4": { 
+               "lv5": {
+                  "val": 1
+               }           
+            }        
+         }     
+      }  
+   }
+};
+#+END_SRC
+
+lv5 の val にアクセスするには、次のように処理する必要があります。
+
+#+BEGIN_SRC lns
+if! let lv1 = json.lv1 {
+   if! let lv2 = lv1.lv2 {
+      if! let lv3 = lv2.lv3 {
+         if! let lv4 = lv3.lv4 {
+            if! let lv5 = lv4.lv5 {
+               print( lv5.val );
+            }        
+         }     
+      }  
+   }  
+}
+#+END_SRC
+
+あるいは次のように unwrap する必要があります。
+
+#+BEGIN_SRC lns
+print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val );
+#+END_SRC
+
+どちらにしてもイマイチです。
+
+このようなネストされた nil チェックを簡単に行なうために利用できるのが
+nil 条件演算子です。
+
+** nil 条件演算子
+
+nil 条件演算子を使って上記の lv5 の val にアクセスすると、
+次のようになります。
+
+#+BEGIN_SRC lns
+print( json.lv1$.lv2$.lv3$.lv4$.lv5$.val );
+#+END_SRC
+
+だいぶスッキリします。
+
+nil 条件演算子は、
+nilable の式の直後に指定することで、
+nilable の式が nil かどうかで、その後の式を実行するかどうかを制御します。
+
+nilable の式の評価結果が nil でない場合、その後の式を実行し、
+nilable の式の評価結果が nil の場合、その後の式を実行せずにその式の結果を nil とします。
+
+
+
+なおリストにアクセスする場合は ~$[~ 、 関数呼び出しする場合は ~$(~ となります。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pub let val:List<int>;
+   pub fn func():int {
+      return 100;
+   }
+}
+fn sub( test:Test! ) {
+   print( test$.val$[1], test$.func$() );
+}
+sub( new Test( [ 1, 2 ] ) ); // 1 100
+sub( nil ); // nil nil
+#+END_SRC
+
+上記の例では、 sub() 関数内で Test クラスの val リストと、func に
+nil 条件演算子を利用してアクセスしています。
+これにより、 unwrap せずにアクセスすることが出来ます。
+
+** 注意
+
+nil 条件アクセスを使用すると、必ずその評価結果は nilable になります。
+
+次に例を示します。
+
+#+BEGIN_SRC lns
+class Test {
+   pub let val:int;
+}
+fn sub( test:Test! ) {
+   if! test$.val {
+      print( _exp + 1 );
+   }
+}
+sub( new Test( 10 ) ); // 11
+#+END_SRC
+
+上記の場合、Test クラスの val は int です。
+
+上記の例の sub 関数では nilable 型の Test クラスのインスタンスに対し、
+~test$.val~ でアクセスしています。
+この時 ~test$.val~ の評価結果は int ではなく int! となります。
+
+** まとめ
+
+nil 条件アクセスにより、 深いネストの unwrap が簡単に出来ます。
+
+次回は、 モジュール管理について説明します。
+-----
+* *import/provide 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript のモジュール管理について説明します。
+
+** モジュール
+
+LuneScript のモジュール管理は、基本的に Lua と同じです。
+
+Lua との違いを、次に挙げます。
+
+- 特に宣言しない場合、ファイルそれぞれが 1 つのモジュールとなる。
+- ファイル名の拡張子は .lns で、 .lns を除いた名前がモジュール名となる。
+- init.lns は非サポート。
+- LuneScript の組込みキーワード(class 等)のファイル名は非サポート。
+  
+念のため、LuneScript と Lua のモジュール管理の共通部分を説明します。
+
+- パッケージの検索パスは package.path に格納されているパス情報によって制御される。
+- モジュール名は . で区切り、サブディレクトリを表わす。
+- 相互参照モジュールをサポートしない。
+
+
+例えば、ファイル hoge/test.lns のモジュール名は hoge.test になります。
+
+上記から分かるように、ディレクトリ名、ファイル名(拡張子以外)に
+. を含めることは出来ません。
+
+
+LuneScript のソースは、特に何も宣言しなくても 1 つのモジュールとなります。
+
+例えば、次のような Test.lns は関数 func を持つモジュールとなります。
+
+#+NAME: Test.lns
+#+BEGIN_SRC lns
+// Test.lns
+fn func(): str, str {
+   return __mod__, __func__;
+}
+#+END_SRC
+
+ただし、モジュール内の情報を外部に公開するには、 pub 宣言が必要です。
+
+具体的には、次のように pub を宣言する必要があります。
+
+#+NAME: Test.lns
+#+BEGIN_SRC lns
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+#+END_SRC
+
+これによって、このモジュールの func() 関数が外部から利用できるようになります。
+
+** import
+
+import は、外部モジュールの利用を宣言します。
+
+import は、モジュールの先頭に宣言してください。
+
+**(2019/6/24) 関数内部でも宣言できるように対応しました。*
+
+
+上記 Test.lns を利用するには、次の様にします。
+
+#+BEGIN_SRC lns
+import Test;
+
+print( Test.func() ); // @Test   Test.func
+#+END_SRC
+
+上記の例では、 Test.func() で Test モジュール内の func() を呼び出しています。
+
+このように import することで、
+外部モジュールが pub 宣言しているシンボルにアクセス出来ます。
+
+
+なお、work/Test.lns を import する場合は、次のようになります。
+
+#+BEGIN_SRC lns
+import work.Test;
+
+print( Test.func() ); // work.Test	Test.func
+#+END_SRC
+
+上記例から分かるように、import したモジュールにアクセスするには、
+そのモジュール名の最後の . 以降の名前を使用します。
+上記例の場合、 work.Test を import しているので、シンボル Test でアクセスします。
+
+なお、複数モジュールを import する時に、
+アクセス名が同じになる場合は(例えば foo.bar と hoge.bar を import する場合)、
+次に説明する as を利用してください。
+
+*** import as
+
+import as は、 import 後のアクセス名を指定します。
+
+例えば、上記の work.Test を import as で foo とすると、次のようになります。
+
+#+BEGIN_SRC lns
+import work.Test as foo;
+
+print( foo.func() ); // work.Test	Test.func
+#+END_SRC
+
+
+** LuneScript でトランスコンパイルしたモジュールを Lua から require() する
+
+LuneScript は、Lua のトランスコンパイラです。
+つまり、 LuneScript で書いたモジュールは、
+Lua から require() して使用することが出来ます。
+
+この場合、 LuneScript で書いたモジュールは、必ずテーブルとなります。
+
+例えば、上記 Test.lns のトランスコンパイル後の Lua ソースは、次のようになります。
+
+#+BEGIN_SRC lua
+--work/Test.lns
+local _moduleObj = {}
+local __mod__ = 'work.Test'
+if not _lune then
+   _lune = {}
+end
+local function func(  )
+   local __func__ = 'Test.func'
+
+   return __mod__, __func__
+end
+_moduleObj.func = func
+return _moduleObj
+#+END_SRC
+
+上記のソースを見ると分かりますが、
+Lua からこのソースを require() すると、_moduleObj が得られることになります。
+
+一方で、 Lua の require() は任意の値を返すこと出来ます。
+そして、この動作を期待される場合があります。
+
+つまり、LuneScript でトランスコンパイルした Lua モジュールは、
+テーブル以外のオブジェクトが得られることを期待した Lua から、
+直接 require して使用することが出来ないことになります。
+
+このような Lua モジュールとの互換を可能にする仕組みが、 provide です。
+
+** provide
+
+provide は、既存の Lua モジュールとの互換性を提供するものです。
+
+**Lua モジュールとの互換性が不要な場合の使用は避けてください。*
+
+次に provide の例を示します。
+
+#+BEGIN_SRC lns
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+
+provide func;
+#+END_SRC
+
+上記例は、 provide に 関数 func() を与えています。
+
+これによって、この Test.lns モジュールのトランスコンパイル結果は、
+次のようになります。
+
+#+BEGIN_SRC lns
+--work/Test.lns
+local __mod__ = 'work.Test'
+if not _lune then
+   _lune = {}
+end
+local function func(  )
+   local __func__ = 'Test.func'
+
+   return __mod__, __func__
+end
+return func
+#+END_SRC
+
+上記から分かるように、 Lua からこのモジュールを require() すると、
+関数 func が得られます。
+
+このように provide を利用すると、
+既存の Lua モジュールとの互換性のあるモジュールを生成することが出来ます。
+
+なお、 provide に指定できるのは *シンボルだけ* です。
+プリミティブな値を指定することは出来ません。
+
+** まとめ
+
+LuneScript は、簡単にモジュールを作成でき、既存の Lua モジュールとの互換性もあります。
+
+
+次回は、 LuneScript から既存の Lua  モジュールを利用する方法について説明します。
+-----
+* *require/module 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript から Lua モジュールを扱う方法について説明します。
+
+** require
+
+Lua モジュールを扱う場合、 require() を使用します。
+
+require() の仕様は Lua と同じですが、戻り値は stem になります。
+つまり、型情報を持ちません。
+適宜キャストが必要になります。
+
+** module
+
+上記の通り、require() は stem を返します。
+
+stem には型情報が無いため、使い勝手が悪いです。
+
+そこで、 module 宣言を使用します。
+
+例えば、次のような Lua のモジュール Test.lua がある場合、
+
+#+BEGIN_SRC lua
+local mod = {}
+mod.val = 1;
+function mod.func1( val )
+   return val + 10
+end
+function mod:func2( val )
+   return self.val + val
+end
+return mod
+#+END_SRC
+
+この Test.lua モジュールは、次の要素を持ちます。
+
+- int の メンバ val 
+- 関数 func1
+- メソッド func2
+  
+なお、ここで言う関数とは、呼び出す時に obj.func1() のように *.* で呼び出し、
+メソッドとは、呼び出す時に obj:func1() のように *:* で呼び出すものを指します。
+
+この Test.lua モジュールを利用する module 宣言は、次のように行ないます。
+
+#+BEGIN_SRC lns
+module Test require 'Test'
+{
+   pub static let val:int;
+   pub static fn func1( val:int ):int;
+   pub fn func2( val:int ):int;
+}
+print( Test.val, Test.func1( 10 ), Test.func2( 20 ) ); // 1 20 21
+#+END_SRC
+
+まず、 module Test require 'Test' の module Test は、モジュール名 Test を宣言します。
+モジュール名は通常のクラス名と考えてください。
+ここでは Lua のモジュール名と同じにしましたが、違う名前でも問題ありません。
+
+module Test require 'Test' の require 'Test' は、
+どのモジュールをロードするかを指定します。
+ここでは Test モジュールをロードしていることを指定しています。
+
+残りは、通常のクラス宣言と同じです。
+
+module 宣言したモジュールは、モジュール名でアクセスします。
+
+#+BEGIN_SRC lns
+print( Test.val, Test.func1( 10 ), Test.func2( 20 ) );
+#+END_SRC
+
+*** module 宣言の制限
+
+module 宣言には、次の制限があります。
+
+- モジュールを継承して新しくクラスを宣言することはできない
+- require した Lua のモジュールと、宣言した module に整合性があるかどうかチェックしない
+
+** まとめ
+
+- LuneScript は、Lua モジュールを扱えます。
+- Lua モジュールを扱う方法には require() と module 宣言があります。
+- module 宣言には制限があります。
+  
+  
+次回は、マクロについて説明します。
+-----
+* *glue コードの半自動生成*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+Lua の外部モジュールには、次の 2 つのケースがある。
+
+- Lua スクリプトで構成されるケース
+- C 等の Native Library を利用するケース
+
+Lua から Native Library を利用するには、
+Lua 用のインタフェースを橋渡しする glue が必要である。
+
+LuneScript は、この glue を半自動的に生成する機能を持つ。
+
+LuneScript の glue 自動生成機能は、
+swig に代表される C/C++ 等のソースから Lua の glue を自動生成する機能ではなく、
+LuneScript で module 宣言したモジュールの glue コードを自動生成する機能である。
+
+#+BEGIN_SRC txt
+swig:		C/C++ ==> glue
+LuneScript:	Lns   ==> glue
+#+END_SRC
+
+** 使用方法
+
+glue を生成するには、 module 定義時に glue キーワードを指定する。
+    
+次は、 test.ext モジュールの glue を生成するサンプルである。
+
+#+BEGIN_SRC lns
+module External require "test.ext" glue 'hoge_' {
+   pub static fn create( val:int ): External;
+   pub fn add( val:int ):int;
+}
+
+let obj = External.create( 1 );
+print( obj.add( 10 ) ); // 11
+#+END_SRC
+
+ここで指定した "test.ext" と 'hoge_' は、 glue を生成する際に利用される。
+
+このソースから glue コードを生成するには、次のコマンドを実行する。
+
+#+BEGIN_SRC txt
+$ lua lune/base/base.lua src.lns glue [dir]
+#+END_SRC
+
+ここで、 src.lns は入力元のソースで、 dir は出力先のディレクトリのパスを指定する。
+
+このコマンドによって、次の 2 つの glue コードが生成される。
+
+- test_ext_glue.c
+- test_ext_glue.h  
+
+test_ext_glue.c は、次の内容を持つ。
+
+#+BEGIN_SRC c
+#include "test_ext_glue.h"
+static int lns_glue_create( lua_State * pLua );
+static int lns_glue_add( lua_State * pLua );
+static const char * s_full_class_name = "test_ext";
+static const luaL_Reg s_lua_func_info[] = {
+  { "create", lns_glue_create },
+  { NULL, NULL }
+};
+static const luaL_Reg s_lua_method_info[] = {
+  { "add", lns_glue_add },
+  { NULL, NULL }
+};
+void * lns_glue_get_test_ext( lua_State * pLua, int index )
+{
+    return luaL_checkudata( pLua, index, s_full_class_name);
+}
+
+static void lns_glue_setupObjMethod(
+    lua_State * pLua, const char * pName, const luaL_Reg * pReg )
+{
+    luaL_newmetatable(pLua, pName );
+    lua_pushvalue(pLua, -1);
+    lua_setfield(pLua, -2, "__index");
+
+#if LUA_VERSION_NUM >= 502
+    luaL_setfuncs(pLua, pReg, 0);
+
+    lua_pop(pLua, 1);
+#else
+    luaL_register(pLua, NULL, pReg );
+
+    lua_pop(pLua, 1);
+#endif
+}
+
+void * lns_glue_new_test_ext( lua_State * pLua, size_t size )
+{
+    void * pBuf = lua_newuserdata( pLua, size );
+    if ( pBuf == NULL ) {
+        return NULL;
+    }
+    
+#if LUA_VERSION_NUM >= 502
+    luaL_setmetatable( pLua, s_full_class_name );
+#else
+    luaL_getmetatable( pLua, s_full_class_name );
+    lua_setmetatable( pLua, -2 );
+#endif
+
+    return pBuf;
+}
+
+int luaopen_test_ext( lua_State * pLua )
+{
+    lns_glue_setupObjMethod( pLua, s_full_class_name, s_lua_method_info );
+
+#if LUA_VERSION_NUM >= 502
+    luaL_newlib( pLua, s_lua_func_info );
+#else
+    luaL_register( pLua, s_full_class_name, s_lua_func_info );
+#endif
+    return 1;
+}
+static int lns_glue_add( lua_State * pLua ){
+  int val = 0;
+  val = luaL_checkinteger( pLua, 2 );
+  return hoge_add( pLua, val);
+}
+static int lns_glue_create( lua_State * pLua ){
+  int val = 0;
+  val = luaL_checkinteger( pLua, 1 );
+  return hoge_create( pLua, val);
+}
+#+END_SRC
+
+この test_ext_glue.c は、
+LuneScript で定義している create() と add() のメソッドを Lua に登録するコードである。
+
+LuneScript で定義している create() と add() に対応する関数は、
+lns_glue_create() と lns_glue_add() である。
+
+なお、この関数はそれぞれ hoge_create() と hoge_add() をコールしている。
+この *hoge_* は、 LuneScript のコード上で指定した glue の文字列が利用される。
+
+test_ext_glue.h は次の内容を持つ。
+
+#+BEGIN_SRC c
+#include <lauxlib.h>
+extern int hoge_create( lua_State * pLua, int val );
+extern int hoge_add( lua_State * pLua, int val );
+extern int luaopen_test_ext( lua_State * pLua );
+extern void * lns_glue_get_test_ext( lua_State * pLua, int index );
+extern void * lns_glue_new_test_ext( lua_State * pLua, size_t size );
+#+END_SRC
+
+ここで、hoge_create() と hoge_add() は次の型となっている。
+
+#+BEGIN_SRC c
+extern int hoge_create( lua_State * pLua, int val );
+extern int hoge_add( lua_State * pLua, int val );
+#+END_SRC
+
+第一引数の lua_State * と戻り値の int は、
+Lua の glue インタフェースと同じ意味を持つ。
+
+第二引数の int は、 LuneScript で定義しているメソッドの引数が入る。
+これは、 LuneScript で自動生成している test_ext_glue.c が
+Lua のスタックから値を取り出して値を設定している。
+
+Lua の glue では、関数引数を得るため API をコールする必要があるが、
+LuneScript で glue を生成した場合は、
+glue コード内で関数引数を得る API を実行している。
+これにより、 ユーザは関数引数を得る API をコールする必要はない。
+
+ただし、LuneScript 側で定義しているメソッドの引数の型が
+int(int!), real(real!), str(str!) 型以外だった場合、
+LuneScript で生成する glue では対応できないため、
+別途ユーザ側での対応が必要である。
+
+また glue の戻り値については、
+ユーザ側で Lua の glue インタフェースと同じ制御を行なう必要がある。
+
+
+hoge_create() と hoge_add() を別途定義することで、
+test.ext モジュールが完成する。
+
+例えば次のように定義する(glue.c)。
+
+#+BEGIN_SRC c
+// glue.c
+#include <test_ext_glue.h>
+
+typedef struct {
+    int val;
+} glue_t;
+
+int hoge_create( lua_State * pLua, int val )
+{
+    glue_t * pGlue = (glue_t*)lns_glue_new_test_ext( pLua, sizeof( glue_t ) );
+    pGlue->val = val;
+    return 1;
+}
+
+int hoge_add( lua_State * pLua, int val )
+{
+    glue_t * pGlue = lns_glue_get_test_ext( pLua, 1 );
+    lua_pushinteger( pLua, val + pGlue->val );
+    return 1;
+}
+#+END_SRC
+
+ちなみにビルドは次のように行なう。
+
+#+BEGIN_SRC txt
+$ gcc -std=c99 -fPIC -shared -o test/ext.so glue.c test_ext_glue.c 
+#+END_SRC
+
+-----
+* *ビルド 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。
+
+LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、
+LuneScript 専用のビルドツールは提供していません。
+よって、ここでは一般的なビルド方法について説明します。
+
+** ビルド
+
+LuneScript は Lua のトランスコンパイラですが、
+LuneScript のコードそのままでも実行可能です。
+
+例えば、次のようなソースは
+
+#+NAME: hoge.lns
+#+BEGIN_SRC lns
+print( "hello" );
+#+END_SRC
+
+次のコマンドで実行できます。
+
+#+BEGIN_SRC txt
+$ lnsc hello.lns exe
+#+END_SRC
+
+しかし、これでは LuneScript から Lua へのトランスコンパイル処理が走るため、
+ある程度の規模のプロジェクトになると効率が悪くなります。
+
+そこで、モジュール毎に Lua へトランスコンパイルするビルド管理が必要になります。
+
+*** トランスコンパイル
+
+Lua へトランスコンパイルするには、次のコマンドを実行します。
+   
+#+BEGIN_SRC txt
+$ lnsc hello.lns save
+#+END_SRC
+
+これにより hello.lns をトランスコンパイルし、
+変換後のコードを hello.lua に出力します。
+
+この hello.lua は Lua コマンドで実行できます。
+
+#+BEGIN_SRC txt
+$ lua hello.lua
+#+END_SRC
+
+モジュールごとにトランスコンパイルしておくだけでも
+lnsc コマンドで直接実行するよりは効率良くなりますが、
+まだ改善できます。
+
+それは LuneScript の import です。
+
+LuneScript の import は、指定のモジュールを読み込みます。
+このとき、LuneScript は指定モジュールを解析します。
+この解析には時間がかかります。
+
+LuneScript は、この解析時間を短縮する手段を提供しています。
+
+*** メタ情報ファイル
+
+メタ情報ファイルとは、モジュールが公開しているクラスや、
+そのモジュールが import している他のモジュールの依存関係などの情報を
+まとめたファイルです。
+
+import する際、モジュールを解析する代わりに
+このメタ情報ファイルを読み込むことで、解析時間を短縮できます。
+
+メタ情報ファイルは、次のコマンドで生成できます。
+
+#+BEGIN_SRC txt
+$ lnsc hello.lns SAVE
+#+END_SRC
+
+先程のコマンドと何が違うかというと、 "*save*" と "*SAVE*" の違いです。
+
+小文字の save は、トランスコンパイルした Lua コードだけ生成しますが、
+大文字の SAVE は、 Lua コードとメタ情報ファイルを生成します。
+
+具体的には、上記コマンドを実行すると hello.lua と hello.meta が生成されます。
+
+LuneScript はモジュールを import する際、
+次の条件が全て成り立つ時に .meta ファイルをロードします。
+このとき、import 対象の .lns ファイルの解析は行ないません。
+
+- .lns に対応する .lua と .meta が存在する
+- それぞれのファイルの更新時間について、次の条件を満す
+  - ~.lns < .meta~
+- インポート対象の mod1.lns 内で import しているモジュール mod2 の更新時間に対し、
+  次の条件を満す。
+  - ~mod1 > mod2~
+- .meta ファイルのフォーマットバージョンが正しい
+
+
+*** 依存関係
+
+2 つのモジュール mod1, mod2 があった時、
+mod1 が mod2 を import していると、「mod1 が mod2 に依存する」ことになります。
+
+「mod1 が mod2 に依存する」ということは、
+mod2 を修正した時は「mod2 だけでなく、mod1 もトランスコンパイルが必要になる」
+ということです。
+
+このような依存関係があるモジュールをビルドするには、
+古くから make コマンドが利用されています。
+近年は様々なビルドツールがありますが、
+make が代表的なビルドツールであることには違いありません。
+
+make コマンドは、定義された依存関係によって、
+あるファイルが修正された際、
+そのファイルに依存するファイルを更新する制御を行ないます。
+
+この依存関係を手動で定義するのは、意外と面倒なものです。
+
+LuneScript は、 make コマンドの依存関係を自動生成する機能を提供します。
+
+LuneScript で依存関係を自動生成するには、次のように SAVE 時にオプションを指定します。
+
+#+BEGIN_SRC sh
+$ lnsc mod1.lns --depends depends/mod1.d SAVE
+#+END_SRC
+
+これは、 mod1.lns をトランスコンパイルすると同時に、
+depends/mod1.d に mod1.lns の依存関係情報を出力します。
+
+この依存関係情報を Makefile に取り込むことで、
+手動で依存関係を定義することなく、簡単に make によるビルド制御が可能になります。
+
+**** サンプル
+
+例えば次のようなモジュールをもつプロジェクトを作成したとします。
+
+#+BEGIN_SRC txt
+test/proj/
+      |
+      +--- Mod1.lns
+      |
+      +--- Mod2.lns
+      |
+      +--- Mod3.lns
+      |
+      +--- Mod4.lns
+#+END_SRC
+
+ここで、それぞれのファイルの中身は次とします。
+
+#+NAME: Mod1.lns
+#+BEGIN_SRC lns
+import test.proj.Mod2;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod2.func() );
+}
+print( func() );
+#+END_SRC
+
+#+NAME: Mod2.lns
+#+BEGIN_SRC lns
+import test.proj.Mod3;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod3.func() );
+}
+#+END_SRC
+
+#+NAME: Mod3.lns
+#+BEGIN_SRC lns
+import test.proj.Mod4;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod4.func() );
+}
+#+END_SRC
+
+#+NAME: Mod4.lns
+#+BEGIN_SRC lns
+pub fn func(): str {
+   return __func__;
+}
+#+END_SRC
+
+上記のファイルの依存関係は次のようになっています。
+
+| ファイル | 依存ファイル |
+|----------+--------------|
+| Mod1.lns | Mod2.lns     |
+| Mod2.lns | Mod3.lns     |
+| Mod3.lns | Mod4.lns     |
+| Mod4.lns | なし         |
+
+このプロジェクトをビルドする Makefile は、次のようになります。
+
+#+BEGIN_SRC makefile
+PROJ_DIR=test/proj
+MKFILE=$(PROJ_DIR)/Makefile
+SRC_DIR=$(PROJ_DIR)/
+
+.PHONY: test all build setup
+
+define comp
+	@echo "$1 -> $2"
+	lnsc $1 --depends depends/$(shell echo $1 | sed 's@/@.@g').d SAVE
+endef
+
+%.meta: %.lns
+	$(call comp,$<,$@)
+
+SRCS =
+SRCS += Mod1.lns
+SRCS += Mod2.lns
+SRCS += Mod3.lns
+SRCS += Mod4.lns
+
+SRCS := $(addprefix $(SRC_DIR),$(SRCS))
+
+META_LIST=$(SRCS:.lns=.meta)
+LUA_LIST=$(SRCS:.lns=.lua)
+
+-include depends/*.d
+
+all:
+	@echo make setup
+	@echo make build
+
+setup:
+	mkdir -p depends
+
+build: $(META_LIST)
+#+END_SRC
+
+ここで重要なのが、 ~define comp~ と ~-include depends/*.d~ の部分です。
+
+- ~define comp~ は、トランスコンパイルと依存情報ファイルの生成処理を登録しています。
+- ~-include depends/*.d~ は、生成した依存情報ファイルを読み込んでいます。
+  
+このような makefile を作成することで、
+import の依存関係に応じたビルドが可能になります。
+
+
+** まとめ
+
+make コマンドを使うことで、
+LuneScript プロジェクトのビルド制御を簡単に実現できます。
+-----
+* *マクロ 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+今回は LuneScript のマクロについて説明します。
+
+** マクロ
+
+LuneScript は、マクロを対応します。
+
+もしかしたら、
+最近は *マクロ* というよりも *メタプログラミング* と言った方が
+意味が通り易いのかもしれません。
+
+「マクロとは何か」を説明するには、
+関数との違いを説明すると分かりやすいと思います。
+
+**関数* は、ある処理をまとめたものです。
+一方、 *マクロ* は、複数の関数定義自体をまとめて定義することが出来ます。
+もちろん *マクロ* として定義できるのは、
+関数定義だけでなく、ほとんど全ての処理を定義できます。
+
+マクロで一番メジャーなプログラミング言語と言えば Lisp だと思いますが、
+LuneScript のマクロは Lisp ほど高機能ではありません。
+しかし、 C 言語のマクロほど限定的でもありません。
+
+*** 簡単なマクロの例
+
+次に簡単なマクロの例を示します。
+
+#+BEGIN_SRC lns
+macro _Hello() {
+   print( "hello world" );
+}
+_Hello(); // hello world
+#+END_SRC
+
+これは hello world を表示するマクロ _Hello です。
+
+マクロ定義は macro キーワードを使用します。
+
+この例は、関数定義を使用した場合と全く変わらないマクロであり、
+マクロとして定義する意味はありません。
+
+しかし、「関数定義と同じ感覚でマクロを定義できる」、
+ということを伝えるには良い例だと言えます。
+
+マクロを搭載するプログラム言語では、
+マクロ定義には、一般の関数定義などとは違い、
+特殊な処理が必要なことが多いです。
+
+それによって、「マクロは何か難しそう」と心のハードルが上ってしまいます。
+
+しかし LuneScript では、
+上記の hello world のサンプルのように、
+ほとんど一般の関数定義と変わらない感覚でマクロ定義を行なえます。
+
+
+ただ、上記の例のようなマクロの書き方では、
+意味のあるマクロは定義できません。
+
+以降では、意味のあるマクロを定義する方法を説明します。
+
+*** マクロの例
+
+少し実用的なマクロの例を次に示します。
+
+このマクロは、次の仕様となります。
+
+- int の値を返す関数を定義するマクロ _Test
+- 関数で返す int 値は、マクロの引数で与える
+- 定義する関数の名前は、 int の値によって決定する
+- 具体的には 1 を返す関数名は func1 とする
+
+次が具体的なマクロのコードです。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      let name = "func%d"(val);
+   }
+   fn ,,,name(): int {
+      return ,,val;
+   }
+}
+
+_Test( 1 );
+_Test( 10 );
+
+print( func1(), func10() ); // 1  10
+#+END_SRC
+
+マクロを展開する場合、関数コールとほとんど同じです。
+
+この場合 _Test( 1 ), _Test( 10 ) がマクロ展開です。
+_Test( 1 ), _Test( 10 ) によって、次が展開されます。
+
+#+BEGIN_SRC lns
+// Test( 1 )
+fn func1():int {
+   return 1;
+}
+// Test( 10 )
+fn func10():int {
+   return 10;
+}
+#+END_SRC
+
+これにより関数 func1(), func10() が定義されるので、
+~print( func1(), func10() )~ は 1 10 が出力されます。
+
+このマクロについて、以降で説明します。
+
+
+*** マクロの書き方
+
+マクロの定義の syntax は次になります。
+
+#+BEGIN_SRC lns
+macro name( arg ) {
+   {
+      macro-statement
+   }
+   expand-statement
+}
+#+END_SRC
+
+キーワード macro で開始し、 次にマクロ名 name 、引数 arg と続きます。
+マクロ名 name は、 _ で始まる必要があります。
+逆にマクロ以外のシンボル名は、 _ 以外で始まる必要があります。
+引数の数に制限はありません。
+
+次に macro-statement ブロックと、 expand-statement が続きます。
+
+マクロの定義方法を理解するには、
+expand-statement を先に理解した方が分かり易いので、
+macro-statement ブロックの説明の前に、expand-statement を説明します。
+
+**** expand-statement
+
+expand-statement は、マクロを展開した後のコードを書きます。
+
+_Test マクロの例では、 次の部分が expand-statement です。
+
+#+BEGIN_SRC lns
+   fn ,,,name(): int {
+      return ,,val;
+   }
+#+END_SRC
+
+これによって、関数定義が展開されます。
+
+この expand-statement では、マクロ専用の演算子が利用できます。
+,, がその演算子です。
+
+利用可能な演算子には、次があります。
+
+- ,,,,
+- ,,,
+- ,,
+
+,,,, は、直後に続く *変数* を評価して得られた *シンボル* を *文字列に変換* する演算子です。
+
+,,, は、直後に続く *変数* を評価して得られた *文字列* を *シンボルに変換* する演算子です。
+
+,, は、直後に続く *変数* を展開する演算子です。
+
+つまり、上記例では ,,,name は name 変数内の文字列をシンボルに変換し、
+,,val は val 変数を展開することで、
+~_Test( 1 )~ マクロは、次が展開されます。
+
+#+BEGIN_SRC lns
+fn func1():int {
+   return 1;
+}
+#+END_SRC
+
+expand-statement には、次の制限を満せば、いかなるコードも書くことが出来ます。
+
+  *expand-statement は、文でなければならない。*
+
+つまり expand-statement は、式や、不完全なトークンの一部などの、
+文として成立しないものでなければ、どのようなコードも書けます。
+
+また、expand-statement には複数の文を書くことも出来ます。
+
+**** macro-statement
+
+macro-statement ブロックには、 expand-statement で利用する変数を定義します。
+expand-statement で利用する変数は、
+macro-statement ブロックの最上位のスコープで宣言する必要があります。
+
+_Test マクロの例では、次が macro-statement です。
+
+#+BEGIN_SRC lns
+   {
+      let name = "func%d"(val);
+   }
+#+END_SRC
+
+ここでは、変数 name を定義しています。
+name の初期値として、 "func%d" (val) をセットしています。
+
+
+macro-statement 内では、LuneScript の全ての機能を利用できます。
+具体的には、macro-statement 内で関数定義なども行なえます。
+
+例えば、 _Test マクロは次のようにも書けます。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      fn funcname(): str {
+         return "func%d"(val);
+      }
+      let name = funcname();
+   }
+   fn ,,,name(): int {
+      return ,,val;
+   }
+}
+#+END_SRC
+
+この例では、 macro-statement で funcname() 関数を宣言し、
+その結果を name 変数に代入しています。
+
+なお macro-statement で利用可能な関数は、LuneScript の標準関数のみです。
+同じソース内で定義している関数でも、その関数がマクロ外で定義している場合、
+macro-statement から使用することは出来ません。
+
+
+macro-statement は、expand-statement と同じようにマクロ専用演算子を利用できます。
+
+具体的には、次の演算子を利用できます。
+
+- ,,,,
+- ,,,
+- ,,
+- ~`{}~
+- ~~  
+
+「,,,,」 「,,,」 「,,」 は、 expand-statement とほぼ同じです。
+expand-statement との違いは、
+expand-statement では直後に続く *変数* を処理対象にしていたのに対し、
+macro-statement では直後に続く *式* を処理対象にします。
+
+~`{}~ は、 ~`{}~ 内で書いたステートメントを、そのまま値とすることが出来ます。
+
+例えば、 上記 _Test マクロは ~`{}~ を使って次のようにも書けます。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      let defstat = `{
+         fn ,,,"func%d"(val)~~():int {
+            return ,,val;
+         }
+      };
+   }
+   ,,defstat;
+}
+
+_Test( 1 );
+_Test( 10 );
+
+print( func1(), func10() ); // 1  10
+#+END_SRC
+
+ここでは、 ~`{}~ を使って関数定義そのものを変数 defstat に格納し、
+defstat を expand-statement で展開しています。
+
+この defstat の初期化部分を抜き出すと、次のようになります。
+
+#+BEGIN_SRC lns
+      let defstat = `{
+         fn ,,,"func%d"(val)~~():int {
+            return ,,val;
+         }
+      };
+#+END_SRC
+
+ここで、 *~~* を使用しているのが分かります。
+
+**~~* は、 ,,, などの演算子の式の区切りを指定するものです。
+上記では、"func%d"(val) の後に ~~ を利用しています。
+これは、,,, 演算子を適応する式が "func%d"(val) までで、
+その後の () はマクロ展開するステートメントの一部であることを示しています。
+
+~~ を指定しないと、
+"func%d"(val) で生成した文字列に () を付けていることになり、
+構文エラーとなります。
+
+
+~`{}~ は、その他の値と同じようにリストやマップに格納できます。
+なお、 ~`{}~ の型は stat となります。stat はマクロ内でのみ有効です。
+
+次に ~`{}~ のリストの例を示します。
+
+#+BEGIN_SRC lns
+macro _Test( val:int ) {
+   {
+      let mut statList:List<stat> = [];
+      for count = 1, val {
+         statList.insert(
+            `{          
+               fn ,,,"func%d"(count)~~():int {
+                  return ,,count;
+               }
+            } );
+      }
+   }
+   ,,statList;
+}
+
+_Test( 5 );
+
+print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5
+#+END_SRC
+
+この例では、 ~`{}~ のリスト statList に関数定義を複数格納し、
+それを展開することで、複数の関数定義(func1 〜 func5)を行なっています。
+
+
+
+なお macro-statement ブロックは、必須ではありません。
+macro-statement ブロックを省略する場合、次のように {} ごと省略します。
+
+#+BEGIN_SRC lns
+macro name( arg ) {
+   expand-statement
+}
+#+END_SRC
+
+**** macro-statement で利用できる関数
+
+macro-statement では、次の関数が利用できます。
+
+- fn _lnsLoad( name:str, code:str ): stem;
+  
+この関数は、code で指定した LuneScript のコードをロードし、
+そのモジュールを返します。
+
+**** マクロ展開
+
+マクロを展開する方法は、関数コールとほとんど同じです。
+ただし、マクロの引数にはリテラルな値しか与えられません。
+
+マクロ展開はビルド時に行なうものであり、実行時には行ないません。
+
+*** 公開マクロ
+
+マクロは外部モジュールに公開できます。
+
+次のように pub を宣言することで、そのマクロを import 先で利用できます。
+
+#+BEGIN_SRC lns
+pub macro _Hello() {
+   print( "hello world" );
+}
+#+END_SRC
+
+
+*** 少し実用的なマクロの例
+
+次は少し実用的なマクロの例です。
+
+
+Google などが提供する REST API のパラメータやレスポンスなどで利用する JSON を、
+LuneScript で扱うには、
+REST API の JSON フォーマット毎にクラス化しておくと便利です。
+そのような時、何種類もある JSON 形式のデータを扱うクラスを
+手動で定義するのは非効率ですし、バグの元でもあります。
+
+そこで、 サンプルの JSON フォーマットを読み込んで、
+その JSON フォーマットを格納可能なクラスを定義するマクロを作成します。
+
+この例では、次の JSON ファイルを読み込み、
+
+#+NAME: hoge.js
+#+BEGIN_SRC lns
+{
+    "val1": "abc",
+    "val2": 0
+}
+#+END_SRC
+
+上記 JSON を扱うための次のクラスを定義するマクロです。
+
+#+BEGIN_SRC lns
+class Hoge {
+  pri let val1:str {pub};
+  pri let val2:int {pub};
+}
+#+END_SRC
+
+
+次がマクロの具体例です。
+
+
+#+BEGIN_SRC lns
+macro _MkClass( name:str, path:str ) {
+   {
+      let mut memStatList:List<stat> = [];
+      if! let mut fileObj = io.open( path ) {
+         if! let txt = fileObj.read( "*a" ) {
+            let defMap = "pub let val = %s;" (txt);
+            let mod = _lnsLoad( "json", defMap );
+            if! let jsonval = mod.val {
+               fn getType( val:stem ): str {
+                  switch type( val ) {
+                     case "number" {
+                        return "int";
+                     }
+                     case "string" {
+                        return "str";
+                     }
+                  }
+                  return "stem";
+               }
+               forsort val, key in jsonval@@Map<str,stem> {
+                  memStatList.insert( `{
+                     pri let ,,,key : ,,,getType( val )~~ {pub};
+                  } );
+               }
+            }
+         }
+      }
+   }
+   class ,,,name {
+      ,,memStatList;
+   }
+}
+_MkClass( "Hoge", "hoge.js" );
+
+let hoge = new Hoge( "ABC", 100 );
+print( hoge.$val1, hoge.$val2 );
+#+END_SRC
+
+このマクロは、ファイルから JSON を読み込み、
+その JSON 構造を格納するためのクラスを宣言します。
+
+クラス名はマクロの第一引数で指定します。
+
+このマクロは、次の処理を行ないます。
+
+- 指定のファイルを開き、そのファイル内に定義されている JSON 文字列を読み込む。
+- JSON 文字列 txt から、 "pub let val = %s;" (txt); で、 
+  LuneScript のコードを生成する。
+- _lnsLoad() を使って、生成した LuneScript のコードをロードする
+- ロードしたモジュールから json の val を取り出し、 
+  forsort で JSON の要素を列挙する
+- 列挙した要素を保持するメンバを宣言する ~`{}~ を生成し、memStatList に追加する
+- name と memStatList を使ってクラスを宣言する。  
+
+このサンプルでは処理を簡単にするために、
+メンバは int と str 型のデータとして扱います。
+リストなどはサポートしていません。
+
+** まとめ
+
+LuneScript は、関数と同じ感覚でマクロを定義することが出来ます。
+
+また、マクロを利用することで、
+さまざまな処理を定義できるようになります。
+
+
+
+次回は、 LuneScript を使って開発するプロジェクトの
+ビルド方法について説明します。
+-----
+* *キャスト 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript は、 3 つのタイプのキャストを提供します。
+
+- ~@@~
+- ~@@@~
+- ~@@=~
+
+** ~@@~  
+
+~@@~ は、変換元の値の型を実行時にチェックせずに強制的に型変換します。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:int = val1@@int;
+#+END_SRC
+
+次のような本来変換できない値も強制的なキャストを行なえてしまいます。
+
+#+BEGIN_SRC lns
+let val1:stem = 1;
+let val2:str[] = val1@@str[];
+print( #val2 ); // runtime error 
+#+END_SRC
+
+上記は、 int 型の値 1 を stem 型の val1 に代入し、
+それを str リスト型の val2 にキャストしています。
+つまり、int 型を str リストにキャストしてしまっています。
+この val2 に対してアクセスすると、 *実行時エラー* となります。
+
+なお、 暗黙的に型変換が行なえるものを @@ で明示的にキャストすると、 
+warning となります。
+
+例えば次のサンプルの ~func( "abc"@@stem )~  は、
+文字列 "abc" から stem への変換は明示キャスト不要で変換可能なため
+warning が出力されます。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) {
+}
+func( "abc"@@stem );
+#+END_SRC
+
+また、明らかに不正な型変換はコンパイルエラーとなります。
+
+例えば次の場合、 ~1@@str~ は int から str に変換していますが、
+この型変換は出来ないためコンパイルエラーとなります。
+
+#+BEGIN_SRC lns
+let val = "abc"@@int;  // error
+let val2 = 1@@str;  // error
+#+END_SRC
+
+クラス型への =@@= キャストは warning 出力します。
+
+=@@= は、 nilable から非 nilable へのキャストは出来ません。
+
+
+クラス型へのキャストは ~@@@~ か ~@@=~ を使用してください。
+
+** ~@@@~
+
+~@@@~ は、動的に変換元の型をチェックして型変換します。
+
+次は ~@@@~ の例です。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) {
+   if! val@@@int {
+      print( "int:%d" ( _exp ) );
+   }
+   if! val@@@str {
+      print( "str:%s" ( _exp ) );
+   }
+}
+func( 1 ); // int:1
+func( "abc" ); // str:abc
+#+END_SRC
+
+~val@@@int~ は、 val の型をチェックし int 型ならば変換し、
+int 型でなければ nil を返します。
+また、 ~val@@@str~ は val の型をチェックし str 型ならば変換し、
+str 型でなければ nil を返します。
+
+これにより、
+~func( 1 )~ は int:1 を出力し、
+~func( "abc" )~ は str:abc を出力します。
+
+=@@@= は、 キャスト元が nilable でもキャスト可能です。
+
+
+*** ~@@@~ の制限 1
+
+小数点以下を持たない real 型の値は、
+@@@ によって int と real どちらにもキャストが成功します。
+
+本来の仕様では、
+小数点以下を持たない real 型の値から int への @@@ キャストは失敗するべきですが、
+これは現状の制限です。
+
+将来の動作は変更になる可能性があります。
+
+例えば次の ~func( 1 )~ は ~int:1~ , ~real:1~ を出力し、
+~func( 2.5 )~ は ~real:2.5~ を出力します。
+
+#+BEGIN_SRC lns
+fn func( val:stem ) {
+   if! val@@@int {
+      print( "int:%d" ( _exp ) );
+   }
+   if! val@@@real {
+      print( "real:%g" ( _exp ) );
+   }
+}
+func( 1.0 );
+func( 2.5 );
+#+END_SRC
+
+*** ~@@@~ の制限 2
+
+@@@ が利用できるのは、 int/real/str/class/interface だけです。
+
+enum などは利用できません。
+
+また、 class でも generics は利用できません。
+
+** ~@@=~
+
+~@@=~ は、メソッドを持たないクラスを変換する際に利用します。
+メソッドを持つクラスや、クラス以外を指定した場合はコンパイルエラーします。
+
+なお、 ~@@=~ も変換元の値をチェックせずに強制的に型変換を行ないます。
+
+~@@=~ は、型チェックに時間がかかるような場合に限り使用するべきです。
+
+
+** まとめ
+
+int、 real 間の変換以外は、出来るだけキャストは避けるべきです。
+generics や、 alge などを利用することで
+型を保ったまま汎用処理を作成できます。
+
+キャストを利用するにしても、 ~@@@~ を利用し、
+~@@~ や ~@@=~ の利用は必要最低限になるように設計してください。
+-----
+* *subfile 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+モジュールの処理が大きくなると、それに伴ないファイルが肥大化する。
+
+ファイルの肥大化に良いことはないため、
+このような場合はモジュールの責務を細分化し、
+それぞれのモジュール毎にファイルを分けるのが一般的なリファクタリングである。
+
+しかし、綺麗に責務を分割できない場合や、
+分割すると他のモジュールに与える影響が大きくなってしまう事もよくある。
+このようにモジュール分割による対応が出来ない場合の代替手段として、
+サブファイル化を行なう。
+
+サブファイル化とは、
+本来 1 つのファイルで構成するモジュールを複数のファイルに分割することである。
+
+LuneScript は、原則 1 モジュール = 1 ファイルであるが、
+サブファイル化した場合は、1 モジュール = 複数ファイルとなる。
+
+** サブファイル構成
+
+サブファイルは 1 つの main と、複数の sub で構成される。
+
+#+BEGIN_SRC
+- main
+  +- sub1
+  +- sub2
+  +- ...
+  +- ...
+  +- subN
+#+END_SRC
+
+** 使用方法
+
+次のように foo/bar ディレクトリ以下に、
+main.lns, sub.lns が存在し sub.lns が main.lns のサブファイルの場合、
+  
+#+BEGIN_SRC
+foo/bar
+     + main.lns
+     + sub.lns
+#+END_SRC
+
+  
+サブファイルを利用するには、 main 側で次のように宣言する。
+
+#+BEGIN_SRC lns
+subfile use foo.bar.sub;
+#+END_SRC
+
+また、サブファイル側では次のように宣言する。
+
+#+BEGIN_SRC lns
+subfile owner foo.bar.main;
+#+END_SRC
+
+これにより、
+指定したモジュール(上記の例では foo.bar.sub)を分割されたサブファイルとして扱い、
+sub.lns は main.lns のモジュールの一部として処理する。
+
+*** 制限
+
+モジュールの宣言は、スクリプトの先頭で行なう必要がある。
+ただし、コメントは除く。
+
+subfile use は、1 つのファイル内で複数宣言できる。
+subfile owner は、一つだけ宣言できる。
+つまり、1 つのファイルは複数のサブファイルを持てるが、
+1つのサブファイルは1つのオーナからしか利用できない。
+
+subfile use を複数宣言した場合、宣言した順でサブファイルを処理する。
+
+
+サブファイルは C の #include と基本的には同じと考えて良いが、
+次の点で #include と異なる。
+
+- C の =#include= は宣言した箇所にファイルを展開するが、 
+  LuneScript ではファイルの最終位置にサブファイルを展開する。
+- サブファイルは、 statement として完結している必要がある。
+  - =#include= のような、式の一部をサブファイル内には書けない。
+- サブファイルに対するメインファイルは 1 つでなければならない。
+- サブファイルから、さらにサブファイルを利用することはできない。
+
+例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
+
+#+BEGIN_SRC lns
+//------ main.lns -------
+subfile use sub1;
+subfile use sub2;
+
+pub let val = 1;
+#+END_SRC
+
+#+BEGIN_SRC lns
+//------ sub1.lns -------
+subfile owner main;
+
+pub let val1 = 1;
+#+END_SRC
+
+#+BEGIN_SRC lns
+//------ sub2.lns -------
+subfile owner main;
+
+pub let val2 = 1;
+#+END_SRC
+
+main.lns は次のスクリプトと等価である。
+
+#+BEGIN_SRC lns
+//------ main.lns -------
+pub let val = 1;
+pub let val1 = 1;
+pub let val2 = 1;
+#+END_SRC
+
+-----
+* *ua のトランスコンパイラ LuneScript を開発した理由*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <style type="text/css"> <!-- pre.src { color: #ffffff; background-color: #101010; } --> </style>
+
+
+Lua は軽量で、かつ実行パフォーマンスの高い言語である。
+Lua の 知名度は、同じスクリプト系言語の Ruby や Python, JavaScript 等とは
+比べるまでもなく低いが、
+システムの拡張に利用できる言語としては、
+最もメジャーで組み込み易い言語の一つと言えるだろう。
+実際、 Lua を組み込んでいるシステムは多く存在している。
+
+また実行性能においても、スクリプト言語としては高速な部類に入る。
+DSP のような処理をさせなければ、
+システムパフォーマンスのボトルネックになるようなことは少ないだろう。
+
+私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
+よく使う言語の１つである。
+
+** Lua のトランスコンパイラ LuneScript を開発した理由
+
+Lua は私の良く使う言語の 1 つである。
+しかし、次の理由から Lua のコードを直接書くのは止めて、
+トランスコンパイラ LuneScript を使って開発する事を考えるようになった。
+
+- 楽して安全に書きたい
+- Lua には動的型付け言語特有の問題がある
+  - 静的なエラーチェックが出来ない
+  - 他人のコードの内容を把握し難い
+  - メンテナンスや機能追加、リファクタリングのリスクが大きい
+  - コーディング時の補完がイケてない
+  - テーブル内のフィールドアクセス制御が出来ない
+- Lua の機能に不満がある  
+  - nil安全でない 
+  - マクロがない
+- Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
+- 既に数多くのシステムで Lua を利用している
+
+以降で、それぞれについて説明する。
+
+
+*** 楽して安全に書きたい
+
+Ruby のまつもとゆきひろ氏は、Ruby に楽しさを求めている。
+
+私は　LuneScriptに楽しさは求めていない。
+いや、「楽しさ」を求める以上に「楽」をしたいと考えている。
+
+もちろん、なにをするにも楽しい方がいい。
+私自身、ソフトウェア開発に楽しさを感じているからこそ、
+プライベートな時間に趣味（無償）のソフトウェア開発をやっている。
+
+今は営業の出来ない純粋なソフト屋だって、
+クラウドワークスの様なサービスを使ってギャランティーを受けられる仕事を
+取ってくることができる時代だ。
+そんな時代に、プライベートな時間を潰して無償のソフトウェア開発をする動機なんて、
+「楽しい」以外の何ものでもない。
+
+ただ、ソフトウェア開発自体は楽しいが、変なバグ取りやテストコード作成は楽しくない。
+では何故このような楽しくない作業が必要なのかと言えば、
+ソフトウェア開発にはバグが入り込み易く、
+そのバグを取り除いてやらないとまともにソフトが動かないからだ。
+
+繰り返すが、この作業は楽しくない。
+人によっては楽しめるかもしれないが、少なくとも私にとっては苦行だ。
+まぁ、「やりとげた」という達成感は無くはないが、
+仕事ならともかく、わざわざプライベートな時間を潰してまでやりたくない。
+
+そういった楽しくない作業を出来るだけやらずに、
+楽して安全なソフトウェア開発をしたいのだ。
+
+Perl の作者 Larry Wall 氏は
+プログラマーの三大美徳として「怠惰 、短気、傲慢」をあげている。
+「楽して安全なソフトウェア開発」は、これとかなり似ていると思う。
+
+Lua には、楽して安全なソフトウェア開発を行なう仕組みが提供されていない。
+提供されていないなら、自分で作れば良いだけだ。
+
+私は、楽をするための労力は惜しまない。
+
+これが、私が LuneScript を開発する一番の理由だ。
+
+*** 動的型付け言語特有の問題
+
+私は動的型付け言語を否定している訳ではない。
+
+私自身、動的型付け言語で処理を書く事は良くあるし、
+100 行にも満たない様な簡単な処理を書く時に
+静的型付け言語なんて使いたいとは思わない。
+
+ここで動的型付け言語を問題としているのは、
+個人が一人で作成して、一人でメンテナンスするスクリプトではなく、
+不特定多数が開発する可能性のあるスクリプトに
+動的型付け言語を利用した場合に、
+問題となり易いことを挙げている。
+
+**** 静的なエラーチェックが出来ない
+
+人間は間違える。
+
+フルタイムでコーディングしているソフトウェアエンジニアなら、
+引数に間違った型のデータを渡した経験は両手・両足では数え切れない程度は有るだろう。
+よくある間違いとしては、
+数字文字列の入力を parse した結果をある関数に渡す時、
+その関数は数値型の値を求めているのに、
+parse したそのままの文字列データを渡してしまう等、
+例を考えれば他にも色々と思い浮かぶ。
+
+複数メンバーで開発する際は、コミュニケーションミス等で、間違いが発生する確率が更に高まる。
+
+静的型付け言語であれば、
+コンパイル時、あるいはイマドキはコーディング時に
+型不一致エラーとなって間違いに気が付く。
+
+
+しかし動的型付け言語では、
+実際に動かさないと分からない。
+また、場合によっては単純に動かしただけでは発生せず、
+特定のパスや特定のタイミングでしか発生しない、と言う事すらある。
+
+単純なミスが後々になって重大な問題の原因となる、
+そしてその原因にたどり着く為に多大なコストが必要になることはよくある。
+
+「テストでカバー出来る」という考えもあると思うが、テストを書くのもタダではない。
+最初に書いたが、私はテスト作成を楽しめない。
+テストを書かずにコンパイラが保証してくれるなら、私はそちらの方を取る。
+
+動的型付け言語で書いたコードに対しても、ある程度は静的チェックを行なうことは可能だ。
+しかし、それは静的型付け言語のものに比べれば、
+とてもコストの掛かる事であり、精度も不十分である。
+
+静的型付け言語であれば、少なくとも型に関連するミスは、
+確実に静的に解析することが出来る。
+
+もちろん、c の void * や java の Object の様な何でもありな型にしてしまった場合や、
+強制的な型変換を使用した場合などは解析不能だが。
+
+私は、将来的に、ディープラーニング等の技術によって静的解析技術が進化し、
+もっと楽してソフトウェア開発が出来るようになると考えている。
+そして、そのような開発をサポートするのは、動的型付け言語ではなく、
+静的型付け言語であると思う。
+
+まぁ、もっと違うパラダイムなのかもしれないが。
+
+
+**** 他人のコードの内容を把握し難い
+
+他人のコードは、自分が書いたコードに比べれば、内容を把握し難い。
+コレは当然のことだ。
+
+ここで言いたいのは、そういう事ではない。
+
+また、インデントが揃ってないとか、
+コーディング規約が守られていないとか、
+そういうレベルの低い事でもない。
+
+どんなに著名なエンジニアが書こうとも、
+ソレが動的型付け言語で書かれていれば、
+静的型付け言語で書かれたコードに比べれば把握し難い。
+
+何故ならば、プログラムの重要なファクターであるデータの型情報が、
+ほとんど書かれていないのだから。
+もしも型情報などは大して重要ではないと言うエンジニアがいるならば、
+「アルゴリズムとデータ構造」の単位を取り直した方が良い。
+
+なお、シンボル名から型を予想することは出来る。
+また、そのようにシンボル名は付けるべきだ。
+
+しかし、ソレはあくまでも予想であり、事実ではない。
+私はソフトウェア開発をする時に、推理ゲームに頼って開発したいとは思わない。
+
+また、コメントあるいはドキュメントに型情報を記載しているからそれを確認すれば良い、
+と言う意見もあるだろう。
+しかし、コメントやドキュメントと実装が乖離している事は良くあるし、
+コードをひと目見れば理解出来るのと、コード+αを見ないと分からないのであれば、
+私はコードをひと目見れば理解出来る方が良い。
+
+なんども言うが私は楽をしたいのだ。
+
+**** メンテナンスや機能追加、リファクタリングのリスクが大きい
+
+どんなコードでも、一度作ったらそれっきり手を加えない、なんて事は滅多にない。
+
+動かしている OS が変わったとか、機能追加が必要になったとか、
+潜在バグが見つかったとか理由は様々だが、
+既存のコードに手を加える機会は少なくない。
+
+そうした既存のコードに手を加える時に、
+動的型付け言語は静的型付け言語に比べるとリスクが大きい。
+
+ここでも、「テストをしっかり書いておけば問題無い」と言う意見もあるだろう。
+しかし、ソレは半分正解だが半分ハズレだ。
+
+「手を加える」と言うことは、「振る舞いが変わる」と同義だ。
+変化の度合いの違いはあっても、変わる事には違いはない。
+そして振る舞い変わってしまうと、テストがあっても安心とは言えなくなる。
+
+何故ならば、テストは振る舞いが正しい事を確認するためのもので、
+その振る舞いが変わるのだから、テストもそのままでは使えなくなるからだ。
+もちろん、すべてが使えなくなる訳ではなく、振る舞いが変わるところだけに限定は出来る。
+
+さて、本題の動的型付け言語と静的型付け言語の話に戻そう。
+
+どうして動的型付け言語だと、静的型付け言語に比べて、
+既存のコードに手を加える時のリスクが大きいのか。
+それは、手を加えることによって影響する箇所を
+抜け漏れなく修正する事が難しいからだ。
+
+静的型付け言語であれば、コンパイルさえ通せば、
+ほぼ修正完了と言って良い。
+一方、動的型付け言語では、全てを修正した後、
+いざテストを動かそうとしても、修正漏れによるエラーでまともに動かない、と言うことが多い。
+エラーを一つ一つ潰してていき、ようやく完了となる。
+
+コンパイルエラーの対応と、テストのエラーを対応するのにどちらが時間がかかるか、
+と考えれば、それは圧倒的にテストのエラーだ。
+コンパイルエラーであれば、コンパイルエラーの行を修正すれば済むが、
+テストのエラーは、エラーの原因を特定する作業が余計に追加となる。
+更に、既存のテスト自体に漏れがあれば、修正漏れ自体を発見できない可能性もある。
+
+また、手を加える作業者が、そのモジュール作成者本人であればまだ良いが、
+全くの別人が対応することも珍しくない。
+その場合は、先程挙げた「他人のコードの内容を把握し難い」との相乗効果で
+更にリスクが高まる。
+
+LuneScript 開発中、何度も設計変更を行ったが、
+もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。
+
+**** コーディング時の補完がイケてない
+
+コーディングで楽をするには、まともな補完機能が必須である。
+   
+最近は動的型付け言語でも、かなり頑張ってコーディングの補完機能が動作している。
+しかし、その補完機能がリストする候補にガッカリした経験を持っていないだろうか。
+あるいは、そもそもリストされるべきものが、全くリストされない事は無いだろうか。
+
+動的型付け言語の補完はかなり難しい。
+何故ならば補完機能は型情報をもとに補完候補を認識するが、
+動的型付け言語では、それを静的に認識するのが困難だからだ。
+
+静的型付け言語であれば、型情報が静的に決定できるので、
+型関連の補完は正確に実現可能た。
+
+
+もちろん、 LuneScript も補完機能を提供している。
+
+詳しくは次の記事を参照のこと。
+
+[[../completion]]
+
+**** テーブル内のフィールドアクセス制御が出来ない
+
+アクセス制御は重要である。
+
+どのデータ・関数をアクセスしても大丈夫かを明示できるからだ。
+
+設計時の大前提として、外部から使用可能な関数、データを公開し、
+外部から使用されると動作を保証できない関数、データを非公開とするのが常識だ。
+
+しかし、 Lua ではテーブルのフィールドに対してはこれが出来ない。
+
+もしかしたら、 metatable を駆使すれば動的な制御は可能かもしれないが、
+少なくとも静的な制御は出来ない。
+
+何度も言うが、動的にエラーが検知できるのは
+エラーが検知できるだけマシというだけで、
+静的にエラーが検出できることに比べれば、圧倒的に不便である。
+
+
+アクセス制限を持つ言語でも、
+リフレクションの機能を使うと非公開としていた関数・データにアクセスできる場合もあるが、
+これは特に問題はないと考える。
+
+何故ならアクセス制御は、そのモジュール設計者の意図を明示することで、
+別の人間がそのモジュールを利用する時にその意図を理解せずにアクセスした場合、
+そのアクセスは設計者の意図からはずれていることを報せることが目的だと、
+私は考えているからである。
+
+特にテストコードを書く場合は、非公開関数・データにアクセスできることが
+求められることがあるため、非公開関数・データにアクセスする手段があること自体は、
+問題ではない。
+
+問題なのはそういった制御がなく、全てアクセス可能になってしまっていることである。
+
+*** Luaの機能に不満がある
+
+Lua はコンパクトでパワフルな言語であるが、
+素の Lua ではサポートされていない機能も多くある。
+
+トランスコンパイラは、Lua に手を加えずに、
+素の Lua ではサポートされていない機能をサポートすることも
+目的の一つに開発している。
+  
+**** nil安全でない
+
+Lua の nil は便利な値ではあるが、動的エラーの原因にもなる。
+多くのエンジニアは、この nil 関連のエラーに悩まされている。
+
+その問題を解決するのが nil 安全だ。
+
+現在のプログラミングで無くてはならない多くの機能は、
+Lisp の時代からすでに実現されている。
+例えば、GC やラムダ式や、クロージャ等は、数十年前からあるものだ。
+
+つまり、その時代からほとんど進化していないと言える。
+
+「ほとんど進化していない」というのは、「多少進化している」ということでもあり、
+その進化の一つに nil 安全は含めて良いだろう。それ程重要なものだ。
+
+しかし、 Lua には nil 安全がサポートされておらず、
+これはイマドキの言語としては、かなりの減点対象と言って良い。
+
+なお、話は逸れるが、
+Rust はライフタイムと所有権という概念で nil(null) の危険性に対応している。
+初めてこのアプローチを見た時「こんなやり型があったのか」と、とても関心した。
+
+さらに Rust はライフタイムと所有権によって、 nil 安全だけでなく、
+メモリ管理やデータアクセス競合など様々な問題を解決している。
+
+Rust を触れたことがないのであれば、
+是非ライフタイムと所有権について確認してもらいたい。
+
+
+閑話休題。
+
+LuneScript では、
+nil を取り得る型 nilable と、
+nil を取り得ない 非 nilable を別の型として管理することで、
+意図しないタイミングで nil エラーが発生することを防止している。
+
+また、 nilable から 非 nilable 型への変換の unwrap 処理、
+多階層の nilable データに楽にアクセスするための nil 条件演算子をサポートすることで、
+nil エラーの対応を楽にかつ安全に対応できるようにしている。
+
+   
+**** マクロがない
+
+マクロといえば、 Lisp が非常に強力なマクロを持っていて、
+マクロをもつ言語の代表格と言って良いだろう。
+Lisp の魅力の根底を支えているものこそマクロだと言っても過言ではない。
+
+しかし、比較的新しい言語は、マクロをサポートしていないものが多い気がする。
+
+C 言語ですら「なんちゃってマクロ」を持っているのに、何故だろうか？
+
+まぁ、言語自体がマクロを持っていなくても、
+なんらかのデータからコードを自動生成するスクリプトを別途エンジニアが作成すれば、
+マクロは不要だと言えなくもないかもしれない。
+
+ただ、そうすると「なんらかのデータ」や、「自動生成するスクリプト」が
+氾濫することになってしまう。
+
+そのようなことにならないようにするためにも、マクロは必要だと考える。
+
+とはいえ、Lisp ほどの高機能なマクロは実装が難しく、
+使用する側もそれなりの学習が必要である。
+
+LuneScript では、実装が簡単で、かつ使用する側の学習に負担がなく、
+誰でも簡単に使えて効果のあるマクロを用意した。
+
+LuneScript のセルフホスティングでもマクロを使用しているが、
+やはりマクロはプログラム言語には無くてはならないものだと改めて感じている。
+
+*** Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
+
+前述している通り、Lua はシステムに組込むには最も扱い易い言語の一つである。
+
+特にそのコンパクトさや、C の標準関数のみでコンパイル可能という特徴は、
+組込みには非常に有用である。
+
+他にも組込みを意識した言語はいくつかあるが、
+組込みという条件で見た場合、Lua を越える言語を私は知らない。
+
+*** 既に数多くのシステムで Lua を利用している
+
+Lua を組み込んでいるシステムは多く存在する。
+
+一度システムに組込まれれば、
+そのシステムが生きている限り余程の事がなければ、その Lua は生き続ける。
+
+ちょっと気にいらないからといって、変えられるものではない。
+
+
+** 最後に
+
+LuneScript は、Lua の欠点を補うべく開発している。
+
+これは、Lua が使えない言語だからではなく、
+Lua の欠点を放置して他の言語に浮気するには惜しい言語だからだ。
+
+もし今後、組込み言語を検討する機会があれば、
+Lua には LuneScript があることも検討材料にして欲しい。
+
+何度も言うが、Lua は軽量で、かつ実行パフォーマンスの高い言語である。
+そして、Lua には LuneScript という選択肢もあることを覚えておいて欲しい。
+-----
+* *トランスコンパイラ開発のすゝめ*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+LuneScript 入門のアドベントカレンダー最後の記事は、
+これまでとは趣向を変えてトランスコンパイラ開発そのものについて扱っていきます。
+
+** トランスコンパイラ開発をすゝめる理由
+
+私は LuneScript というトランスコンパイラを開発しています。
+
+この開発を通して、エンジニアとして良い経験が出来たと感じています。
+
+なお、LuneScript を開発した理由については次の記事に書いています。
+
+[[../reason]]
+
+私は次の理由からトランスコンパイラ開発を
+多くの方に経験して欲しいと思い、この記事を書くことにしました。
+
+- 現状に対する不満を建設的に解決できる
+- トレンドの技術を確認できる
+- コーディングルールを矯正できる  
+
+以降では、上記の各項目を説明していきます。
+
+*** 現状に対する不満を建設的に解決できる
+  
+皆さんは、今のソフトウェア開発に対して不満を持っていませんか？
+
+- 上司が気にいらないとか、
+- 開発 PC の性能がショボいとか、
+- 給料が安いとか、
+- 残業が多いとか、
+
+私が言っている「不満」は、
+上記のソフトウェア開発を取り巻く「現実社会への不満」では *なく* 、
+
+ソフトウェア開発を行う上で、
+頭の中にあるアイデアを実現するのに
+
+- 言語仕様上バグり易いとか、
+- もの凄く手間のかかる面倒な書き方しか出来ないとか、
+- 実現するために必要なユーティリティ的なものを一から作らなければならず、
+  本来作りたいものに辿り着く前に時間が掛り過ぎるとか、
+- そもそも言語仕様的に実現できないとか、
+
+そういった、プログラム言語に対する不満です。
+
+そのような不満がある人で、
+その不満を解決するための具体的なアイデアがある人には、
+トランスコンパイラを開発することを薦めます。
+
+私自身、トランスコンパイラを開発しようと思った一番の理由はこのためです。
+
+「無いなら自分で作れば良い」
+
+アイデアをソフトウェアで実現出来る能力を持っているからこそ
+「ソフトウェアエンジニア」ではないでしょうか？
+
+
+**** 「コンパイラ」ではなく「トランスコンパイラ」である理由
+
+『なんで「コンパイラ」じゃなくて「トランスコンパイラ」なの？』
+と疑問に思う方もいるかもしれません。
+
+それは、「トランスコンパイラ」の方が「コンパイラ」を作りよりも
+技術的なハードルが低いためです。
+LLVM の登場で、以前と比べればコンパイラ開発のハードルは下っているとは思いますが、
+それでもトランスコンパイラの方がまだまだハードルは低いです。
+
+特に、コンパイルした後のコードにバグがあった時の「原因追求コスト」は、
+トランスコンパイラの方が圧倒的に低いです。
+
+コンパイラを作ること自体が目的であればそれでも良いとは思いますが、
+コンパイラを作ること自体は手段であり、
+あくまでも目的は「プログラム言語に対する不満」を解決することです。
+
+出来るだけコストを掛けずに実現できる方が良いでしょう。
+
+それに、「プログラム言語に対する不満」の多くは、
+トランスコンパイラで解決できることがほとんどです。
+
+もちろん「コンパイル時間をもっと短くしたい」というような不満には、
+コンパイラを自前で開発しなければならないと思いますが、
+それ以外のほとんど不満はトランスコンパイラで解決できるでしょう。
+
+
+最終的なゴールが、コンパイラを作ることであったとしても、
+
+- まずはトランスコンパイラを作成し、
+- 不満を解決できていることや、言語としての使い易さを実証し、
+- そのトランスコンパイラを使うことが有益であることが確認でき、
+- その後、直接ネイティブへのコンパイルが必要になってから
+  
+最終的にコンパイラを開発するのが、効率の良い方法と言えるでしょう。
+
+**** 「インタプリタ」ではなく「トランスコンパイラ」である理由
+
+「コンパイラ」ではない理由は上述しました。
+
+ここでは、「インタプリタ」ではない理由を説明します。
+
+と、言っても理由は「コンパイラ」の時と変らずに、
+「インタプリタ」よりも「ハードルが低い」からです。
+
+インタプリタを作るのは、コンパイラよりはハードルが低いです。
+私自身、簡易的なインタプリタは何度か作った経験があります。
+
+しかし、実用的なインタプリタとなると話は別です。
+実用的なインタプリタとなると、
+開発工数的な問題と、実行性能的な問題があります。
+コンパイラの時にも書きましたが、
+「プログラム言語に対する不満」を解決するのが目的なので、
+それ以外のことは一旦考えないでおきましょう。
+
+今は実用的なインタプリタ型の言語(スクリプト言語)が世の中にいくつもあります。
+わざわざ自前で作る必要はないでしょう。
+
+**** 出力結果が分かり易い
+
+コンパイラと比べてトランスコンパイラの方が良いこととして、
+「トランスコンパイラの出力コードは多くの人にとって分かり易い」ことが
+挙げられます。
+
+
+コンパイラが出力した「ネイティブコード」と、
+トランスコンパイラが出力した「とある言語のコード」、
+どちらが分かり易いかと言えば、「とある言語のコード」の方が分かり易いのは
+誰もが認めるところでしょう。
+
+「じゃぁなんで分かり易い方が良いんだ？」というと、
+導入リスクがそれだけ低いということです。
+
+新しい技術をプロジェクトに導入する際、
+それが「安全」かどうかを判断する必要があります。
+
+単に「安全」と言っても、色々な観点があります。
+
+- ウイルス的なものが入り込んでいないことを保証する「情報セキュリティ」
+- 海外に輸出可能か、「外為法」の対象かどうか
+- ライセンス的に問題ないか。 
+  そのコンパイラの作者が作成した部分のライセンスは問題なくても、
+  作者が意図せずに使用しているコードにライセンス上の問題がないか
+  
+他にも新しいものを導入するには、幾つかの安全性をクリアする必要があります。
+
+これらの安全性をクリアする際、その対象技術の分かり易さは非常に重要です。
+
+コンパイラの場合、
+生成されたネイティブコードを調べるのは現実的ではないため、
+コンパイラのコードを調査して安全性を確認することになります。
+
+一方トランスコンパイラは、
+ライセンスと変換後のコードを調べれば良いだけです。
+
+
+*** トレンドの技術を確認できる
+
+せっかく新しいトランスコンパイラを開発するのであれば、
+できるだけ使い勝手の良いものを作ろうと思うのがエンジニアの性分でしょう。
+
+であれば、さまざまな言語の特徴を調査して、
+良いものを取り込むのが常套手段です。
+
+私も LuneScript を開発するにあたり、なるべく多くの言語を調査し、
+さまざまな機能を取り込んだつもりです。
+
+
+さまざまな言語の特徴を知ることに何の意味があるのか？
+例えば普段 C 言語のプロジェクトしか関わりのないエンジニアが
+Go や swift の特徴を知ることに意味があるのか？
+そのようなことを疑問に思う人もいると思います。
+
+普段から Qiita 等のサイトで自ら新しい情報を収集しているような人ならば、
+そのようなことを疑問に持つことはないと思いますが、
+そうでない場合は疑問に思う人は少なくないでしょう。
+
+私は、例え普段 C 言語のプロジェクトしか関わりのないエンジニアであっても、
+イマドキの言語の特徴は把握しておくべきだと思います。
+
+それは、イマドキの言語の特徴そのものは C 言語では使えないとしても、
+考え方や、エッセンスなどは C 言語でも導入可能だからです。
+
+
+例えば、関数型言語の考え方自体は、
+Haskell を使わなくても C 言語でも実現できます。
+
+もちろん、C 言語の syntax だと書き難いモノや、
+C 言語の仕様上実現できないモノなども存在します。
+
+しかし、関数型言語の考え方自体を知った上で、敢えて C 言語らしく書くことと、
+C 言語しか知らないからいつも通りに C 言語で書くことは、違います。
+
+
+また、イマドキの言語の特徴をトランスコンパイラの機能として取り込むには、
+単にイマドキの言語を使うよりも、より深い理解が可能になります。
+というか深い理解がなければ取り込むことは出来ません。
+
+このように、イマドキの言語の特徴の理解を深めるためにも
+トランスコンパイラの開発は経験として良いものだと言えます。
+
+*** コーディングルールを矯正できる  
+
+これは、いままで挙げた内容と少し方向性が違いますが、
+自分としては結構重要だと思った点です。
+
+皆さん、コーディングする際、
+「こう書きたい」「こう書くべき」というような理想の書き方を持っていると思います。
+
+トランスコンパイラを開発するということは、
+コーディングルールを言語レベルで矯正(強制)できる、ということでもあります。
+
+この説明だと「どういうこと？」と疑問に持つ方も多いと思いますが、
+python の「インデントによるブロック」と言えば通じると思います。
+
+python は、
+ブロックをキーワードや区切り記号ではなく、インデントによって表現します。
+
+つまり、「ブロックはインデントすべき」ということを
+コーディングルールで縛るのではなく、
+Python では「インデントが揃っていないとブロックとして扱わねぇよ」と
+言語レベルで矯正(強制)している訳です。
+
+コーディングルールで論争が起ることは少なくありません。
+独自にトランスコンパイラを開発すれば、
+言語レベルでそのような無駄な論争を防げます。
+
+自分でトランスコンパイラを開発するまではあまり意識していませんでしたが、
+普段意識しているコーディングルールの中でも、
+別の言語では言語レベルで実施できないから不要になっているルールというものが
+いくつかあることが分かりました。
+
+新しい言語を開発する際は、新しい機能を取り入れるだけでなく、
+普段のコーディングルールを見直し、言語レベルで対応できないか検討するべきだと思います。
+
+** 最後に
+
+これまでに、
+簡易的なインタプリタや、[[../../lctags/][ソースコードタグシステム]] 等を趣味で作ってきました。
+
+今回 LuneScript 開発を通して、
+また一つソフトウェア開発の面白さを実感できました。
+
+「いまさら新しい言語なんて作っても意味はない」、
+そう思っている方も多いと思います。少なくとも私はそう思っていました。
+
+しかし、今回 LuneScript を開発することで、
+また一つソフトウェアエンジニアとして成長出来たと思います。
+
+人がどう思おうが自分で成長を感じることが出来れば、それが一番です。
+
+
+ソフトウェア開発に対して不満を持っている方は、
+是非新しいプログラミング言語の開発にチャレンジしてみてください。
+-----
+* *イマドキな開発環境でもっと楽しよう*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <style type="text/css"> <!-- pre.src { color: #ffffff; background-color: #101010; } --> </style>
+
+
+皆さんは Lua の開発に、エディタは何を使用しているでしょうか？
+
+Lua Development Tools や Atom, VSCode のようなイマドキな機能満載な環境ですか？
+それとも、emacs や vim などの古典的な環境ですか？
+
+どちらの環境にしろ、 Lua コーディング中の補完機能に不満を持っていないですか？
+
+Lua の補完機能は、多くの場合かなり賢く補完してくれるんですが、
+補完が効かないことって結構ありますよね？
+
+ちょっと確認しただけでも、次の場面では補完が効いてくれないようです。
+- 関数の引数に渡したオブジェクトが持つメソッドのフィールド補完
+- metatable を利用したオブジェクト指向プログラミングの補完
+
+軽い処理では、上記問題はあまり気にならないのかもしれないですが、
+ある程度の規模の処理を書く時は結構気になります。
+
+Lua のトランスコンパイラ LuneScript では、
+どんな場面でも補完が効くように、コンパイラレベルで補完機能を提供します。
+
+ここでは、LuneScript のコーディング時に利用出来る、
+イマドキの開発支援を紹介します。
+
+具体的には次の 3 つの機能です。
+
+- コード補完機能
+- Syntax エラーチェック機能
+- subfile を認識した検索
+
+** コード補完機能
+
+LuneScript は、クラスフィールドの補完機能を提供しています。
+
+例えば次のようなコードのとき、
+
+#+BEGIN_SRC lns
+class Super {
+   pub let val:int;
+   pri let val2:int { pub };
+   pub fn funcsuper():int! {
+      return 0;
+   }
+}
+class Test extend Super {
+   pub fn __init( val: int ) {
+      super( val );
+   }
+   pub fn func( val: int ):int {
+      return 1;
+   }
+}
+let test = new Test( 1 );
+#+END_SRC
+
+test のフィールドの補完が次のように行なえます。
+
+[[https://ifritjp.github.io/doc/LuneScript/comp1.gif]]
+
+ここで注目してもらいたいのは次の点です。
+
+- 継承関係を認識して Super と Test のフィールドが候補にリストされている
+- アクセス制御を認識して Super の private な val2 メンバがリストから除外されている
+- インスタンスからアクセス出来ないコンストラクタ(__init)がリストから除外されている
+- 定義していない get_val2() がリストされている
+
+当たり前の機能ですが、
+この当たり前の機能をしっかりとコンパイラ自体が提供しているというのは、
+意外に少なかったりします。
+
+** Syntax エラーチェック機能
+
+LuneScript は、コンパイラなので当然 Syntax エラーチェック機能を持ちます。
+
+このエラーチェック情報の基、エディタ上にエラー箇所を表示可能です。
+
+例えば、次のようなソースで、
+
+#+BEGIN_SRC lns
+fn func( val: int ) {
+   print( val );
+}
+let map = { "a": 1, "b":2 };
+#+END_SRC
+
+次の処理を追加するとエラーとなります。
+
+[[https://ifritjp.github.io/doc/LuneScript/error.gif]]
+
+[[https://ifritjp.github.io/doc/LuneScript/error2.PNG]]
+
+これは、 map 型の item へのアクセス結果は nilable 型になり、
+それを func() に与えた場合、 int! と int の型不一致エラーとなります。
+
+このような、ちょっと見過しがちなエラーもエディタ上で簡単に確認できます。
+
+** subfile を認識した検索
+
+LuneScript は、大きいモジュールを定義するファイルを
+複数のファイルに分割して定義する機能 subfile を持ちます。
+
+この機能を利用することで、ファイルが大きくなってエディタが重くなる、
+なんてストレスから開放されます。
+
+しかし、ファイルが分割されてしまうので、
+モジュール内の検索性が悪くなる欠点があります。
+
+例えば、あるモジュールが owner.lns, sub1.lns, sub2.lns, sub3.lns で構成されている場合、
+あるモジュール内データがどこでアクセスされているかを検索するには、
+owner.lns, sub1.lns, sub2.lns, sub3.lns の 4 つのファイルを
+切り替えて検索する必要があります。
+
+これは面倒な操作です。
+
+この面倒な操作を、検索時に自動で行ないます。
+
+具体的には owner.lns で検索して見つかない場合は、次は sub1.lns に切り替えて検索。
+sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検索。
+... この処理を自動で行ないます。
+
+** 設定
+
+emacs の設定です。  
+  
+#+BEGIN_SRC lisp
+(require 'lns-conf)
+;;(require 'lns-flymake)
+(require 'lns-flycheck)
+(require 'lns-company-mode)
+;;(require 'lns-auto-complete)
+(require 'lns-helm)
+#+END_SRC
+
+コード補完、Syntax チェックは、環境に合わせてどちらかを選択してください。
+
+- コード補完
+  - flycheck 
+  - flymake
+- Syntax チェック
+  - company-mode
+  - auto-complete
+
+LuneScript の flymake, auto-complete 対応は、メンテナンスしていません。
+flycheck, company-mode の使用を推奨します。
+
+** プロジェクト
+
+LuneScript は、モジュールパスをプロジェクトからの相対パスで管理します。
+このため、emacs にプロジェクトのルートディレクトリを認識させる必要があります。
+
+プロジェクトのルートディレクトリを emacs に認識させるには、
+プロジェクトのルートディレクトリに次の *lune.js* ファイルを作成してください。
+
+#+BEGIN_SRC txt
+lune.js
+#+END_SRC
+
+この *lune.js* ファイルには、次を書いておきます。
+
+#+BEGIN_SRC js
+{}
+#+END_SRC
+
+*** モジュールのパス
+
+次の位置に lune.js を作成した場合、
+proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 になります。
+
+#+BEGIN_SRC txt
+proj/lune.js
+proj/foo/bar/module1.lsn
+#+END_SRC
+
+** 最後に
+
+今回の機能は emacs 上で動作確認しています。
+ちなみに、コード補完は company-mode, auto-complete,
+syntax エラーチェックは flymake, flycheck に対応しています。
+
+LuneScript でデフォルトで提供しているのは emacs 向けの設定ですが、
+emacs が行なっているのはフロントエンド制御だけで、
+バックエンドは全て LuneScript が行なっています。
+
+つまり、 emacs 以外の環境に移植することは十分可能です。
+ただ、私自身は emacs ユーザなので、 emacs を最優先で開発しています。
+
+もしも LuneScript に興味をもったなら、
+emacs 以外の環境に対応していただけると嬉しいです。

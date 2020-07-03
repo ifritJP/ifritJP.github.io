@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Lua のトランスコンパイラ LuneScript の紹介 3 - 公開技術情報</title>
+<title>26. subfile 編 - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.71.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/introduce3/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/subfile/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -23,18 +23,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="Lua のトランスコンパイラ LuneScript の紹介 3" />
-<meta property="og:description" content="ここの情報は古くなっています。 LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発" />
+<meta property="og:title" content="26. subfile 編" />
+<meta property="og:description" content="モジュールの処理が大きくなると、それに伴ないファイルが肥大化する。 ファイルの肥大化に良いことはないため、 このような場合はモジュールの責務を細" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/introduce3/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/subfile/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Lua のトランスコンパイラ LuneScript の紹介 3"/>
-<meta name="twitter:description" content="ここの情報は古くなっています。 LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発"/>
-<meta itemprop="name" content="Lua のトランスコンパイラ LuneScript の紹介 3">
-<meta itemprop="description" content="ここの情報は古くなっています。 LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発">
+<meta name="twitter:title" content="26. subfile 編"/>
+<meta name="twitter:description" content="モジュールの処理が大きくなると、それに伴ないファイルが肥大化する。 ファイルの肥大化に良いことはないため、 このような場合はモジュールの責務を細"/>
+<meta itemprop="name" content="26. subfile 編">
+<meta itemprop="description" content="モジュールの処理が大きくなると、それに伴ないファイルが肥大化する。 ファイルの肥大化に良いことはないため、 このような場合はモジュールの責務を細">
 
-<meta itemprop="wordCount" content="1643">
+<meta itemprop="wordCount" content="968">
 
 
 
@@ -51,393 +51,158 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>Lua のトランスコンパイラ LuneScript の紹介 3</h1>
+<main><h1>26. subfile 編</h1>
 
 <p>
-<strong>ここの情報は古くなっています。</strong>
+モジュールの処理が大きくなると、それに伴ないファイルが肥大化する。
 </p>
 <p>
-LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。
+ファイルの肥大化に良いことはないため、
+このような場合はモジュールの責務を細分化し、
+それぞれのモジュール毎にファイルを分けるのが一般的なリファクタリングである。
 </p>
 <p>
-LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。
+しかし、綺麗に責務を分割できない場合や、
+分割すると他のモジュールに与える影響が大きくなってしまう事もよくある。
+このようにモジュール分割による対応が出来ない場合の代替手段として、
+サブファイル化を行なう。
+</p>
+<p>
+サブファイル化とは、
+本来 1 つのファイルで構成するモジュールを複数のファイルに分割することである。
+</p>
+<p>
+LuneScript は、原則 1 モジュール = 1 ファイルであるが、
+サブファイル化した場合は、1 モジュール = 複数ファイルとなる。
 </p>
 <h2 id="headline-1">
-provide
+サブファイル構成
 </h2>
 <p>
-LuneScript では 1 スクリプトファイル が 1 モジュールであり、
-1 つのスクリプトファイル内に宣言した複数のクラスや関数をまとめて
-1 つのモジュールを作成する。
+サブファイルは 1 つの main と、複数の sub で構成される。
 </p>
-<p>
-例えば次のスクリプトでは、 val 変数と func() 関数を宣言している。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// sub.lns
-pub let val:int = 1;
-pub fn func():int {
-  return 1;
-}</code></pre>
+<div class="src src-text">
+<div class="highlight"><pre class="chroma"><code class="language-text" data-lang="text">- main
+  +- sub1
+  +- sub2
+  +- ...
+  +- ...
+  +- subN</code></pre></div>
 </div>
-<p>
-このモジュールを import して利用する際は、
-次のように sub.val, val.func() としてモジュールのフィールドにアクセスする。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// main.lns
-import sub;
-print( sub.val, sub.func() );</code></pre>
-</div>
-<p>
-これは、スクリプトファイル内で 1 つの関数だけを宣言した場合でも同じである。
-</p>
-<p>
-一方、Lua のモジュールは何の値を返してもよい。
-例えば、モジュールが整数値を返すことも出来る。
-</p>
-<p>
-provide は、 LuneScript のモジュールと
-Lua のモジュールの互換性を確保するために利用する。
-</p>
-<p>
-つまり、 provide を利用することで、
-LuneScript モジュールで関数やクラスを返すことが出来る。
-</p>
-<h3 id="headline-2">
+<h2 id="headline-2">
 使用方法
-</h3>
+</h2>
 <p>
-provide は次のように使用する。
+次のように foo/bar ディレクトリ以下に、
+main.lns, sub.lns が存在し sub.lns が main.lns のサブファイルの場合、
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// sub.lns
-let val:int = 1;
-pub fn func():int {
-  return 1;
-}
-provide func;</code></pre>
+<div class="src src-text">
+<div class="highlight"><pre class="chroma"><code class="language-text" data-lang="text">foo/bar
+     + main.lns
+     + sub.lns</code></pre></div>
 </div>
 <p>
-この例では、 sub モジュールは func を返す。
-</p>
-<p>
-この sub モジュールを利用する場合、次のように import した sub が関数となる。
+サブファイルを利用するには、 main 側で次のように宣言する。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// main.lns
-import sub;
-print( sub() );</code></pre>
+<pre><code class="language-lns" data-lang="lns">subfile use foo.bar.sub;</code></pre>
 </div>
+<p>
+また、サブファイル側では次のように宣言する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">subfile owner foo.bar.main;</code></pre>
+</div>
+<p>
+これにより、
+指定したモジュール(上記の例では foo.bar.sub)を分割されたサブファイルとして扱い、
+sub.lns は main.lns のモジュールの一部として処理する。
+</p>
 <h3 id="headline-3">
 制限
 </h3>
 <p>
-provide は次の制限をもつ
+モジュールの宣言は、スクリプトの先頭で行なう必要がある。
+ただし、コメントは除く。
+</p>
+<p>
+subfile use は、1 つのファイル内で複数宣言できる。
+subfile owner は、一つだけ宣言できる。
+つまり、1 つのファイルは複数のサブファイルを持てるが、
+1つのサブファイルは1つのオーナからしか利用できない。
+</p>
+<p>
+subfile use を複数宣言した場合、宣言した順でサブファイルを処理する。
+</p>
+<p>
+サブファイルは C の #include と基本的には同じと考えて良いが、
+次の点で #include と異なる。
 </p>
 <ul>
 <li>
 <p>
-provide で指定できるのは 1 つのシンボルのみ。 
+C の <code class="verbatim">#include</code> は宣言した箇所にファイルを展開するが、 
+LuneScript ではファイルの最終位置にサブファイルを展開する。
+</p>
+</li>
+<li>
+<p>
+サブファイルは、 statement として完結している必要がある。
 </p>
 <ul>
 <li>
 <p>
-プリミティブな値を指定することは出来ない。
+<code class="verbatim">#include</code> のような、式の一部をサブファイル内には書けない。
 </p>
 </li>
 </ul>
 </li>
 <li>
 <p>
-provide を指定した場合は、当然 pub 指定できるのは 1 つのシンボルに限られる。
+サブファイルに対するメインファイルは 1 つでなければならない。
 </p>
 </li>
 <li>
 <p>
-provide は、スクリプトの末尾に宣言しなければならない。
+サブファイルから、さらにサブファイルを利用することはできない。
 </p>
 </li>
 </ul>
-<h2 id="headline-4">
-enum
-</h2>
 <p>
-LuneScript は enum を扱える。
-</p>
-<h3 id="headline-5">
-宣言方法
-</h3>
-<p>
-enum は次のように宣言する。
+例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1,
-  val2,
-  val3,
-  val4,
-}
+<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
+subfile use sub1;
+subfile use sub2;
 
-let val = EnumVal.val1;</code></pre>
+pub let val = 1;</code></pre>
 </div>
-<p>
-この例では EnumVal という enum 型を宣言し、
-EnumVal には val1 〜 val4 までの値を保持する。
-</p>
-<p>
-宣言した enum 値を使用する場合は EnumVal.val1 のようにアクセスする。
-</p>
-<p>
-アクセス制御として pub を指定可能。
-</p>
-<h3 id="headline-6">
-enum 値の型
-</h3>
-<p>
-宣言時に &#39;=&#39; で値を設定することで、 enum 値を設定できる。
-</p>
-<p>
-&#39;=&#39; を省略すると、enum 値は 0 から始まる int 型となる。
-</p>
-<p>
-enum が保持できる型は int, real, str のいずれかで、
-1 つの enum に複数の型を混在させることは出来ない。
-</p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum testEnum {
-   val1,
-   val2,
-   val3 = 1.0 // error: multiple type
-}
+<pre><code class="language-lns" data-lang="lns">//------ sub1.lns -------
+subfile owner main;
 
-enum testEnum2 {
-   val1 = 1.0,
-   val2,
-   val3 = 1, // error: multiple type
-}
+pub let val1 = 1;</code></pre>
+</div>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">//------ sub2.lns -------
+subfile owner main;
 
-enum testEnum3 {
-   val1 = &#34;1&#34;,
-   val2,  // error: illegal type
-   val3 = 1, // error: multiple type
-}
-
-enum testEnum4 {
-   val1,
-   val2
-}</code></pre>
+pub let val2 = 1;</code></pre>
 </div>
 <p>
-int, real は、 enum 値は 1 ずつ増加する。
+main.lns は次のスクリプトと等価である。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1 = 10,	// 10
-  val2,		// 11
-  val3 = 20,	// 20
-  val4,		// 21
-  val5,		// 22
-}</code></pre>
-</div>
-<p>
-enum 値は、式を書ける。
-ただし式はプリミティブな値でなければならない。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1 = 10,		// 10
-  val2 = val + 1,	// 11
-}</code></pre>
-</div>
-<h3 id="headline-7">
-enum 値の演算
-</h3>
-<p>
-enum 値は、enum 値の型と演算できる。
-</p>
-<p>
-例えば次の場合、EnumVal.val4 + 10 は 13 となる。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1,
-  val2,
-  val3,
-  val4,
-}
-
-print( EnumVal.val4 + 10 ); // 13</code></pre>
-</div>
-<h3 id="headline-8">
-enum 値の名前
-</h3>
-<p>
-enum 値から動的に名前を取得することが出来る。
-</p>
-<p>
-例えば次の場合、 <code>print( val, val.$_txt )</code> は 0, Enumval.val1 を出力する。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1,
-  val2,
-  val3,
-  val4,
-}
-
-let val = EnumVal.val1;
-print( val, val.$_txt ); // 0, Enumval.val1</code></pre>
-</div>
-<h3 id="headline-9">
-enum 値への変換
-</h3>
-<p>
-enum 値は int real, str のいずれかの値を持つ。
-</p>
-<p>
-enum 値は、それらの型の変数に代入できる。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1,
-  val2,
-  val3,
-  val4,
-}
-let val:int = EnumVal.val1;</code></pre>
-</div>
-<p>
-一方で、int real, str の値を enum 型の変数に代入することは出来ない。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1,
-  val2,
-  val3,
-  val4,
-}
-let val:EnumVal = 1; // error</code></pre>
-</div>
-<p>
-int real, str の値を、対応する enum 型に変換するには _from() メソッドを使用する。
-</p>
-<p>
-次の例は、 <code>EnumVal._from(0)</code> を使って、
-0 から対応する EnumVal.val1 に変換し、EnumVal 型の変数 val に設定している。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-  val1,
-  val2,
-  val3,
-  val4,
-}
-let val:EnumVal = unwrap EnumVal._from( 0 );
-print( val.$_txt );  // EnumVal.val1;</code></pre>
-</div>
-<p>
-ここで _from() メソッドの戻り値は EnumVal! 型となるので、
-EnumVal にするため unwrap している。
-_from() メソッドは、指定の引数に一致する enum 値が存在する場合はその enum 値を返すが、
-一致する enum 値が無い場合は nil を返す。
-</p>
-<h3 id="headline-10">
-名前の省略
-</h3>
-<p>
-LuneScript では enum 値にアクセスする際、
-swift と同じ形式で名前を省略することが可能です。
-</p>
-<p>
-例えば次のような場合、 switch の条件に enum 値を指定しています。
-この時の case は EnumVal.val1 ではなく .val1 で enum 値を利用できます。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub enum EnumVal {
-   val1,
-   val2,
-   val3,
-   val4,
-}
-fn func( val:EnumVal ) {
-   switch ( val ) {
-      case .val1, .val2 {
-      } 
-      case .val3, .val4 {
-      } 
-   }
-}</code></pre>
-</div>
-<p>
-この方法が利用可能なのは、次の箇所です。
-</p>
-<ul>
-<li>
-<p>
-関数コール時の引数指定
-</p>
-</li>
-<li>
-<p>
-変数への代入
-</p>
-</li>
-<li>
-<p>
-switch-case
-</p>
-</li>
-<li>
-<p>
-return
-</p>
-</li>
-<li>
-<p>
-2項演算
-</p>
-</li>
-<li>
-<p>
-Map のキー
-</p>
-</li>
-</ul>
-<h3 id="headline-11">
-enum 値のリスト
-</h3>
-<p>
-get__allList() を使用することで、
-enum 型の全 enum 値を要素に持つリストを取得することができます。
-</p>
-<p>
-例えば次のコードでは、 EnumVal の全 enum 値の文字列表現を出力します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum EnumVal {
-   val1,
-   val2,
-   val3,
-   val4,
-}
-foreach val in EnumVal.$_allList {
-   print( val.$_txt );
-}</code></pre>
-</div>
-<p>
-このコードの出力結果は次になります。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">EnumVal.val1
-EnumVal.val2
-EnumVal.val3
-EnumVal.val4</code></pre>
+<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
+pub let val = 1;
+pub let val1 = 1;
+pub let val2 = 1;</code></pre>
 </div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/introduce2/" title="Lua のトランスコンパイラ LuneScript の紹介 2"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Lua のトランスコンパイラ LuneScript の紹介 2</a>
-<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/go/" title="Z. Go 言語へのトランスコンパイル">Next - Z. Go 言語へのトランスコンパイル <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/cast/" title="25. キャスト 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 25. キャスト 編</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/reason/" title="A. Lua のトランスコンパイラ LuneScript を開発した理由">Next - A. Lua のトランスコンパイラ LuneScript を開発した理由 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -560,16 +325,17 @@ EnumVal.val4</code></pre>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">Z. Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
 </ul>
   
 </li>

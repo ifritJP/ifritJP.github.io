@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Lua のトランスコンパイラ LuneScript の紹介 2 - 公開技術情報</title>
+<title>22.1. glue コードの半自動生成 - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.71.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/introduce2/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/glue/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -23,18 +23,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="Lua のトランスコンパイラ LuneScript の紹介 2" />
-<meta property="og:description" content="LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。 subfile クラスの処理が大き" />
+<meta property="og:title" content="22.1. glue コードの半自動生成" />
+<meta property="og:description" content="Lua の外部モジュールには、次の 2 つのケースがある。 Lua スクリプトで構成されるケース C 等の Native Library を利用するケース Lua から Native Library を利用するには、 Lua 用のイン" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/introduce2/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/glue/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Lua のトランスコンパイラ LuneScript の紹介 2"/>
-<meta name="twitter:description" content="LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。 subfile クラスの処理が大き"/>
-<meta itemprop="name" content="Lua のトランスコンパイラ LuneScript の紹介 2">
-<meta itemprop="description" content="LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。 LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。 subfile クラスの処理が大き">
+<meta name="twitter:title" content="22.1. glue コードの半自動生成"/>
+<meta name="twitter:description" content="Lua の外部モジュールには、次の 2 つのケースがある。 Lua スクリプトで構成されるケース C 等の Native Library を利用するケース Lua から Native Library を利用するには、 Lua 用のイン"/>
+<meta itemprop="name" content="22.1. glue コードの半自動生成">
+<meta itemprop="description" content="Lua の外部モジュールには、次の 2 つのケースがある。 Lua スクリプトで構成されるケース C 等の Native Library を利用するケース Lua から Native Library を利用するには、 Lua 用のイン">
 
-<meta itemprop="wordCount" content="2335">
+<meta itemprop="wordCount" content="1320">
 
 
 
@@ -51,156 +51,8 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>Lua のトランスコンパイラ LuneScript の紹介 2</h1>
+<main><h1>22.1. glue コードの半自動生成</h1>
 
-<p>
-LuneScript は、 Lua へのトランスコンパイルを目的とした言語です。
-</p>
-<p>
-LuneScript を利用することで、規模の大きい Lua スクリプトを効率良く開発出来ます。
-</p>
-<h2 id="headline-1">
-subfile
-</h2>
-<p>
-クラスの処理が大きくなると、それに伴ないファイルが肥大化する。
-</p>
-<p>
-ファイルの肥大化に良いことはないため、
-このような場合はクラスの責務を細分化し、
-それぞれのクラス毎にファイルを分けるのが一般的なリファクタリングである。
-</p>
-<p>
-しかし、綺麗に責務を分割できない場合や、
-分割すると他のモジュールに与える影響が大きくなってしまう事もよくある。
-このようにクラス分割による対応が出来ない場合の代替手段として、
-サブファイル化を行なう。
-</p>
-<p>
-サブファイル化は、
-本来 1 つのファイルで構成するモジュールを複数のファイルに分割することである。
-</p>
-<p>
-LuneScript は、原則 1 モジュール = 1 ファイルであるが、
-サブファイル化した場合は、1 モジュール = 複数ファイルとなる。
-</p>
-<p>
-サブファイルを利用するには、利用する側で次のように宣言する。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">subfile use foo.bar.sub;</code></pre>
-</div>
-<p>
-また、サブファイル側では次のように宣言する。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">subfile owner foo.bar.main;</code></pre>
-</div>
-<p>
-これにより、
-指定したモジュール(上記の例では foo.bar.sub)をサブファイルとして扱う。
-</p>
-<p>
-モジュールの宣言は、スクリプトの先頭で行なう必要がある。
-ただし、コメントは除く。
-</p>
-<p>
-subfile use は、1 つのファイル内で複数宣言できる。
-subfile owner は、一つだけ宣言できる。
-つまり、1 つのファイルは複数のサブファイルを持てるが、
-1つのサブファイルは1つのオーナからしか利用できない。
-</p>
-<p>
-subfile use を複数宣言した場合、宣言した順でサブファイルを処理する。
-</p>
-<p>
-サブファイルは C の #include と基本的には同じと考えて良いが、
-次の点で #include と異なる。
-</p>
-<ul>
-<li>
-<p>
-LuneScript ではファイルの最終位置に展開する。
-</p>
-</li>
-<li>
-<p>
-サブファイルは、 statement として完結している必要がある。
-</p>
-<ul>
-<li>
-</li>
-</ul>
-</li>
-<li>
-<p>
-サブファイルに対するメインファイルは 1 つでなければならない。
-</p>
-</li>
-<li>
-<p>
-サブファイルから、さらにサブファイルを利用することはできない。
-</p>
-</li>
-</ul>
-<p>
-例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
-subfile use sub1;
-subfile use sub2;
-
-pub let val = 1;
-//------ sub1.lns -------
-subfile owner main;
-
-pub let val1 = 1;
-//------ sub2.lns -------
-subfile owner main;
-
-pub let val2 = 1;</code></pre>
-</div>
-<p>
-main.lns は次のスクリプトと等価である。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
-pub let val = 1;
-pub let val1 = 1;
-pub let val2 = 1;</code></pre>
-</div>
-<h2 id="headline-2">
-module
-</h2>
-<p>
-Lua の外部モジュールは require で利用できる。
-しかし require の結果は stem 型であり、
-stem 型のまま LuneScript で扱うのは使い勝手が悪い。
-</p>
-<p>
-module は、外部モジュールの型を定義する。
-</p>
-<p>
-詳しくは次の記事を参考にしてください。
-</p>
-<ul>
-<li>
-<p>
-トランスコンパイラ LuneScript 入門 - require/module 編
-</p>
-<ul>
-<li>
-<p>
-<a href="../require">../require</a>
-</p>
-</li>
-</ul>
-<h3 id="headline-3">
-glue コード自動生成
-</h3>
-</li>
-</ul>
 <p>
 Lua の外部モジュールには、次の 2 つのケースがある。
 </p>
@@ -218,10 +70,10 @@ C 等の Native Library を利用するケース
 </ul>
 <p>
 Lua から Native Library を利用するには、
-Lua 用のインタフェースを持つ glue が必要である。
+Lua 用のインタフェースを橋渡しする glue が必要である。
 </p>
 <p>
-LuneScript は、この glue を自動生成する機能を持つ。
+LuneScript は、この glue を半自動的に生成する機能を持つ。
 </p>
 <p>
 LuneScript の glue 自動生成機能は、
@@ -232,9 +84,9 @@ LuneScript で module 宣言したモジュールの glue コードを自動生�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">swig:		C/C++ ==&gt; glue
 LuneScript:	Lns   ==&gt; glue</code></pre></div>
 </div>
-<h4 id="headline-4">
+<h2 id="headline-1">
 使用方法
-</h4>
+</h2>
 <p>
 glue を生成するには、 module 定義時に glue キーワードを指定する。
 </p>
@@ -361,7 +213,7 @@ LuneScript で定義している create() と add() のメソッドを Lua に�
 </p>
 <p>
 LuneScript で定義している create() と add() に対応する関数は、
-lns_glue_create() と lns_glue_add() が対応している。
+lns_glue_create() と lns_glue_add() である。
 </p>
 <p>
 なお、この関数はそれぞれ hoge_create() と hoge_add() をコールしている。
@@ -445,30 +297,10 @@ test.ext モジュールが完成する。
 <div class="src src-txt">
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ gcc -std=c99 -fPIC -shared -o test/ext.so glue.c test_ext_glue.c</code></pre></div>
 </div>
-<h2 id="headline-5">
-nil 条件演算子
-</h2>
-<p>
-nil 条件演算子 については、次を参考にしてください。
-</p>
-<ul>
-<li>
-<p>
-トランスコンパイラ LuneScript 入門 - nil 条件演算子 編
-</p>
-<ul>
-<li>
-<p>
-<a href="../nilcond">../nilcond</a>
-</p>
-</li>
-</ul>
-</li>
-</ul>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/box/" title="Box 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Box 編</a>
-<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/introduce3/" title="Lua のトランスコンパイラ LuneScript の紹介 3">Next - Lua のトランスコンパイラ LuneScript の紹介 3 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/require/" title="22. require/module 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 22. require/module 編</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/make/" title="23. ビルド 編">Next - 23. ビルド 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -591,16 +423,17 @@ nil 条件演算子 については、次を参考にしてください。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/introduce2/">Lua のトランスコンパイラ LuneScript の紹介 2</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/introduce3/">Lua のトランスコンパイラ LuneScript の紹介 3</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">Z. Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
 </ul>
   
 </li>
