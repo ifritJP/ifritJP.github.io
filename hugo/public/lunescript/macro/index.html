@@ -34,7 +34,7 @@
 <meta itemprop="name" content="24. マクロ 編">
 <meta itemprop="description" content="今回は LuneScript のマクロについて説明します。 マクロ LuneScript は、マクロを対応します。 もしかしたら、 最近は マクロ というよりも メタプログラミング と言った方が 意味">
 
-<meta itemprop="wordCount" content="3735">
+<meta itemprop="wordCount" content="4118">
 
 
 
@@ -647,7 +647,67 @@ name と memStatList を使ってクラスを宣言する。
 メンバは int と str 型のデータとして扱います。
 リストなどはサポートしていません。
 </p>
-<h2 id="headline-11">
+<h3 id="headline-11">
+マクロ間共通 Map
+</h3>
+<p>
+マクロは、コンパイル時に実行される処理です。
+また、マクロの実行はそれぞれ独立しています。
+2 つのマクロ A, B を実行する時、
+マクロ A の実行結果によってマクロ B の制御を変更する、
+ということは出来ません。
+</p>
+<p>
+しかし、これだと不便なこともあります。
+そこで、マクロ内でデータを共有するのが マクロ間共通 Map です。
+</p>
+<p>
+<strong>※これは実験的な機能です。</strong>
+</p>
+<p>
+マクロの macro-statement 内からは、特殊変数 <code class="verbatim">__var</code> を利用できます。
+</p>
+<p>
+この変数の型は、次の Map です。
+</p>
+<pre class="example">
+let mut var:Map&lt;str,stem&gt;
+</pre>
+<p>
+この変数は、各モジュールのコンパイル開始時に生成され、
+全てのマクロから同じ変数にアクセスします。
+</p>
+<p>
+次に例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">   macro _test0( name:str, val:int ) {
+      {
+         __var[ name ] = val;
+      }
+   }
+   macro _test1() {
+      {
+         let val;
+         if! let work = __var[ &#34;hoge&#34; ] {
+            val = work@@int;
+         }
+         else {
+            val = 10;
+         }
+      }
+      print( &#34;%s&#34; (,,val) );
+   }
+   _test0( &#34;hogea&#34;, 1 );
+   _test1(); // 10
+   _test0( &#34;hoge&#34;, 1 );
+   _test1(); // 1</code></pre>
+</div>
+<p>
+この例では、_test0() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> に int データを保持し、
+_test1() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> の格納されている値によって処理を変更しています。
+</p>
+<h2 id="headline-12">
 まとめ
 </h2>
 <p>
