@@ -1,0 +1,209 @@
+#+TITLE: Lua5.4 の主な変更点
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+Lua5.4 が 2020/6/29 にリリースされた。
+
+主な変更点は次の通り
+
+- new generational mode for garbage collection
+- to-be-closed variables
+- const variables
+- userdata can have multiple user values
+- new implementation for math.random
+- warning system
+- debug information about function arguments and returns
+- new semantics for the integer 'for' loop
+- optional 'init' argument to 'string.gmatch'
+- new functions 'lua_resetthread' and 'coroutine.close'
+- string-to-number coercions moved to the string library
+- allocation function allowed to fail when shrinking a memory block
+- new format '%p' in 'string.format'
+- utf8 library accepts codepoints up to 2^31
+
+ここでは to-be-closed variables と const variables の動作を確認する。
+
+* const variables
+
+const variables は、 *上書きが出来ない変数* である。
+
+const variables の宣言は、
+次のように local 変数宣言時に =<const>= を付加して宣言する必要がある。
+
+: local val<const> = 1
+
+const variables は上書きが出来ない変数であるため、
+次のような場合 ~val = 2~ はエラーする。
+
+#+BEGIN_SRC lua
+local val<const> = 1
+val = 2 -- error  : attempt to assign to const variable 'val'
+#+END_SRC
+
+なお、const variables は変数の上書きが禁止なだけであって、
+*変数が保持する値は変更できる。*
+
+例えば、次のような処理は可能である。
+
+#+BEGIN_SRC lua
+local val<const> = {}
+table.insert( val, 1 )
+print( #val )
+#+END_SRC
+
+この処理では、 val を const 宣言して空の Table をセットし、
+その後 1 を insert している。
+この insert 処理はエラーせず実行できる。
+
+
+* to-be-closed variables
+
+to-be-closed variables は、 従来の __gc メタメソッドに近い概念である。
+
+__gc メタメソッドは、値が開放される時にコールされるのに対し、
+__close メタメソッドは、local 変数のスコープが外れた時にコールされる。
+
+to-be-closed variables を宣言するには、
+次のように local 変数宣言時に =<close>= を付加して宣言する必要がある。
+
+: local val<close> = 初期値
+
+*初期値には __close メタメソッドを持つ値を指定しなければならない。*
+例えば、次のように初期値に __close メタメソッドを
+持たない値を指定した場合、エラーとなる。
+
+: local val<close> = {}
+
+なお、このエラーはコンパイルエラーではなく、
+*実行時エラーとなる* ことは注意が必要である。
+
+
+次に to-be-closed variables のサンプルを示す。
+
+#+BEGIN_SRC lua
+function createCloseVal(num)
+   local meta = {
+      __close = function( self, err ) print( "__close", self.num ) end,
+      __gc = function( self ) print( "__gc", self.num ) end,
+   }
+   return setmetatable( { num=num }, meta )
+end
+
+for count = 1, 3 do
+   local val<close> = createCloseVal( count )
+   local val2<close> = createCloseVal( count + 100 )
+end
+#+END_SRC
+
+このサンプルは createCloseVal() で to-be-closed variables に格納する値を生成し、
+to-be-closed variables の =val= にセットする処理を for で 3 回繰り返す。
+
+この実行結果は次の通りである。
+
+#+BEGIN_SRC txt
+__close	101
+__close	1
+__close	102
+__close	2
+__close	103
+__close	3
+__gc	103
+__gc	3
+__gc	102
+__gc	2
+__gc	101
+__gc	1
+#+END_SRC
+
+この結果を見ると分かる通り、
+__close が for のブロックで実行された後に、__gc が実行されている。
+
+また、ブロック内に複数の  to-be-closed variables を宣言している場合、
+*宣言とは逆順で __close() が実行される。*
+
+なお to-be-closed variables は、
+const 変数と同じで *変数の上書きが出来ない。*
+
+** クロージャ
+
+to-be-closed variables はクロージャで利用できる。
+ただし、 *__close メソッドはクロージャとは関係なく*
+*to-be-closed variables のスコープ終了時に実行される。*
+
+次にサンプルを示す。
+
+#+BEGIN_SRC lua
+function createCloseVal(num)
+   local meta = {
+      __close = function( self, err ) print( "__close", self.num ) end,
+      __gc = function( self ) print( "__gc", self.num ) end,
+   }
+   return setmetatable( { num=num }, meta )
+end
+
+function test( num ) 
+   local val<close> = createCloseVal( num )
+   return function()
+      print( "closure", val.num )
+   end
+end
+
+local hoge = test( 100 )
+hoge()
+#+END_SRC
+
+このサンプルは、 test 関数で to-be-closed variables の val 変数と、
+その val を使用したクロージャを生成する。
+
+このサンプルの出力は次の通りである。
+
+#+BEGIN_SRC txt
+__close	100
+closure	100
+__gc	100
+#+END_SRC
+
+まず to-be-closed variables の val 変数の __close() が実行され、
+"__close	100" が出力されている。
+これは、 test() 関数を抜けて val 変数のスコープが終了するためである。
+
+次に hoge() を実行して "closure 100" が出力されている。
+
+最後に、val に格納されている値が開放されるタイミングで __gc() が実行され、
+"__gc	100" が出力されている。
+
+以上のように to-be-closed variables は、
+クロージャとは独立して動作する。
+
+* その他
+
+to-be-closed variables と const variables 以外に気になって調べた結果を説明する。
+  
+** new semantics for the integer 'for' loop
+  
+変更点に for 文が新しくなったと挙げられているが、
+説明を見る限り普通に使用している限りは影響がないように思える。
+
+一応説明しておくと、従来は for の繰り返し制御が整数と実数とで違いは無かったが、
+5.4 では整数と実数とで明確に内部処理が異なる、ということだ。
+
+ただ、内部処理が異なるということであって、
+この変更によってユーザプログラムに影響が出ることはほとんどないだろう。
+
+** userdata can have multiple user values
+
+ユーザデータが複数の値を保持できるようになったとあるが、
+それによってユーザデータの確保 API が変っている。
+
+- void *lua_newuserdatauv(lua_State *L, size_t size, int nuvalue);
+- int lua_setiuservalue(lua_State *L, int index, int n);
+- int lua_getiuservalue(lua_State *L, int index, int n);
+
+これの何が嬉しいのかイマイチ分からない。時間があれば後で調べてみる。
+
+なお、従来の lua_newuserdata() は、
+互換性確保のためマクロが定義されている。
+
+: #define lua_newuserdata(L,s)	lua_newuserdatauv(L,s,1)

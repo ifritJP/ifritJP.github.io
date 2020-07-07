@@ -34,7 +34,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス Lua は非常にコンパクトな言語でありながら、高い">
 
-<meta itemprop="wordCount" content="65818">
+<meta itemprop="wordCount" content="66202">
 
 
 
@@ -9457,7 +9457,67 @@ name と memStatList を使ってクラスを宣言する。
 メンバは int と str 型のデータとして扱います。
 リストなどはサポートしていません。
 </p>
-<h3 id="headline-253">
+<h4 id="headline-253">
+マクロ間共通 Map
+</h4>
+<p>
+マクロは、コンパイル時に実行される処理です。
+また、マクロの実行はそれぞれ独立しています。
+2 つのマクロ A, B を実行する時、
+マクロ A の実行結果によってマクロ B の制御を変更する、
+ということは出来ません。
+</p>
+<p>
+しかし、これだと不便なこともあります。
+そこで、マクロ内でデータを共有するのが マクロ間共通 Map です。
+</p>
+<p>
+<strong>*※これは実験的な機能です。</strong>
+</p>
+<p>
+マクロの macro-statement 内からは、特殊変数 <code class="verbatim">__var</code> を利用できます。
+</p>
+<p>
+この変数の型は、次の Map です。
+</p>
+<pre class="example">
+let mut var:Map&lt;str,stem&gt;
+</pre>
+<p>
+この変数は、各モジュールのコンパイル開始時に生成され、
+全てのマクロから同じ変数にアクセスします。
+</p>
+<p>
+次に例を示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">   macro _test0( name:str, val:int ) {
+      {
+         __var[ name ] = val;
+      }
+   }
+   macro _test1() {
+      {
+         let val;
+         if! let work = __var[ &#34;hoge&#34; ] {
+            val = work@@int;
+         }
+         else {
+            val = 10;
+         }
+      }
+      print( &#34;%s&#34; (,,val) );
+   }
+   _test0( &#34;hogea&#34;, 1 );
+   _test1(); // 10
+   _test0( &#34;hoge&#34;, 1 );
+   _test1(); // 1</code></pre>
+</div>
+<p>
+この例では、_test0() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> に int データを保持し、
+_test1() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> の格納されている値によって処理を変更しています。
+</p>
+<h3 id="headline-254">
 まとめ
 </h3>
 <p>
@@ -9472,7 +9532,7 @@ LuneScript は、関数と同じ感覚でマクロを定義することが出来
 ビルド方法について説明します。
 </p>
 <hr>
-<h2 id="headline-254">
+<h2 id="headline-255">
 <strong>キャスト 編</strong>
 </h2>
 <p>
@@ -9493,7 +9553,7 @@ LuneScript は、 3 つのタイプのキャストを提供します。
 <p>
 <code>@@=</code>
 </p>
-<h3 id="headline-255">
+<h3 id="headline-256">
 <code>@@</code>  
 </h3>
 </li>
@@ -9553,7 +9613,7 @@ let val2 = 1@@str;  // error</code></pre>
 <p>
 クラス型へのキャストは <code>@@@</code> か <code>@@=</code> を使用してください。
 </p>
-<h3 id="headline-256">
+<h3 id="headline-257">
 <code>@@@</code>
 </h3>
 <p>
@@ -9588,7 +9648,7 @@ str 型でなければ nil を返します。
 <p>
 <code class="verbatim">@@@</code> は、 キャスト元が nilable でもキャスト可能です。
 </p>
-<h4 id="headline-257">
+<h4 id="headline-258">
 <code>@@@</code> の制限 1
 </h4>
 <p>
@@ -9619,7 +9679,7 @@ str 型でなければ nil を返します。
 func( 1.0 );
 func( 2.5 );</code></pre>
 </div>
-<h4 id="headline-258">
+<h4 id="headline-259">
 <code>@@@</code> の制限 2
 </h4>
 <p>
@@ -9631,7 +9691,7 @@ enum などは利用できません。
 <p>
 また、 class でも generics は利用できません。
 </p>
-<h3 id="headline-259">
+<h3 id="headline-260">
 <code>@@=</code>
 </h3>
 <p>
@@ -9644,7 +9704,7 @@ enum などは利用できません。
 <p>
 <code>@@=</code> は、型チェックに時間がかかるような場合に限り使用するべきです。
 </p>
-<h3 id="headline-260">
+<h3 id="headline-261">
 まとめ
 </h3>
 <p>
@@ -9657,7 +9717,7 @@ generics や、 alge などを利用することで
 <code>@@</code> や <code>@@=</code> の利用は必要最低限になるように設計してください。
 </p>
 <hr>
-<h2 id="headline-261">
+<h2 id="headline-262">
 <strong>subfile 編</strong>
 </h2>
 <p>
@@ -9682,7 +9742,7 @@ generics や、 alge などを利用することで
 LuneScript は、原則 1 モジュール = 1 ファイルであるが、
 サブファイル化した場合は、1 モジュール = 複数ファイルとなる。
 </p>
-<h3 id="headline-262">
+<h3 id="headline-263">
 サブファイル構成
 </h3>
 <p>
@@ -9696,7 +9756,7 @@ LuneScript は、原則 1 モジュール = 1 ファイルであるが、
   +- ...
   +- subN</code></pre></div>
 </div>
-<h3 id="headline-263">
+<h3 id="headline-264">
 使用方法
 </h3>
 <p>
@@ -9725,7 +9785,7 @@ main.lns, sub.lns が存在し sub.lns が main.lns のサブファイルの場�
 指定したモジュール(上記の例では foo.bar.sub)を分割されたサブファイルとして扱い、
 sub.lns は main.lns のモジュールの一部として処理する。
 </p>
-<h4 id="headline-264">
+<h4 id="headline-265">
 制限
 </h4>
 <p>
@@ -9807,7 +9867,7 @@ pub let val1 = 1;
 pub let val2 = 1;</code></pre>
 </div>
 <hr>
-<h2 id="headline-265">
+<h2 id="headline-266">
 <strong>Lua のトランスコンパイラ LuneScript を開発した理由</strong>
 </h2>
 <p>
@@ -9827,7 +9887,7 @@ DSP のような処理をさせなければ、
 私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
 よく使う言語の１つである。
 </p>
-<h3 id="headline-266">
+<h3 id="headline-267">
 Lua のトランスコンパイラ LuneScript を開発した理由
 </h3>
 <p>
@@ -9904,7 +9964,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 <p>
 以降で、それぞれについて説明する。
 </p>
-<h4 id="headline-267">
+<h4 id="headline-268">
 楽して安全に書きたい
 </h4>
 <p>
@@ -9957,7 +10017,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 <p>
 これが、私が LuneScript を開発する一番の理由だ。
 </p>
-<h4 id="headline-268">
+<h4 id="headline-269">
 動的型付け言語特有の問題
 </h4>
 <p>
@@ -9975,7 +10035,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 動的型付け言語を利用した場合に、
 問題となり易いことを挙げている。
 </p>
-<h5 id="headline-269">
+<h5 id="headline-270">
 静的なエラーチェックが出来ない
 </h5>
 <p>
@@ -10035,7 +10095,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 まぁ、もっと違うパラダイムなのかもしれないが。
 </p>
-<h5 id="headline-270">
+<h5 id="headline-271">
 他人のコードの内容を把握し難い
 </h5>
 <p>
@@ -10079,7 +10139,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 なんども言うが私は楽をしたいのだ。
 </p>
-<h5 id="headline-271">
+<h5 id="headline-272">
 メンテナンスや機能追加、リファクタリングのリスクが大きい
 </h5>
 <p>
@@ -10141,7 +10201,7 @@ parse したそのままの文字列データを渡してしまう等、
 LuneScript 開発中、何度も設計変更を行ったが、
 もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。
 </p>
-<h5 id="headline-272">
+<h5 id="headline-273">
 コーディング時の補完がイケてない
 </h5>
 <p>
@@ -10170,7 +10230,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 <a href="../completion">../completion</a>
 </p>
-<h5 id="headline-273">
+<h5 id="headline-274">
 テーブル内のフィールドアクセス制御が出来ない
 </h5>
 <p>
@@ -10214,7 +10274,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 問題なのはそういった制御がなく、全てアクセス可能になってしまっていることである。
 </p>
-<h4 id="headline-274">
+<h4 id="headline-275">
 Luaの機能に不満がある
 </h4>
 <p>
@@ -10226,7 +10286,7 @@ Lua はコンパクトでパワフルな言語であるが、
 素の Lua ではサポートされていない機能をサポートすることも
 目的の一つに開発している。
 </p>
-<h5 id="headline-275">
+<h5 id="headline-276">
 nil安全でない
 </h5>
 <p>
@@ -10279,7 +10339,7 @@ nil を取り得ない 非 nilable を別の型として管理することで、
 多階層の nilable データに楽にアクセスするための nil 条件演算子をサポートすることで、
 nil エラーの対応を楽にかつ安全に対応できるようにしている。
 </p>
-<h5 id="headline-276">
+<h5 id="headline-277">
 マクロがない
 </h5>
 <p>
@@ -10317,7 +10377,7 @@ LuneScript では、実装が簡単で、かつ使用する側の学習に負担
 LuneScript のセルフホスティングでもマクロを使用しているが、
 やはりマクロはプログラム言語には無くてはならないものだと改めて感じている。
 </p>
-<h4 id="headline-277">
+<h4 id="headline-278">
 Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
 </h4>
 <p>
@@ -10331,7 +10391,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 他にも組込みを意識した言語はいくつかあるが、
 組込みという条件で見た場合、Lua を越える言語を私は知らない。
 </p>
-<h4 id="headline-278">
+<h4 id="headline-279">
 既に数多くのシステムで Lua を利用している
 </h4>
 <p>
@@ -10344,7 +10404,7 @@ Lua を組み込んでいるシステムは多く存在する。
 <p>
 ちょっと気にいらないからといって、変えられるものではない。
 </p>
-<h3 id="headline-279">
+<h3 id="headline-280">
 最後に
 </h3>
 <p>
@@ -10363,14 +10423,14 @@ Lua には LuneScript があることも検討材料にして欲しい。
 そして、Lua には LuneScript という選択肢もあることを覚えておいて欲しい。
 </p>
 <hr>
-<h2 id="headline-280">
+<h2 id="headline-281">
 <strong>トランスコンパイラ開発のすゝめ</strong>
 </h2>
 <p>
 LuneScript 入門のアドベントカレンダー最後の記事は、
 これまでとは趣向を変えてトランスコンパイラ開発そのものについて扱っていきます。
 </p>
-<h3 id="headline-281">
+<h3 id="headline-282">
 トランスコンパイラ開発をすゝめる理由
 </h3>
 <p>
@@ -10409,7 +10469,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 <p>
 以降では、上記の各項目を説明していきます。
 </p>
-<h4 id="headline-282">
+<h4 id="headline-283">
 現状に対する不満を建設的に解決できる
 </h4>
 <p>
@@ -10486,7 +10546,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 アイデアをソフトウェアで実現出来る能力を持っているからこそ
 「ソフトウェアエンジニア」ではないでしょうか？
 </p>
-<h5 id="headline-283">
+<h5 id="headline-284">
 「コンパイラ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -10548,7 +10608,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 <p>
 最終的にコンパイラを開発するのが、効率の良い方法と言えるでしょう。
 </p>
-<h5 id="headline-284">
+<h5 id="headline-285">
 「インタプリタ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -10577,7 +10637,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 今は実用的なインタプリタ型の言語(スクリプト言語)が世の中にいくつもあります。
 わざわざ自前で作る必要はないでしょう。
 </p>
-<h5 id="headline-285">
+<h5 id="headline-286">
 出力結果が分かり易い
 </h5>
 <p>
@@ -10636,7 +10696,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 一方トランスコンパイラは、
 ライセンスと変換後のコードを調べれば良いだけです。
 </p>
-<h4 id="headline-286">
+<h4 id="headline-287">
 トレンドの技術を確認できる
 </h4>
 <p>
@@ -10691,7 +10751,7 @@ C 言語しか知らないからいつも通りに C 言語で書くことは、
 このように、イマドキの言語の特徴の理解を深めるためにも
 トランスコンパイラの開発は経験として良いものだと言えます。
 </p>
-<h4 id="headline-287">
+<h4 id="headline-288">
 コーディングルールを矯正できる  
 </h4>
 <p>
@@ -10735,7 +10795,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 新しい言語を開発する際は、新しい機能を取り入れるだけでなく、
 普段のコーディングルールを見直し、言語レベルで対応できないか検討するべきだと思います。
 </p>
-<h3 id="headline-288">
+<h3 id="headline-289">
 最後に
 </h3>
 <p>
@@ -10762,7 +10822,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 是非新しいプログラミング言語の開発にチャレンジしてみてください。
 </p>
 <hr>
-<h2 id="headline-289">
+<h2 id="headline-290">
 <strong>イマドキな開発環境でもっと楽しよう</strong>
 </h2>
 <p>
@@ -10824,7 +10884,7 @@ Syntax エラーチェック機能
 <p>
 subfile を認識した検索
 </p>
-<h3 id="headline-290">
+<h3 id="headline-291">
 コード補完機能
 </h3>
 </li>
@@ -10889,7 +10949,7 @@ test のフィールドの補完が次のように行なえます。
 この当たり前の機能をしっかりとコンパイラ自体が提供しているというのは、
 意外に少なかったりします。
 </p>
-<h3 id="headline-291">
+<h3 id="headline-292">
 Syntax エラーチェック機能
 </h3>
 <p>
@@ -10923,7 +10983,7 @@ let map = { &#34;a&#34;: 1, &#34;b&#34;:2 };</code></pre>
 <p>
 このような、ちょっと見過しがちなエラーもエディタ上で簡単に確認できます。
 </p>
-<h3 id="headline-292">
+<h3 id="headline-293">
 subfile を認識した検索
 </h3>
 <p>
@@ -10955,7 +11015,7 @@ owner.lns, sub1.lns, sub2.lns, sub3.lns の 4 つのファイルを
 sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検索。
 … この処理を自動で行ないます。
 </p>
-<h3 id="headline-293">
+<h3 id="headline-294">
 設定
 </h3>
 <p>
@@ -11012,7 +11072,7 @@ auto-complete
 LuneScript の flymake, auto-complete 対応は、メンテナンスしていません。
 flycheck, company-mode の使用を推奨します。
 </p>
-<h3 id="headline-294">
+<h3 id="headline-295">
 プロジェクト
 </h3>
 <p>
@@ -11033,7 +11093,7 @@ LuneScript は、モジュールパスをプロジェクトからの相対パス
 <div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{}</span>
 </code></pre></div>
 </div>
-<h4 id="headline-295">
+<h4 id="headline-296">
 モジュールのパス
 </h4>
 <p>
@@ -11044,7 +11104,7 @@ proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 にな�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">proj/lune.js
 proj/foo/bar/module1.lsn</code></pre></div>
 </div>
-<h3 id="headline-296">
+<h3 id="headline-297">
 最後に
 </h3>
 <p>
@@ -11102,6 +11162,7 @@ emacs 以外の環境に対応していただけると嬉しいです。
 <li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
 </ul>
   
