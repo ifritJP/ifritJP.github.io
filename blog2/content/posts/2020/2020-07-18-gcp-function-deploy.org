@@ -1,0 +1,25 @@
+#+TITLE: Google Cloud Functions の deploy で 'missing dot in first path element; Error ID: 3182a79f' エラー
+#+DATE: 2020-07-10
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: 
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+GCP から「Go 1.11 は使えなくなるから Go 1.13 にして」という通知があったので、
+忘れないうちに Go 1.13 にして deploy をしたら、次のエラーが出た。
+
+: ERROR: (gcloud.functions.deploy) OperationError: code=13, message=Build failed: go mod: -require=xxxxxx/hoge/foo@v0.0.0: invalid path: malformed module path "xxxxxx/hoge/foo": missing dot in first path element; Error ID: 3182a79f
+
+どうやら、モジュールの先頭ディレクトリは FQDN の形式しないと NG になったようだ。
+いままでは . を含まない適当な名前にしてたんだが、これだと NG になるらしい。
+
+つまり xxxxxx/hoge/foo の xxxxxx に . が含まれてない == FQDN ではない、
+ということで NG っぽい。
+xxxxxx を github pages の自分の FQDN にして deploy したら上手くいった。
+
+ちなみに、ローカルの Go build では FQDN ではなくても問題なかった。
+deploy の時だけ問題になるようだ。
+
+どうせなら、ローカルの Go build でもエラーになれば良いのに。
