@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>fengari の使い方 (Lua を Web ブラウザで動かす方法) - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.71.1" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lua/fengari/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="fengari の使い方 (Lua を Web ブラウザで動かす方法)" />
+<meta property="og:description" content="Lua を Web ブラウザで動かす技術がいくつかある。 最初期のモノは lua.vm.js だろうか？ ただ lua.vm.js は開発が停止してから 4 年経過しており、今から使うには躊躇する。 そこ" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lua/fengari/" />
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="fengari の使い方 (Lua を Web ブラウザで動かす方法)"/>
+<meta name="twitter:description" content="Lua を Web ブラウザで動かす技術がいくつかある。 最初期のモノは lua.vm.js だろうか？ ただ lua.vm.js は開発が停止してから 4 年経過しており、今から使うには躊躇する。 そこ"/>
+<meta itemprop="name" content="fengari の使い方 (Lua を Web ブラウザで動かす方法)">
+<meta itemprop="description" content="Lua を Web ブラウザで動かす技術がいくつかある。 最初期のモノは lua.vm.js だろうか？ ただ lua.vm.js は開発が停止してから 4 年経過しており、今から使うには躊躇する。 そこ">
+
+<meta itemprop="wordCount" content="2062">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="/documents/">Home</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>fengari の使い方 (Lua を Web ブラウザで動かす方法)</h1>
+
+<p>
+Lua を Web ブラウザで動かす技術がいくつかある。
+最初期のモノは <a href="http://daurnimator.github.io/lua.vm.js/lua.vm.js.html ">lua.vm.js</a> だろうか？
+</p>
+<p>
+ただ lua.vm.js は開発が停止してから 4 年経過しており、今から使うには躊躇する。
+</p>
+<p>
+そこで、今回は fengari の使用方法について書くことにする。
+</p>
+<p>
+&lt;<a href="https://github.com/fengari-lua/fengari">https://github.com/fengari-lua/fengari</a>&gt;
+</p>
+<p>
+なお、lua.vm.js の issue にも、次のように fengari の使用を推奨するようなコメントがある。
+</p>
+<pre class="example">
+Please consider using the successor to lua.vm.js, fengari
+</pre>
+<p>
+&lt;<a href="https://github.com/daurnimator/lua.vm.js/issues/66">https://github.com/daurnimator/lua.vm.js/issues/66</a>&gt;
+</p>
+<h2 id="headline-1">
+fengari とは
+</h2>
+<p>
+fengari は、 Lua VM を JavaScript で書いているプロジェクトだ。
+</p>
+<p>
+emscripten を使うことで、
+オリジナルの Lua VM をほぼそのまま WebAssembly に変換可能だが、
+fengari は WebAssembly ではなく JavaScript でポーティングしている。
+</p>
+<p>
+実行パフォーマンスは、WebAssembly の方が有利だろう。
+</p>
+<p>
+今回あえて fengari を取り上げるのは、次の理由からだ。
+</p>
+<ul>
+<li>
+<p>
+私自身に emscripten の知識が無いため、
+JS だけで完結する fengari の方が emscripten よりもハードルが低かった
+</p>
+</li>
+<li>
+<p>
+今回やろうとしていることに、それほど実行パフォーマンスは必要ではなかった
+</p>
+</li>
+<li>
+<p>
+自分の環境の glibc のバージョンが古くて emscripten をインストールできなかった
+</p>
+<ul>
+<li>
+<p>
+docker を使ってまで emscripten をやるモチベーションがなかった
+</p>
+</li>
+</ul>
+<h3 id="headline-2">
+fengari の github
+</h3>
+</li>
+</ul>
+<p>
+fengari は、次の URL で開発されている。
+</p>
+<p>
+&lt;<a href="https://github.com/fengari-lua/fengari">https://github.com/fengari-lua/fengari</a>&gt;
+</p>
+<p>
+一方で、Web ブラウザで fengari を動かす場合は、次の fengari-web を使用する。
+</p>
+<p>
+&lt;<a href="https://github.com/fengari-lua/fengari-web">https://github.com/fengari-lua/fengari-web</a>&gt;
+</p>
+<p>
+さらに、 fengari の Lua VM と JavaScript とを連携するため IF を提供する
+fengari-interop がある。
+</p>
+<p>
+&lt;<a href="https://github.com/fengari-lua/fengari-interop">https://github.com/fengari-lua/fengari-interop</a>&gt;
+</p>
+<p>
+なお fengari-web のライブラリは、 fengari と fengari-interop を含んでいる。
+</p>
+<h2 id="headline-3">
+fengari-web の使用方法
+</h2>
+<p>
+fengari-web を使用するには、
+次の URL から fengari-web.js を落し、
+</p>
+<p>
+&lt;<a href="https://github.com/fengari-lua/fengari-web/releases">https://github.com/fengari-lua/fengari-web/releases</a>&gt;
+</p>
+<p>
+次のように HTML に組込む。
+</p>
+<div class="src src-html">
+<div class="highlight"><pre class="chroma"><code class="language-html" data-lang="html"><span class="p">&lt;</span><span class="nt">script</span> <span class="na">src</span><span class="o">=</span><span class="s">&#34;fengari-web.js&#34;</span> <span class="na">type</span><span class="o">=</span><span class="s">&#34;text/javascript&#34;</span><span class="p">&gt;&lt;/</span><span class="nt">script</span><span class="p">&gt;</span></code></pre></div>
+</div>
+<p>
+これによって、 JavaScript から fengari のシンボルを通して
+Lua VM IF にアクセスできるようになる。
+</p>
+<p>
+もっともシンプルに fengari を使うには、次の通り fengari.load() を利用する。
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">fengari</span><span class="p">.</span><span class="nx">load</span><span class="p">(</span><span class="s1">&#39;return 1+1&#39;</span><span class="p">)())</span>
+</code></pre></div>
+</div>
+<p>
+fengari.load() は、ロードした Lua スクリプトを実行する関数を返すので、
+fengari.load()() となる。
+</p>
+<p>
+ただし、この方法だと Lua を Web ブラウザ上で動かそうという物好きがやりそうな
+Lua の細かい制御を実現出来ない可能性が高い。
+</p>
+<p>
+そのような細かい制御は、 fengari が提供する Lua VM IF を使用する必要がある。
+</p>
+<p>
+Lua VM IF は、 fengari が独自に提供しているものではなく、
+Lua VM が元々提供しているものである。
+fengari Lua VM IF は、オリジナルの Lua VM IF をポーティングしたもので、
+その仕様もオリジナルのものを引き継いでいる。
+</p>
+<p>
+fengari の Lua VM IF を使用したサンプルを次に示す。
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js">    <span class="kd">var</span> <span class="nx">lua_state</span> <span class="o">=</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">lauxlib</span><span class="p">.</span><span class="nx">luaL_newstate</span><span class="p">();</span>
+    <span class="nx">fengari</span><span class="p">.</span><span class="nx">lualib</span><span class="p">.</span><span class="nx">luaL_openlibs</span><span class="p">(</span> <span class="nx">lua_state</span> <span class="p">);</span>
+    <span class="nx">fengari</span><span class="p">.</span><span class="nx">lauxlib</span><span class="p">.</span><span class="nx">luaL_requiref</span><span class="p">(</span> <span class="nx">lua_state</span><span class="p">,</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">to_luastring</span><span class="p">(</span><span class="s2">&#34;js&#34;</span><span class="p">),</span>
+                                   <span class="nx">fengari</span><span class="p">.</span><span class="nx">interop</span><span class="p">.</span><span class="nx">luaopen_js</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+    <span class="nx">fengari</span><span class="p">.</span><span class="nx">lua</span><span class="p">.</span><span class="nx">lua_pop</span><span class="p">(</span> <span class="nx">lua_state</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span> <span class="cm">/* remove lib */</span>
+</code></pre></div>
+</div>
+<p>
+Lua を C に組み込んだ経験を持つ人なら、ぱっと見ただけでだいたい検討が付くだろう。
+fengari.lauxlib などのシンボルを除けば、 Lua VM IF そのものだ。
+</p>
+<p>
+つまり、 JavaScript 上で Lua VM IF を書くことで、 Lua コードを Web 上で制御できる。
+</p>
+<p>
+Lua VM IF の詳細については、
+fengari ではなく Lua のリファレンスを確認する必要がある。
+</p>
+<p>
+&lt;<a href="http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html#4">http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html#4</a>&gt;
+</p>
+<p>
+Lua VM IF を見慣れている人なら気付いたかもしれないが、
+上記の fengari Lua VM IF のサンプルには、
+通常の Lua VM IF の初期化コードには見慣れない処理が行なわれているのが分かると思う。
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js">    <span class="nx">fengari</span><span class="p">.</span><span class="nx">lauxlib</span><span class="p">.</span><span class="nx">luaL_requiref</span><span class="p">(</span> <span class="nx">lua_state</span><span class="p">,</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">to_luastring</span><span class="p">(</span><span class="s2">&#34;js&#34;</span><span class="p">),</span>
+                                   <span class="nx">fengari</span><span class="p">.</span><span class="nx">interop</span><span class="p">.</span><span class="nx">luaopen_js</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+これが何をやっているのかというと、
+fengari-interop パッケージを Lua VM 内の js シンボルにセットしている。
+</p>
+<p>
+fengari-interop は、 Lua VM と JavaScript とを連携するため IF で、
+次のようなコードを Lua で書くことで JavaScript のリソースへのアクセスを提供するものだ。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">js.global</span><span class="p">:</span><span class="n">alert</span><span class="p">(</span> <span class="s2">&#34;hoge&#34;</span> <span class="p">)</span> <span class="c1">-- javascript の alert()</span></code></pre></div>
+</div>
+<p>
+ここで注意すべきは、
+js モジュールの関数コールを <code class="verbatim">.</code> ではなく <code class="verbatim">:</code> によるメソッドコールにするということだ。
+</p>
+<h3 id="headline-4">
+fengari-web Lua VM IF の使用上の注意
+</h3>
+<p>
+fengari-web Lua VM IF と JavaScript とでデータをやり取りする場合、
+注意が必要なケースがある。
+</p>
+<h4 id="headline-5">
+JavaScript から fengari-web Lua VM IF に文字列を渡す
+</h4>
+<p>
+前述の通り、fengari.load() は下記の様に使用する。
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">fengari</span><span class="p">.</span><span class="nx">load</span><span class="p">(</span><span class="s1">&#39;return 1+1&#39;</span><span class="p">)())</span>
+</code></pre></div>
+</div>
+<p>
+この fengari.load() と似た動きをさせる fengari-web Lua VM IF を次に示す。
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="kd">var</span> <span class="nx">txt</span> <span class="o">=</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">to_luastring</span><span class="p">(</span> <span class="s2">&#34;print( (function() return 1 + 1; end)() )&#34;</span> <span class="p">);</span>
+<span class="nx">fengari</span><span class="p">.</span><span class="nx">lauxlib</span><span class="p">.</span><span class="nx">luaL_dostring</span><span class="p">(</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">L</span><span class="p">,</span> <span class="nx">txt</span> <span class="p">);</span>
+</code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+fengari.lauxlib.luaL_dostring() は Lua VM IF の API で、指定のスクリプトを実行する。
+</p>
+<ul>
+<li>
+<p>
+luaL_dostring() の第一引数は Lua VM の lua_State で、
+fengari.L は fengari がデフォルトで使用する lua_State である。
+</p>
+</li>
+<li>
+<p>
+fengari.L の代わりに fengari.lauxlib.luaL_newstate() で
+生成した lua_State を渡しても良い。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+fengari.to_luastring() は fengari 独自の API で、
+JavaScript の文字列を fengari  Lua VM IF で利用可能な文字列に変換する。
+</p>
+<ul>
+<li>
+<p>
+fengari  Lua VM IF の文字列は JavaScript の文字列とは異なり、
+Uint8Array を利用している。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<code class="verbatim">print( (function() return 1 + 1; end)() )</code> は、
+1 + 1 を実行する関数を定義し、それを実行し、結果を print() で出力している。
+</p>
+</li>
+</ul>
+<p>
+このように fengari-web Lua VM IF に文字列を渡す場合、
+<strong>fengari.to_luastring() で文字列データを変換して渡す</strong> 必要がある。
+</p>
+<h4 id="headline-6">
+fengari-web Lua VM IF から文字列を取得する
+</h4>
+<p>
+Lua VM IF の lua_typename() は、指定の Lua 値のタイプに対応する文字列を返す関数である。
+</p>
+<p>
+これを fengari-web で console.log() に出力するには、次のようになる。
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">to_jsstring</span><span class="p">(</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">lua</span><span class="p">.</span><span class="nx">lua_typename</span><span class="p">(</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">L</span><span class="p">,</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">lua</span><span class="p">.</span><span class="nx">LUA_TTABLE</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+</code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+fengari.lua.lua_typename() を実行する
+</p>
+<ul>
+<li>
+<p>
+LUA の定数の LUA_TTABLE は fengari.lua で定義される
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+fengari.lua.lua_typename() は文字列を返すが、
+これは Lua VM の文字列であるため
+console.log() で出力するには JavaScript の文字列に変換する必要がある。
+</p>
+</li>
+<li>
+<p>
+fengari.to_jsstring() は、上記の目的のための文字列変換を行なっている。
+</p>
+</li>
+</ul>
+<p>
+このように、fengari-web Lua VM IF から文字列を取得した場合、
+<strong>fengari.to_jsstring() で文字列データを変換する</strong> 必要がある。
+</p>
+<h4 id="headline-7">
+JavaScript から fengari-web Lua VM IF に JSON オブジェクトを渡す
+</h4>
+<p>
+Lua VM IF を利用して Lua の関数コールを行なうには、Lua VM のスタックを利用する。
+Lua の関数コールの引数をセットするには、 lua_pushnumber() などを使う。
+セットする値がプリミティブな数値や文字列であれば簡単だが、
+JSON オブジェクトをセットするような場合、lua_newtable() などを駆使しなければならない。
+</p>
+<p>
+この面倒な作業を肩代わりしてくれるのが interop.push() だ。
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="nx">fengari</span><span class="p">.</span><span class="nx">lauxlib</span><span class="p">.</span><span class="nx">luaL_loadstring</span><span class="p">(</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">L</span><span class="p">,</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">to_luastring</span><span class="p">(</span> <span class="sb">`
+</span><span class="sb">local arg = ...
+</span><span class="sb">for key, val in pairs( arg ) do
+</span><span class="sb">    print( key, val )
+</span><span class="sb">end
+</span><span class="sb">`</span><span class="p">))</span>
+<span class="nx">fengari</span><span class="p">.</span><span class="nx">interop</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">L</span><span class="p">,</span> <span class="p">{</span> <span class="s2">&#34;a&#34;</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&#34;b&#34;</span><span class="o">:</span><span class="mi">2</span> <span class="p">}</span> <span class="p">);</span>
+<span class="nx">fengari</span><span class="p">.</span><span class="nx">lua</span><span class="p">.</span><span class="nx">lua_call</span><span class="p">(</span> <span class="nx">fengari</span><span class="p">.</span><span class="nx">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span> <span class="p">);</span>
+</code></pre></div>
+</div>
+<p>
+上記サンプルは <code class="verbatim">{ &#34;a&#34;:1, &#34;b&#34;:2 }</code> を interop.push() でスタックに積み、
+Lua の for によってその値の key, val を列挙して print している。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lua/detail/" title="C インタフェース詳細編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - C インタフェース詳細編</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lua/anti-pattern/" title="Lua でやりがちなミス">Next - Lua でやりがちなミス <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
+</ul>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua5.4 の主な変更点</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/libclang/">Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/operator/">libclang で演算子を特定する方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/ast/">libclang の AST(Abstract Syntax Tree)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">03. Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">04. 値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">04.2. Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">05. enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">06. match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">07. 変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">08. 一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">09. 繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">10. 関数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">10.2. 多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">Z. Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

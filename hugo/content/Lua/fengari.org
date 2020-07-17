@@ -1,0 +1,215 @@
+#+TITLE: fengari の使い方 (Lua を Web ブラウザで動かす方法) 
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+Lua を Web ブラウザで動かす技術がいくつかある。
+最初期のモノは [[http://daurnimator.github.io/lua.vm.js/lua.vm.js.html ][lua.vm.js]] だろうか？
+
+ただ lua.vm.js は開発が停止してから 4 年経過しており、今から使うには躊躇する。
+
+そこで、今回は fengari の使用方法について書くことにする。
+
+<https://github.com/fengari-lua/fengari>
+
+なお、lua.vm.js の issue にも、次のように fengari の使用を推奨するようなコメントがある。
+
+: Please consider using the successor to lua.vm.js, fengari
+
+<https://github.com/daurnimator/lua.vm.js/issues/66>
+
+* fengari とは
+
+fengari は、 Lua VM を JavaScript で書いているプロジェクトだ。
+
+emscripten を使うことで、
+オリジナルの Lua VM をほぼそのまま WebAssembly に変換可能だが、
+fengari は WebAssembly ではなく JavaScript でポーティングしている。
+
+実行パフォーマンスは、WebAssembly の方が有利だろう。
+
+今回あえて fengari を取り上げるのは、次の理由からだ。
+
+- 私自身に emscripten の知識が無いため、
+  JS だけで完結する fengari の方が emscripten よりもハードルが低かった
+- 今回やろうとしていることに、それほど実行パフォーマンスは必要ではなかった
+- 自分の環境の glibc のバージョンが古くて emscripten をインストールできなかった
+  - docker を使ってまで emscripten をやるモチベーションがなかった
+
+** fengari の github
+
+fengari は、次の URL で開発されている。
+  
+<https://github.com/fengari-lua/fengari>
+
+一方で、Web ブラウザで fengari を動かす場合は、次の fengari-web を使用する。
+
+<https://github.com/fengari-lua/fengari-web>
+
+さらに、 fengari の Lua VM と JavaScript とを連携するため IF を提供する
+fengari-interop がある。
+
+<https://github.com/fengari-lua/fengari-interop>
+
+なお fengari-web のライブラリは、 fengari と fengari-interop を含んでいる。
+
+* fengari-web の使用方法
+
+fengari-web を使用するには、
+次の URL から fengari-web.js を落し、
+
+<https://github.com/fengari-lua/fengari-web/releases>
+
+次のように HTML に組込む。
+
+#+BEGIN_SRC html
+<script src="fengari-web.js" type="text/javascript"></script>
+#+END_SRC
+
+これによって、 JavaScript から fengari のシンボルを通して
+Lua VM IF にアクセスできるようになる。
+
+もっともシンプルに fengari を使うには、次の通り fengari.load() を利用する。
+
+#+BEGIN_SRC js
+console.log(fengari.load('return 1+1')())
+#+END_SRC
+
+
+fengari.load() は、ロードした Lua スクリプトを実行する関数を返すので、
+fengari.load()() となる。
+
+ただし、この方法だと Lua を Web ブラウザ上で動かそうという物好きがやりそうな
+Lua の細かい制御を実現出来ない可能性が高い。
+
+そのような細かい制御は、 fengari が提供する Lua VM IF を使用する必要がある。
+
+Lua VM IF は、 fengari が独自に提供しているものではなく、
+Lua VM が元々提供しているものである。
+fengari Lua VM IF は、オリジナルの Lua VM IF をポーティングしたもので、
+その仕様もオリジナルのものを引き継いでいる。
+
+fengari の Lua VM IF を使用したサンプルを次に示す。
+
+#+BEGIN_SRC js
+    var lua_state = fengari.lauxlib.luaL_newstate();
+    fengari.lualib.luaL_openlibs( lua_state );
+    fengari.lauxlib.luaL_requiref( lua_state, fengari.to_luastring("js"),
+                                   fengari.interop.luaopen_js, 1);
+    fengari.lua.lua_pop( lua_state, 1); /* remove lib */
+#+END_SRC
+
+Lua を C に組み込んだ経験を持つ人なら、ぱっと見ただけでだいたい検討が付くだろう。
+fengari.lauxlib などのシンボルを除けば、 Lua VM IF そのものだ。
+
+つまり、 JavaScript 上で Lua VM IF を書くことで、 Lua コードを Web 上で制御できる。
+
+Lua VM IF の詳細については、
+fengari ではなく Lua のリファレンスを確認する必要がある。
+
+<http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html#4>
+
+
+Lua VM IF を見慣れている人なら気付いたかもしれないが、
+上記の fengari Lua VM IF のサンプルには、
+通常の Lua VM IF の初期化コードには見慣れない処理が行なわれているのが分かると思う。
+
+#+BEGIN_SRC js
+    fengari.lauxlib.luaL_requiref( lua_state, fengari.to_luastring("js"),
+                                   fengari.interop.luaopen_js, 1);
+#+END_SRC
+
+
+これが何をやっているのかというと、
+fengari-interop パッケージを Lua VM 内の js シンボルにセットしている。
+
+fengari-interop は、 Lua VM と JavaScript とを連携するため IF で、
+次のようなコードを Lua で書くことで JavaScript のリソースへのアクセスを提供するものだ。
+
+#+BEGIN_SRC lua
+js.global:alert( "hoge" ) -- javascript の alert() 
+#+END_SRC
+
+ここで注意すべきは、
+js モジュールの関数コールを =.= ではなく =:= によるメソッドコールにするということだ。
+
+
+** fengari-web Lua VM IF の使用上の注意
+
+fengari-web Lua VM IF と JavaScript とでデータをやり取りする場合、
+注意が必要なケースがある。
+   
+*** JavaScript から fengari-web Lua VM IF に文字列を渡す
+   
+前述の通り、fengari.load() は下記の様に使用する。
+
+#+BEGIN_SRC js
+console.log(fengari.load('return 1+1')())
+#+END_SRC
+
+
+この fengari.load() と似た動きをさせる fengari-web Lua VM IF を次に示す。
+
+#+BEGIN_SRC js
+var txt = fengari.to_luastring( "print( (function() return 1 + 1; end)() )" );
+fengari.lauxlib.luaL_dostring( fengari.L, txt );
+#+END_SRC
+
+- fengari.lauxlib.luaL_dostring() は Lua VM IF の API で、指定のスクリプトを実行する。
+  - luaL_dostring() の第一引数は Lua VM の lua_State で、
+    fengari.L は fengari がデフォルトで使用する lua_State である。
+  - fengari.L の代わりに fengari.lauxlib.luaL_newstate() で
+    生成した lua_State を渡しても良い。
+- fengari.to_luastring() は fengari 独自の API で、
+  JavaScript の文字列を fengari  Lua VM IF で利用可能な文字列に変換する。
+  - fengari  Lua VM IF の文字列は JavaScript の文字列とは異なり、
+    Uint8Array を利用している。
+- =print( (function() return 1 + 1; end)() )= は、
+  1 + 1 を実行する関数を定義し、それを実行し、結果を print() で出力している。
+    
+このように fengari-web Lua VM IF に文字列を渡す場合、
+*fengari.to_luastring() で文字列データを変換して渡す* 必要がある。
+
+*** fengari-web Lua VM IF から文字列を取得する
+
+Lua VM IF の lua_typename() は、指定の Lua 値のタイプに対応する文字列を返す関数である。
+
+これを fengari-web で console.log() に出力するには、次のようになる。
+
+#+BEGIN_SRC js
+console.log( fengari.to_jsstring( fengari.lua.lua_typename( fengari.L, fengari.lua.LUA_TTABLE ) ) )
+#+END_SRC
+
+- fengari.lua.lua_typename() を実行する
+  - LUA の定数の LUA_TTABLE は fengari.lua で定義される
+- fengari.lua.lua_typename() は文字列を返すが、
+  これは Lua VM の文字列であるため
+  console.log() で出力するには JavaScript の文字列に変換する必要がある。
+- fengari.to_jsstring() は、上記の目的のための文字列変換を行なっている。
+
+このように、fengari-web Lua VM IF から文字列を取得した場合、
+*fengari.to_jsstring() で文字列データを変換する* 必要がある。
+
+*** JavaScript から fengari-web Lua VM IF に JSON オブジェクトを渡す
+
+Lua VM IF を利用して Lua の関数コールを行なうには、Lua VM のスタックを利用する。
+Lua の関数コールの引数をセットするには、 lua_pushnumber() などを使う。
+セットする値がプリミティブな数値や文字列であれば簡単だが、
+JSON オブジェクトをセットするような場合、lua_newtable() などを駆使しなければならない。
+
+この面倒な作業を肩代わりしてくれるのが interop.push() だ。
+
+#+BEGIN_SRC js
+fengari.lauxlib.luaL_loadstring( fengari.L, fengari.to_luastring( `
+local arg = ...
+for key, val in pairs( arg ) do
+    print( key, val )
+end
+`))
+fengari.interop.push( fengari.L, { "a":1, "b":2 } );
+fengari.lua.lua_call( fengari.L, 1, 0 );
+#+END_SRC
+
+上記サンプルは ={ "a":1, "b":2 }= を interop.push() でスタックに積み、
+Lua の for によってその値の key, val を列挙して print している。
