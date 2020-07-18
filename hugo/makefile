@@ -34,6 +34,7 @@ SRCS += subfile.org
 SRCS += reason.org
 SRCS += recommend.org
 SRCS += completion.org
+SRCS += onWeb.org
 
 SRCS := $(addprefix content/LuneScript/, $(SRCS))
 
