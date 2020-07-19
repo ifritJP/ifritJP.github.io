@@ -97,14 +97,24 @@ lnsFront.preloadLnsCode = function( frontId ) {
     });
     xmlReq.open( "GET", "lunescript-main-1.rockspec");
     xmlReq.send();
-    
 }
 
 lnsFront.setup = function( consoleId, luaCodeId, lnsCodeId, executeId ) {
     lnsFront.idSeed++;
     var frontId = lnsFront.idSeed;
     if ( frontId == 1 ) {
-        lnsFront.preloadLnsCode( frontId );
+        if ( fengari ) {
+            var script = document.createElement( "script" );
+            script.type = "text/javascript";
+            script.src = "fengari-web.js";
+            script.addEventListener( "load", function() {
+                lnsFront.preloadLnsCode( frontId );
+            });
+            document.head.appendChild( script );
+        }
+        else {
+            lnsFront.preloadLnsCode( frontId );
+        }
     }
 
 
