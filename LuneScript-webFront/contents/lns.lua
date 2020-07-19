@@ -81,7 +81,5 @@ end
 
 debug.sethook( hookFunc, "l", 100 )
 
-local result, mess = pcall( load( luaCode, "lnsweb.lua", "t", newEnv ) )
-if not result then
-   print( mess )
-end
+load( luaCode, "lnsweb.lua", "t", newEnv )()
+debug.sethook()

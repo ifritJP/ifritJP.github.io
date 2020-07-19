@@ -55,6 +55,8 @@ lnsFront.compile = function ( frontId, maxStep ) {
                 frontId,
                 fengari.to_jsstring( fengari.lua.lua_tostring( fengari.L, -1 ) ) + "\n" );
 	}
+        // hook を解除する
+        fengari.lua.lua_sethook( fengari.L, null, 0, 0 );
     }
 
     fengari.lua.lua_settop( fengari.L, stackTop );
