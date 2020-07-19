@@ -1,0 +1,77 @@
+{
+    var initialized = false;
+    var idSeed = 0;
+
+    var lnsFrontIdMap = {};
+
+    function runLnsCode( element, codeNo ) {
+        function openFront() {
+            idSeed++;
+            
+            var frontDiv = document.createElement( "div" );
+            frontDiv.spellcheck = false;
+            var lnsCodeEle = document.createElement( "textarea" );
+            lnsCodeEle.class = "lnsFront";
+            lnsCodeEle.id = "lns-code-" + idSeed;
+            lnsCodeEle.value = '// ここは編集可能です。編集後に Run してください。\n' + element.innerText;
+            lnsCodeEle.style.width = "100%";
+            lnsCodeEle.rows = 10;
+            var lineNo = lnsCodeEle.value.split("\n").length;
+            if ( lineNo < lnsCodeEle.rows ) {
+                lnsCodeEle.rows = lineNo;
+            }
+            var outputEle = document.createElement( "textarea" );
+            outputEle.readOnly = true;
+            outputEle.id = "output-" + idSeed;
+            outputEle.style.width = "100%";
+            outputEle.rows = 5;
+            frontDiv.appendChild( lnsCodeEle );
+            frontDiv.appendChild( document.createElement( "br" ) );
+
+            frontDiv.appendChild( outputEle );
+            element.appendChild( frontDiv );
+
+            lnsFrontIdMap[ codeNo ] =
+                lnsFront.setup( outputEle.id, "", lnsCodeEle.id, "" );
+        }
+
+        
+        if ( !initialized ) {
+            initialized = true;
+            var script = document.createElement( "script" );
+            script.type = "text/javascript";
+            script.src = "https://ifritjp.github.io/LuneScript-webFront/contents/lunescript-front.js";
+            script.addEventListener( "load", function() {
+                openFront();
+            });
+            document.head.appendChild( script );
+        }
+        else {
+            if ( lnsFrontIdMap[ codeNo ] == null ) {
+                openFront();
+            }
+            else {
+                lnsFront.compile( lnsFrontIdMap[ codeNo ] );
+            }
+        }
+    }
+
+
+    var codeNo = 0;
+    window.addEventListener( "load",function() {
+        Array.from( document.getElementsByClassName( "language-lns" ) ).forEach( function( element ) {
+            codeNo++;
+            element.appendChild( document.createElement( "br" ) );
+
+            var button = document.createElement( "input" );
+            button.type = "button";
+            button.value = "Run";
+            button.addEventListener( "click", function ( workElement, workCodeNo ) {
+                return function() {
+                    runLnsCode( workElement, workCodeNo );
+                };
+            }( element, codeNo ) );
+            element.appendChild( button );
+        });
+    } );
+}
