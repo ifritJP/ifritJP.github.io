@@ -104,9 +104,22 @@ lnsFront.setup = function( consoleId, luaCodeId, lnsCodeId, executeId ) {
     var frontId = lnsFront.idSeed;
     if ( frontId == 1 ) {
         if ( window.fengari == null ) {
+            // fengari がロードされていない場合はロードする
+            var fengariUrl;
+            Array.from( document.getElementsByTagName('script') ).forEach(
+                function( script) {
+                    if ( script.src != null ) {
+                        // このスクリプトと同じディレクトリの fengari-web.js をロードする
+                        if ( script.src.match( /lunescript-front\.js$/ ) ) {
+                            fengariUrl = script.src.replace(
+                                RegExp( "/[^/]+$" ), "/fengari-web.js" );
+                            
+                        }
+                    }
+                });
             var script = document.createElement( "script" );
             script.type = "text/javascript";
-            script.src = "fengari-web.js";
+            script.src = fengariUrl;
             script.addEventListener( "load", function() {
                 lnsFront.preloadLnsCode( frontId );
             });
