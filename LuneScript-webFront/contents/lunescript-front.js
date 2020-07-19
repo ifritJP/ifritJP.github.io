@@ -4,13 +4,27 @@ lnsFront.lnsOStream = null;
 lnsFront.luaOStream = null;
 lnsFront.setLuaCode = null;
 lnsFront.getLnsLibCode = null;
-lnsFront.setup = null;
 
+lnsFront.setup = null;
+lnsFront.baseUrl = null;
 lnsFront.idSeed = 0;
 lnsFront.id2Elements = {};
 // LuneScript の lua ファイルを格納するマップ。
 // modName -> lua コード
 lnsFront.lnsLibCodeMap = {};
+
+
+
+// このスクリプトの baseUrl を取得する
+Array.from( document.getElementsByTagName('script') ).forEach(
+    function( script) {
+        if ( script.src != null ) {
+            if ( script.src.match( /lunescript-front\.js$/ ) ) {
+                lnsFront.baseUrl = script.src.replace( RegExp( "/[^/]+$" ), "/" );
+            }
+        }
+    });
+
 
     
     
@@ -58,7 +72,7 @@ lnsFront.loadLnsLibCode = function( frontId, modName, path ) {
 	    lnsFront.compile( frontId );
 	}
     });
-    fileReq.open( "GET", path );
+    fileReq.open( "GET", lnsFront.baseUrl + path );
     fileReq.send();
 }
 
@@ -95,7 +109,7 @@ lnsFront.preloadLnsCode = function( frontId ) {
 	    lnsFront.loadLnsLibCode( frontId, module, path );
     	};
     });
-    xmlReq.open( "GET", "lunescript-main-1.rockspec");
+    xmlReq.open( "GET", lnsFront.baseUrl + "lunescript-main-1.rockspec");
     xmlReq.send();
 }
 
@@ -105,21 +119,9 @@ lnsFront.setup = function( consoleId, luaCodeId, lnsCodeId, executeId ) {
     if ( frontId == 1 ) {
         if ( window.fengari == null ) {
             // fengari がロードされていない場合はロードする
-            var fengariUrl;
-            Array.from( document.getElementsByTagName('script') ).forEach(
-                function( script) {
-                    if ( script.src != null ) {
-                        // このスクリプトと同じディレクトリの fengari-web.js をロードする
-                        if ( script.src.match( /lunescript-front\.js$/ ) ) {
-                            fengariUrl = script.src.replace(
-                                RegExp( "/[^/]+$" ), "/fengari-web.js" );
-                            
-                        }
-                    }
-                });
             var script = document.createElement( "script" );
             script.type = "text/javascript";
-            script.src = fengariUrl;
+            script.src = lnsFront.baseUrl + "fengari-web.js";
             script.addEventListener( "load", function() {
                 lnsFront.preloadLnsCode( frontId );
             });
