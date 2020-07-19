@@ -5,6 +5,7 @@ import (
     "fmt"
     "net"
     "strings"
+    "log"
 )
 
 var port=28080
@@ -28,5 +29,10 @@ func main() {
     endPoint := fmt.Sprintf( "http://%s:%d", localAddr, port )
     fmt.Println( "Start Server:" )
     fmt.Printf( "  -- %s%s\n", endPoint, content_path )
-    http.ListenAndServe( fmt.Sprintf( ":%d", port ), nil)
+    http.Handle(
+        content_path + "/",
+        http.StripPrefix(
+            content_path + "/",
+            http.FileServer(http.Dir( "." + content_path ))))
+    log.Fatal(http.ListenAndServe( fmt.Sprintf( ":%d", port ), nil))
 }

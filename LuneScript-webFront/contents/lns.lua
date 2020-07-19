@@ -1,7 +1,8 @@
-local lnsCode = ...
-
+local frontId, lnsCode = ...
 
 local js = require( 'js' )
+
+local lnsFront = js.global.lnsFront
 
 -- require で lns のライブラリを逐次ロードしないように、
 -- require の処理を入れ替える。
@@ -11,7 +12,7 @@ require = function( modName )
       return package.loaded[ modName ]
    end
    -- js の getLnsLibCode() コールして Lua コードを取得する
-   local code = js.global:getLnsLibCode( modName )
+   local code = lnsFront:getLnsLibCode( frontId, modName )
    local mod = load( code )()
    -- lua コードをロードしてセットする
    package.loaded[ modName ] = mod
@@ -24,7 +25,7 @@ end
 -- コンソールの出力を js 側に転送する関数をセット。
 local lnsStreamObj = {
    write = function( self, txt )
-      js.global:lnsOStream( txt )
+      lnsFront:lnsOStream( frontId, txt )
    end
 }
 io = {
@@ -36,7 +37,7 @@ io = {
 local front = require( 'lune.base.front' )
 local luaCode = front.convertLnsCode2LuaCode( lnsCode, "lnsweb.lns" )
 
-js.global:setLuaCode( luaCode )
+lnsFront:setLuaCode( frontId, luaCode )
 
 -- 変換した Lua を実行する 
 
@@ -48,9 +49,9 @@ for key, val in pairs( _ENV ) do
       newEnv[ key ] = function( ... )
 	 local args = { ... }
 	 for index, printVal in ipairs( args ) do
-	    js.global:luaOStream( string.format( "%s", printVal ) .. "\t" )
+	    lnsFront:luaOStream( frontId, string.format( "%s", printVal ) .. "\t" )
 	 end
-	 js.global:luaOStream( "\n" )
+	 lnsFront:luaOStream( frontId, "\n" )
       end
    else
       newEnv[ key ] = val
@@ -60,7 +61,7 @@ end
 -- コンソールの出力を js 側に転送する関数をセット。
 local luaStreamObj = {
    write = function( self, txt )
-      js.global:luaOStream( txt )
+      lnsFront:luaOStream( frontId, txt )
    end
 }
 newEnv[ "io" ] = {
