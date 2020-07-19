@@ -1,4 +1,4 @@
-local frontId, lnsCode = ...
+local frontId, maxTime, lnsCode = ...
 
 local js = require( 'js' )
 
@@ -69,5 +69,19 @@ newEnv[ "io" ] = {
    stderr = luaStreamObj,
 }
 
+local totalStep = 0;
+local stepUnit = 100
+local startTime = os.time()
+function hookFunc( event, lineNo )
+   local diff = os.difftime( os.time(), startTime )
+   if maxTime <= diff then
+      error( string.format( "timer over -- %g", diff ))
+   end
+end
 
-load( luaCode, "lnsweb.lua", "t", newEnv )()
+debug.sethook( hookFunc, "l", 100 )
+
+local result, mess = pcall( load( luaCode, "lnsweb.lua", "t", newEnv ) )
+if not result then
+   print( mess )
+end

@@ -12,8 +12,8 @@ lnsFront.id2Elements = {};
 // LuneScript の lua ファイルを格納するマップ。
 // modName -> lua コード
 lnsFront.lnsLibCodeMap = {};
-
-
+// ユーザのスクリプトを実行する時間(秒)のリミット。 この時間を越える場合はエラーさせる。
+lnsFront.defaultMaxTime = 2;
 
 // このスクリプトの baseUrl を取得する
 Array.from( document.getElementsByTagName('script') ).forEach(
@@ -25,10 +25,8 @@ Array.from( document.getElementsByTagName('script') ).forEach(
         }
     });
 
-
     
-    
-lnsFront.compile = function ( frontId ) {
+lnsFront.compile = function ( frontId, maxStep ) {
     lnsFront.id2Elements[ frontId ].consoleEle.value = "";
     if ( lnsFront.id2Elements[ frontId ].luaCodeEle ) {
         lnsFront.id2Elements[ frontId ].luaCodeEle.value = "";
@@ -41,17 +39,28 @@ lnsFront.compile = function ( frontId ) {
     if ( fengari.lauxlib.luaL_loadstring(
     	fengari.L, fengari.to_luastring( lnsFront.lnsLibCodeMap[ "lns" ] ) ) != fengari.lua.LUA_OK )
     {
-    	console.log( fengari.to_jsstring( fengari.lua.lua_tostring( fengari.L, -1 ) ) );
+    	lnsFront.luaOStream(
+            frontId,
+            fengari.to_jsstring( fengari.lua.lua_tostring( fengari.L, -1 ) )  + "\n" );
     }
     else {
+        if ( typeof maxStep != "number" || maxStep > 10 ) {
+            maxStep = lnsFront.defaultMaxTime;
+        }
 	fengari.lua.lua_pushinteger( fengari.L, frontId );
+	fengari.lua.lua_pushinteger( fengari.L, maxStep );
 	fengari.lua.lua_pushstring( fengari.L, fengari.to_luastring( editor.value ) );
-    	if ( fengari.lua.lua_pcall( fengari.L, 2, 0, 0 ) != fengari.lua.LUA_OK ) {
-    	    console.log( fengari.to_jsstring( fengari.lua.lua_tostring( fengari.L, -1 ) ) );
+    	if ( fengari.lua.lua_pcall( fengari.L, 3, 0, 0 ) != fengari.lua.LUA_OK ) {
+    	    lnsFront.luaOStream(
+                frontId,
+                fengari.to_jsstring( fengari.lua.lua_tostring( fengari.L, -1 ) ) + "\n" );
 	}
     }
 
     fengari.lua.lua_settop( fengari.L, stackTop );
+
+    lnsFront.luaOStream( frontId, "------\n" );
+    lnsFront.luaOStream( frontId, "end" );
 };
 
 // modName で指定されたモジュールのコードを返す。
