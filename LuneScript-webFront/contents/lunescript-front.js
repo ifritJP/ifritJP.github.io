@@ -103,7 +103,7 @@ lnsFront.setup = function( consoleId, luaCodeId, lnsCodeId, executeId ) {
     lnsFront.idSeed++;
     var frontId = lnsFront.idSeed;
     if ( frontId == 1 ) {
-        if ( fengari == null ) {
+        if ( window.fengari == null ) {
             var script = document.createElement( "script" );
             script.type = "text/javascript";
             script.src = "fengari-web.js";
