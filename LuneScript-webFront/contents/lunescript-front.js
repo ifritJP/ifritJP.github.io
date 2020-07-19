@@ -170,4 +170,10 @@ lnsFront.setup = function( consoleId, luaCodeId, lnsCodeId, executeId ) {
     if ( urlSearch.has( "param") ) {
         elements.lnsCodeEle.value = urlSearch.get( "param");
     }
+
+    if ( frontId != 1 ) {
+        lnsFront.compile( frontId );
+    }
+
+    return frontId;
 };
