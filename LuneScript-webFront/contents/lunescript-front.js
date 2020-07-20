@@ -26,7 +26,7 @@ Array.from( document.getElementsByTagName('script') ).forEach(
     });
 
     
-lnsFront.compile = function ( frontId, maxStep ) {
+lnsFront.compile = function ( frontId, maxTime ) {
     lnsFront.id2Elements[ frontId ].consoleEle.value = "";
     if ( lnsFront.id2Elements[ frontId ].luaCodeEle ) {
         lnsFront.id2Elements[ frontId ].luaCodeEle.value = "";
@@ -44,11 +44,11 @@ lnsFront.compile = function ( frontId, maxStep ) {
             fengari.to_jsstring( fengari.lua.lua_tostring( fengari.L, -1 ) )  + "\n" );
     }
     else {
-        if ( typeof maxStep != "number" || maxStep > 10 ) {
-            maxStep = lnsFront.defaultMaxTime;
+        if ( typeof maxTime != "number" || maxTime > 10 ) {
+            maxTime = lnsFront.defaultMaxTime;
         }
 	fengari.lua.lua_pushinteger( fengari.L, frontId );
-	fengari.lua.lua_pushinteger( fengari.L, maxStep );
+	fengari.lua.lua_pushinteger( fengari.L, maxTime );
 	fengari.lua.lua_pushstring( fengari.L, fengari.to_luastring( editor.value ) );
     	if ( fengari.lua.lua_pcall( fengari.L, 3, 0, 0 ) != fengari.lua.LUA_OK ) {
     	    lnsFront.luaOStream(
@@ -125,31 +125,36 @@ lnsFront.preloadLnsCode = function( frontId ) {
 }
 
 lnsFront.setup = function( consoleId, luaCodeId, lnsCodeId, executeId ) {
+
     lnsFront.idSeed++;
     var frontId = lnsFront.idSeed;
-    if ( frontId == 1 ) {
-        if ( window.fengari == null ) {
-            // fengari がロードされていない場合はロードする
-            var script = document.createElement( "script" );
-            script.type = "text/javascript";
-            script.src = lnsFront.baseUrl + "fengari-web.js";
-            script.addEventListener( "load", function() {
-                lnsFront.preloadLnsCode( frontId );
-            });
-            document.head.appendChild( script );
-        }
-        else {
-            lnsFront.preloadLnsCode( frontId );
-        }
-    }
-
-
+    
     var elements = {};
     lnsFront.id2Elements[ frontId ] = elements;
     elements.consoleEle = document.getElementById( consoleId );
     elements.luaCodeEle = document.getElementById( luaCodeId );
     elements.lnsCodeEle = document.getElementById( lnsCodeId );
     elements.executeEle = document.getElementById( executeId );
+    
+    if ( frontId == 1 ) {
+        elements.consoleEle.value = "loading...";
+        setTimeout( function() {
+            if ( window.fengari == null ) {
+                // fengari がロードされていない場合はロードする
+                var script = document.createElement( "script" );
+                script.type = "text/javascript";
+                script.src = lnsFront.baseUrl + "fengari-web.js";
+                script.addEventListener( "load", function() {
+                    lnsFront.preloadLnsCode( 1 );
+                });
+                document.head.appendChild( script );
+            }
+            else {
+                lnsFront.preloadLnsCode( 1 );
+            }
+        }, 100 );
+    }
+
 
     
     lnsFront.lnsOStream = function( id, txt ) {

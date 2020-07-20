@@ -18,7 +18,7 @@ LuneScript の動作確認用に、Web ブラウザ上で動作する LuneScript
 LuneScript のコード入力用の textarea に LuneScript のコードを入力し、
 execute ボタンを押下すると、Lua に変換・実行します。
 
-LuneScript の全ての処理がブラウザ上で動作しています。
+LuneScript の全ての処理が、ブラウザ上で動作しています。
 
 ただし、次の制限があります。
 
@@ -29,3 +29,132 @@ LuneScript の全ての処理をブラウザ上で動作させているため、
 スマホなどでは初回実行に時間が掛ります。
 
 
+* 技術解説
+
+fengari を利用してブラウザ上で Lua VM を動かし、
+その Lua VM 上で LuneScript コンパイラを実行しています。
+
+fengari については次の記事を参照してください。
+
+[[../../lua/fengari/]]
+
+
+fengari の Lua VM は、
+Lua 上で require すると XMLHttpRequest でそのモジュールをロードします。
+LuneScript は 30 個の Lua ファイルで構成しているため、
+30 個の Lua ファイルをシーケンシャルにロードすることになります。
+30 ファイルのシーケンシャルなロードは流石に効率が悪いため、
+事前に XMLHttpRequest で非同期でロードしておき、
+require 処理の時は事前にロードしたファイルを load するように処理を切り替えています。
+
+そして LuneScript コンパイラのロード後に、
+入力されたユーザの LuneScript コードを LuneScript で変換し、
+それを実行します。
+
+LuneScript コンパイラのロードは、そこそこの時間がかかります。
+私が使用しているスマホで 10 秒弱、 PC だと 1 秒弱。
+一度ロードした後は、ブラウザをリロードするまでは LuneScript のロードは不要で、
+ユーザの LuneScript コードの変換、実行が出来ます。
+
+
+なお、ユーザの LuneScript コードがバグって暴走した時の対処として、
+実行後 2 秒経過したら強制停止するようにしています。
+
+この LuneScript コンパイラは、
+一度ロードした後は完全にブラウザ内に閉じで動作するため、
+サーバ側に負荷は掛りません。
+サーバに必要な機能は、静的コンテンツのホスティングだけです。
+
+** LuneScript の fengari 対応
+
+fengari Lua VM 上で LuneScript を動かすにあたって、
+LuneScript の次の処理を修正しました。
+
+*「List<X> 型の foreach 処理を pairs() から ipairs() に切り替え」*
+
+オリジナルの Lua VM では、シーケンスのテーブルにおいては、
+pairs() でも ipairs() でも列挙する順番が同じであるのに対し、
+fengari Lua VM では pairs() では順不同になるようです。
+LuneScript では、処理の簡単化と確実性を取って ipairs() ではなく
+pairs() を利用していましたが、 fengari Lua VM では ipairs() に切り替えました。
+
+なお、この切り替えの制御を *--use-ipairs コンパイルオプション* で行なうようにしています。
+--use-ipairs を指定した場合 ipairs() になります。
+現状、オプションを指定していない場合は pairs() を利用していますが、
+将来はデフォルト状態を逆にすることも検討しています。
+
+* リファレンスのサンプルコード実行
+
+この技術を使用して、 LuneScript リファレンスのサンプルコードを実行するようにしています。
+
+組込み方法は簡単で、次の JavaScript をロードし、
+
+: ifritJP.github.io/LuneScript-webFront/contents/lunescript-front.js
+
+=lnsFront.setup()=, =lnsFront.compile()= 関数を実行するだけです。
+
+** lnsFront.setup()
+   
+=lnsFront.setup()= は、 fengari と LuneScript をロードし、
+各 HTML element の紐付けを行ない、
+textarea に格納されている LuneScript コードをコンパイルし、実行します。
+
+setup() は、次の型の関数です。
+
+#+BEGIN_SRC js
+lnsFront.setup( consoleId, luaCodeId, lnsCodeId, executeId )
+#+END_SRC
+
+| 引数      | 意味                                         | 必須/Option |
+|-----------+----------------------------------------------+-------------|
+| consoleId | コンソール出力結果を格納する textarea の id  | 必須        |
+| luaCodeId | 変換後の Lua コードを格納する textarea の id | Option      |
+| lnsCodeId | Lns コードを格納する textarea の id          | 必須        |
+| executeId | 変換を開始するトリガボタンの id              | Option      |
+
+上記の Option の element を使用しない場合、
+element ID は空文字列を指定してください。
+
+例えば 変換後の Lua コードが不要な場合は、次のように実行します。
+
+#+BEGIN_SRC js
+var frontId = lnsFront.setup( consoleId, "", lnsCodeId, executeId )
+#+END_SRC
+
+なお、この関数は引数に与えられた consoleId 等をまとめて管理し、
+ID を発行して紐付けます。そして、その ID が戻り値となります。
+
+lnsFront.setup() 実行後は、 executeId で指定したボタンをクリックするか、
+lnsFront.compile() を実行すると、
+登録した lnsCodeId の textarea 内の LuneScript コードを変換して実行し、
+実行結果を各 textarea に格納します。
+
+LuneScript のコードを入力する textarea が複数ある場合、
+lnsFront.setup() をそれぞれで実行します。
+
+*** lnsFront.setup() の注意
+
+*一つの textarea に対して、lnsFront.setup() を複数回実行しないでください。*
+
+一度 lnsFront.setup() を実行した後は、
+executeId で登録したボタンをクリックするか、
+lnsFront.compile() を実行することで、
+登録されている textarea 内の LuneScript のコードを実行します。
+
+** lnsFront.compile()
+
+lnsFront.compile() は、
+lnsFront.setup() で登録した textarea 内の LuneScript コードを
+コンパイル・実行します。
+
+#+BEGIN_SRC js
+lnsFront.compile( frontId, maxTime )
+#+END_SRC
+
+| 引数    | 意味                                         | 必須/Option |
+|---------+----------------------------------------------+-------------|
+| frontId | lnsFront.setup() の戻り値                    | 必須        |
+| maxTime | ユーザの LuneScript 実行のタイムリミット(秒) | Option      |
+
+maxTime を省略した場合、デフォルトの 2 秒がリミットになります。
+なお 10 秒以上を指定した場合、無効値として扱い、デフォルト値がセットされます。
