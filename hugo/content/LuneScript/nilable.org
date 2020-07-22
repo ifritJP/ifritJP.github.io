@@ -15,6 +15,7 @@ LuneScript は、値に nil を持ちます。
 以前説明しましたが、 stem 型の変数は nil 以外の全ての型を保持できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let mut val:stem = 1;
 val = 1.0;
 val = "abc";
@@ -28,6 +29,7 @@ val = nil; // error
 stem ではなく stem! を使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut val:stem! = 1;
 val = 1.0;
 val = "abc";
@@ -48,6 +50,7 @@ nilable は stem! だけでなく、
 本来の型と nil を保持可能な nilable 型となります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let mut val1:int = 1;
 val1 = nil;  // error
 
@@ -69,6 +72,7 @@ nilable 型は、そのままでは元の型として使用できないという
 この説明だと何のことだか伝わり難いと思いますので、次の例を見てください。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val:int! = 1;
 print( val + 1 );  // error
 #+END_SRC
@@ -101,6 +105,7 @@ print( val + 1 );  // error
 しかし、次のように比較すること出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn check( val:int! ) {
    if val == 1 {
       print( "ok" );
@@ -121,6 +126,7 @@ check( 2 ); // ng
 次のように、非 nilable 型から nilable 型への変換は、暗黙的に行なわれます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val:int! = 1;   // int! <-- int
 #+END_SRC
 
@@ -143,6 +149,7 @@ unwrap は、 nilable 型の式を、非 nilable 型へ変換します。
 例えば次のように使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:int! = 1;
 let val2:int = unwrap val1;
 #+END_SRC
@@ -154,6 +161,7 @@ int! から int! に変換しています。
 そのプログラムは実行時エラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:int! = nil;
 let val2:int = unwrap val1;   // runtime error
 #+END_SRC
@@ -166,6 +174,7 @@ unwrap default は、変換対象の値が nil だった場合の値を指定し
 次は default を使用した例です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:int! = nil;
 let val2:int = unwrap val1 default 0;
 #+END_SRC
@@ -181,6 +190,7 @@ when! は、指定の nilable 型の *変数* が nil かどうかを判定し�
 次に when! の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:int!, val2:int! ): int {
    when! val, val2 {
       return val + val2;
@@ -216,6 +226,7 @@ if! は、指定の *式* が nil かどうかを判定し、分岐します。
 次に if! の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:int! ): int! {
    return val;
 }
@@ -254,6 +265,7 @@ else は省略可能です。
 shadowing されるためです。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    if! func( val ) {
       if! func( val ) {
          return _exp + 10;
@@ -273,6 +285,7 @@ if! let は、 if! で判定する式の結果を格納する変数名を指定�
 次は if! let のサンプルです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val1:int!, val2:int! ): int!, int! {
    return val1, val2;
 }
@@ -308,6 +321,7 @@ let! は、nil 以外の初期値を持つ変数宣言を行ないます。
 次に let! のサンプルを示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val1:int!, val2:int! ): int!, int! {
    return val1, val2;
 }
@@ -357,6 +371,7 @@ unwrap! は、 let! に似た制御です。異なるのは変数を宣言する
 次は、 unwrap! の例です。
    
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn test( arg:int! ) {
   let mut val = 0;
 
@@ -387,6 +402,7 @@ Map 型データの要素にアクセスした場合、
 たとえば次の場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = { "abc": 1 };
 let val2 = val.abc;
 #+END_SRC
@@ -399,6 +415,7 @@ val2 は int ではなく、 int! となります。
 ちなみに、リスト、配列の要素アクセスは nilable にはなりません。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = [ 1, 2, 3 ];
 let val2 = val[ 1 ];
 #+END_SRC

@@ -9,8 +9,9 @@
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/import/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
 <script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
@@ -35,7 +36,7 @@
 <meta itemprop="name" content="21. import/provide 編">
 <meta itemprop="description" content="今回は LuneScript のモジュール管理について説明します。 モジュール LuneScript のモジュール管理は、基本的に Lua と同じです。 Lua との違いを、次に挙げます。 特に宣言しない">
 
-<meta itemprop="wordCount" content="1699">
+<meta itemprop="wordCount" content="1717">
 
 
 
@@ -123,7 +124,8 @@ LuneScript のソースは、特に何も宣言しなくても 1 つのモジュ
 例えば、次のような Test.lns は関数 func を持つモジュールとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test.lns
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
 fn func(): str, str {
    return __mod__, __func__;
 }</code></pre>
@@ -135,7 +137,8 @@ fn func(): str, str {
 具体的には、次のように pub を宣言する必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test.lns
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
 pub fn func(): str, str {
    return __mod__, __func__;
 }</code></pre>
@@ -159,7 +162,8 @@ import は、モジュールの先頭に宣言してください。
 上記 Test.lns を利用するには、次の様にします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import Test;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import Test;
 
 print( Test.func() ); // @Test   Test.func</code></pre>
 </div>
@@ -174,7 +178,8 @@ print( Test.func() ); // @Test   Test.func</code></pre>
 なお、work/Test.lns を import する場合は、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import work.Test;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import work.Test;
 
 print( Test.func() ); // work.Test	Test.func</code></pre>
 </div>
@@ -198,7 +203,8 @@ import as は、 import 後のアクセス名を指定します。
 例えば、上記の work.Test を import as で foo とすると、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import work.Test as foo;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import work.Test as foo;
 
 print( foo.func() ); // work.Test	Test.func</code></pre>
 </div>
@@ -260,7 +266,8 @@ provide は、既存の Lua モジュールとの互換性を提供するもの�
 次に provide の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test.lns
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
 pub fn func(): str, str {
    return __mod__, __func__;
 }
@@ -274,18 +281,18 @@ provide func;</code></pre>
 これによって、この Test.lns モジュールのトランスコンパイル結果は、
 次のようになります。
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">--work/Test.lns
-local __mod__ = &#39;work.Test&#39;
-if not _lune then
-   _lune = {}
-end
-local function func(  )
-   local __func__ = &#39;Test.func&#39;
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--work/Test.lns</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;work.Test&#39;</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune</span> <span class="kr">then</span>
+   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="kd">local</span> <span class="n">__func__</span> <span class="o">=</span> <span class="s1">&#39;Test.func&#39;</span>
 
-   return __mod__, __func__
-end
-return func</code></pre>
+   <span class="kr">return</span> <span class="n">__mod__</span><span class="p">,</span> <span class="n">__func__</span>
+<span class="kr">end</span>
+<span class="kr">return</span> <span class="n">func</span></code></pre></div>
 </div>
 <p>
 上記から分かるように、 Lua からこのモジュールを require() すると、

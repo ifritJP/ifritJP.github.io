@@ -107,6 +107,7 @@ LuneScript で扱う値と型については次の記事を参考にしてくだ
 一行コメント ~//~ 、 複数行コメント ~/* */~ を指定可能。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 // 行末までコメント
 /* ここから〜
 ここまでコメント*/
@@ -199,10 +200,11 @@ LuneScript は、スクリプトの上から順に解析する。
 次は、 ClassA, ClassB がそれぞれを参照する時の例である。
 
 #+BEGIN_SRC lns
-class Super {
+// @lnsFront: ok
+pub class Super {
 }
 pub proto class ClassB extend Super;
-class ClassA {
+pub class ClassA {
   let val: ClassB;
 }
 pub class ClassB extend Super{
@@ -274,6 +276,7 @@ Lua コマンドでそのまま実行できます。
 例えば次の処理コードをトランスコンパイルすると、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:int! ):int {
    return 1 + unwrap val default 0;
 }
@@ -740,6 +743,7 @@ exe は lnsc のオプションで、 指定したスクリプトを実行する
 次の内容を持つファイル hello.lns を作成してください。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 print( "Hello world." );
 #+END_SRC
 
@@ -756,6 +760,7 @@ $ lnsc hello.lns exe
 まずは、 hello.lns を次のように少し変更します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let txt = "world";
 print( "Hello %s." ( txt ) );
 #+END_SRC
@@ -830,6 +835,7 @@ LuneScript では、 区切り記号 =;= が必須です。
 次のように =;= を終端に入れていないとエラーになります。
   
 #+BEGIN_SRC lns
+// @lnsFront: error
 print( "Hello world." )
 #+END_SRC
 
@@ -884,6 +890,7 @@ LuneScript から Lua に出力したコードには、
 例えば、次の LuneScript のコードを Lua に変換すると、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn add( val:int! ):int {
    return 10 + unwrap val default 0;
 }
@@ -1102,6 +1109,7 @@ LuneScript を Lua5.1 にトランスコンパイルする場合、次の制限�
 tostring() を付加することでエラーしないように回避しています。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 print( string.format( "%d,%s,%s,%s",  1, 1.0, {}, [] ) );
 #+END_SRC
 
@@ -1118,6 +1126,7 @@ print( string.format( "%d,%s,%s,%s", 1, tostring( 1.0), tostring( {}), tostring(
 例えば、次の場合は変換できません。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let formatTxt = "%d,%s,%s,%s";
 print( string.format( formatTxt,  1, 1.0, {}, [] ) );
 #+END_SRC
@@ -1212,6 +1221,7 @@ LuneScript は、
 int 型のプリミティブな値として扱えます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 print( ?a ); // 97  (0x61)
 #+END_SRC
 
@@ -1250,37 +1260,43 @@ Lua5.3 のビット長は、環境に依存します。
 - 論理積 (&)
 
 #+BEGIN_SRC lns
-1 & 3 == 1
+// @lnsFront: ok
+print( 1 & 3 == 1 );
 #+END_SRC
   
 - 論理和  (|)
   
 #+BEGIN_SRC lns
-1 | 2 == 3
+// @lnsFront: ok
+print( 1 | 2 == 3 );
 #+END_SRC
   
 - 排他的論理和 (~)
   
 #+BEGIN_SRC lns
-1 ~ 3 == 2
+// @lnsFront: ok
+print( 1 ~ 3 == 2 );
 #+END_SRC
   
 - 論理シフト(左) (|<<)
   
 #+BEGIN_SRC lns
-1 |<< 2 == 4
+// @lnsFront: ok
+print( 1 |<< 2 == 4 );
 #+END_SRC
   
 - 論理シフト(右) (|>>)
 
 #+BEGIN_SRC lns
-0x10 |>> 2 == 4
+// @lnsFront: ok
+print( 0x10 |>> 2 == 4 );
 #+END_SRC
 
 - ビット反転 (~)
   
 #+BEGIN_SRC lns
-~2 == 0xfffffffd  
+// @lnsFront: ok
+print( ~2 == 0xfffffffd );
 #+END_SRC
 
 
@@ -1301,6 +1317,7 @@ Lua5.3 のビット長は、環境に依存します。
 ここで指定する N は、文字列先頭が 1 を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let txt = "abc";
 print( txt[ 2 ] );  // 98
 #+END_SRC
@@ -1310,6 +1327,7 @@ N が文字列長を越えた場合の動作は、 *未定義* です。
 文字列長は # で取得します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 print( #"abc" ); // 3
 #+END_SRC
 
@@ -1326,6 +1344,7 @@ true, false をもちます。
 リストは値を追加、削除可能な型です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut list:List<int> = [];
 list.insert( 1 ); // [ 1 ]
 list.insert( 2 ); // [ 1, 2 ]
@@ -1351,6 +1370,7 @@ Map のリテラルは JSON フォーマットを拡張したフォーマット�
 次のように JSON フォーマットを扱えます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let map = {
    "val1": 1,
    "val2": 2,
@@ -1364,6 +1384,7 @@ print( map.val1, map.val2, map.val3 ); // 1 2 3
 - キーと値に nil 以外の全ての値を使用できる
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut test:Map<int,int> = {};
 let map = {
    1: "val1",
@@ -1377,6 +1398,7 @@ print( map[ 1 ], map[ 2.0 ], map[ test ] ); // val1 val2 val3
 JSON そのものを扱うことが出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut map:Map<str,int> = {};
 map[ "abc" ] = 1;
 map.xyz = 10;
@@ -1389,6 +1411,7 @@ key の型が str の場合、 .key としてもアクセスできます。
 次の例の print は true を出力します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( map[ "abc" ] == map.abc ); // true
 #+END_SRC
 
@@ -1403,6 +1426,7 @@ Map を扱う際、次を注意してください。
 具体的には、下記の例で ~map[1]~ と ~map[1.0]~ が、何を返すかは *未定義* です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let map = {
    1: "val1",
    1.0: "val2",
@@ -1421,6 +1445,7 @@ print( map[ 1 ], map[ 1.0 ] );
 その結果は aaa と nil となります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut map:Map<&List<int>,str> = {};
 let list1 = [ 1 ];
 let list2 = [ 1 ];
@@ -1448,6 +1473,7 @@ List, Array, Map は generics 対応しています。
 例えば、そえぞれ次のように宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let list:List<int> = [];  // int を要素に持つリスト
 let array:Array<real> = [@];  // real を要素に持つ配列
 let map:Map<str,int> = {}; // str をキー、int を値に持つマップ
@@ -1457,6 +1483,7 @@ let map:Map<str,int> = {}; // str をキー、int を値に持つマップ
 *** リスト、マップコンストラクタの型
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let list = [ 1, 2, 3 ];
 let map = { "A": 10, "B": 11, "C": 12 };
 #+END_SRC
@@ -1471,6 +1498,7 @@ let map = { "A": 10, "B": 11, "C": 12 };
 具体的には、次のようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let list1 = [ 1, 2, 3 ];			// List<int>
 let list2 = [ 'a', 'b', 'c' ];			// List<str>
 let list3 = [ 'a', 1, 'c' ];			// List<stem>
@@ -1539,6 +1567,7 @@ Map ではなく Set を使うことで、次の効果があります。
 Set は次のように書くことでデータを生成します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let obj = (@ 1, 2, 3, 4 ); // 1 2 3 4
 #+END_SRC
 
@@ -1550,6 +1579,7 @@ Set は ~(@ )~ で値を括ります。
 省略しない場合は次のように書きます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let obj:Set<int> = (@ 1, 2, 3, 4 ); // 1 2 3 4
 #+END_SRC
 
@@ -1558,6 +1588,7 @@ let obj:Set<int> = (@ 1, 2, 3, 4 ); // 1 2 3 4
 空の Set を使用する場合は、型推論できないため型を明示する必要があります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let obj:Set<int> = (@);
 #+END_SRC
 
@@ -1574,6 +1605,7 @@ let obj:Set<int> = (@);
 Set への値の追加、削除は次のように行ないます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut obj = (@ 1, 2, 3, 4 );
 obj.add( 0 );  // 0 1 2 3 4
 obj.del( 2 );  // 0 1 3 4
@@ -1582,6 +1614,7 @@ obj.del( 2 );  // 0 1 3 4
 Set で管理する値の有無確認は、次のように行ないます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let obj = (@ 1, 2, 3, 4 );
 print( obj.has( 0 ) );  // false
 print( obj.has( 1 ) );  // true
@@ -1591,6 +1624,7 @@ Set は、len() メソッドで要素の数を取得できます。
 ただし、 len() メソッドは要素を列挙して数を計算するため、計算量はサイズに比例します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut obj = (@ 1, 2, 3, 4 );
 print( obj.len() );
 #+END_SRC
@@ -1598,6 +1632,7 @@ print( obj.len() );
 同じ Set を生成するには clone() を使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let obj = (@ 1, 2, 3, 4 );
 let obj2 = obj.clone();
 #+END_SRC
@@ -1616,6 +1651,7 @@ let obj2 = obj.clone();
 なお、この操作は対象の Set の内容を書き変えます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let set1 = (@  1, 2, 3 );
 let set2 = (@  2, 3, 4 );
 let set3 = set1.clone().or(set2);   // 1 2 3 4
@@ -1653,6 +1689,7 @@ enum として扱える値の型は次の通りです。
 enum は次のように定義します。
    
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1,
@@ -1667,6 +1704,7 @@ print( TestEnum.val0, TestEnum.val1, TestEnum.val2 );  // 0, 1, 2
 enum の値を指定する場合は、次のように定義します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0 = 10,
   val1,
@@ -1683,6 +1721,7 @@ enum の値を省略した場合、次に従って値を assign します。
 なお、 enum 値に文字列を assign する場合、値を省略することは出来ません。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0 = "abc",
   val1 = "def",
@@ -1698,6 +1737,7 @@ enum 値に設定する値には、式を指定出来ます。
 例えば次のような場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func(): int {
   return 100;
 }
@@ -1716,6 +1756,7 @@ enum TestEnum {
 定義した enum は、次のように型として利用できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1,
@@ -1745,6 +1786,7 @@ enum 値を指定する場合は、
 TestEnum.val1 ではなく、 .val1 として指定できます。
    
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1,
@@ -1773,6 +1815,7 @@ val は TestEnum で定義した enum 値ですが、それは 0, 1, 2 のいず
 一方で次の例を見てください。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 enum TestEnum {
   val0,
   val1,
@@ -1795,6 +1838,7 @@ enum 値に assign している型の値から、
 対応する enum 値に変換するには、次のように _from() 関数を利用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1,
@@ -1823,6 +1867,7 @@ enum 値は $_txt によって、このシンボル名を動的に取得でき�
 例えば次の場合、TestEnum.val1 が出力されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1,
@@ -1848,6 +1893,7 @@ $_txt には次の注意点があります。
 
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1 = 10,
@@ -1870,6 +1916,7 @@ $_allList で、enum が定義している全 enum のリストを取得でき�
 例えば次のコードの場合、 
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1,
@@ -1928,6 +1975,7 @@ int, real, str に限らず全ての型をグルーピングすることが出�
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Hoge {
    pri let val:int {pub};
 }
@@ -1967,6 +2015,7 @@ Test は、 Val1 〜 Val5 までの値域を持ちます。
 この alge 型の値を使用する場合、次のように書きます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let val1 = Test.Val1;
 let val2 = Test.Val2( 1 );
 let val3 = Test.Val3( "abc" );
@@ -1987,6 +2036,7 @@ let val5 = Test.Val5( 10, "xyz" );
 enum 型は、次のように元の値と同じように使用できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 enum TestEnum {
   val0,
   val1,
@@ -2008,6 +2058,7 @@ func( unwrap TestEnum._from( val ) );
 次に match の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Hoge {
    pri let val:int {pub};
 }
@@ -2065,6 +2116,7 @@ alge 型も enum 型と同じように省略表記を利用できます。
 次のような alge 型の Test と、その Test を引数に持つ関数があった場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 alge Test {
    Val1,
    Val2,
@@ -2078,6 +2130,7 @@ fn func( test:Test ) {
 func() をコールする際、次のように Test を省略可能です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 func( .Val1 );
 func( .Val2 );
 func( .Val3( 10 ) );
@@ -2091,6 +2144,7 @@ func( .Val3( 10 ) );
 パラメータを持たない単純な alge 型の値は、次のように比較することが出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 alge Test {
    Val1,
    Val2,
@@ -2126,6 +2180,7 @@ func( .Val2 ); // Val2
 alge を使うと JSON 構造を次のように書くことが出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 alge JsonVal {
    JNull,
    JBool(bool),
@@ -2211,6 +2266,7 @@ LuneScript は静的型付け言語であり、変数は型を持ちます。
 変数は、次のように let で宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val:int = 1;
 #+END_SRC
 
@@ -2223,6 +2279,7 @@ let val:int = 1;
 real の 1.0 をセットすると、型が違うためコンパイルエラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val:int = 1.0;  // error
 #+END_SRC
 
@@ -2246,6 +2303,7 @@ LuneScript は型推論をサポートしています。
 これによって、次のように型を指定せずに変数を宣言できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1 = 1; // int 
 let val2 = 1.0; // real
 let val3 = "abc"; // str
@@ -2268,6 +2326,7 @@ let val3 = "abc"; // str
 初期化していない変数にアクセスすると、コンパイルエラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 {
    let val;
    print( "%s" ( val ) ); // error
@@ -2284,6 +2343,7 @@ let val3 = "abc"; // str
 例えば次の場合、エラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( flag:bool )
 {
    let val;
@@ -2300,6 +2360,7 @@ false の場合は val が初期化されないためです。
 次のように、アクセスする前に全てのパスで初期化をする必要があります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( flag:bool )
 {
    let val;
@@ -2322,6 +2383,7 @@ val に対する書き換えではないため、
 ちなみに次のような少し複雑な場合も、フローを解析します。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( kind:int )
 {
    let val;
@@ -2353,6 +2415,7 @@ fn func( kind:int )
 なお、次の場合も print( val ) の箇所でエラーになります。 
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( flag:bool )
 {
    let val;
@@ -2376,6 +2439,7 @@ fn func( flag:bool )
 例えば次の場合は、
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( flag:bool )
 {
    let val;
@@ -2398,6 +2462,7 @@ int 型の val に real の 1.0 を代入しようとしているため、
 エラーを回避できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( flag:bool )
 {
    let val:stem; // stem 型を宣言
@@ -2426,6 +2491,7 @@ LuneScript では、 同名の変数宣言を禁止しています。
 具体的には、次の変数宣言はエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 {
    let val = 1;
    {
@@ -2443,12 +2509,14 @@ LuneScript では、 同名の変数宣言を禁止しています。
 外部のモジュールに公開したい場合は、次のように pub を付加して宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub let val = 1;
 #+END_SRC
 
 外部公開されている変数にアクセスする場合、次のように import を使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import SubModule;
 print( SubModule.val );
 #+END_SRC
@@ -2462,6 +2530,7 @@ SubModule は ~pub let val = 1;~ を宣言している LuneScript のモジュ�
 もう一つ global を使うことも出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub let val1 = 1;
 global let val2 = 2;
 #+END_SRC
@@ -2472,6 +2541,7 @@ pub と global の違いは、 名前空間の違いです。
 これは上記 val1, val2 を外部からアクセスしているサンプルです。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import SubModule;
 print( SubModule.val1 );
 print( val2 );
@@ -2494,6 +2564,7 @@ global を使用せざるを得ないこともあると思います。
 例えば次の例では val2 は、 SubModule になんの関係もなく存在しているように見えますが、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import SubModule;
 print( SubModule.val1 );
 print( val2 );
@@ -2502,6 +2573,7 @@ print( val2 );
 次の場合 SubModule を import していないため、val2 は存在しないのでエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( val2 );
 #+END_SRC
 
@@ -2513,6 +2585,7 @@ print( val2 );
 例えば、次の val2 は最上位のスコープではないためエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 pub let val = 1;
 {
    pub let val2 = 1; // error
@@ -2526,6 +2599,7 @@ pub let val = 1;
 例えば、次の ~val = 2~ はエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val = 1;
 val = 2; // error
 #+END_SRC
@@ -2533,6 +2607,7 @@ val = 2; // error
 可変な変数(mutable)とする場合、次のように mut で宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut val = 1;
 val = 2;
 #+END_SRC
@@ -2544,6 +2619,7 @@ LuneScript は、 Lua と同じで関数の戻り値に複数の値を返せま�
 この戻り値を変数宣言の初期値とするには、次のように宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let val1, val2 = func();
 let mut val3, mut val4 = func();
 #+END_SRC
@@ -2570,6 +2646,7 @@ nil 以外の全ての値は、 stem 型の変数に代入できます。
 これには、暗黙的な型変換が行なわれています。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut val:stem = 1;
 val = 1.0;
 val = "abc";
@@ -2581,6 +2658,7 @@ val = [@];
 一方、 stem 型の値から異なる型への代入はエラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val1:stem = 1;
 let val2:int = val1; // error
 #+END_SRC
@@ -2627,6 +2705,7 @@ nilable 制御で別途分岐制御があるためです。
 if 文は、次のように使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = 1;
 if val == 1 {
    print( "hoge" );
@@ -2656,6 +2735,7 @@ LuneScript では、 bool 値との比較を推奨していません。
 具体的には次のようなオペレーションを推奨しません。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
    let val1 = true;
    if val1 == true {
    }
@@ -2675,6 +2755,7 @@ bool の真偽値によって処理を切り替える場合、
 次のようにしてください。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let exp = true;
 if exp {
    print( "exp is true" );
@@ -2693,6 +2774,7 @@ if not exp {
 switch 文は次のように使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = 1;
 switch val {
    case 1 {
@@ -2712,6 +2794,7 @@ switch val {
 switch の case には、次のように複数の式を書けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = 1;
 switch val {
    case 10, 20, 30 {
@@ -2726,6 +2809,7 @@ switch val {
 これは次の if 文と同義で、いづれかの値に一致すると、そのブロックを実行します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = 1;
 if val == 10 or val == 20 or val == 30 {
    print( "hoge" );
@@ -2740,6 +2824,7 @@ switch 文で注意すべき点は、 C 言語などと違い break が不要で
 例えば次の break は、 switch 文を抜けるのではなく for 文を抜けることになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 for count = 1, 10 {
    switch count {
       case 5 {
@@ -2784,6 +2869,7 @@ LuneScript は、次の繰り返し構文をサポートします。
 while, repeat は次のように利用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut val = 1;
 while val < 10 {
    val = val + 1;
@@ -2815,6 +2901,7 @@ repeat の式では、ブロック内部のスコープの変数を利用でき�
 
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let flag = true;
 while flag {
 }
@@ -2827,6 +2914,7 @@ while flag {
 LuneScript では無限ループの後の print() 文は処理されないということを判定します。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 while true {
 }
 print( "hoge" );
@@ -2851,6 +2939,7 @@ Rust のように無限ループ専用の命令を用意する方が良いかと
 次のように利用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 for count = 1, 10, 1 {
   print( count );
 }
@@ -2865,6 +2954,7 @@ for 開始時に一度だけ評価されるということです。
 つまり、次のようなことをやると、期待と異なる動作になります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut addVal = 1;
 for count = 1, 10, addVal {
   addVal = addVal + 1;
@@ -2881,6 +2971,7 @@ apply は、Lua の for in との互換用命令です。
 次のように利用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 apply txt of string.gmatch( "hoge.foo.bar", '[^%.]+' ) {
    print( txt );
 }
@@ -2896,6 +2987,7 @@ foreach は、リスト、配列、マップの要素を列挙する関数です
 次のように利用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 foreach val, index in [ 1, 2, 3 ] {
    print( index, val );
 }
@@ -2915,6 +3007,7 @@ foreach val in (@ 1, 2, 3 ) {
 なお リスト、配列の index, マップの key は、次のように省略することができます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 foreach val in [ 1, 2, 3 ] {
    print( val );
 }
@@ -2933,6 +3026,7 @@ Set, Map を foreach で要素を列挙した場合、要素の列挙順は不�
 forsort は、 Set, Map の要素を列挙する際に、キーでソート(昇順)した順で列挙します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 forsort val, key in { "b":200, "c":300, "a":100 } {
    print( key, val );
 }
@@ -2944,6 +3038,7 @@ forsort val in (@ 2, 4, 1, 0 ) {
 Map の forsort は key を省略できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 forsort val in { "b":200, "c":300, "a":100 } {
    print( val );
 }
@@ -2977,6 +3072,7 @@ LuneScript の一般制御構文は、基本的に Lua と同じです。
 LuneScript の関数は次のように定義します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn add_sub( val1:int, val2:int ): int, int {
    return val1 + val2, val1 - val2;
 }
@@ -3015,6 +3111,7 @@ LuneScript は、戻り値を複数返せます。
 次に例を示します。
    
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func(): __ {
    while true {
    }
@@ -3040,6 +3137,7 @@ func() から処理が戻ってきます。
 このような場合は、エラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func(val:int): __ {
    while true {
       if val == 1 {
@@ -3063,6 +3161,7 @@ fn func(val:int): __ {
 具体的には次のようにブロック内に定義できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn sub():int {
    let mut val = 0;
    {
@@ -3092,6 +3191,7 @@ print( sub() ); // 6
 関数も変数と同様、pub を使って外部公開できます。
   
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub fn func(): int {
    return 1;
 }
@@ -3102,6 +3202,7 @@ pub を指定することで、外部からアクセス可能な関数となり�
 global も利用できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 global fn func(): int {
    return 1;
 }
@@ -3123,6 +3224,7 @@ LuneScript は、関数オブジェクトを値として扱うことが出来ま
 次に form の使用例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn test() {
    print( "hoge" );
 }
@@ -3143,6 +3245,7 @@ sub( test ); // hoge
 なお、 form 型は次の関数として扱います。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 fn func(...):... {}
 #+END_SRC
 
@@ -3160,6 +3263,7 @@ fn func(...):... {}
 不正動作となってしまいます。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( val:int ) {
    print( val + 1 );
 }
@@ -3170,6 +3274,7 @@ func2( nil );
 代入可能なケースと、代入不可能なケースの例を次に示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let form1:form = fn ( val1:stem! ) { };
 let form2:form = fn ( val1:stem ) { };  // error
 let form3:form = fn ( val1:stem!, val2:stem! ) { };
@@ -3186,6 +3291,7 @@ let form4:form = fn ( val1:stem!, val2:stem ) { }; // error
 form で扱えない関数を扱うには、次のように form 宣言をします。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 form funcform( val:int ):int;
 fn sub( func:funcform ) {
    print( func( 1 ) + 1 );
@@ -3205,10 +3311,11 @@ anonymous 関数は、名前を持たない関数を定義します。
 次は anonymous 関数の例です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn sub( func:form ) {
   func( 1 );
 }
-sub( fn ( val:int! ) { print( val ); } );  // 1
+sub( fn ( val:stem! ) { print( val ); } );  // 1
 #+END_SRC
 
 この例では、 anonymous 関数 ~fn ( val:int ) { print( val ); }~ を定義しています。
@@ -3264,6 +3371,7 @@ LuneScript は、多値の関数戻り値に対応しています。
 例えば、次のように関数は複数の値を返せます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func(): int,int {
    return 1, 2;
 }
@@ -3372,6 +3480,7 @@ LuneScript では、このように問題を避けるため多値の戻り値を
 具体的な明示方法は次になります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func1(): int,int {
    return 1, 2;
 }
@@ -3397,6 +3506,7 @@ LuneScript は、nilable 型の引数は関数コール時に省略すること�
 例えば次の関数 func() は、引数を省略してコールできます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val1:int!, val2:int! ):int {
    when! val1, val2 {
       return val1 + val2;
@@ -3441,6 +3551,7 @@ LuneScript では、引数を省略する場合 ~##~ を使用します。
 上の func() をコールする場合、次のようになります。
   
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( func(1,2) );  // 3
 print( func(1##) );  // 1
 print( func(##) );   // 0
@@ -3479,6 +3590,7 @@ LuneScript は、値に nil を持ちます。
 以前説明しましたが、 stem 型の変数は nil 以外の全ての型を保持できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let mut val:stem = 1;
 val = 1.0;
 val = "abc";
@@ -3492,6 +3604,7 @@ val = nil; // error
 stem ではなく stem! を使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut val:stem! = 1;
 val = 1.0;
 val = "abc";
@@ -3512,6 +3625,7 @@ nilable は stem! だけでなく、
 本来の型と nil を保持可能な nilable 型となります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let mut val1:int = 1;
 val1 = nil;  // error
 
@@ -3533,6 +3647,7 @@ nilable 型は、そのままでは元の型として使用できないという
 この説明だと何のことだか伝わり難いと思いますので、次の例を見てください。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val:int! = 1;
 print( val + 1 );  // error
 #+END_SRC
@@ -3565,6 +3680,7 @@ print( val + 1 );  // error
 しかし、次のように比較すること出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn check( val:int! ) {
    if val == 1 {
       print( "ok" );
@@ -3585,6 +3701,7 @@ check( 2 ); // ng
 次のように、非 nilable 型から nilable 型への変換は、暗黙的に行なわれます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val:int! = 1;   // int! <-- int
 #+END_SRC
 
@@ -3607,6 +3724,7 @@ unwrap は、 nilable 型の式を、非 nilable 型へ変換します。
 例えば次のように使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:int! = 1;
 let val2:int = unwrap val1;
 #+END_SRC
@@ -3618,6 +3736,7 @@ int! から int! に変換しています。
 そのプログラムは実行時エラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:int! = nil;
 let val2:int = unwrap val1;   // runtime error
 #+END_SRC
@@ -3630,6 +3749,7 @@ unwrap default は、変換対象の値が nil だった場合の値を指定し
 次は default を使用した例です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:int! = nil;
 let val2:int = unwrap val1 default 0;
 #+END_SRC
@@ -3645,6 +3765,7 @@ when! は、指定の nilable 型の *変数* が nil かどうかを判定し�
 次に when! の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:int!, val2:int! ): int {
    when! val, val2 {
       return val + val2;
@@ -3680,6 +3801,7 @@ if! は、指定の *式* が nil かどうかを判定し、分岐します。
 次に if! の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:int! ): int! {
    return val;
 }
@@ -3718,6 +3840,7 @@ else は省略可能です。
 shadowing されるためです。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    if! func( val ) {
       if! func( val ) {
          return _exp + 10;
@@ -3737,6 +3860,7 @@ if! let は、 if! で判定する式の結果を格納する変数名を指定�
 次は if! let のサンプルです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val1:int!, val2:int! ): int!, int! {
    return val1, val2;
 }
@@ -3772,6 +3896,7 @@ let! は、nil 以外の初期値を持つ変数宣言を行ないます。
 次に let! のサンプルを示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val1:int!, val2:int! ): int!, int! {
    return val1, val2;
 }
@@ -3821,6 +3946,7 @@ unwrap! は、 let! に似た制御です。異なるのは変数を宣言する
 次は、 unwrap! の例です。
    
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn test( arg:int! ) {
   let mut val = 0;
 
@@ -3851,6 +3977,7 @@ Map 型データの要素にアクセスした場合、
 たとえば次の場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = { "abc": 1 };
 let val2 = val.abc;
 #+END_SRC
@@ -3863,6 +3990,7 @@ val2 は int ではなく、 int! となります。
 ちなみに、リスト、配列の要素アクセスは nilable にはなりません。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val = [ 1, 2, 3 ];
 let val2 = val[ 1 ];
 #+END_SRC
@@ -3915,6 +4043,7 @@ LuneScript のクラスは、次をサポートします。
 最小のクラス定義は次のように行ないます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
 }
 #+END_SRC
@@ -3932,6 +4061,7 @@ class Test {
 次のように pub を付加します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub class Test {
 }
 #+END_SRC
@@ -3951,6 +4081,7 @@ let test = new Test();
 メソッド定義は、ほぼ関数定義と同じです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pub fn func() {
       print( __func__ );
@@ -3965,6 +4096,7 @@ test.func();  // Test.func
 例えば、次の ~sub( test.func )~ はエラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    pub fn func() {
       print( __func__ );
@@ -3982,6 +4114,7 @@ sub( test.func );  // error
 次のように anonymous 関数を作成して sub() に渡します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pub fn func() {
       print( __func__ );
@@ -4020,6 +4153,7 @@ self シンボルは、自分自身のインスタンスを表します。
 非公開メソッドの func() を self 使用してコールしています。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    fn func() {
       print( __func__ );
@@ -4039,6 +4173,7 @@ test.sub();  // Test.func
 先ほどのメソッド定義は、次のようにも書けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
 }
 pub fn Test.func() {
@@ -4060,6 +4195,7 @@ import しているモジュール内で定義することは出来ません。
 func() をプロトタイプ宣言することで、sub() 内で func() のコールが可能になります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    fn func();
    pub fn sub() {
@@ -4084,6 +4220,7 @@ test.sub();  // Test.func
 クラスメソッドの定義は、メソッド定義に static を付加するだけです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pub static fn sfunc() {
       print( __func__ );
@@ -4104,6 +4241,7 @@ Test.sfunc(); // Test.sfunc
 次にメンバ定義の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let val1:int;
    pri let val2:int;
@@ -4138,6 +4276,7 @@ pri はアクセス制御で、意味はメソッド定義と同じです。
 次に mutable なメンバ、メソッドの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let mut val1:int;
    pri let val2:int;
@@ -4166,6 +4305,7 @@ mutable のメソッド add() は、 メンバ val1 に値をセットしてい�
 では、次のように メソッド add() の mut 宣言を外した場合はどうなるかというと。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    pri let mut val1:int;
    pri let val2:int;
@@ -4186,6 +4326,7 @@ mutable でないメソッド内からメンバを変更しようとした場合
 次の場合もエラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    pri let mut val:int;
    pub fn increment() mut {
@@ -4211,6 +4352,7 @@ immutable なメソッドから mutable なメソッドのコールは出来ま�
 func() メソッドは immutable であるため val もまた immutable となり、エラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    pri let mut val:int;
    pub fn func() {
@@ -4251,6 +4393,7 @@ allmut は、メンバの mutablity を宣言し、
 次に allmut のサンプルを示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let allmut val:int;
    pub fn func() {
@@ -4288,6 +4431,7 @@ val を書き換えることが可能となります。
 次にコンストラクタの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let val1:int;
    pri let val2:int;
@@ -4307,6 +4451,7 @@ let test = new Test();
 この引数は、new 演算子によって与えられます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let val1:int;
    pri let val2:int;
@@ -4335,6 +4480,7 @@ test.func(); // 11 12
 デフォルトコンストラクタが内部的に生成されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let val1:int;
    pri let val2:int;
@@ -4344,6 +4490,7 @@ class Test {
 そのデフォルトコンストラクタは、次のように定義されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    pub fn __init( val1:int, val2:int ) {
       self.val1 = val1;
       self.val2 = val2;
@@ -4361,6 +4508,7 @@ class Test {
 次のような派生クラス Sub の現形式デフォルトコンストラクタは、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pro let val:int;
 }
@@ -4382,6 +4530,7 @@ super クラスのコンストラクタの引数 + 派生クラスの全メン�
 次のような派生クラス Sub の旧形式デフォルトコンストラクタは、
      
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pro let val:int!;
 }
@@ -4413,6 +4562,7 @@ sub.func(); // nil, 2
 しかしこの振舞いは、次のような処理を書いた時に問題になります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    pri let mut val:int {pub};
    pub static fn create(): Test {
@@ -4434,6 +4584,7 @@ class Test {
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let mut val:int {pub};
    _lune_control default__init;
@@ -4462,6 +4613,7 @@ class Test {
 次はクラスメンバ定義の例です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri static let val1:int;
    pri static let val2:int;
@@ -4516,6 +4668,7 @@ LuneScript のクラス定義は、次をサポートします。
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let val1:int;
    pri let mut val2:int {pub,pub};
@@ -4534,6 +4687,7 @@ print( test.$val2, test.$val3 );  // 10 3
 この指定によって、次のメソッドが内部的に作成されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn Test.get_val2(): int {
    return self.val2;
 }
@@ -4545,6 +4699,7 @@ pub fn Test.set_val2( val:int ) {
 getter にアクセスする場合、 $ を使って次のようにアクセスします。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let mut test = new Test( 1, 2, 3 );
 print( test.$val2, test.$val3 );  // 2 3
 #+END_SRC
@@ -4559,6 +4714,7 @@ setter が不要な場合、「setter のアクセス制御」を省略します
 なお、getter が不要で setter が必要な場合は、次のように宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let mut val1:int {non,pub};
 }
@@ -4577,6 +4733,7 @@ getter の戻り値型は、通常そのメンバの型と一致します。
 例えば次の Test のメンバ list の getter は、 =List<int>= 型の戻り値を返します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let mut list:List<int> {pub};
 }
@@ -4603,6 +4760,7 @@ getter を次のように宣言することで、
 mutable なメンバを immutable として返す getter を作成できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pri let mut list:List<int> {pub&};
 }
@@ -4617,6 +4775,7 @@ getter を次のように宣言することで、
 メンバの型そのものではなく、 super クラスや interface の型として返すことが出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Val {
 }
 class ValSub extend Val {
@@ -4676,6 +4835,7 @@ LuneScript は、クラスの継承をサポートします。
 次にクラスの継承例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Super {
    pub fn func() {
       print( __func__ );
@@ -4706,6 +4866,7 @@ sub.func(); // Super.func
 メンバ val を初期化する引数を持つデフォルトコンストラクタが内部的に生成されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Super {
    pro let val:int;
 }
@@ -4754,6 +4915,7 @@ LuneScript は、クラスが保持するメンバのメソッドに対して、
 「透過的にアクセス」という表現では伝わり難いと思うので、次の例で説明します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 abstract class Test {
    pub abstract fn foo(): str;
    pub abstract fn bar(): str;
@@ -4786,6 +4948,7 @@ TestSub2 は、 メンバ sub を advertise しています。
 次のようにメンバ sub のメソッド (foo,bar) をコールする処理を内部的に生成します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub override fn TestSub2.foo(): str {
    return self.sub.foo();
 }
@@ -4829,6 +4992,7 @@ LuneScript は、メソッドの override をサポートします。
 メソッドの override の例を次に示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Super {
    pub fn func() {
       print( __func__ );
@@ -4859,6 +5023,7 @@ super() を使用します。
 次に super() の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Super {
    pub fn func(): int {
       return 1;
@@ -4886,6 +5051,7 @@ Super クラスの func() メソッドを呼び出しています。
 次に abstract の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 abstract class Super {
    pub abstract fn func(): int;
 }
@@ -4952,6 +5118,7 @@ Java や C# を使用していればお馴染だと思いますが、
 次にインタフェースの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 interface IF {
    pub fn func();
 }
@@ -4971,6 +5138,7 @@ sub( new Test() ); // Test.func
 次に 2 つのインタフェースを実装するクラスの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 interface IF1 {
    pub fn func1();
 }
@@ -5000,6 +5168,7 @@ sub( test, test ); // Test.func Test.func2
 同名で異なる型のメソッドがある場合、エラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 interface IF1 {
    pub fn func():int;
 }
@@ -5049,6 +5218,7 @@ mapping を利用するには、
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test extend (Mapping){
    let val1:int {pub};
    let val2:str {pub};
@@ -5136,6 +5306,7 @@ LuneScript では当初、組込み型の List/Array/Map でのみ Generics を�
 関数の Generics は次のように宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func<T>( val:T ) : Set<T> {
    return (@ val);
 }
@@ -5150,6 +5321,7 @@ fn func<T>( val:T ) : Set<T> {
 仮型パラメータは、複数指定することができます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func<T1,T2>( val1:T1, val2:T2 ) : Set<T1>, List<T2> {
    return (@ val1), [ val2 ];
 }
@@ -5194,6 +5366,7 @@ test2, test3 はコンパイルエラーとなります。
 つまり、次のような ~func1<T!>~ はエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func1<T!>( val:T ) : T {
    return val;
 }
@@ -5203,6 +5376,7 @@ fn func1<T!>( val:T ) : T {
 つまり、次の場合エラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func1<T>( val:T ) : T {
    return val;
 }
@@ -5214,9 +5388,10 @@ print( func1( val ) ); // error type mismatch
 ~func1<T>(val:T)~ の val は T であり、
 仮型パラメータは nilable を利用できないためエラーとなります。
 
-このような処理を行ないたい場合は、次のように宣言します。
+このような処理を行なわせたい場合は、次のように宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func1<T>( val:T! ) : T {
    return unwrap val;
 }
@@ -5237,6 +5412,7 @@ func1() の引数が nilable であることを宣言します。
 Generics を利用すると、次のような処理が書けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func<T>( val:T ) : Set<T> {
    return (@ val);
 }
@@ -5258,6 +5434,7 @@ func( 1 ) は、 (@ 1 ) の Set<int> を生成します。
 Generics ではなく、stem を利用することで次のように似たような処理を記載できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:stem ) : Set<stem> {
    return (@ val);
 }
@@ -5282,6 +5459,7 @@ Generics を利用することで、キャストを使わずに安全にアク�
 クラスの Generics は次のように宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test<T> {
    let val:T;
    pub fn func() : List<T> {
@@ -5296,6 +5474,7 @@ class Test<T> {
 次のように仮型パラメータの宣言は不要です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn Test.func2() : Set<T> {
    return (@ self.val );
 }
@@ -5304,12 +5483,14 @@ pub fn Test.func2() : Set<T> {
 Generics クラスのインスタンスは次のように生成します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let test = new Test<str>( "abc" );
 #+END_SRC
 
 なお、コンストラクタの引数に全ての仮パラメータを使用している場合、
 次のように実型パラメータを省略することも可能です。
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let test = new Test( "abc" );
 #+END_SRC
 
@@ -5321,6 +5502,7 @@ let test = new Test( "abc" );
 クラスの仮型パラメータ T と、メソッドの仮型パラメータ T2 を持っています。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test<T> {
    let val:T;
    pub fn func<T2>(val:T2) : Map<T,T2> {
@@ -5358,6 +5540,7 @@ Test クラスの仮型パラメータは Val クラスに限られます。
 Val クラスのメソッド func() をコールできるようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 abstract class Val {
    pub abstract fn func(): str;
 }
@@ -5372,6 +5555,7 @@ class Test<T:Val> {
 次は、この Test クラスを使ったサンプルです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 abstract class Val {
    pub abstract fn func(): str;
 }
@@ -5423,6 +5607,7 @@ func( new Test( new Val2() ) );  // this is val2
 つまり次のようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 class Hoge<T:SuperClass(IF,...)> {
 }
 #+END_SRC
@@ -5446,6 +5631,7 @@ Mapping に関しては、次の記事を参照してください。
 次は簡単な例です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test<T> extend (Mapping) {
    let txt:str;
    pub fn func( val:T ) {
@@ -5469,6 +5655,7 @@ Test<T> クラスは Mapping を extend しています。
 次のように仮型パラメータ型のメンバを持った場合は、エラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test<T> extend (Mapping) {
    let txt:T;
 }
@@ -5485,6 +5672,7 @@ class Test<T> extend (Mapping) {
 具体的には次の通り ~Test<T:(Mapping)>~ とします。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test<T:(Mapping)> extend (Mapping) {
    let val:T {pub};
 }
@@ -5513,6 +5701,7 @@ if! let test2 = Test<str>._fromMap( map ) {
 例えば次のような Map のデータがあった場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let json = {
    "lv1": {
       "lv2": {
@@ -5531,6 +5720,7 @@ let json = {
 lv5 の val にアクセスするには、次のように処理する必要があります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 if! let lv1 = json.lv1 {
    if! let lv2 = lv1.lv2 {
       if! let lv3 = lv2.lv3 {
@@ -5547,6 +5737,7 @@ if! let lv1 = json.lv1 {
 あるいは次のように unwrap する必要があります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val );
 #+END_SRC
 
@@ -5561,6 +5752,7 @@ nil 条件演算子を使って上記の lv5 の val にアクセスすると、
 次のようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( json.lv1$.lv2$.lv3$.lv4$.lv5$.val );
 #+END_SRC
 
@@ -5580,6 +5772,7 @@ nilable の式の評価結果が nil の場合、その後の式を実行せず�
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pub let val:List<int>;
    pub fn func():int {
@@ -5604,6 +5797,7 @@ nil 条件アクセスを使用すると、必ずその評価結果は nilable �
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    pub let val:int;
 }
@@ -5666,6 +5860,7 @@ LuneScript のソースは、特に何も宣言しなくても 1 つのモジュ
 
 #+NAME: Test.lns
 #+BEGIN_SRC lns
+// @lnsFront: ok
 // Test.lns
 fn func(): str, str {
    return __mod__, __func__;
@@ -5678,6 +5873,7 @@ fn func(): str, str {
 
 #+NAME: Test.lns
 #+BEGIN_SRC lns
+// @lnsFront: ok
 // Test.lns
 pub fn func(): str, str {
    return __mod__, __func__;
@@ -5698,6 +5894,7 @@ import は、モジュールの先頭に宣言してください。
 上記 Test.lns を利用するには、次の様にします。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import Test;
 
 print( Test.func() ); // @Test   Test.func
@@ -5712,6 +5909,7 @@ print( Test.func() ); // @Test   Test.func
 なお、work/Test.lns を import する場合は、次のようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import work.Test;
 
 print( Test.func() ); // work.Test	Test.func
@@ -5732,6 +5930,7 @@ import as は、 import 後のアクセス名を指定します。
 例えば、上記の work.Test を import as で foo とすると、次のようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import work.Test as foo;
 
 print( foo.func() ); // work.Test	Test.func
@@ -5785,6 +5984,7 @@ provide は、既存の Lua モジュールとの互換性を提供するもの�
 次に provide の例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 // Test.lns
 pub fn func(): str, str {
    return __mod__, __func__;
@@ -5798,7 +5998,7 @@ provide func;
 これによって、この Test.lns モジュールのトランスコンパイル結果は、
 次のようになります。
 
-#+BEGIN_SRC lns
+#+BEGIN_SRC lua
 --work/Test.lns
 local __mod__ = 'work.Test'
 if not _lune then
@@ -5879,6 +6079,7 @@ return mod
 この Test.lua モジュールを利用する module 宣言は、次のように行ないます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 module Test require 'Test'
 {
    pub static let val:int;
@@ -5901,6 +6102,7 @@ module Test require 'Test' の require 'Test' は、
 module 宣言したモジュールは、モジュール名でアクセスします。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( Test.val, Test.func1( 10 ), Test.func2( 20 ) );
 #+END_SRC
 
@@ -5952,6 +6154,7 @@ glue を生成するには、 module 定義時に glue キーワードを指定�
 次は、 test.ext モジュールの glue を生成するサンプルである。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 module External require "test.ext" glue 'hoge_' {
    pub static fn create( val:int ): External;
    pub fn add( val:int ):int;
@@ -6159,6 +6362,7 @@ LuneScript のコードそのままでも実行可能です。
 
 #+NAME: hoge.lns
 #+BEGIN_SRC lns
+// @lnsFront: ok
 print( "hello" );
 #+END_SRC
 
@@ -6291,6 +6495,7 @@ test/proj/
 
 #+NAME: Mod1.lns
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import test.proj.Mod2;
 
 pub fn func(): str {
@@ -6301,6 +6506,7 @@ print( func() );
 
 #+NAME: Mod2.lns
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import test.proj.Mod3;
 
 pub fn func(): str {
@@ -6310,6 +6516,7 @@ pub fn func(): str {
 
 #+NAME: Mod3.lns
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import test.proj.Mod4;
 
 pub fn func(): str {
@@ -6319,6 +6526,7 @@ pub fn func(): str {
 
 #+NAME: Mod4.lns
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub fn func(): str {
    return __func__;
 }
@@ -6421,6 +6629,7 @@ LuneScript のマクロは Lisp ほど高機能ではありません。
 次に簡単なマクロの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Hello() {
    print( "hello world" );
 }
@@ -6467,6 +6676,7 @@ _Hello(); // hello world
 次が具体的なマクロのコードです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       let name = "func%d"(val);
@@ -6488,6 +6698,7 @@ print( func1(), func10() ); // 1  10
 _Test( 1 ), _Test( 10 ) によって、次が展開されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 // Test( 1 )
 fn func1():int {
    return 1;
@@ -6509,6 +6720,7 @@ fn func10():int {
 マクロの定義の syntax は次になります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 macro name( arg ) {
    {
       macro-statement
@@ -6535,6 +6747,7 @@ expand-statement は、マクロを展開した後のコードを書きます。
 _Test マクロの例では、 次の部分が expand-statement です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    fn ,,,name(): int {
       return ,,val;
    }
@@ -6562,6 +6775,7 @@ _Test マクロの例では、 次の部分が expand-statement です。
 ~_Test( 1 )~ マクロは、次が展開されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func1():int {
    return 1;
 }
@@ -6585,6 +6799,7 @@ macro-statement ブロックの最上位のスコープで宣言する必要が�
 _Test マクロの例では、次が macro-statement です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    {
       let name = "func%d"(val);
    }
@@ -6600,6 +6815,7 @@ macro-statement 内では、LuneScript の全ての機能を利用できます�
 例えば、 _Test マクロは次のようにも書けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       fn funcname(): str {
@@ -6641,6 +6857,7 @@ macro-statement では直後に続く *式* を処理対象にします。
 例えば、 上記 _Test マクロは ~`{}~ を使って次のようにも書けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       let defstat = `{
@@ -6664,6 +6881,7 @@ defstat を expand-statement で展開しています。
 この defstat の初期化部分を抜き出すと、次のようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
       let defstat = `{
          fn ,,,"func%d"(val)~~():int {
             return ,,val;
@@ -6689,6 +6907,7 @@ defstat を expand-statement で展開しています。
 次に ~`{}~ のリストの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       let mut statList:List<stat> = [];
@@ -6718,6 +6937,7 @@ print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5
 macro-statement ブロックを省略する場合、次のように {} ごと省略します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 macro name( arg ) {
    expand-statement
 }
@@ -6746,6 +6966,7 @@ macro-statement では、次の関数が利用できます。
 次のように pub を宣言することで、そのマクロを import 先で利用できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub macro _Hello() {
    print( "hello world" );
 }
@@ -6769,7 +6990,7 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 この例では、次の JSON ファイルを読み込み、
 
 #+NAME: hoge.js
-#+BEGIN_SRC lns
+#+BEGIN_SRC js
 {
     "val1": "abc",
     "val2": 0
@@ -6779,6 +7000,7 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 上記 JSON を扱うための次のクラスを定義するマクロです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Hoge {
   pri let val1:str {pub};
   pri let val2:int {pub};
@@ -6790,6 +7012,7 @@ class Hoge {
 
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 macro _MkClass( name:str, path:str ) {
    {
       let mut memStatList:List<stat> = [];
@@ -6873,6 +7096,7 @@ print( hoge.$val1, hoge.$val2 );
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
    macro _test0( name:str, val:int ) {
       {
          __var[ name ] = val;
@@ -6930,6 +7154,7 @@ LuneScript は、 3 つのタイプのキャストを提供します。
 ~@@~ は、変換元の値の型を実行時にチェックせずに強制的に型変換します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:stem = 1;
 let val2:int = val1@@int;
 #+END_SRC
@@ -6937,6 +7162,7 @@ let val2:int = val1@@int;
 次のような本来変換できない値も強制的なキャストを行なえてしまいます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1:stem = 1;
 let val2:str[] = val1@@str[];
 print( #val2 ); // runtime error 
@@ -6955,6 +7181,7 @@ warning となります。
 warning が出力されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:stem ) {
 }
 func( "abc"@@stem );
@@ -6966,6 +7193,7 @@ func( "abc"@@stem );
 この型変換は出来ないためコンパイルエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val = "abc"@@int;  // error
 let val2 = 1@@str;  // error
 #+END_SRC
@@ -6984,6 +7212,7 @@ let val2 = 1@@str;  // error
 次は ~@@@~ の例です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:stem ) {
    if! val@@@int {
       print( "int:%d" ( _exp ) );
@@ -7023,6 +7252,7 @@ str 型でなければ nil を返します。
 ~func( 2.5 )~ は ~real:2.5~ を出力します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:stem ) {
    if! val@@@int {
       print( "int:%d" ( _exp ) );
@@ -7114,12 +7344,14 @@ foo/bar
 サブファイルを利用するには、 main 側で次のように宣言する。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 subfile use foo.bar.sub;
 #+END_SRC
 
 また、サブファイル側では次のように宣言する。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 subfile owner foo.bar.main;
 #+END_SRC
 
@@ -7153,6 +7385,7 @@ subfile use を複数宣言した場合、宣言した順でサブファイル�
 例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 //------ main.lns -------
 subfile use sub1;
 subfile use sub2;
@@ -7161,6 +7394,7 @@ pub let val = 1;
 #+END_SRC
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 //------ sub1.lns -------
 subfile owner main;
 
@@ -7168,6 +7402,7 @@ pub let val1 = 1;
 #+END_SRC
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 //------ sub2.lns -------
 subfile owner main;
 
@@ -7177,6 +7412,7 @@ pub let val2 = 1;
 main.lns は次のスクリプトと等価である。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 //------ main.lns -------
 pub let val = 1;
 pub let val1 = 1;
@@ -7886,6 +8122,7 @@ LuneScript は、クラスフィールドの補完機能を提供しています
 例えば次のようなコードのとき、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Super {
    pub let val:int;
    pri let val2:int { pub };
@@ -7895,7 +8132,7 @@ class Super {
 }
 class Test extend Super {
    pub fn __init( val: int ) {
-      super( val );
+      super( val, val + 1 );
    }
    pub fn func( val: int ):int {
       return 1;
@@ -7928,6 +8165,7 @@ LuneScript は、コンパイラなので当然 Syntax エラーチェック機�
 例えば、次のようなソースで、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val: int ) {
    print( val );
 }

@@ -43,11 +43,18 @@ HEAD := content/LuneScript/_all.org.head
 EXCLUDE = -e '^\#+TITLE:' -e '^\#+AUTHOR:' -e '^\#+date:'
 SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z]*\. *\(.*\)/-----\n* *\2*/g'
 
-all:
+help:
+	@echo make all
+	@echo make concat_all
+
+concat_all:
 	cat $(SRCS) | sed 's/^*/**/g'  | sed $(SEDPAT) | grep -v $(EXCLUDE) > dump
 	cat $(HEAD) dump > dump2
 
 	mv dump2 content/LuneScript/all.org
 	rm dump
+
+all:
+	$(MAKE) concat_all
 	hugo
 

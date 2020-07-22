@@ -9,8 +9,9 @@
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/macro/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
 <script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
@@ -35,7 +36,7 @@
 <meta itemprop="name" content="24. マクロ 編">
 <meta itemprop="description" content="今回は LuneScript のマクロについて説明します。 マクロ LuneScript は、マクロを対応します。 もしかしたら、 最近は マクロ というよりも メタプログラミング と言った方が 意味">
 
-<meta itemprop="wordCount" content="4118">
+<meta itemprop="wordCount" content="4166">
 
 
 
@@ -91,7 +92,8 @@ LuneScript のマクロは Lisp ほど高機能ではありません。
 次に簡単なマクロの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Hello() {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Hello() {
    print( &#34;hello world&#34; );
 }
 _Hello(); // hello world</code></pre>
@@ -165,7 +167,8 @@ int の値を返す関数を定義するマクロ _Test
 次が具体的なマクロのコードです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       let name = &#34;func%d&#34;(val);
    }
@@ -187,7 +190,8 @@ print( func1(), func10() ); // 1  10</code></pre>
 _Test( 1 ), _Test( 10 ) によって、次が展開されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test( 1 )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test( 1 )
 fn func1():int {
    return 1;
 }
@@ -210,7 +214,8 @@ fn func10():int {
 マクロの定義の syntax は次になります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro name( arg ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+macro name( arg ) {
    {
       macro-statement
    }
@@ -241,7 +246,8 @@ expand-statement は、マクロを展開した後のコードを書きます。
 _Test マクロの例では、 次の部分が expand-statement です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   fn ,,,name(): int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   fn ,,,name(): int {
       return ,,val;
    }</code></pre>
 </div>
@@ -287,7 +293,8 @@ _Test マクロの例では、 次の部分が expand-statement です。
 <code>_Test( 1 )</code> マクロは、次が展開されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1():int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1():int {
    return 1;
 }</code></pre>
 </div>
@@ -316,7 +323,8 @@ macro-statement ブロックの最上位のスコープで宣言する必要が�
 _Test マクロの例では、次が macro-statement です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   {
       let name = &#34;func%d&#34;(val);
    }</code></pre>
 </div>
@@ -332,7 +340,8 @@ macro-statement 内では、LuneScript の全ての機能を利用できます�
 例えば、 _Test マクロは次のようにも書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       fn funcname(): str {
          return &#34;func%d&#34;(val);
@@ -399,7 +408,8 @@ macro-statement では直後に続く <strong>式</strong> を処理対象にし
 例えば、 上記 _Test マクロは <code>`{}</code> を使って次のようにも書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       let defstat = `{
          fn ,,,&#34;func%d&#34;(val)~~():int {
@@ -423,7 +433,8 @@ defstat を expand-statement で展開しています。
 この defstat の初期化部分を抜き出すと、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">      let defstat = `{
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+      let defstat = `{
          fn ,,,&#34;func%d&#34;(val)~~():int {
             return ,,val;
          }
@@ -451,7 +462,8 @@ defstat を expand-statement で展開しています。
 次に <code>`{}</code> のリストの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       let mut statList:List&lt;stat&gt; = [];
       for count = 1, val {
@@ -479,7 +491,8 @@ print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5</code></pre>
 macro-statement ブロックを省略する場合、次のように {} ごと省略します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro name( arg ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+macro name( arg ) {
    expand-statement
 }</code></pre>
 </div>
@@ -520,7 +533,8 @@ fn _lnsLoad( name:str, code:str ): stem;
 次のように pub を宣言することで、そのマクロを import 先で利用できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub macro _Hello() {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub macro _Hello() {
    print( &#34;hello world&#34; );
 }</code></pre>
 </div>
@@ -544,17 +558,19 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 <p>
 この例では、次の JSON ファイルを読み込み、
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">{
-    &#34;val1&#34;: &#34;abc&#34;,
-    &#34;val2&#34;: 0
-}</code></pre>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{</span>
+    <span class="s2">&#34;val1&#34;</span><span class="o">:</span> <span class="s2">&#34;abc&#34;</span><span class="p">,</span>
+    <span class="s2">&#34;val2&#34;</span><span class="o">:</span> <span class="mi">0</span>
+<span class="p">}</span>
+</code></pre></div>
 </div>
 <p>
 上記 JSON を扱うための次のクラスを定義するマクロです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
   pri let val1:str {pub};
   pri let val2:int {pub};
 }</code></pre>
@@ -563,7 +579,8 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 次がマクロの具体例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _MkClass( name:str, path:str ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+macro _MkClass( name:str, path:str ) {
    {
       let mut memStatList:List&lt;stat&gt; = [];
       if! let mut fileObj = io.open( path ) {
@@ -683,7 +700,8 @@ let mut var:Map&lt;str,stem&gt;
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   macro _test0( name:str, val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+   macro _test0( name:str, val:int ) {
       {
          __var[ name ] = val;
       }

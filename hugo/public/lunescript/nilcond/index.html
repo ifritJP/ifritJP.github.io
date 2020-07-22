@@ -9,8 +9,9 @@
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/nilcond/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
 <script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
@@ -25,17 +26,17 @@
 :root {}
 </style>
 <meta property="og:title" content="20. nil 条件演算子 編" />
-<meta property="og:description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } } }; lv5 の" />
+<meta property="og:description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 // @lnsFront: ok let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } }" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/nilcond/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="20. nil 条件演算子 編"/>
-<meta name="twitter:description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } } }; lv5 の"/>
+<meta name="twitter:description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 // @lnsFront: ok let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } }"/>
 <meta itemprop="name" content="20. nil 条件演算子 編">
-<meta itemprop="description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } } }; lv5 の">
+<meta itemprop="description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 // @lnsFront: ok let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } }">
 
-<meta itemprop="wordCount" content="757">
+<meta itemprop="wordCount" content="775">
 
 
 
@@ -65,7 +66,8 @@ Map アクセス
 例えば次のような Map のデータがあった場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let json = {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let json = {
    &#34;lv1&#34;: {
       &#34;lv2&#34;: {
          &#34;lv3&#34;: {
@@ -83,7 +85,8 @@ Map アクセス
 lv5 の val にアクセスするには、次のように処理する必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">if! let lv1 = json.lv1 {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+if! let lv1 = json.lv1 {
    if! let lv2 = lv1.lv2 {
       if! let lv3 = lv2.lv3 {
          if! let lv4 = lv3.lv4 {
@@ -99,7 +102,8 @@ lv5 の val にアクセスするには、次のように処理する必要が�
 あるいは次のように unwrap する必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val );</code></pre>
 </div>
 <p>
 どちらにしてもイマイチです。
@@ -116,7 +120,8 @@ nil 条件演算子を使って上記の lv5 の val にアクセスすると、
 次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( json.lv1$.lv2$.lv3$.lv4$.lv5$.val );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( json.lv1$.lv2$.lv3$.lv4$.lv5$.val );</code></pre>
 </div>
 <p>
 だいぶスッキリします。
@@ -137,7 +142,8 @@ nilable の式の評価結果が nil の場合、その後の式を実行せず�
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pub let val:List&lt;int&gt;;
    pub fn func():int {
       return 100;
@@ -164,7 +170,8 @@ nil 条件アクセスを使用すると、必ずその評価結果は nilable �
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pub let val:int;
 }
 fn sub( test:Test! ) {

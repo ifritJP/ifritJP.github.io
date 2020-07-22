@@ -60,6 +60,10 @@
     var codeNo = 0;
     window.addEventListener( "load",function() {
         Array.from( document.getElementsByClassName( "language-lns" ) ).forEach( function( element ) {
+            if ( element.innerText.indexOf( "@lnsFront: ok" ) == -1 &&
+                 element.innerText.indexOf( "@lnsFront: error" ) == -1 ) {
+                return;
+            }
             codeNo++;
             element.appendChild( document.createElement( "br" ) );
 

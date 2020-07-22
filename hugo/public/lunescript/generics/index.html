@@ -9,8 +9,9 @@
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/generics/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
 <script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
@@ -35,7 +36,7 @@
 <meta itemprop="name" content="19. generics 編">
 <meta itemprop="description" content="ここでは、 LuneScript がサポートする Generics について説明します。 LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、 ユーザ定義の関数やクラスでも Generics をサ">
 
-<meta itemprop="wordCount" content="2687">
+<meta itemprop="wordCount" content="2742">
 
 
 
@@ -69,7 +70,8 @@ LuneScript では当初、組込み型の List/Array/Map でのみ Generics を�
 関数の Generics は次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
    return (@ val);
 }</code></pre>
 </div>
@@ -84,7 +86,8 @@ LuneScript では当初、組込み型の List/Array/Map でのみ Generics を�
 仮型パラメータは、複数指定することができます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func&lt;T1,T2&gt;( val1:T1, val2:T2 ) : Set&lt;T1&gt;, List&lt;T2&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func&lt;T1,T2&gt;( val1:T1, val2:T2 ) : Set&lt;T1&gt;, List&lt;T2&gt; {
    return (@ val1), [ val2 ];
 }</code></pre>
 </div>
@@ -142,7 +145,8 @@ test2, test3 はコンパイルエラーとなります。
 つまり、次のような <code>func1&lt;T!&gt;</code> はエラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1&lt;T!&gt;( val:T ) : T {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func1&lt;T!&gt;( val:T ) : T {
    return val;
 }</code></pre>
 </div>
@@ -151,7 +155,8 @@ test2, test3 はコンパイルエラーとなります。
 つまり、次の場合エラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1&lt;T&gt;( val:T ) : T {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func1&lt;T&gt;( val:T ) : T {
    return val;
 }
 let val:int! = 1;
@@ -163,10 +168,11 @@ print( func1( val ) ); // error type mismatch</code></pre>
 仮型パラメータは nilable を利用できないためエラーとなります。
 </p>
 <p>
-このような処理を行ないたい場合は、次のように宣言します。
+このような処理を行なわせたい場合は、次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1&lt;T&gt;( val:T! ) : T {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1&lt;T&gt;( val:T! ) : T {
    return unwrap val;
 }
 let val:int! = 1;
@@ -190,7 +196,8 @@ func1() の引数が nilable であることを宣言します。
 Generics を利用すると、次のような処理が書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
    return (@ val);
 }
 foreach val in func( &#34;foo&#34; ) {
@@ -214,7 +221,8 @@ func( 1 ) は、 (@ 1 ) の Set&lt;int&gt; を生成します。
 Generics ではなく、stem を利用することで次のように似たような処理を記載できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) : Set&lt;stem&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:stem ) : Set&lt;stem&gt; {
    return (@ val);
 }
 foreach val in func( &#34;foo&#34; ) {
@@ -241,7 +249,8 @@ Generics を利用することで、キャストを使わずに安全にアク�
 クラスの Generics は次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T&gt; {
    let val:T;
    pub fn func() : List&lt;T&gt; {
       return [ self.val ];
@@ -256,7 +265,8 @@ Generics を利用することで、キャストを使わずに安全にアク�
 次のように仮型パラメータの宣言は不要です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub fn Test.func2() : Set&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn Test.func2() : Set&lt;T&gt; {
    return (@ self.val );
 }</code></pre>
 </div>
@@ -264,14 +274,16 @@ Generics を利用することで、キャストを使わずに安全にアク�
 Generics クラスのインスタンスは次のように生成します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let test = new Test&lt;str&gt;( &#34;abc&#34; );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let test = new Test&lt;str&gt;( &#34;abc&#34; );</code></pre>
 </div>
 <p>
 なお、コンストラクタの引数に全ての仮パラメータを使用している場合、
 次のように実型パラメータを省略することも可能です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let test = new Test( &#34;abc&#34; );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let test = new Test( &#34;abc&#34; );</code></pre>
 </div>
 <h2 id="headline-6">
 メソッド
@@ -284,7 +296,8 @@ Generics クラスのインスタンスは次のように生成します。
 クラスの仮型パラメータ T と、メソッドの仮型パラメータ T2 を持っています。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T&gt; {
    let val:T;
    pub fn func&lt;T2&gt;(val:T2) : Map&lt;T,T2&gt; {
       return { self.val: val };
@@ -329,7 +342,8 @@ Test クラスの仮型パラメータは Val クラスに限られます。
 Val クラスのメソッド func() をコールできるようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">abstract class Val {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+abstract class Val {
    pub abstract fn func(): str;
 }
 class Test&lt;T:Val&gt; {
@@ -343,7 +357,8 @@ class Test&lt;T:Val&gt; {
 次は、この Test クラスを使ったサンプルです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">abstract class Val {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+abstract class Val {
    pub abstract fn func(): str;
 }
 class Test&lt;T:Val&gt; {
@@ -411,7 +426,8 @@ Val1 と Val2 の実型パラメータの Test 型のインスタンスを生成
 つまり次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge&lt;T:SuperClass(IF,...)&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+class Hoge&lt;T:SuperClass(IF,...)&gt; {
 }</code></pre>
 </div>
 <p>
@@ -441,7 +457,8 @@ Mapping に関しては、次の記事を参照してください。
 次は簡単な例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; extend (Mapping) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T&gt; extend (Mapping) {
    let txt:str;
    pub fn func( val:T ) {
       print( self.txt, val );
@@ -466,7 +483,8 @@ Test&lt;T&gt; クラスは Mapping を extend しています。
 次のように仮型パラメータ型のメンバを持った場合は、エラーになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; extend (Mapping) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test&lt;T&gt; extend (Mapping) {
    let txt:T;
 }</code></pre>
 </div>
@@ -483,7 +501,8 @@ Test&lt;T&gt; クラスは Mapping を extend しています。
 具体的には次の通り <code>Test&lt;T:(Mapping)&gt;</code> とします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T:(Mapping)&gt; extend (Mapping) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T:(Mapping)&gt; extend (Mapping) {
    let val:T {pub};
 }
 

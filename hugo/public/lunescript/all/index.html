@@ -9,8 +9,9 @@
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/all/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
-<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
 <script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
@@ -35,7 +36,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス Lua は非常にコンパクトな言語でありながら、高い">
 
-<meta itemprop="wordCount" content="68055">
+<meta itemprop="wordCount" content="68787">
 
 
 
@@ -303,7 +304,8 @@ enum 編
 一行コメント <code>//</code> 、 複数行コメント <code>/* */</code> を指定可能。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// 行末までコメント
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+// 行末までコメント
 /* ここから〜
 ここまでコメント*/</code></pre>
 </div>
@@ -555,10 +557,11 @@ LuneScript は、スクリプトの上から順に解析する。
 次は、 ClassA, ClassB がそれぞれを参照する時の例である。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub class Super {
 }
 pub proto class ClassB extend Super;
-class ClassA {
+pub class ClassA {
   let val: ClassB;
 }
 pub class ClassB extend Super{
@@ -710,7 +713,8 @@ Lua コマンドでそのまま実行できます。
 例えば次の処理コードをトランスコンパイルすると、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:int! ):int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:int! ):int {
    return 1 + unwrap val default 0;
 }</code></pre>
 </div>
@@ -1413,7 +1417,8 @@ Hello world
 次の内容を持つファイル hello.lns を作成してください。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( &#34;Hello world.&#34; );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( &#34;Hello world.&#34; );</code></pre>
 </div>
 <p>
 そして、次のコマンドを実行します。
@@ -1431,7 +1436,8 @@ Hello world
 まずは、 hello.lns を次のように少し変更します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let txt = &#34;world&#34;;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let txt = &#34;world&#34;;
 print( &#34;Hello %s.&#34; ( txt ) );</code></pre>
 </div>
 <p>
@@ -1514,7 +1520,8 @@ LuneScript では、 区切り記号 <code class="verbatim">;</code> が必須�
 次のように <code class="verbatim">;</code> を終端に入れていないとエラーになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( &#34;Hello world.&#34; )</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+print( &#34;Hello world.&#34; )</code></pre>
 </div>
 <p>
 このとき、以下のエラーメッセージが出力されます。
@@ -1574,7 +1581,8 @@ LuneScript から Lua に出力したコードには、
 例えば、次の LuneScript のコードを Lua に変換すると、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn add( val:int! ):int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn add( val:int! ):int {
    return 10 + unwrap val default 0;
 }
 print( add( 1 ) ); // 11
@@ -1859,7 +1867,8 @@ string.format() の書式に %s, %q を指定した場合、
 tostring() を付加することでエラーしないように回避しています。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( string.format( &#34;%d,%s,%s,%s&#34;,  1, 1.0, {}, [] ) );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( string.format( &#34;%d,%s,%s,%s&#34;,  1, 1.0, {}, [] ) );</code></pre>
 </div>
 <p>
 上記のように、リテラルな文字列を使った format 書式は、
@@ -1876,7 +1885,8 @@ str でなければ次のように tostring() を付加します。
 例えば、次の場合は変換できません。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let formatTxt = &#34;%d,%s,%s,%s&#34;;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let formatTxt = &#34;%d,%s,%s,%s&#34;;
 print( string.format( formatTxt,  1, 1.0, {}, [] ) );</code></pre>
 </div>
 <h3 id="headline-52">
@@ -2105,7 +2115,8 @@ LuneScript は、
 int 型のプリミティブな値として扱えます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( ?a ); // 97  (0x61)</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( ?a ); // 97  (0x61)</code></pre>
 </div>
 <p>
 なお、 &#39; や &#34; の文字のコードを得る場合、
@@ -2167,7 +2178,8 @@ Lua5.3 のビット長は、環境に依存します。
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">1 &amp; 3 == 1</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( 1 &amp; 3 == 1 );</code></pre>
 </div>
 <ul>
 <li>
@@ -2177,7 +2189,8 @@ Lua5.3 のビット長は、環境に依存します。
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">1 | 2 == 3</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( 1 | 2 == 3 );</code></pre>
 </div>
 <ul>
 <li>
@@ -2187,7 +2200,8 @@ Lua5.3 のビット長は、環境に依存します。
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">1 ~ 3 == 2</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( 1 ~ 3 == 2 );</code></pre>
 </div>
 <ul>
 <li>
@@ -2197,7 +2211,8 @@ Lua5.3 のビット長は、環境に依存します。
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">1 |&lt;&lt; 2 == 4</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( 1 |&lt;&lt; 2 == 4 );</code></pre>
 </div>
 <ul>
 <li>
@@ -2207,7 +2222,8 @@ Lua5.3 のビット長は、環境に依存します。
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">0x10 |&gt;&gt; 2 == 4</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( 0x10 |&gt;&gt; 2 == 4 );</code></pre>
 </div>
 <ul>
 <li>
@@ -2217,7 +2233,8 @@ Lua5.3 のビット長は、環境に依存します。
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">~2 == 0xfffffffd</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( ~2 == 0xfffffffd );</code></pre>
 </div>
 <h4 id="headline-61">
 文字列
@@ -2239,7 +2256,8 @@ Lua5.3 のビット長は、環境に依存します。
 ここで指定する N は、文字列先頭が 1 を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let txt = &#34;abc&#34;;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let txt = &#34;abc&#34;;
 print( txt[ 2 ] );  // 98</code></pre>
 </div>
 <p>
@@ -2249,7 +2267,8 @@ N が文字列長を越えた場合の動作は、 <strong>未定義</strong> �
 文字列長は # で取得します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( #&#34;abc&#34; ); // 3</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( #&#34;abc&#34; ); // 3</code></pre>
 </div>
 <h4 id="headline-62">
 真偽値(bool)
@@ -2264,7 +2283,8 @@ true, false をもちます。
 リストは値を追加、削除可能な型です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut list:List&lt;int&gt; = [];
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut list:List&lt;int&gt; = [];
 list.insert( 1 ); // [ 1 ]
 list.insert( 2 ); // [ 1, 2 ]
 list.insert( 3 ); // [ 1, 2, 3 ]
@@ -2293,7 +2313,8 @@ Map のリテラルは JSON フォーマットを拡張したフォーマット�
 次のように JSON フォーマットを扱えます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let map = {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let map = {
    &#34;val1&#34;: 1,
    &#34;val2&#34;: 2,
    &#34;val3&#34;: 3
@@ -2311,7 +2332,8 @@ print( map.val1, map.val2, map.val3 ); // 1 2 3</code></pre>
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut test:Map&lt;int,int&gt; = {};
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut test:Map&lt;int,int&gt; = {};
 let map = {
    1: &#34;val1&#34;,
    2.0: &#34;val2&#34;,
@@ -2324,7 +2346,8 @@ print( map[ 1 ], map[ 2.0 ], map[ test ] ); // val1 val2 val3</code></pre>
 JSON そのものを扱うことが出来ます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut map:Map&lt;str,int&gt; = {};
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut map:Map&lt;str,int&gt; = {};
 map[ &#34;abc&#34; ] = 1;
 map.xyz = 10;</code></pre>
 </div>
@@ -2337,7 +2360,8 @@ key の型が str の場合、 .key としてもアクセスできます。
 次の例の print は true を出力します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( map[ &#34;abc&#34; ] == map.abc ); // true</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( map[ &#34;abc&#34; ] == map.abc ); // true</code></pre>
 </div>
 <p>
 なお、マップに対して <code>#</code> 演算子は使用できません。
@@ -2359,7 +2383,8 @@ Map を扱う際、次を注意してください。
 具体的には、下記の例で <code>map[1]</code> と <code>map[1.0]</code> が、何を返すかは <strong>未定義</strong> です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let map = {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let map = {
    1: &#34;val1&#34;,
    1.0: &#34;val2&#34;,
 };
@@ -2384,7 +2409,8 @@ print( map[ 1 ], map[ 1.0 ] );</code></pre>
 その結果は aaa と nil となります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut map:Map&lt;&amp;List&lt;int&gt;,str&gt; = {};
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut map:Map&lt;&amp;List&lt;int&gt;,str&gt; = {};
 let list1 = [ 1 ];
 let list2 = [ 1 ];
 map[ list1 ] = &#34;aaa&#34;;
@@ -2416,7 +2442,8 @@ List, Array, Map は generics 対応しています。
 例えば、そえぞれ次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let list:List&lt;int&gt; = [];  // int を要素に持つリスト
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let list:List&lt;int&gt; = [];  // int を要素に持つリスト
 let array:Array&lt;real&gt; = [@];  // real を要素に持つ配列
 let map:Map&lt;str,int&gt; = {}; // str をキー、int を値に持つマップ</code></pre>
 </div>
@@ -2424,7 +2451,8 @@ let map:Map&lt;str,int&gt; = {}; // str をキー、int を値に持つマップ
 リスト、マップコンストラクタの型
 </h4>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let list = [ 1, 2, 3 ];
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let list = [ 1, 2, 3 ];
 let map = { &#34;A&#34;: 10, &#34;B&#34;: 11, &#34;C&#34;: 12 };</code></pre>
 </div>
 <p>
@@ -2440,7 +2468,8 @@ let map = { &#34;A&#34;: 10, &#34;B&#34;: 11, &#34;C&#34;: 12 };</code></pre>
 具体的には、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let list1 = [ 1, 2, 3 ];			// List&lt;int&gt;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let list1 = [ 1, 2, 3 ];			// List&lt;int&gt;
 let list2 = [ &#39;a&#39;, &#39;b&#39;, &#39;c&#39; ];			// List&lt;str&gt;
 let list3 = [ &#39;a&#39;, 1, &#39;c&#39; ];			// List&lt;stem&gt;
 let map1 = { &#34;A&#34;: 10, &#34;B&#34;: 11, &#34;C&#34;: 12 };	// Map&lt;str,int&gt;
@@ -2543,7 +2572,8 @@ Set のコンストラクタ
 Set は次のように書くことでデータを生成します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let obj = (@ 1, 2, 3, 4 ); // 1 2 3 4</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let obj = (@ 1, 2, 3, 4 ); // 1 2 3 4</code></pre>
 </div>
 <p>
 これは、1,2,3,4 のデータを保持する Set です。
@@ -2556,7 +2586,8 @@ Set は <code>(@ )</code> で値を括ります。
 省略しない場合は次のように書きます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let obj:Set&lt;int&gt; = (@ 1, 2, 3, 4 ); // 1 2 3 4</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let obj:Set&lt;int&gt; = (@ 1, 2, 3, 4 ); // 1 2 3 4</code></pre>
 </div>
 <p>
 <code>Set&lt;int&gt;</code> は、要素が int である Set を宣言します。
@@ -2565,7 +2596,8 @@ Set は <code>(@ )</code> で値を括ります。
 空の Set を使用する場合は、型推論できないため型を明示する必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let obj:Set&lt;int&gt; = (@);</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let obj:Set&lt;int&gt; = (@);</code></pre>
 </div>
 <h3 id="headline-75">
 Set の操作
@@ -2604,7 +2636,8 @@ Set の操作
 Set への値の追加、削除は次のように行ないます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut obj = (@ 1, 2, 3, 4 );
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut obj = (@ 1, 2, 3, 4 );
 obj.add( 0 );  // 0 1 2 3 4
 obj.del( 2 );  // 0 1 3 4</code></pre>
 </div>
@@ -2612,7 +2645,8 @@ obj.del( 2 );  // 0 1 3 4</code></pre>
 Set で管理する値の有無確認は、次のように行ないます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let obj = (@ 1, 2, 3, 4 );
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let obj = (@ 1, 2, 3, 4 );
 print( obj.has( 0 ) );  // false
 print( obj.has( 1 ) );  // true</code></pre>
 </div>
@@ -2621,14 +2655,16 @@ Set は、len() メソッドで要素の数を取得できます。
 ただし、 len() メソッドは要素を列挙して数を計算するため、計算量はサイズに比例します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut obj = (@ 1, 2, 3, 4 );
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut obj = (@ 1, 2, 3, 4 );
 print( obj.len() );</code></pre>
 </div>
 <p>
 同じ Set を生成するには clone() を使用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let obj = (@ 1, 2, 3, 4 );
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let obj = (@ 1, 2, 3, 4 );
 let obj2 = obj.clone();</code></pre>
 </div>
 <h3 id="headline-76">
@@ -2679,7 +2715,8 @@ Set 間の操作
 なお、この操作は対象の Set の内容を書き変えます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let set1 = (@  1, 2, 3 );
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let set1 = (@  1, 2, 3 );
 let set2 = (@  2, 3, 4 );
 let set3 = set1.clone().or(set2);   // 1 2 3 4
 let set4 = set1.clone().and(set2);  // 2 3 
@@ -2732,7 +2769,8 @@ str
 enum は次のように定義します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -2746,7 +2784,8 @@ print( TestEnum.val0, TestEnum.val1, TestEnum.val2 );  // 0, 1, 2</code></pre>
 enum の値を指定する場合は、次のように定義します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0 = 10,
   val1,
   val2 = 20,
@@ -2772,7 +2811,8 @@ enum の値を省略した場合、次に従って値を assign します。
 なお、 enum 値に文字列を assign する場合、値を省略することは出来ません。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0 = &#34;abc&#34;,
   val1 = &#34;def&#34;,
   val2 = &#34;ghi&#34;,
@@ -2787,7 +2827,8 @@ enum 値に設定する値には、式を指定出来ます。
 例えば次のような場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func(): int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func(): int {
   return 100;
 }
 enum TestEnum {
@@ -2807,7 +2848,8 @@ enum TestEnum {
 定義した enum は、次のように型として利用できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -2840,7 +2882,8 @@ enum 値を指定する場合は、
 TestEnum.val1 ではなく、 .val1 として指定できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -2873,7 +2916,8 @@ val は TestEnum で定義した enum 値ですが、それは 0, 1, 2 のいず
 一方で次の例を見てください。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -2896,7 +2940,8 @@ enum 値に assign している型の値から、
 対応する enum 値に変換するには、次のように _from() 関数を利用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -2928,7 +2973,8 @@ enum 値は $_txt によって、このシンボル名を動的に取得でき�
 例えば次の場合、TestEnum.val1 が出力されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -2957,7 +3003,8 @@ $_txt には次の注意点があります。
 例えば次の場合、print() が TestEnum.val1, TestEnum.val2 のどれを出力するかは未定義です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1 = 10,
   val2 = 10,
@@ -2982,7 +3029,8 @@ $_allList で、enum が定義している全 enum のリストを取得でき�
 例えば次のコードの場合、 
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -3048,7 +3096,8 @@ int, real, str に限らず全ての型をグルーピングすることが出�
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
    pri let val:int {pub};
 }
 alge Test {
@@ -3113,7 +3162,8 @@ Test は、 Val1 〜 Val5 までの値域を持ちます。
 この alge 型の値を使用する場合、次のように書きます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1 = Test.Val1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let val1 = Test.Val1;
 let val2 = Test.Val2( 1 );
 let val3 = Test.Val3( &#34;abc&#34; );
 let val4 = Test.Val4( new Hoge( 100 ) );
@@ -3156,7 +3206,8 @@ match
 enum 型は、次のように元の値と同じように使用できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">enum TestEnum {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum TestEnum {
   val0,
   val1,
   val2,
@@ -3179,7 +3230,8 @@ func( unwrap TestEnum._from( val ) );</code></pre>
 次に match の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
    pri let val:int {pub};
 }
 
@@ -3242,7 +3294,8 @@ alge 型も enum 型と同じように省略表記を利用できます。
 次のような alge 型の Test と、その Test を引数に持つ関数があった場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">alge Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+alge Test {
    Val1,
    Val2,
    Val3( int ),
@@ -3255,7 +3308,8 @@ fn func( test:Test ) {
 func() をコールする際、次のように Test を省略可能です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">func( .Val1 );
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+func( .Val1 );
 func( .Val2 );
 func( .Val3( 10 ) );</code></pre>
 </div>
@@ -3270,7 +3324,8 @@ alge型 の比較
 パラメータを持たない単純な alge 型の値は、次のように比較することが出来ます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">alge Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+alge Test {
    Val1,
    Val2,
    Val3( int ),
@@ -3306,7 +3361,8 @@ alge の使用例
 alge を使うと JSON 構造を次のように書くことが出来ます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">alge JsonVal {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+alge JsonVal {
    JNull,
    JBool(bool),
    JInt(int),
@@ -3392,7 +3448,8 @@ LuneScript は静的型付け言語であり、変数は型を持ちます。
 変数は、次のように let で宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val:int = 1;</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val:int = 1;</code></pre>
 </div>
 <p>
 上記の例は、初期値として int の 1 を持つ変数 val を宣言しています。
@@ -3405,7 +3462,8 @@ LuneScript は静的型付け言語であり、変数は型を持ちます。
 real の 1.0 をセットすると、型が違うためコンパイルエラーになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val:int = 1.0;  // error</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let val:int = 1.0;  // error</code></pre>
 </div>
 <p>
 <del>また、現在は変数宣言には初期値が必須です。</del>
@@ -3434,7 +3492,8 @@ LuneScript は型推論をサポートしています。
 これによって、次のように型を指定せずに変数を宣言できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1 = 1; // int 
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val1 = 1; // int 
 let val2 = 1.0; // real
 let val3 = &#34;abc&#34;; // str</code></pre>
 </div>
@@ -3477,7 +3536,8 @@ let val:Super = new Sub();
 初期化していない変数にアクセスすると、コンパイルエラーになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">{
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+{
    let val;
    print( &#34;%s&#34; ( val ) ); // error
 }</code></pre>
@@ -3496,7 +3556,8 @@ let val:Super = new Sub();
 例えば次の場合、エラーになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( flag:bool )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func( flag:bool )
 {
    let val;
    if flag {
@@ -3513,7 +3574,8 @@ false の場合は val が初期化されないためです。
 次のように、アクセスする前に全てのパスで初期化をする必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( flag:bool )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( flag:bool )
 {
    let val;
    if flag {
@@ -3534,7 +3596,8 @@ val に対する書き換えではないため、
 ちなみに次のような少し複雑な場合も、フローを解析します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( kind:int )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func( kind:int )
 {
    let val;
    if kind &lt; 10 {
@@ -3565,7 +3628,8 @@ val に対する書き換えではないため、
 なお、次の場合も print( val ) の箇所でエラーになります。 
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( flag:bool )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func( flag:bool )
 {
    let val;
    fn sub() {
@@ -3592,7 +3656,8 @@ val に対する書き換えではないため、
 例えば次の場合は、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( flag:bool )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func( flag:bool )
 {
    let val;
    if flag {
@@ -3614,7 +3679,8 @@ int 型の val に real の 1.0 を代入しようとしているため、
 エラーを回避できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( flag:bool )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( flag:bool )
 {
    let val:stem; // stem 型を宣言
    if flag {
@@ -3645,7 +3711,8 @@ LuneScript では、 同名の変数宣言を禁止しています。
 具体的には、次の変数宣言はエラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">{
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+{
    let val = 1;
    {
       let val = 1;  // error
@@ -3665,13 +3732,15 @@ LuneScript では、 同名の変数宣言を禁止しています。
 外部のモジュールに公開したい場合は、次のように pub を付加して宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub let val = 1;</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub let val = 1;</code></pre>
 </div>
 <p>
 外部公開されている変数にアクセスする場合、次のように import を使用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import SubModule;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import SubModule;
 print( SubModule.val );</code></pre>
 </div>
 <p>
@@ -3686,7 +3755,8 @@ SubModule は <code>pub let val = 1;</code> を宣言している LuneScript の
 もう一つ global を使うことも出来ます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub let val1 = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub let val1 = 1;
 global let val2 = 2;</code></pre>
 </div>
 <p>
@@ -3697,7 +3767,8 @@ pub と global の違いは、 名前空間の違いです。
 これは上記 val1, val2 を外部からアクセスしているサンプルです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import SubModule;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import SubModule;
 print( SubModule.val1 );
 print( val2 );</code></pre>
 </div>
@@ -3724,7 +3795,8 @@ global を使用せざるを得ないこともあると思います。
 例えば次の例では val2 は、 SubModule になんの関係もなく存在しているように見えますが、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import SubModule;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import SubModule;
 print( SubModule.val1 );
 print( val2 );</code></pre>
 </div>
@@ -3732,7 +3804,8 @@ print( val2 );</code></pre>
 次の場合 SubModule を import していないため、val2 は存在しないのでエラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( val2 );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( val2 );</code></pre>
 </div>
 <p>
 また外部公開する変数には、次の制約があります。
@@ -3744,7 +3817,8 @@ print( val2 );</code></pre>
 例えば、次の val2 は最上位のスコープではないためエラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub let val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+pub let val = 1;
 {
    pub let val2 = 1; // error
 }</code></pre>
@@ -3759,14 +3833,16 @@ mutable
 例えば、次の <code>val = 2</code> はエラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let val = 1;
 val = 2; // error</code></pre>
 </div>
 <p>
 可変な変数(mutable)とする場合、次のように mut で宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut val = 1;
 val = 2;</code></pre>
 </div>
 <h4 id="headline-103">
@@ -3779,7 +3855,8 @@ LuneScript は、 Lua と同じで関数の戻り値に複数の値を返せま�
 この戻り値を変数宣言の初期値とするには、次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1, val2 = func();
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let val1, val2 = func();
 let mut val3, mut val4 = func();</code></pre>
 </div>
 <p>
@@ -3827,7 +3904,8 @@ nil 以外の全ての値は、 stem 型の変数に代入できます。
 これには、暗黙的な型変換が行なわれています。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut val:stem = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut val:stem = 1;
 val = 1.0;
 val = &#34;abc&#34;;
 val = {};
@@ -3838,7 +3916,8 @@ val = [@];</code></pre>
 一方、 stem 型の値から異なる型への代入はエラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1:stem = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let val1:stem = 1;
 let val2:int = val1; // error</code></pre>
 </div>
 <p>
@@ -3917,7 +3996,8 @@ if
 if 文は、次のように使用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val = 1;
 if val == 1 {
    print( &#34;hoge&#34; );
 }
@@ -3973,7 +4053,8 @@ LuneScript では、 bool 値との比較を推奨していません。
 具体的には次のようなオペレーションを推奨しません。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   let val1 = true;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+   let val1 = true;
    if val1 == true {
    }
    if val1 == false {
@@ -3994,7 +4075,8 @@ bool の真偽値によって処理を切り替える場合、
 次のようにしてください。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let exp = true;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let exp = true;
 if exp {
    print( &#34;exp is true&#34; );
 }
@@ -4012,7 +4094,8 @@ switch
 switch 文は次のように使用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val = 1;
 switch val {
    case 1 {
       print( &#34;hoge&#34; );
@@ -4032,7 +4115,8 @@ switch val {
 switch の case には、次のように複数の式を書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val = 1;
 switch val {
    case 10, 20, 30 {
       print( &#34;hoge&#34; );
@@ -4046,7 +4130,8 @@ switch val {
 これは次の if 文と同義で、いづれかの値に一致すると、そのブロックを実行します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val = 1;
 if val == 10 or val == 20 or val == 30 {
    print( &#34;hoge&#34; );
 }
@@ -4061,7 +4146,8 @@ switch 文で注意すべき点は、 C 言語などと違い break が不要で
 例えば次の break は、 switch 文を抜けるのではなく for 文を抜けることになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">for count = 1, 10 {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+for count = 1, 10 {
    switch count {
       case 5 {
          break;
@@ -4133,7 +4219,8 @@ while, repeat
 while, repeat は次のように利用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut val = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut val = 1;
 while val &lt; 10 {
    val = val + 1;
 }
@@ -4167,7 +4254,8 @@ repeat の式では、ブロック内部のスコープの変数を利用でき�
 フロー解析においては無限ループとは扱いません。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let flag = true;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let flag = true;
 while flag {
 }</code></pre>
 </div>
@@ -4180,7 +4268,8 @@ while flag {
 LuneScript では無限ループの後の print() 文は処理されないということを判定します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">while true {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+while true {
 }
 print( &#34;hoge&#34; );</code></pre>
 </div>
@@ -4209,7 +4298,8 @@ for
 次のように利用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">for count = 1, 10, 1 {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+for count = 1, 10, 1 {
   print( count );
 }</code></pre>
 </div>
@@ -4225,7 +4315,8 @@ for 開始時に一度だけ評価されるということです。
 つまり、次のようなことをやると、期待と異なる動作になります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut addVal = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut addVal = 1;
 for count = 1, 10, addVal {
   addVal = addVal + 1;
   print( count );
@@ -4244,7 +4335,8 @@ apply は、Lua の for in との互換用命令です。
 次のように利用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">apply txt of string.gmatch( &#34;hoge.foo.bar&#34;, &#39;[^%.]+&#39; ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+apply txt of string.gmatch( &#34;hoge.foo.bar&#34;, &#39;[^%.]+&#39; ) {
    print( txt );
 }</code></pre>
 </div>
@@ -4262,7 +4354,8 @@ foreach は、リスト、配列、マップの要素を列挙する関数です
 次のように利用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">foreach val, index in [ 1, 2, 3 ] {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+foreach val, index in [ 1, 2, 3 ] {
    print( index, val );
 }
 foreach val, index in [@ 10, 20, 30 ] {
@@ -4282,7 +4375,8 @@ foreach val in (@ 1, 2, 3 ) {
 なお リスト、配列の index, マップの key は、次のように省略することができます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">foreach val in [ 1, 2, 3 ] {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+foreach val in [ 1, 2, 3 ] {
    print( val );
 }
 foreach val in [@ 10, 20, 30 ] {
@@ -4302,7 +4396,8 @@ Set, Map を foreach で要素を列挙した場合、要素の列挙順は不�
 forsort は、 Set, Map の要素を列挙する際に、キーでソート(昇順)した順で列挙します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">forsort val, key in { &#34;b&#34;:200, &#34;c&#34;:300, &#34;a&#34;:100 } {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+forsort val, key in { &#34;b&#34;:200, &#34;c&#34;:300, &#34;a&#34;:100 } {
    print( key, val );
 }
 forsort val in (@ 2, 4, 1, 0 ) {
@@ -4313,7 +4408,8 @@ forsort val in (@ 2, 4, 1, 0 ) {
 Map の forsort は key を省略できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">forsort val in { &#34;b&#34;:200, &#34;c&#34;:300, &#34;a&#34;:100 } {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+forsort val in { &#34;b&#34;:200, &#34;c&#34;:300, &#34;a&#34;:100 } {
    print( val );
 }</code></pre>
 </div>
@@ -4352,7 +4448,8 @@ LuneScript の一般制御構文は、基本的に Lua と同じです。
 LuneScript の関数は次のように定義します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn add_sub( val1:int, val2:int ): int, int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn add_sub( val1:int, val2:int ): int, int {
    return val1 + val2, val1 - val2;
 }
 print( add_sub( 1, 2 ) ); // 3, -1</code></pre>
@@ -4434,7 +4531,8 @@ LuneScript は、戻り値を複数返せます。
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func(): __ {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func(): __ {
    while true {
    }
 }
@@ -4463,7 +4561,8 @@ func() から処理が戻ってきます。
 このような場合は、エラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func(val:int): __ {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func(val:int): __ {
    while true {
       if val == 1 {
          break;
@@ -4491,7 +4590,8 @@ func() から処理が戻ってきます。
 具体的には次のようにブロック内に定義できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn sub():int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn sub():int {
    let mut val = 0;
    {
       {
@@ -4522,7 +4622,8 @@ print( sub() ); // 6</code></pre>
 関数も変数と同様、pub を使って外部公開できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub fn func(): int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub fn func(): int {
    return 1;
 }</code></pre>
 </div>
@@ -4533,7 +4634,8 @@ pub を指定することで、外部からアクセス可能な関数となり�
 global も利用できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">global fn func(): int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+global fn func(): int {
    return 1;
 }</code></pre>
 </div>
@@ -4560,7 +4662,8 @@ LuneScript は、関数オブジェクトを値として扱うことが出来ま
 次に form の使用例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn test() {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn test() {
    print( &#34;hoge&#34; );
 }
 fn sub( func:form ) {
@@ -4595,7 +4698,8 @@ sub( test ); // hoge</code></pre>
 なお、 form 型は次の関数として扱います。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func(...):... {}</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+fn func(...):... {}</code></pre>
 </div>
 <h4 id="headline-131">
 form 型に代入可能な関数型
@@ -4616,7 +4720,8 @@ form 型に代入可能な関数型
 不正動作となってしまいます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func( val:int ) {
    print( val + 1 );
 }
 let func2:form = func;
@@ -4626,7 +4731,8 @@ func2( nil );</code></pre>
 代入可能なケースと、代入不可能なケースの例を次に示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let form1:form = fn ( val1:stem! ) { };
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let form1:form = fn ( val1:stem! ) { };
 let form2:form = fn ( val1:stem ) { };  // error
 let form3:form = fn ( val1:stem!, val2:stem! ) { };
 let form4:form = fn ( val1:stem!, val2:stem ) { }; // error</code></pre>
@@ -4644,7 +4750,8 @@ form 宣言
 form で扱えない関数を扱うには、次のように form 宣言をします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">form funcform( val:int ):int;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+form funcform( val:int ):int;
 fn sub( func:funcform ) {
    print( func( 1 ) + 1 );
 }
@@ -4667,10 +4774,11 @@ anonymous 関数は、名前を持たない関数を定義します。
 次は anonymous 関数の例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn sub( func:form ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn sub( func:form ) {
   func( 1 );
 }
-sub( fn ( val:int! ) { print( val ); } );  // 1</code></pre>
+sub( fn ( val:stem! ) { print( val ); } );  // 1</code></pre>
 </div>
 <p>
 この例では、 anonymous 関数 <code>fn ( val:int ) { print( val ); }</code> を定義しています。
@@ -4770,7 +4878,8 @@ LuneScript は、多値の関数戻り値に対応しています。
 例えば、次のように関数は複数の値を返せます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func(): int,int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(): int,int {
    return 1, 2;
 }
 print( func() );  // 1 2</code></pre>
@@ -4917,7 +5026,8 @@ return に指定する値で、なおかつその値が省略可能な場合
 具体的な明示方法は次になります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1(): int,int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1(): int,int {
    return 1, 2;
 }
 fn func2( val1:int, val2:int!) {
@@ -4941,7 +5051,8 @@ LuneScript は、nilable 型の引数は関数コール時に省略すること�
 例えば次の関数 func() は、引数を省略してコールできます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val1:int!, val2:int! ):int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val1:int!, val2:int! ):int {
    when! val1, val2 {
       return val1 + val2;
    }
@@ -5010,7 +5121,8 @@ LuneScript では、引数を省略する場合 <code>##</code> を使用しま�
 上の func() をコールする場合、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( func(1,2) );  // 3
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( func(1,2) );  // 3
 print( func(1##) );  // 1
 print( func(##) );   // 0</code></pre>
 </div>
@@ -5050,7 +5162,8 @@ LuneScript は、値に nil を持ちます。
 以前説明しましたが、 stem 型の変数は nil 以外の全ての型を保持できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut val:stem = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let mut val:stem = 1;
 val = 1.0;
 val = &#34;abc&#34;;
 val = {};
@@ -5063,7 +5176,8 @@ val = nil; // error</code></pre>
 stem ではなく stem! を使用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut val:stem! = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut val:stem! = 1;
 val = 1.0;
 val = &#34;abc&#34;;
 val = {};
@@ -5086,7 +5200,8 @@ nilable は stem! だけでなく、
 本来の型と nil を保持可能な nilable 型となります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut val1:int = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let mut val1:int = 1;
 val1 = nil;  // error
 
 let mut val2:int! = 1;
@@ -5111,7 +5226,8 @@ nilable 型は、そのままでは元の型として使用できないという
 この説明だと何のことだか伝わり難いと思いますので、次の例を見てください。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val:int! = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let val:int! = 1;
 print( val + 1 );  // error</code></pre>
 </div>
 <p>
@@ -5162,7 +5278,8 @@ nilable 型との比較
 しかし、次のように比較すること出来ます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn check( val:int! ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn check( val:int! ) {
    if val == 1 {
       print( &#34;ok&#34; );
    }
@@ -5184,7 +5301,8 @@ nilable 型から非 nilable 型への変換
 次のように、非 nilable 型から nilable 型への変換は、暗黙的に行なわれます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val:int! = 1;   // int! &lt;-- int</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val:int! = 1;   // int! &lt;-- int</code></pre>
 </div>
 <p>
 一方で nilable 型から非 nilable 型への変換は、明示的に行なう必要があります。
@@ -5234,7 +5352,8 @@ unwrap は、 nilable 型の式を、非 nilable 型へ変換します。
 例えば次のように使用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1:int! = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val1:int! = 1;
 let val2:int = unwrap val1;</code></pre>
 </div>
 <p>
@@ -5246,7 +5365,8 @@ int! から int! に変換しています。
 そのプログラムは実行時エラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1:int! = nil;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val1:int! = nil;
 let val2:int = unwrap val1;   // runtime error</code></pre>
 </div>
 <p>
@@ -5260,7 +5380,8 @@ unwrap default は、変換対象の値が nil だった場合の値を指定し
 次は default を使用した例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1:int! = nil;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val1:int! = nil;
 let val2:int = unwrap val1 default 0;</code></pre>
 </div>
 <p>
@@ -5279,7 +5400,8 @@ when! は、指定の nilable 型の <strong>変数</strong> が nil かどう�
 次に when! の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:int!, val2:int! ): int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:int!, val2:int! ): int {
    when! val, val2 {
       return val + val2;
    }
@@ -5329,7 +5451,8 @@ if! は、指定の <strong>式</strong> が nil かどうかを判定し、分�
 次に if! の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:int! ): int! {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:int! ): int! {
    return val;
 }
 fn sub( val:int! ): int {
@@ -5381,7 +5504,8 @@ else は省略可能です。
 shadowing されるためです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   if! func( val ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   if! func( val ) {
       if! func( val ) {
          return _exp + 10;
       }  
@@ -5403,7 +5527,8 @@ if! let は、 if! で判定する式の結果を格納する変数名を指定�
 次は if! let のサンプルです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val1:int!, val2:int! ): int!, int! {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val1:int!, val2:int! ): int!, int! {
    return val1, val2;
 }
 fn sub( val1:int!, val2:int! ): int {
@@ -5443,7 +5568,8 @@ let! は、nil 以外の初期値を持つ変数宣言を行ないます。
 次に let! のサンプルを示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val1:int!, val2:int! ): int!, int! {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val1:int!, val2:int! ): int!, int! {
    return val1, val2;
 }
 fn sub( val1:int!, val2:int! ): int {
@@ -5519,7 +5645,8 @@ unwrap! は、 let! に似た制御です。異なるのは変数を宣言する
 次は、 unwrap! の例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn test( arg:int! ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn test( arg:int! ) {
   let mut val = 0;
 
   unwrap! val = arg { print( 0 ); return; } then { val = val + 1; };
@@ -5565,7 +5692,8 @@ Map 型データの要素にアクセスした場合、
 たとえば次の場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = { &#34;abc&#34;: 1 };
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val = { &#34;abc&#34;: 1 };
 let val2 = val.abc;</code></pre>
 </div>
 <p>
@@ -5579,7 +5707,8 @@ val2 は int ではなく、 int! となります。
 ちなみに、リスト、配列の要素アクセスは nilable にはなりません。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = [ 1, 2, 3 ];
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val = [ 1, 2, 3 ];
 let val2 = val[ 1 ];</code></pre>
 </div>
 <p>
@@ -5681,7 +5810,8 @@ interface
 最小のクラス定義は次のように行ないます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
 }</code></pre>
 </div>
 <p>
@@ -5702,7 +5832,8 @@ interface
 次のように pub を付加します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub class Test {
 }</code></pre>
 </div>
 <h3 id="headline-161">
@@ -5723,7 +5854,8 @@ let test = new Test();</code></pre>
 メソッド定義は、ほぼ関数定義と同じです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pub fn func() {
       print( __func__ );
    }
@@ -5738,7 +5870,8 @@ test.func();  // Test.func</code></pre>
 例えば、次の <code>sub( test.func )</code> はエラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    pub fn func() {
       print( __func__ );
    }
@@ -5755,7 +5888,8 @@ sub( test.func );  // error</code></pre>
 次のように anonymous 関数を作成して sub() に渡します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pub fn func() {
       print( __func__ );
    }
@@ -5816,7 +5950,8 @@ self シンボルは、自分自身のインスタンスを表します。
 非公開メソッドの func() を self 使用してコールしています。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    fn func() {
       print( __func__ );
    }
@@ -5837,7 +5972,8 @@ test.sub();  // Test.func</code></pre>
 先ほどのメソッド定義は、次のようにも書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
 }
 pub fn Test.func() {
    print( __func__ );
@@ -5862,7 +5998,8 @@ import しているモジュール内で定義することは出来ません。
 func() をプロトタイプ宣言することで、sub() 内で func() のコールが可能になります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    fn func();
    pub fn sub() {
       self.func();
@@ -5888,7 +6025,8 @@ test.sub();  // Test.func</code></pre>
 クラスメソッドの定義は、メソッド定義に static を付加するだけです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pub static fn sfunc() {
       print( __func__ );
    }
@@ -5922,7 +6060,8 @@ accessor 指定が可能
 次にメンバ定義の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let val1:int;
    pri let val2:int;
    pri let val3:int;
@@ -5971,7 +6110,8 @@ immutable なメソッドは、メンバを変更不可能なメソッド
 次に mutable なメンバ、メソッドの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let mut val1:int;
    pri let val2:int;
    pub fn func() {
@@ -6001,7 +6141,8 @@ mutable のメソッド add() は、 メンバ val1 に値をセットしてい�
 では、次のように メソッド add() の mut 宣言を外した場合はどうなるかというと。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    pri let mut val1:int;
    pri let val2:int;
    pub fn func() {
@@ -6022,7 +6163,8 @@ mutable でないメソッド内からメンバを変更しようとした場合
 次の場合もエラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    pri let mut val:int;
    pub fn increment() mut {
       self.val = self.val + 1;
@@ -6049,7 +6191,8 @@ allmut メンバ
 func() メソッドは immutable であるため val もまた immutable となり、エラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    pri let mut val:int;
    pub fn func() {
       self.val = self.val + 1;  // error
@@ -6114,7 +6257,8 @@ allmut は、メンバの mutablity を宣言し、
 次に allmut のサンプルを示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let allmut val:int;
    pub fn func() {
       self.val = self.val + 1;  // ok
@@ -6197,7 +6341,8 @@ nilable 型のメンバを明示的に初期化しない場合、 初期値 nil 
 次にコンストラクタの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let val1:int;
    pri let val2:int;
    pub fn __init() {
@@ -6218,7 +6363,8 @@ let test = new Test();</code></pre>
 この引数は、new 演算子によって与えられます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let val1:int;
    pri let val2:int;
    pub fn __init( val1:int, val2:int ) {
@@ -6249,7 +6395,8 @@ test.func(); // 11 12</code></pre>
 デフォルトコンストラクタが内部的に生成されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let val1:int;
    pri let val2:int;
 }</code></pre>
@@ -6258,7 +6405,8 @@ test.func(); // 11 12</code></pre>
 そのデフォルトコンストラクタは、次のように定義されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   pub fn __init( val1:int, val2:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   pub fn __init( val1:int, val2:int ) {
       self.val1 = val1;
       self.val2 = val2;
    }</code></pre>
@@ -6279,7 +6427,8 @@ test.func(); // 11 12</code></pre>
 次のような派生クラス Sub の現形式デフォルトコンストラクタは、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pro let val:int;
 }
 class Sub extend Test {
@@ -6302,7 +6451,8 @@ super クラスのコンストラクタの引数 + 派生クラスの全メン�
 次のような派生クラス Sub の旧形式デフォルトコンストラクタは、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pro let val:int!;
 }
 class Sub extend Test {
@@ -6336,7 +6486,8 @@ sub.func(); // nil, 2</code></pre>
 しかしこの振舞いは、次のような処理を書いた時に問題になります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    pri let mut val:int {pub};
    pub static fn create(): Test {
       return new Test( 1 );  // error
@@ -6360,7 +6511,8 @@ sub.func(); // nil, 2</code></pre>
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let mut val:int {pub};
    _lune_control default__init;
    pub static fn create(): Test {
@@ -6393,7 +6545,8 @@ sub.func(); // nil, 2</code></pre>
 次はクラスメンバ定義の例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri static let val1:int;
    pri static let val2:int;
 
@@ -6509,7 +6662,8 @@ accessor
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let val1:int;
    pri let mut val2:int {pub,pub};
    pri let val3:int {pub};
@@ -6528,7 +6682,8 @@ print( test.$val2, test.$val3 );  // 10 3</code></pre>
 この指定によって、次のメソッドが内部的に作成されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub fn Test.get_val2(): int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn Test.get_val2(): int {
    return self.val2;
 }
 pub fn Test.set_val2( val:int ) {
@@ -6539,7 +6694,8 @@ pub fn Test.set_val2( val:int ) {
 getter にアクセスする場合、 $ を使って次のようにアクセスします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut test = new Test( 1, 2, 3 );
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let mut test = new Test( 1, 2, 3 );
 print( test.$val2, test.$val3 );  // 2 3</code></pre>
 </div>
 <p>
@@ -6556,7 +6712,8 @@ setter が不要な場合、「setter のアクセス制御」を省略します
 なお、getter が不要で setter が必要な場合は、次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let mut val1:int {non,pub};
 }</code></pre>
 </div>
@@ -6577,7 +6734,8 @@ getter の戻り値型は、通常そのメンバの型と一致します。
 例えば次の Test のメンバ list の getter は、 <code class="verbatim">List&lt;int&gt;</code> 型の戻り値を返します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let mut list:List&lt;int&gt; {pub};
 }
 let test = new Test( [] );
@@ -6616,7 +6774,8 @@ getter を次のように宣言することで、
 mutable なメンバを immutable として返す getter を作成できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pri let mut list:List&lt;int&gt; {pub&amp;};
 }</code></pre>
 </div>
@@ -6632,7 +6791,8 @@ getter を次のように宣言することで、
 メンバの型そのものではなく、 super クラスや interface の型として返すことが出来ます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Val {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Val {
 }
 class ValSub extend Val {
 }
@@ -6715,7 +6875,8 @@ LuneScript は、クラスの継承をサポートします。
 次にクラスの継承例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Super {
    pub fn func() {
       print( __func__ );
    }
@@ -6750,7 +6911,8 @@ sub.func(); // Super.func</code></pre>
 メンバ val を初期化する引数を持つデフォルトコンストラクタが内部的に生成されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Super {
    pro let val:int;
 }
 class Sub extend Super {
@@ -6816,7 +6978,8 @@ advertise
 「透過的にアクセス」という表現では伝わり難いと思うので、次の例で説明します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">abstract class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+abstract class Test {
    pub abstract fn foo(): str;
    pub abstract fn bar(): str;
 }
@@ -6849,7 +7012,8 @@ TestSub2 は、 メンバ sub を advertise しています。
 次のようにメンバ sub のメソッド (foo,bar) をコールする処理を内部的に生成します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub override fn TestSub2.foo(): str {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub override fn TestSub2.foo(): str {
    return self.sub.foo();
 }
 pub override fn TestSub2.bar(): str {
@@ -6908,7 +7072,8 @@ LuneScript は、メソッドの override をサポートします。
 メソッドの override の例を次に示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Super {
    pub fn func() {
       print( __func__ );
    }
@@ -6942,7 +7107,8 @@ super() を使用します。
 次に super() の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Super {
    pub fn func(): int {
       return 1;
    }
@@ -6972,7 +7138,8 @@ abstract
 次に abstract の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">abstract class Super {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+abstract class Super {
    pub abstract fn func(): int;
 }
 class Sub extend Super {
@@ -7099,7 +7266,8 @@ Java や C# を使用していればお馴染だと思いますが、
 次にインタフェースの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">interface IF {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+interface IF {
    pub fn func();
 }
 class Test extend (IF) {
@@ -7119,7 +7287,8 @@ sub( new Test() ); // Test.func</code></pre>
 次に 2 つのインタフェースを実装するクラスの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">interface IF1 {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+interface IF1 {
    pub fn func1();
 }
 interface IF2 {
@@ -7149,7 +7318,8 @@ sub( test, test ); // Test.func Test.func2</code></pre>
 同名で異なる型のメソッドがある場合、エラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">interface IF1 {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+interface IF1 {
    pub fn func():int;
 }
 interface IF2 {
@@ -7214,7 +7384,8 @@ mapping を利用するには、
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test extend (Mapping){
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test extend (Mapping){
    let val1:int {pub};
    let val2:str {pub};
 }
@@ -7330,7 +7501,8 @@ LuneScript では当初、組込み型の List/Array/Map でのみ Generics を�
 関数の Generics は次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
    return (@ val);
 }</code></pre>
 </div>
@@ -7345,7 +7517,8 @@ LuneScript では当初、組込み型の List/Array/Map でのみ Generics を�
 仮型パラメータは、複数指定することができます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func&lt;T1,T2&gt;( val1:T1, val2:T2 ) : Set&lt;T1&gt;, List&lt;T2&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func&lt;T1,T2&gt;( val1:T1, val2:T2 ) : Set&lt;T1&gt;, List&lt;T2&gt; {
    return (@ val1), [ val2 ];
 }</code></pre>
 </div>
@@ -7403,7 +7576,8 @@ test2, test3 はコンパイルエラーとなります。
 つまり、次のような <code>func1&lt;T!&gt;</code> はエラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1&lt;T!&gt;( val:T ) : T {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func1&lt;T!&gt;( val:T ) : T {
    return val;
 }</code></pre>
 </div>
@@ -7412,7 +7586,8 @@ test2, test3 はコンパイルエラーとなります。
 つまり、次の場合エラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1&lt;T&gt;( val:T ) : T {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+fn func1&lt;T&gt;( val:T ) : T {
    return val;
 }
 let val:int! = 1;
@@ -7424,10 +7599,11 @@ print( func1( val ) ); // error type mismatch</code></pre>
 仮型パラメータは nilable を利用できないためエラーとなります。
 </p>
 <p>
-このような処理を行ないたい場合は、次のように宣言します。
+このような処理を行なわせたい場合は、次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1&lt;T&gt;( val:T! ) : T {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1&lt;T&gt;( val:T! ) : T {
    return unwrap val;
 }
 let val:int! = 1;
@@ -7451,7 +7627,8 @@ func1() の引数が nilable であることを宣言します。
 Generics を利用すると、次のような処理が書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func&lt;T&gt;( val:T ) : Set&lt;T&gt; {
    return (@ val);
 }
 foreach val in func( &#34;foo&#34; ) {
@@ -7475,7 +7652,8 @@ func( 1 ) は、 (@ 1 ) の Set&lt;int&gt; を生成します。
 Generics ではなく、stem を利用することで次のように似たような処理を記載できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) : Set&lt;stem&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:stem ) : Set&lt;stem&gt; {
    return (@ val);
 }
 foreach val in func( &#34;foo&#34; ) {
@@ -7502,7 +7680,8 @@ Generics を利用することで、キャストを使わずに安全にアク�
 クラスの Generics は次のように宣言します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T&gt; {
    let val:T;
    pub fn func() : List&lt;T&gt; {
       return [ self.val ];
@@ -7517,7 +7696,8 @@ Generics を利用することで、キャストを使わずに安全にアク�
 次のように仮型パラメータの宣言は不要です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub fn Test.func2() : Set&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn Test.func2() : Set&lt;T&gt; {
    return (@ self.val );
 }</code></pre>
 </div>
@@ -7525,14 +7705,16 @@ Generics を利用することで、キャストを使わずに安全にアク�
 Generics クラスのインスタンスは次のように生成します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let test = new Test&lt;str&gt;( &#34;abc&#34; );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let test = new Test&lt;str&gt;( &#34;abc&#34; );</code></pre>
 </div>
 <p>
 なお、コンストラクタの引数に全ての仮パラメータを使用している場合、
 次のように実型パラメータを省略することも可能です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let test = new Test( &#34;abc&#34; );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let test = new Test( &#34;abc&#34; );</code></pre>
 </div>
 <h3 id="headline-213">
 メソッド
@@ -7545,7 +7727,8 @@ Generics クラスのインスタンスは次のように生成します。
 クラスの仮型パラメータ T と、メソッドの仮型パラメータ T2 を持っています。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T&gt; {
    let val:T;
    pub fn func&lt;T2&gt;(val:T2) : Map&lt;T,T2&gt; {
       return { self.val: val };
@@ -7590,7 +7773,8 @@ Test クラスの仮型パラメータは Val クラスに限られます。
 Val クラスのメソッド func() をコールできるようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">abstract class Val {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+abstract class Val {
    pub abstract fn func(): str;
 }
 class Test&lt;T:Val&gt; {
@@ -7604,7 +7788,8 @@ class Test&lt;T:Val&gt; {
 次は、この Test クラスを使ったサンプルです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">abstract class Val {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+abstract class Val {
    pub abstract fn func(): str;
 }
 class Test&lt;T:Val&gt; {
@@ -7672,7 +7857,8 @@ Val1 と Val2 の実型パラメータの Test 型のインスタンスを生成
 つまり次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge&lt;T:SuperClass(IF,...)&gt; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+class Hoge&lt;T:SuperClass(IF,...)&gt; {
 }</code></pre>
 </div>
 <p>
@@ -7702,7 +7888,8 @@ Mapping に関しては、次の記事を参照してください。
 次は簡単な例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; extend (Mapping) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T&gt; extend (Mapping) {
    let txt:str;
    pub fn func( val:T ) {
       print( self.txt, val );
@@ -7727,7 +7914,8 @@ Test&lt;T&gt; クラスは Mapping を extend しています。
 次のように仮型パラメータ型のメンバを持った場合は、エラーになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T&gt; extend (Mapping) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test&lt;T&gt; extend (Mapping) {
    let txt:T;
 }</code></pre>
 </div>
@@ -7744,7 +7932,8 @@ Test&lt;T&gt; クラスは Mapping を extend しています。
 具体的には次の通り <code>Test&lt;T:(Mapping)&gt;</code> とします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test&lt;T:(Mapping)&gt; extend (Mapping) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test&lt;T:(Mapping)&gt; extend (Mapping) {
    let val:T {pub};
 }
 
@@ -7771,7 +7960,8 @@ Map アクセス
 例えば次のような Map のデータがあった場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let json = {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let json = {
    &#34;lv1&#34;: {
       &#34;lv2&#34;: {
          &#34;lv3&#34;: {
@@ -7789,7 +7979,8 @@ Map アクセス
 lv5 の val にアクセスするには、次のように処理する必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">if! let lv1 = json.lv1 {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+if! let lv1 = json.lv1 {
    if! let lv2 = lv1.lv2 {
       if! let lv3 = lv2.lv3 {
          if! let lv4 = lv3.lv4 {
@@ -7805,7 +7996,8 @@ lv5 の val にアクセスするには、次のように処理する必要が�
 あるいは次のように unwrap する必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val );</code></pre>
 </div>
 <p>
 どちらにしてもイマイチです。
@@ -7822,7 +8014,8 @@ nil 条件演算子を使って上記の lv5 の val にアクセスすると、
 次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( json.lv1$.lv2$.lv3$.lv4$.lv5$.val );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( json.lv1$.lv2$.lv3$.lv4$.lv5$.val );</code></pre>
 </div>
 <p>
 だいぶスッキリします。
@@ -7843,7 +8036,8 @@ nilable の式の評価結果が nil の場合、その後の式を実行せず�
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pub let val:List&lt;int&gt;;
    pub fn func():int {
       return 100;
@@ -7870,7 +8064,8 @@ nil 条件アクセスを使用すると、必ずその評価結果は nilable �
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    pub let val:int;
 }
 fn sub( test:Test! ) {
@@ -7969,7 +8164,8 @@ LuneScript のソースは、特に何も宣言しなくても 1 つのモジュ
 例えば、次のような Test.lns は関数 func を持つモジュールとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test.lns
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
 fn func(): str, str {
    return __mod__, __func__;
 }</code></pre>
@@ -7981,7 +8177,8 @@ fn func(): str, str {
 具体的には、次のように pub を宣言する必要があります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test.lns
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
 pub fn func(): str, str {
    return __mod__, __func__;
 }</code></pre>
@@ -8005,7 +8202,8 @@ import は、モジュールの先頭に宣言してください。
 上記 Test.lns を利用するには、次の様にします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import Test;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import Test;
 
 print( Test.func() ); // @Test   Test.func</code></pre>
 </div>
@@ -8020,7 +8218,8 @@ print( Test.func() ); // @Test   Test.func</code></pre>
 なお、work/Test.lns を import する場合は、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import work.Test;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import work.Test;
 
 print( Test.func() ); // work.Test	Test.func</code></pre>
 </div>
@@ -8044,7 +8243,8 @@ import as は、 import 後のアクセス名を指定します。
 例えば、上記の work.Test を import as で foo とすると、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import work.Test as foo;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import work.Test as foo;
 
 print( foo.func() ); // work.Test	Test.func</code></pre>
 </div>
@@ -8106,7 +8306,8 @@ provide は、既存の Lua モジュールとの互換性を提供するもの�
 次に provide の例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test.lns
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
 pub fn func(): str, str {
    return __mod__, __func__;
 }
@@ -8120,18 +8321,18 @@ provide func;</code></pre>
 これによって、この Test.lns モジュールのトランスコンパイル結果は、
 次のようになります。
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">--work/Test.lns
-local __mod__ = &#39;work.Test&#39;
-if not _lune then
-   _lune = {}
-end
-local function func(  )
-   local __func__ = &#39;Test.func&#39;
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--work/Test.lns</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;work.Test&#39;</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune</span> <span class="kr">then</span>
+   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="kd">local</span> <span class="n">__func__</span> <span class="o">=</span> <span class="s1">&#39;Test.func&#39;</span>
 
-   return __mod__, __func__
-end
-return func</code></pre>
+   <span class="kr">return</span> <span class="n">__mod__</span><span class="p">,</span> <span class="n">__func__</span>
+<span class="kr">end</span>
+<span class="kr">return</span> <span class="n">func</span></code></pre></div>
 </div>
 <p>
 上記から分かるように、 Lua からこのモジュールを require() すると、
@@ -8226,7 +8427,8 @@ int の メンバ val
 この Test.lua モジュールを利用する module 宣言は、次のように行ないます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">module Test require &#39;Test&#39;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+module Test require &#39;Test&#39;
 {
    pub static let val:int;
    pub static fn func1( val:int ):int;
@@ -8251,7 +8453,8 @@ module Test require &#39;Test&#39; の require &#39;Test&#39; は、
 module 宣言したモジュールは、モジュール名でアクセスします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( Test.val, Test.func1( 10 ), Test.func2( 20 ) );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+print( Test.val, Test.func1( 10 ), Test.func2( 20 ) );</code></pre>
 </div>
 <h4 id="headline-232">
 module 宣言の制限
@@ -8339,7 +8542,8 @@ glue を生成するには、 module 定義時に glue キーワードを指定�
 次は、 test.ext モジュールの glue を生成するサンプルである。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">module External require &#34;test.ext&#34; glue &#39;hoge_&#39; {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+module External require &#34;test.ext&#34; glue &#39;hoge_&#39; {
    pub static fn create( val:int ): External;
    pub fn add( val:int ):int;
 }
@@ -8565,7 +8769,8 @@ LuneScript のコードそのままでも実行可能です。
 例えば、次のようなソースは
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">print( &#34;hello&#34; );</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( &#34;hello&#34; );</code></pre>
 </div>
 <p>
 次のコマンドで実行できます。
@@ -8749,7 +8954,8 @@ depends/mod1.d に mod1.lns の依存関係情報を出力します。
 ここで、それぞれのファイルの中身は次とします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import test.proj.Mod2;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import test.proj.Mod2;
 
 pub fn func(): str {
    return &#34;%s -&gt; %s&#34; (__func__, Mod2.func() );
@@ -8757,21 +8963,24 @@ pub fn func(): str {
 print( func() );</code></pre>
 </div>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import test.proj.Mod3;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import test.proj.Mod3;
 
 pub fn func(): str {
    return &#34;%s -&gt; %s&#34; (__func__, Mod3.func() );
 }</code></pre>
 </div>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">import test.proj.Mod4;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import test.proj.Mod4;
 
 pub fn func(): str {
    return &#34;%s -&gt; %s&#34; (__func__, Mod4.func() );
 }</code></pre>
 </div>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub fn func(): str {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub fn func(): str {
    return __func__;
 }</code></pre>
 </div>
@@ -8911,7 +9120,8 @@ LuneScript のマクロは Lisp ほど高機能ではありません。
 次に簡単なマクロの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Hello() {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Hello() {
    print( &#34;hello world&#34; );
 }
 _Hello(); // hello world</code></pre>
@@ -8985,7 +9195,8 @@ int の値を返す関数を定義するマクロ _Test
 次が具体的なマクロのコードです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       let name = &#34;func%d&#34;(val);
    }
@@ -9007,7 +9218,8 @@ print( func1(), func10() ); // 1  10</code></pre>
 _Test( 1 ), _Test( 10 ) によって、次が展開されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// Test( 1 )
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test( 1 )
 fn func1():int {
    return 1;
 }
@@ -9030,7 +9242,8 @@ fn func10():int {
 マクロの定義の syntax は次になります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro name( arg ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+macro name( arg ) {
    {
       macro-statement
    }
@@ -9061,7 +9274,8 @@ expand-statement は、マクロを展開した後のコードを書きます。
 _Test マクロの例では、 次の部分が expand-statement です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   fn ,,,name(): int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   fn ,,,name(): int {
       return ,,val;
    }</code></pre>
 </div>
@@ -9107,7 +9321,8 @@ _Test マクロの例では、 次の部分が expand-statement です。
 <code>_Test( 1 )</code> マクロは、次が展開されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func1():int {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1():int {
    return 1;
 }</code></pre>
 </div>
@@ -9136,7 +9351,8 @@ macro-statement ブロックの最上位のスコープで宣言する必要が�
 _Test マクロの例では、次が macro-statement です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   {
       let name = &#34;func%d&#34;(val);
    }</code></pre>
 </div>
@@ -9152,7 +9368,8 @@ macro-statement 内では、LuneScript の全ての機能を利用できます�
 例えば、 _Test マクロは次のようにも書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       fn funcname(): str {
          return &#34;func%d&#34;(val);
@@ -9219,7 +9436,8 @@ macro-statement では直後に続く <strong>式</strong> を処理対象にし
 例えば、 上記 _Test マクロは <code>`{}</code> を使って次のようにも書けます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       let defstat = `{
          fn ,,,&#34;func%d&#34;(val)~~():int {
@@ -9243,7 +9461,8 @@ defstat を expand-statement で展開しています。
 この defstat の初期化部分を抜き出すと、次のようになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">      let defstat = `{
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+      let defstat = `{
          fn ,,,&#34;func%d&#34;(val)~~():int {
             return ,,val;
          }
@@ -9271,7 +9490,8 @@ defstat を expand-statement で展開しています。
 次に <code>`{}</code> のリストの例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _Test( val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+macro _Test( val:int ) {
    {
       let mut statList:List&lt;stat&gt; = [];
       for count = 1, val {
@@ -9299,7 +9519,8 @@ print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5</code></pre>
 macro-statement ブロックを省略する場合、次のように {} ごと省略します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro name( arg ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+macro name( arg ) {
    expand-statement
 }</code></pre>
 </div>
@@ -9340,7 +9561,8 @@ fn _lnsLoad( name:str, code:str ): stem;
 次のように pub を宣言することで、そのマクロを import 先で利用できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub macro _Hello() {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub macro _Hello() {
    print( &#34;hello world&#34; );
 }</code></pre>
 </div>
@@ -9364,17 +9586,19 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 <p>
 この例では、次の JSON ファイルを読み込み、
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">{
-    &#34;val1&#34;: &#34;abc&#34;,
-    &#34;val2&#34;: 0
-}</code></pre>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{</span>
+    <span class="s2">&#34;val1&#34;</span><span class="o">:</span> <span class="s2">&#34;abc&#34;</span><span class="p">,</span>
+    <span class="s2">&#34;val2&#34;</span><span class="o">:</span> <span class="mi">0</span>
+<span class="p">}</span>
+</code></pre></div>
 </div>
 <p>
 上記 JSON を扱うための次のクラスを定義するマクロです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
   pri let val1:str {pub};
   pri let val2:int {pub};
 }</code></pre>
@@ -9383,7 +9607,8 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 次がマクロの具体例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">macro _MkClass( name:str, path:str ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+macro _MkClass( name:str, path:str ) {
    {
       let mut memStatList:List&lt;stat&gt; = [];
       if! let mut fileObj = io.open( path ) {
@@ -9503,7 +9728,8 @@ let mut var:Map&lt;str,stem&gt;
 次に例を示します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   macro _test0( name:str, val:int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+   macro _test0( name:str, val:int ) {
       {
          __var[ name ] = val;
       }
@@ -9574,14 +9800,16 @@ LuneScript は、 3 つのタイプのキャストを提供します。
 <code>@@</code> は、変換元の値の型を実行時にチェックせずに強制的に型変換します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1:stem = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val1:stem = 1;
 let val2:int = val1@@int;</code></pre>
 </div>
 <p>
 次のような本来変換できない値も強制的なキャストを行なえてしまいます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val1:stem = 1;
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val1:stem = 1;
 let val2:str[] = val1@@str[];
 print( #val2 ); // runtime error</code></pre>
 </div>
@@ -9601,7 +9829,8 @@ warning となります。
 warning が出力されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:stem ) {
 }
 func( &#34;abc&#34;@@stem );</code></pre>
 </div>
@@ -9613,7 +9842,8 @@ func( &#34;abc&#34;@@stem );</code></pre>
 この型変換は出来ないためコンパイルエラーとなります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let val = &#34;abc&#34;@@int;  // error
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let val = &#34;abc&#34;@@int;  // error
 let val2 = 1@@str;  // error</code></pre>
 </div>
 <p>
@@ -9635,7 +9865,8 @@ let val2 = 1@@str;  // error</code></pre>
 次は <code>@@@</code> の例です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:stem ) {
    if! val@@@int {
       print( &#34;int:%d&#34; ( _exp ) );
    }
@@ -9680,7 +9911,8 @@ str 型でなければ nil を返します。
 <code>func( 2.5 )</code> は <code>real:2.5</code> を出力します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:stem ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:stem ) {
    if! val@@@int {
       print( &#34;int:%d&#34; ( _exp ) );
    }
@@ -9784,13 +10016,15 @@ main.lns, sub.lns が存在し sub.lns が main.lns のサブファイルの場�
 サブファイルを利用するには、 main 側で次のように宣言する。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">subfile use foo.bar.sub;</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+subfile use foo.bar.sub;</code></pre>
 </div>
 <p>
 また、サブファイル側では次のように宣言する。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">subfile owner foo.bar.main;</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+subfile owner foo.bar.main;</code></pre>
 </div>
 <p>
 これにより、
@@ -9851,20 +10085,23 @@ LuneScript ではファイルの最終位置にサブファイルを展開する
 例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+//------ main.lns -------
 subfile use sub1;
 subfile use sub2;
 
 pub let val = 1;</code></pre>
 </div>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">//------ sub1.lns -------
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+//------ sub1.lns -------
 subfile owner main;
 
 pub let val1 = 1;</code></pre>
 </div>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">//------ sub2.lns -------
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+//------ sub2.lns -------
 subfile owner main;
 
 pub let val2 = 1;</code></pre>
@@ -9873,7 +10110,8 @@ pub let val2 = 1;</code></pre>
 main.lns は次のスクリプトと等価である。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">//------ main.lns -------
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+//------ main.lns -------
 pub let val = 1;
 pub let val1 = 1;
 pub let val2 = 1;</code></pre>
@@ -10908,7 +11146,8 @@ LuneScript は、クラスフィールドの補完機能を提供しています
 例えば次のようなコードのとき、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Super {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Super {
    pub let val:int;
    pri let val2:int { pub };
    pub fn funcsuper():int! {
@@ -10917,7 +11156,7 @@ LuneScript は、クラスフィールドの補完機能を提供しています
 }
 class Test extend Super {
    pub fn __init( val: int ) {
-      super( val );
+      super( val, val + 1 );
    }
    pub fn func( val: int ):int {
       return 1;
@@ -10974,7 +11213,8 @@ LuneScript は、コンパイラなので当然 Syntax エラーチェック機�
 例えば、次のようなソースで、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val: int ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val: int ) {
    print( val );
 }
 let map = { &#34;a&#34;: 1, &#34;b&#34;:2 };</code></pre>

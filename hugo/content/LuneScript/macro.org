@@ -33,6 +33,7 @@ LuneScript のマクロは Lisp ほど高機能ではありません。
 次に簡単なマクロの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Hello() {
    print( "hello world" );
 }
@@ -79,6 +80,7 @@ _Hello(); // hello world
 次が具体的なマクロのコードです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       let name = "func%d"(val);
@@ -100,6 +102,7 @@ print( func1(), func10() ); // 1  10
 _Test( 1 ), _Test( 10 ) によって、次が展開されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 // Test( 1 )
 fn func1():int {
    return 1;
@@ -121,6 +124,7 @@ fn func10():int {
 マクロの定義の syntax は次になります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 macro name( arg ) {
    {
       macro-statement
@@ -147,6 +151,7 @@ expand-statement は、マクロを展開した後のコードを書きます。
 _Test マクロの例では、 次の部分が expand-statement です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    fn ,,,name(): int {
       return ,,val;
    }
@@ -174,6 +179,7 @@ _Test マクロの例では、 次の部分が expand-statement です。
 ~_Test( 1 )~ マクロは、次が展開されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func1():int {
    return 1;
 }
@@ -197,6 +203,7 @@ macro-statement ブロックの最上位のスコープで宣言する必要が�
 _Test マクロの例では、次が macro-statement です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    {
       let name = "func%d"(val);
    }
@@ -212,6 +219,7 @@ macro-statement 内では、LuneScript の全ての機能を利用できます�
 例えば、 _Test マクロは次のようにも書けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       fn funcname(): str {
@@ -253,6 +261,7 @@ macro-statement では直後に続く *式* を処理対象にします。
 例えば、 上記 _Test マクロは ~`{}~ を使って次のようにも書けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       let defstat = `{
@@ -276,6 +285,7 @@ defstat を expand-statement で展開しています。
 この defstat の初期化部分を抜き出すと、次のようになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
       let defstat = `{
          fn ,,,"func%d"(val)~~():int {
             return ,,val;
@@ -301,6 +311,7 @@ defstat を expand-statement で展開しています。
 次に ~`{}~ のリストの例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 macro _Test( val:int ) {
    {
       let mut statList:List<stat> = [];
@@ -330,6 +341,7 @@ print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5
 macro-statement ブロックを省略する場合、次のように {} ごと省略します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 macro name( arg ) {
    expand-statement
 }
@@ -358,6 +370,7 @@ macro-statement では、次の関数が利用できます。
 次のように pub を宣言することで、そのマクロを import 先で利用できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub macro _Hello() {
    print( "hello world" );
 }
@@ -381,7 +394,7 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 この例では、次の JSON ファイルを読み込み、
 
 #+NAME: hoge.js
-#+BEGIN_SRC lns
+#+BEGIN_SRC js
 {
     "val1": "abc",
     "val2": 0
@@ -391,6 +404,7 @@ REST API の JSON フォーマット毎にクラス化しておくと便利で�
 上記 JSON を扱うための次のクラスを定義するマクロです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Hoge {
   pri let val1:str {pub};
   pri let val2:int {pub};
@@ -402,6 +416,7 @@ class Hoge {
 
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 macro _MkClass( name:str, path:str ) {
    {
       let mut memStatList:List<stat> = [];
@@ -485,6 +500,7 @@ print( hoge.$val1, hoge.$val2 );
 次に例を示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
    macro _test0( name:str, val:int ) {
       {
          __var[ name ] = val;

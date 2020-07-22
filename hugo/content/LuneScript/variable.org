@@ -15,6 +15,7 @@ LuneScript は静的型付け言語であり、変数は型を持ちます。
 変数は、次のように let で宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val:int = 1;
 #+END_SRC
 
@@ -27,6 +28,7 @@ let val:int = 1;
 real の 1.0 をセットすると、型が違うためコンパイルエラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val:int = 1.0;  // error
 #+END_SRC
 
@@ -50,6 +52,7 @@ LuneScript は型推論をサポートしています。
 これによって、次のように型を指定せずに変数を宣言できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let val1 = 1; // int 
 let val2 = 1.0; // real
 let val3 = "abc"; // str
@@ -72,6 +75,7 @@ let val3 = "abc"; // str
 初期化していない変数にアクセスすると、コンパイルエラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 {
    let val;
    print( "%s" ( val ) ); // error
@@ -88,6 +92,7 @@ let val3 = "abc"; // str
 例えば次の場合、エラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( flag:bool )
 {
    let val;
@@ -104,6 +109,7 @@ false の場合は val が初期化されないためです。
 次のように、アクセスする前に全てのパスで初期化をする必要があります。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( flag:bool )
 {
    let val;
@@ -126,6 +132,7 @@ val に対する書き換えではないため、
 ちなみに次のような少し複雑な場合も、フローを解析します。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( kind:int )
 {
    let val;
@@ -157,6 +164,7 @@ fn func( kind:int )
 なお、次の場合も print( val ) の箇所でエラーになります。 
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( flag:bool )
 {
    let val;
@@ -180,6 +188,7 @@ fn func( flag:bool )
 例えば次の場合は、
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 fn func( flag:bool )
 {
    let val;
@@ -202,6 +211,7 @@ int 型の val に real の 1.0 を代入しようとしているため、
 エラーを回避できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( flag:bool )
 {
    let val:stem; // stem 型を宣言
@@ -230,6 +240,7 @@ LuneScript では、 同名の変数宣言を禁止しています。
 具体的には、次の変数宣言はエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 {
    let val = 1;
    {
@@ -247,12 +258,14 @@ LuneScript では、 同名の変数宣言を禁止しています。
 外部のモジュールに公開したい場合は、次のように pub を付加して宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub let val = 1;
 #+END_SRC
 
 外部公開されている変数にアクセスする場合、次のように import を使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import SubModule;
 print( SubModule.val );
 #+END_SRC
@@ -266,6 +279,7 @@ SubModule は ~pub let val = 1;~ を宣言している LuneScript のモジュ�
 もう一つ global を使うことも出来ます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub let val1 = 1;
 global let val2 = 2;
 #+END_SRC
@@ -276,6 +290,7 @@ pub と global の違いは、 名前空間の違いです。
 これは上記 val1, val2 を外部からアクセスしているサンプルです。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import SubModule;
 print( SubModule.val1 );
 print( val2 );
@@ -298,6 +313,7 @@ global を使用せざるを得ないこともあると思います。
 例えば次の例では val2 は、 SubModule になんの関係もなく存在しているように見えますが、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import SubModule;
 print( SubModule.val1 );
 print( val2 );
@@ -306,6 +322,7 @@ print( val2 );
 次の場合 SubModule を import していないため、val2 は存在しないのでエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( val2 );
 #+END_SRC
 
@@ -317,6 +334,7 @@ print( val2 );
 例えば、次の val2 は最上位のスコープではないためエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 pub let val = 1;
 {
    pub let val2 = 1; // error
@@ -330,6 +348,7 @@ pub let val = 1;
 例えば、次の ~val = 2~ はエラーとなります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val = 1;
 val = 2; // error
 #+END_SRC
@@ -337,6 +356,7 @@ val = 2; // error
 可変な変数(mutable)とする場合、次のように mut で宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut val = 1;
 val = 2;
 #+END_SRC
@@ -348,6 +368,7 @@ LuneScript は、 Lua と同じで関数の戻り値に複数の値を返せま�
 この戻り値を変数宣言の初期値とするには、次のように宣言します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let val1, val2 = func();
 let mut val3, mut val4 = func();
 #+END_SRC
@@ -374,6 +395,7 @@ nil 以外の全ての値は、 stem 型の変数に代入できます。
 これには、暗黙的な型変換が行なわれています。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut val:stem = 1;
 val = 1.0;
 val = "abc";
@@ -385,6 +407,7 @@ val = [@];
 一方、 stem 型の値から異なる型への代入はエラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let val1:stem = 1;
 let val2:int = val1; // error
 #+END_SRC
