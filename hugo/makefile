@@ -1,5 +1,6 @@
 
-SRCS += _index.org
+INDEX = _index.org
+
 SRCS += tutorial1.org
 SRCS += tutorial2.setup.org
 SRCS += tutorial3.hello.org
@@ -37,6 +38,7 @@ SRCS += completion.org
 SRCS += onWeb.org
 
 SRCS := $(addprefix content/LuneScript/, $(SRCS))
+INDEX := $(addprefix content/LuneScript/, $(INDEX))
 
 HEAD := content/LuneScript/_all.org.head
 
@@ -48,7 +50,9 @@ help:
 	@echo make concat_all
 
 concat_all:
-	cat $(SRCS) | sed 's/^*/**/g'  | sed $(SEDPAT) | grep -v $(EXCLUDE) > dump
+	cat $(INDEX) | sed 's@\[\[@[[../@g' | cat - $(SRCS) |		\
+		sed 's/^*/**/g'  | sed $(SEDPAT) |			\
+		grep -v $(EXCLUDE) > dump
 	cat $(HEAD) dump > dump2
 
 	mv dump2 content/LuneScript/all.org
