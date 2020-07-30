@@ -361,6 +361,56 @@ let mut val = 1;
 val = 2;
 #+END_SRC
 
+なお、次のように immutable の変数を宣言した後に初期値を代入することもできます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val;
+val = 1;
+#+END_SRC
+
+ただし、次のように初期値を代入した後にさらに値をセットするとエラーになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val;
+val = 1;
+val = 2; // error
+#+END_SRC
+
+*** immutable な型
+
+上記の通り、mut 宣言しない変数は immutable になります。
+さらに mut 宣言しない変数の型も immutable になります。
+例えば次の場合、
+list1 は mut 宣言しているため List の変更操作(insert)が可能ですが、
+list2 は mut 宣言せずに immutable であるため List の変更操作はエラーになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut list1 = [1];
+list1.insert( 2 ); // ok
+let list2 = [1];
+list2.insert( 2 ); // error
+#+END_SRC
+
+この様に immutable な型は、元の型 T に & を付けて &T として表記します。
+例えば =&List<int>= は、 変更操作できないリストを表します。
+なお、変更操作は出来ませんが、 foreach などの参照操作は出来ます。
+
+=&List<List<int>>= は、 =List<int>= を要素に持つ immutable なリストです。
+ここで =List<int>= は & が付いていないため mutable です。
+つまり、次のようになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+let mut list:&List<List<int>> = [[100],[]];
+list[1].insert( 1 ); // ok
+list.insert( [10] ); // error
+#+END_SRC
+
+
+
 ** 複数宣言
 
 LuneScript は、 Lua と同じで関数の戻り値に複数の値を返せます。
@@ -379,9 +429,9 @@ mut は各変数名の前に宣言します。
 
 次のシンボルは、特殊な値を保持します。
 
-| シンボル | 値           |
-|----------+--------------|
-| ~__mod__~ | モジュール名 |
+| シンボル   | 値           |
+|------------+--------------|
+| ~__mod__~  | モジュール名 |
 | ~__func__~ | 現在の関数名 |
 | ~__line__~ | 現在の行番号 |
 

@@ -1207,6 +1207,14 @@ LuneScript は、整数と実数を分けて扱います。
 
 これにより 10/3 は 3 となり、 10/3.0 は 3.3333... となります。
 
+型名はそれぞれ次の通りです。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:int = 1;      // 整数
+let val2:real = 1.5;  // 実数
+#+END_SRC
+
 **** 数値リテラル
 
 数値リテラルは C89 ライクなものを採用します。
@@ -1332,12 +1340,23 @@ print( #"abc" ); // 3
 #+END_SRC
 
 
+型名は次の通り str です。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:str = "abc"; // 文字列
+#+END_SRC
 
 *** 真偽値(bool)
 
 true, false をもちます。    
 
+型名は、次の通り bool です。
 
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:bool = true;
+#+END_SRC
 
 *** リスト
 
@@ -1362,6 +1381,15 @@ print( list[1] ); // 1
 例えば ~#list~ は、 リスト型の変数 list の長さを取得します。
 
 値の追加は Lua と同じで insert(), 削除は remove() です。
+
+型名は、次の通り List<T> です。
+ここで T は、リストが保持する要素の型を示します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:List<int> = [1,2];
+#+END_SRC
+
 
 *** Map   
     
@@ -1417,6 +1445,14 @@ print( map[ "abc" ] == map.abc ); // true
 
 なお、マップに対して ~#~ 演算子は使用できません。
 
+Map の型名は、次の通り Map<K,V> です。
+ここで K はキーの型、V はキーに紐付ける値の型です。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:Map<str,int> = { "abc":123 };
+#+END_SRC
+
 **** Map の注意
 
 Map を扱う際、次を注意してください。
@@ -1464,7 +1500,7 @@ int, real, str 以外を map のキーに使用した場合、
 
 詳しくは次の記事を参照してください。
 
-
+[[../set/]]
 
 *** generics
 
@@ -1515,6 +1551,7 @@ LuneScript は enum に対応しています。
 
 詳細は明日の記事を参照してください。
 
+[[../enum/]]
 
 *** stem
 
@@ -2612,6 +2649,56 @@ let mut val = 1;
 val = 2;
 #+END_SRC
 
+なお、次のように immutable の変数を宣言した後に初期値を代入することもできます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val;
+val = 1;
+#+END_SRC
+
+ただし、次のように初期値を代入した後にさらに値をセットするとエラーになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val;
+val = 1;
+val = 2; // error
+#+END_SRC
+
+**** immutable な型
+
+上記の通り、mut 宣言しない変数は immutable になります。
+さらに mut 宣言しない変数の型も immutable になります。
+例えば次の場合、
+list1 は mut 宣言しているため List の変更操作(insert)が可能ですが、
+list2 は mut 宣言せずに immutable であるため List の変更操作はエラーになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut list1 = [1];
+list1.insert( 2 ); // ok
+let list2 = [1];
+list2.insert( 2 ); // error
+#+END_SRC
+
+この様に immutable な型は、元の型 T に & を付けて &T として表記します。
+例えば =&List<int>= は、 変更操作できないリストを表します。
+なお、変更操作は出来ませんが、 foreach などの参照操作は出来ます。
+
+=&List<List<int>>= は、 =List<int>= を要素に持つ immutable なリストです。
+ここで =List<int>= は & が付いていないため mutable です。
+つまり、次のようになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+let mut list:&List<List<int>> = [[100],[]];
+list[1].insert( 1 ); // ok
+list.insert( [10] ); // error
+#+END_SRC
+
+
+
 *** 複数宣言
 
 LuneScript は、 Lua と同じで関数の戻り値に複数の値を返せます。
@@ -2630,9 +2717,9 @@ mut は各変数名の前に宣言します。
 
 次のシンボルは、特殊な値を保持します。
 
-| シンボル | 値           |
-|----------+--------------|
-| ~__mod__~ | モジュール名 |
+| シンボル   | 値           |
+|------------+--------------|
+| ~__mod__~  | モジュール名 |
 | ~__func__~ | 現在の関数名 |
 | ~__line__~ | 現在の行番号 |
 

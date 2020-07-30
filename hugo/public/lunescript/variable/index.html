@@ -36,7 +36,7 @@
 <meta itemprop="name" content="07. 変数 編">
 <meta itemprop="description" content="今回は LuneScript の変数について説明します。 変数 LuneScript は静的型付け言語であり、変数は型を持ちます。 変数は、次のように let で宣言します。 // @lnsFront: ok let val:int = 1; 上記の例">
 
-<meta itemprop="wordCount" content="2937">
+<meta itemprop="wordCount" content="3322">
 
 
 
@@ -466,7 +466,57 @@ val = 2; // error</code></pre>
 let mut val = 1;
 val = 2;</code></pre>
 </div>
-<h3 id="headline-9">
+<p>
+なお、次のように immutable の変数を宣言した後に初期値を代入することもできます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val;
+val = 1;</code></pre>
+</div>
+<p>
+ただし、次のように初期値を代入した後にさらに値をセットするとエラーになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let val;
+val = 1;
+val = 2; // error</code></pre>
+</div>
+<h4 id="headline-9">
+immutable な型
+</h4>
+<p>
+上記の通り、mut 宣言しない変数は immutable になります。
+さらに mut 宣言しない変数の型も immutable になります。
+例えば次の場合、
+list1 は mut 宣言しているため List の変更操作(insert)が可能ですが、
+list2 は mut 宣言せずに immutable であるため List の変更操作はエラーになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut list1 = [1];
+list1.insert( 2 ); // ok
+let list2 = [1];
+list2.insert( 2 ); // error</code></pre>
+</div>
+<p>
+この様に immutable な型は、元の型 T に &amp; を付けて &amp;T として表記します。
+例えば <code class="verbatim">&amp;List&lt;int&gt;</code> は、 変更操作できないリストを表します。
+なお、変更操作は出来ませんが、 foreach などの参照操作は出来ます。
+</p>
+<p>
+<code class="verbatim">&amp;List&lt;List&lt;int&gt;&gt;</code> は、 <code class="verbatim">List&lt;int&gt;</code> を要素に持つ immutable なリストです。
+ここで <code class="verbatim">List&lt;int&gt;</code> は &amp; が付いていないため mutable です。
+つまり、次のようになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let mut list:&amp;List&lt;List&lt;int&gt;&gt; = [[100],[]];
+list[1].insert( 1 ); // ok
+list.insert( [10] ); // error</code></pre>
+</div>
+<h3 id="headline-10">
 複数宣言
 </h3>
 <p>
@@ -483,7 +533,7 @@ let mut val3, mut val4 = func();</code></pre>
 <p>
 mut は各変数名の前に宣言します。
 </p>
-<h3 id="headline-10">
+<h3 id="headline-11">
 特殊シンボル
 </h3>
 <p>
@@ -515,7 +565,7 @@ mut は各変数名の前に宣言します。
 なお、 <code>__mod__</code>, <code>__func__</code> が展開する名前の書式は、
 <strong>将来変更する可能性</strong> があります。
 </p>
-<h2 id="headline-11">
+<h2 id="headline-12">
 型変換(キャスト)
 </h2>
 <p>
@@ -547,7 +597,7 @@ let val2:int = val1; // error</code></pre>
 <p>
 <a href="../cast">../cast</a>
 </p>
-<h3 id="headline-12">
+<h3 id="headline-13">
 まとめ
 </h3>
 <p>
