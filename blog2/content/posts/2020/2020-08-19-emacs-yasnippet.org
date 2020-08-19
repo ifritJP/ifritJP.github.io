@@ -1,0 +1,68 @@
+#+TITLE: emacs yasnippet の snippet を対応させるモード名に / 等のファイル名に使用できない文字がある場合
+#+DATE: 2020-08-19
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: emacs reviewboard
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+emacs で snippet を管理するパッケージに yasnippet がある。
+
+yasnippet はメジャーモード毎に snippet を登録しておき、
+編集中のメジャーモードに合せて snippet を呼び出すことができる。
+
+yasnippet に snippet を登録するには、
+変数 =yas-snippet-dirs= で指定しているディレクトリ内に
+メジャーモード名のディレクトリを作成し、
+そのメジャーモード名のディレクトリ内に snippet 情報を記述したファイルを置く。
+
+これにより、 yasnippet のロード時、あるいは M-x yas-reload-all 実行時に、
+snippet が yasnippet に登録される。
+
+ここで問題がある。
+
+説明した通り、yasnippet に snippet を登録するには、
+メジャーモード名のディレクトリを作成する必要があるが、
+emacs のメジャーモード名は / 等を含むことが出来る。
+つまり、そのようなメジャーモードのディレクトリを作成することが出来ないので、
+snippet を登録することが出来ない。
+
+今回は、/ 等のファイル名に使用できない文字を含むメジャーモードの snippet を
+登録する方法について示す。
+
+* 登録方法
+
+登録方法を説明する前に、 yasnippet の snippet 呼び出し処理について簡単に説明する。
+
+- yasnippet は snippet を展開する際、現在のメジャーモードを確認し、
+  各メジャーモードに登録されている snippet を取得する。
+- この時、現在のメジャーモードだけでなく、 変数 yas--extra-modes に指定されている
+  モードに登録されている snippet についても取得する。
+
+上記の通り yas--extra-modes に指定されているモードも snippet の検索対象になるので、
+今回は yas--extra-modes を利用して対応する。
+
+snippet を登録したいモードを mode_A とする。
+
+次のように処理することで、この mode_A で利用する snippet を登録できる。
+
+- mode_A の代替となるモードを作成する。
+  - このモードを mode_B とする。
+- 通常の手順で mode_B に snippet を登録する。
+- mode_A の hook に、次の処理を行なう関数を登録する。
+  - yas--extra-modes をバッファローカル変数に設定し、その値に '(mode_B) をセットする。
+
+以上により、 メジャーモード mode_A が有効になったバッファの
+バッファローカル変数 yas--extra-modes に mode_B が登録される。
+これで、mode_A 内で yasnippet の snippet を呼び出すと
+mode_B の snippet が検索対象になる。
+
+上記の方法は、mode_A の snippet を直接登録する方法ではなく、
+mode_A と mode_B を紐付けて mode_A の snippet に mode_B の snippet を含めることで、
+目的を実現している。
+
+mode_A の snippet を直接登録するには、
+yasnippet のコードを修正する以外には方法が無さそうなので、
+今回はこのような対応にしている。
+

@@ -16,6 +16,7 @@ SRCS += func.org
 SRCS += multipleRetVal.org
 SRCS += defaultArg.org
 SRCS += nilable.org
+SRCS += closure.org
 SRCS += class1.org
 SRCS += class2accessor.org
 SRCS += classInherit.org

@@ -36,7 +36,7 @@
 <meta itemprop="name" content="07. 変数 編">
 <meta itemprop="description" content="今回は LuneScript の変数について説明します。 変数 LuneScript は静的型付け言語であり、変数は型を持ちます。 変数は、次のように let で宣言します。 // @lnsFront: ok let val:int = 1; 上記の例">
 
-<meta itemprop="wordCount" content="3322">
+<meta itemprop="wordCount" content="4016">
 
 
 
@@ -597,9 +597,114 @@ let val2:int = val1; // error</code></pre>
 <p>
 <a href="../cast">../cast</a>
 </p>
-<h3 id="headline-13">
+<h2 id="headline-13">
+参照
+</h2>
+<p>
+変数は、 一部(int,real,nil)を除いてオブジェクトの参照を保持します。
+</p>
+<p>
+例えば次の場合、 
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut list1 = [ 10 ];
+let list2 = list1;
+list1.insert( 20 );
+list1.insert( 30 );
+foreach val in list2 {
+   print( val ); // 10 20 30
+}</code></pre>
+</div>
+<ul>
+<li>
+<p>
+<strong>list1</strong> に List&lt;int&gt;  型のリスト (<code class="verbatim">[ 10 ]</code>)オブジェクトの参照をセット
+</p>
+</li>
+<li>
+<p>
+<strong>list2</strong> に <strong>list1</strong> が保持する参照をセット
+</p>
+</li>
+<li>
+<p>
+<strong>list1</strong> が参照するリストオブジェクトに 20, 30 を insert
+</p>
+</li>
+<li>
+<p>
+<strong>list2</strong> が参照するリストオブジェクトの各値を print()
+</p>
+</li>
+</ul>
+<p>
+ここで、 list1 と list2 は <strong>同じリストオブジェクト</strong> を参照しているため、
+list1 に 20, 30 を insert すると、
+list2 が参照しているリストオブジェクトは同じであるため、
+print( val ) は 10 20 30 を出力します。
+</p>
+<p>
+また、次のように list2 に 40 を insert した場合、
+<strong>同じリストオブジェクト</strong> に 40 を挿入するため、
+print( val ) は 10 20 30 40 を出力します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut list1 = [ 10 ];
+let mut list2 = list1;
+list1.insert( 20 );
+list1.insert( 30 );
+list2.insert( 40 );
+foreach val in list2 {
+   print( val ); // 10 20 30 40
+}</code></pre>
+</div>
+<p>
+list1 に新しいリストオブジェクト (<code class="verbatim">[ 100]</code>) をセットした場合、
+list1 が参照するリストオブジェクトと、
+list2 が参照するリストオブジェクトは異なるため、
+print( val ) は 10 20 30 40 を出力します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut list1 = [ 10 ];
+let mut list2 = list1;
+list1.insert( 20 );
+list1.insert( 30 );
+list2.insert( 40 );
+list1 = [ 100 ];
+foreach val in list2 {
+   print( val ); // 10 20 30 40
+}</code></pre>
+</div>
+<p>
+これは、 List&lt;List&lt;int&gt;&gt; の場合も同じです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list = [ 10, 20 ];
+let mut wrapList:List&lt;List&lt;int&gt;&gt; = [];
+wrapList.insert( list );
+wrapList.insert( list );
+wrapList.insert( [ 100, 200 ] );
+list[ 1 ] = list[ 1 ] + 1;
+print( wrapList[ 1 ][ 1 ], wrapList[ 1 ][ 2 ] ); // 11 20
+print( wrapList[ 2 ][ 1 ], wrapList[ 2 ][ 2 ] ); // 11 20
+print( wrapList[ 3 ][ 1 ], wrapList[ 3 ][ 2 ] ); // 100 200</code></pre>
+</div>
+<p>
+wrapList の 1, 2 番目に list を追加し、
+wrapList の 3 番目に新しいリストオブジェクトを追加している。
+その後 list[1]をインクリメント後、wrapList の中身を出力する。
+</p>
+<p>
+ここで、 wrapList[1][1] と wrapList[2][1] は、同じ list[1] を指すため、
+インクリメントされた値が出力される。
+wrapList[3] は新しいリストオブジェクトになるため、インクリメントの影響はない。
+</p>
+<h2 id="headline-14">
 まとめ
-</h3>
+</h2>
 <p>
 LuneScript の変数には、次の要素を取り入れています。
 </p>
@@ -747,6 +852,7 @@ Lua を静的片付けで扱う際に必要となる、最低限の機能を満�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">10.2. 多値の戻り値</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/closure/">10.5. クロージャ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>

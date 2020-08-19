@@ -2754,7 +2754,90 @@ let val2:int = val1; // error
 
 [[../cast]]
 
-*** まとめ
+** 参照
+
+変数は、 一部(int,real,nil)を除いてオブジェクトの参照を保持します。
+
+例えば次の場合、 
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut list1 = [ 10 ];
+let list2 = list1;
+list1.insert( 20 );
+list1.insert( 30 );
+foreach val in list2 {
+   print( val ); // 10 20 30
+}
+#+END_SRC
+
+- *list1* に List<int>  型のリスト (=[ 10 ]=)オブジェクトの参照をセット
+- *list2* に *list1* が保持する参照をセット
+- *list1* が参照するリストオブジェクトに 20, 30 を insert
+- *list2* が参照するリストオブジェクトの各値を print()
+
+ここで、 list1 と list2 は *同じリストオブジェクト* を参照しているため、
+list1 に 20, 30 を insert すると、
+list2 が参照しているリストオブジェクトは同じであるため、
+print( val ) は 10 20 30 を出力します。
+
+また、次のように list2 に 40 を insert した場合、
+**同じリストオブジェクト* に 40 を挿入するため、
+print( val ) は 10 20 30 40 を出力します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut list1 = [ 10 ];
+let mut list2 = list1;
+list1.insert( 20 );
+list1.insert( 30 );
+list2.insert( 40 );
+foreach val in list2 {
+   print( val ); // 10 20 30 40
+}
+#+END_SRC
+
+list1 に新しいリストオブジェクト (=[ 100]=) をセットした場合、
+list1 が参照するリストオブジェクトと、
+list2 が参照するリストオブジェクトは異なるため、
+print( val ) は 10 20 30 40 を出力します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut list1 = [ 10 ];
+let mut list2 = list1;
+list1.insert( 20 );
+list1.insert( 30 );
+list2.insert( 40 );
+list1 = [ 100 ];
+foreach val in list2 {
+   print( val ); // 10 20 30 40
+}
+#+END_SRC
+
+これは、 List<List<int>> の場合も同じです。
+
+#+BEGIN_SRC lns
+let mut list = [ 10, 20 ];
+let mut wrapList:List<List<int>> = [];
+wrapList.insert( list );
+wrapList.insert( list );
+wrapList.insert( [ 100, 200 ] );
+list[ 1 ] = list[ 1 ] + 1;
+print( wrapList[ 1 ][ 1 ], wrapList[ 1 ][ 2 ] ); // 11 20
+print( wrapList[ 2 ][ 1 ], wrapList[ 2 ][ 2 ] ); // 11 20
+print( wrapList[ 3 ][ 1 ], wrapList[ 3 ][ 2 ] ); // 100 200
+#+END_SRC
+
+wrapList の 1, 2 番目に list を追加し、
+wrapList の 3 番目に新しいリストオブジェクトを追加している。
+その後 list[1]をインクリメント後、wrapList の中身を出力する。
+
+ここで、 wrapList[1][1] と wrapList[2][1] は、同じ list[1] を指すため、
+インクリメントされた値が出力される。
+wrapList[3] は新しいリストオブジェクトになるため、インクリメントの影響はない。
+
+** まとめ
 
 LuneScript の変数には、次の要素を取り入れています。
 
@@ -4100,6 +4183,43 @@ LuneScript は、次の仕様によって nil 安全を実現しています。
   
 
 次回はクラスについて説明します。
+-----
+* *5. クロージャ*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript はクロージャに対応している。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( mut val:int ): form {
+   return fn () {
+      val = val + 1;
+      print( val );
+   };
+}
+
+let sub1 = func( 10 );
+sub1(##); // 11
+sub1(##); // 12
+sub1(##); // 13
+sub1(##); // 14
+let sub2 = func( 100 );
+sub2(##); // 101
+sub2(##); // 102
+sub2(##); // 103
+sub2(##); // 104
+#+END_SRC
+
+上記の関数 func() は、クロージャを生成して返す関数である。
+このクロージャは、 func の引数 val をインクリメントして出力する関数である。
+
+このサンプルでは、func(10), func(100) をコールし、
+それぞれで生成されたクロージャを sub1, sub2 セットし、4 回ずつコールしている。
+これによって、 11 〜 14, 101 〜 104 が出力される。
+
 -----
 * *クラス 基本 編*
 # -*- coding:utf-8 -*-
