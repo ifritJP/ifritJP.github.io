@@ -2146,6 +2146,8 @@ case で Val1 〜 Val5 で分岐しています。
 
 ここで ~test.$_txt~ は、 値域の Val2 を示す "Test.Val2" の文字列が展開されます。
 
+match は、 switch と同様に default と _default を利用できます。
+
 ** alge 型の省略表記
 
 alge 型も enum 型と同じように省略表記を利用できます。
@@ -2817,6 +2819,7 @@ foreach val in list2 {
 これは、 List<List<int>> の場合も同じです。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut list = [ 10, 20 ];
 let mut wrapList:List<List<int>> = [];
 wrapList.insert( list );
@@ -3002,6 +3005,96 @@ for count = 1, 10 {
    }
 }
 #+END_SRC
+
+**** enum 値のフロー解析
+
+switch 条件が enum 値の場合、
+case 文で全ての enum 値が指定されているかどうかをチェックしてフロー解析します。
+
+例えば次の場合、
+func() 関数内の switch 文の後にある print() 文は到達不可のエラーとなります。
+これは、 enum 値 Val の全ての値( Val1, Val2 ) のケースに
+return が指定されているためです。
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+   }
+   print( work ); // error : 全ての enum 値の case があり、 return している
+}
+#+END_SRC
+
+また、全ての enum 値に対する case が指定されていて、
+さらに default も指定されている場合、
+その default には到達しないため warning となります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+      default { // warning : ここには到達しない
+         return;
+      }
+   }
+}
+#+END_SRC
+
+
+***** fail safe default
+
+上記の通り、 全ての enum 値に対する case が指定されていて、
+さらに default も指定されている場合、
+その default には到達しないため warning となります。
+
+しかし、 default を fail safe として使用している場合、
+default を指定しておきたい時もあります。
+
+そのような場合は、 default ではなく _default を指定することで、
+warning を抑制できます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+      _default { // ここには到達しないが、 warning は出力されない
+         return;
+      }
+   }
+}
+#+END_SRC
+
+   
 
 ** まとめ
 

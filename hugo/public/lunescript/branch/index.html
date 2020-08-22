@@ -36,7 +36,7 @@
 <meta itemprop="name" content="08. 一般分岐構文 編">
 <meta itemprop="description" content="今回は LuneScript の一般分岐構文について説明します。 構文一覧 LuneScript は、次の一般分岐構文をサポートします。 if switch ちなみに、ここであえて「一般」分岐制御としてい">
 
-<meta itemprop="wordCount" content="821">
+<meta itemprop="wordCount" content="1284">
 
 
 
@@ -247,7 +247,99 @@ for count = 1, 10 {
    }
 }</code></pre>
 </div>
-<h2 id="headline-5">
+<h4 id="headline-5">
+enum 値のフロー解析
+</h4>
+<p>
+switch 条件が enum 値の場合、
+case 文で全ての enum 値が指定されているかどうかをチェックしてフロー解析します。
+</p>
+<p>
+例えば次の場合、
+func() 関数内の switch 文の後にある print() 文は到達不可のエラーとなります。
+これは、 enum 値 Val の全ての値( Val1, Val2 ) のケースに
+return が指定されているためです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+   }
+   print( work ); // error : 全ての enum 値の case があり、 return している
+}</code></pre>
+</div>
+<p>
+また、全ての enum 値に対する case が指定されていて、
+さらに default も指定されている場合、
+その default には到達しないため warning となります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+      default { // warning : ここには到達しない
+         return;
+      }
+   }
+}</code></pre>
+</div>
+<h5 id="headline-6">
+fail safe default
+</h5>
+<p>
+上記の通り、 全ての enum 値に対する case が指定されていて、
+さらに default も指定されている場合、
+その default には到達しないため warning となります。
+</p>
+<p>
+しかし、 default を fail safe として使用している場合、
+default を指定しておきたい時もあります。
+</p>
+<p>
+そのような場合は、 default ではなく _default を指定することで、
+warning を抑制できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+      _default { // ここには到達しないが、 warning は出力されない
+         return;
+      }
+   }
+}</code></pre>
+</div>
+<h2 id="headline-7">
 まとめ
 </h2>
 <p>
