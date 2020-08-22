@@ -2146,7 +2146,7 @@ case で Val1 〜 Val5 で分岐しています。
 
 ここで ~test.$_txt~ は、 値域の Val2 を示す "Test.Val2" の文字列が展開されます。
 
-match は、 switch と同様に default と _default を利用できます。
+match は、 switch と同様に default と _default、そして _match を利用できます。
 
 ** alge 型の省略表記
 
@@ -3088,6 +3088,49 @@ fn func( val:Val ) {
          return;
       }
       _default { // ここには到達しないが、 warning は出力されない
+         return;
+      }
+   }
+}
+#+END_SRC
+
+
+**** enum の switch
+
+enum 値を条件にする switch において、
+全ての enum 値に対する case を必ず宣言させたい時、
+次のように _switch を使用できる。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   _switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+   }
+}
+#+END_SRC
+
+_switch では、 enum に対する case に抜けがあるとコンパイルエラーする。
+また、 default は使用できない。
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   _switch val { // error
+      case .Val1 {
          return;
       }
    }
