@@ -36,7 +36,7 @@
 <meta itemprop="name" content="Z. Go 言語へのトランスコンパイル">
 <meta itemprop="description" content="LuneScript から Go 言語へのトランスコンパイルを検討中。 ここでは、検討中の内容を記録する。 ねらい LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。 LuneScript の">
 
-<meta itemprop="wordCount" content="3742">
+<meta itemprop="wordCount" content="4615">
 
 
 
@@ -151,7 +151,7 @@ C 言語での GC 実装が思うように進まなかったので、
 </tr>
 <tr>
 <td>List</td>
-<td>スライス</td>
+<td>独自構造体</td>
 <td>LnsList</td>
 </tr>
 <tr>
@@ -186,7 +186,7 @@ C 言語での GC 実装が思うように進まなかったので、
 </tr>
 <tr>
 <td>enum</td>
-<td>int/floag64/string</td>
+<td>int/float64/string</td>
 <td>LnsEnum</td>
 </tr>
 <tr>
@@ -209,7 +209,7 @@ LuneScript int/real は、 go の type alias を使用して次のように定�
 </p>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="kt">int</span>
-<span class="kd">type</span> <span class="nx">LnsReal</span> <span class="p">=</span> <span class="nx">floag64</span></code></pre></div>
+<span class="kd">type</span> <span class="nx">LnsReal</span> <span class="p">=</span> <span class="kt">float64</span></code></pre></div>
 </div>
 <h3 id="headline-4">
 nilable の扱い
@@ -346,37 +346,55 @@ Go による等価コード
 Go による等価コードを示す
 </p>
 <div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">IF</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">sub1</span> <span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
+
+<span class="kn">import</span> <span class="s">&#34;fmt&#34;</span>
 
 <span class="kd">type</span> <span class="nx">ParentMtd</span> <span class="kd">interface</span> <span class="p">{</span>
     <span class="nf">sub1</span> <span class="p">()</span> <span class="kt">int</span>
 <span class="p">}</span>
-
 <span class="kd">type</span> <span class="nx">Parent</span> <span class="kd">struct</span> <span class="p">{</span>
     <span class="nx">val1</span> <span class="kt">int</span>
-    <span class="nx">fp</span> <span class="nx">ParentMtd</span>
+    <span class="nx">FP</span> <span class="nx">ParentMtd</span>
 <span class="p">}</span>
+<span class="kd">type</span> <span class="nx">ParentDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">obj</span>
+<span class="p">}</span>
+
+
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Parent</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val1</span>
 <span class="p">}</span>
 
-<span class="kd">func</span> <span class="nf">newParent</span><span class="p">(</span><span class="nx">val1</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
+<span class="kd">func</span> <span class="nf">NewParent</span><span class="p">(</span><span class="nx">val1</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
     <span class="nx">parent</span> <span class="o">:=</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">parent</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">parent</span>
+    <span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">parent</span>
     <span class="k">return</span> <span class="o">&amp;</span><span class="nx">parent</span>
 <span class="p">}</span>
 
 <span class="kd">type</span> <span class="nx">SubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nx">ParentMtd</span>
     <span class="nf">sub2</span> <span class="p">()</span> <span class="kt">int</span>
 <span class="p">}</span>
 
 <span class="kd">type</span> <span class="nx">Sub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">super</span> <span class="nx">Parent</span>
+    <span class="nx">Parent</span>
     <span class="nx">val2</span> <span class="kt">int</span>
-    <span class="nx">fp</span> <span class="nx">SubMtd</span>
+    <span class="nx">FP</span> <span class="nx">SubMtd</span>
 <span class="p">}</span>
+<span class="kd">type</span> <span class="nx">SubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">obj</span>
+<span class="p">}</span>
+
+
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
 <span class="p">}</span>
@@ -386,26 +404,38 @@ Go による等価コードを示す
 
 <span class="kd">func</span> <span class="nf">newSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
     <span class="nx">sub</span> <span class="o">:=</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
+    <span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
+    <span class="nx">sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
     <span class="k">return</span> <span class="o">&amp;</span><span class="nx">sub</span>
 <span class="p">}</span>
 
 
 <span class="kd">type</span> <span class="nx">SubSubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nx">SubMtd</span>
     <span class="nf">sub3</span> <span class="p">()</span> <span class="kt">int</span>
 <span class="p">}</span>
 
 <span class="kd">type</span> <span class="nx">SubSub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">super</span> <span class="nx">Sub</span>
+    <span class="nx">Sub</span>
     <span class="nx">val3</span> <span class="kt">int</span>
-    <span class="nx">fp</span> <span class="nx">SubSubMtd</span>
+    <span class="nx">FP</span> <span class="nx">SubSubMtd</span>
 <span class="p">}</span>
+<span class="kd">type</span> <span class="nx">SubSubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">obj</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Sub</span>
+<span class="p">}</span>
+
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
 <span class="p">}</span>
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub2</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span>
 <span class="p">}</span>
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub3</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
@@ -414,10 +444,44 @@ Go による等価コードを示す
 
 <span class="kd">func</span> <span class="nf">newSubSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span><span class="p">,</span><span class="nx">val3</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
     <span class="nx">subsub</span> <span class="o">:=</span> <span class="nx">SubSub</span><span class="p">{</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val3</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
+    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
+    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
+    <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
     <span class="k">return</span> <span class="o">&amp;</span><span class="nx">subsub</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">testParent</span><span class="p">(</span> <span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">testSub</span><span class="p">(</span> <span class="nx">mess</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">mess</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">(),</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span> <span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">testCast</span><span class="p">(</span> <span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="nx">cast</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">ok</span> <span class="p">{</span>
+        <span class="nf">testSub</span><span class="p">(</span> <span class="s">&#34;cast&#34;</span><span class="p">,</span> <span class="nx">cast</span><span class="p">.</span><span class="nf">ToSub</span><span class="p">()</span> <span class="p">)</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="s">&#34;cast NG&#34;</span> <span class="p">)</span>
+    <span class="p">}</span>
+    
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Lns_init</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">subsub</span> <span class="o">:=</span> <span class="nf">newSubSub</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span> <span class="p">)</span>
+    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">val1</span><span class="p">,</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">val2</span><span class="p">,</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">val3</span> <span class="p">)</span>
+    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">(),</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub2</span><span class="p">(),</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub3</span><span class="p">()</span> <span class="p">)</span>
+    <span class="nf">testSub</span><span class="p">(</span> <span class="s">&#34;subsub.Sub&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">subsub</span><span class="p">.</span><span class="nx">Sub</span> <span class="p">)</span>
+    <span class="nf">testParent</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
+    <span class="nf">testCast</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
+
+    <span class="nx">sub</span> <span class="o">:=</span> <span class="nf">newSub</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="p">)</span>
+    <span class="nf">testSub</span><span class="p">(</span> <span class="s">&#34;sub&#34;</span><span class="p">,</span> <span class="nx">sub</span> <span class="p">)</span>
+    <span class="nf">testParent</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
+    <span class="nf">testCast</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
+
+    <span class="nf">testCast</span><span class="p">(</span> <span class="nf">NewParent</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <h3 id="headline-12">
@@ -450,7 +514,13 @@ Parent クラスを表現するため、次の構造体と interface を定義�
 <span class="p">}</span>
 <span class="kd">type</span> <span class="nx">Parent</span> <span class="kd">struct</span> <span class="p">{</span>
     <span class="nx">val1</span> <span class="kt">int</span>
-    <span class="nx">fp</span> <span class="nx">ParentMtd</span>
+    <span class="nx">FP</span> <span class="nx">ParentMtd</span>
+<span class="p">}</span>
+<span class="kd">type</span> <span class="nx">ParentDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">obj</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <ul>
@@ -476,6 +546,11 @@ Parent クラスのモリモーフィズムを表現する
 Parent 構造体は、メンバと ParentMtd を持つ
 </p>
 </li>
+<li>
+<p>
+ParentDownCast は、ダウンキャスト用にクラスごとに定義する
+</p>
+</li>
 </ul>
 <h5 id="headline-15">
 メソッド
@@ -495,10 +570,10 @@ Parent クラスのメソッドを表現するため、次のレシーバ関数�
 Parent クラスのコンストラクタとして、次を定義する。
 </p>
 <div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newParent</span><span class="p">(</span><span class="nx">val1</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
-    <span class="nx">super</span> <span class="o">:=</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">super</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">super</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">super</span>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">NewParent</span><span class="p">(</span><span class="nx">val1</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
+    <span class="nx">super</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="nx">super</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">super</span>
+    <span class="k">return</span> <span class="nx">super</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <p>
@@ -512,7 +587,7 @@ Parent クラスのコンストラクタとして、次を定義する。
 </li>
 <li>
 <p>
-fp の設定
+FP の設定
 </p>
 </li>
 </ul>
@@ -523,9 +598,12 @@ Parent クラスの使用方法
 Parent は次のように使用する。
 </p>
 <div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">parent</span> <span class="o">:=</span> <span class="nf">newParent</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nx">fp</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span></code></pre></div>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">parent</span> <span class="o">:=</span> <span class="nf">NewParent</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span></code></pre></div>
 </div>
+<p>
+メソッドをコールする場合、必ず FP インタフェースを介してコールする。
+</p>
 <h4 id="headline-18">
 Sub クラス
 </h4>
@@ -552,12 +630,22 @@ Sub クラスを表現するため、次の構造体と interface を定義す�
 </p>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nx">ParentMtd</span>
     <span class="nf">sub2</span> <span class="p">()</span> <span class="kt">int</span>
 <span class="p">}</span>
 <span class="kd">type</span> <span class="nx">Sub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">super</span> <span class="nx">Parent</span>
+    <span class="nx">Parent</span>
     <span class="nx">val2</span> <span class="kt">int</span>
-    <span class="nx">fp</span> <span class="nx">SubMtd</span>
+    <span class="nx">FP</span> <span class="nx">SubMtd</span>
+<span class="p">}</span>
+<span class="kd">type</span> <span class="nx">SubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">obj</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <ul>
@@ -587,7 +675,7 @@ Sub クラスのメソッドを表現するため、次のレシーバ関数を�
 </p>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val1</span>
+    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
 <span class="p">}</span>
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="nf">sub2</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
@@ -601,10 +689,10 @@ Sub クラスのコンストラクタとして、次を定義する。
 </p>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="nx">sub</span> <span class="o">:=</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">sub</span>
+    <span class="nx">sub</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">sub</span>
+    <span class="nx">sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">sub</span>
+    <span class="k">return</span> <span class="nx">sub</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <p>
@@ -618,17 +706,17 @@ Sub クラスのコンストラクタとして、次を定義する。
 </li>
 <li>
 <p>
-fp の設定
+FP の設定
 </p>
 <ul>
 <li>
 <p>
-<strong>super の fp もここで設定する</strong>
+<strong>super の FP もここで設定する</strong>
 </p>
 </li>
 <li>
 <p>
-この super の fp に &amp;super ではなく &amp;sub を設定することで、ポリモーフィズムを実現する
+この super の FP に &amp;super ではなく &amp;sub を設定することで、ポリモーフィズムを実現する
 </p>
 </li>
 </ul>
@@ -660,12 +748,26 @@ SubSub クラスを表現するため、次の構造体と interface を定義�
 </p>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SubSubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nx">SubMtd</span>
     <span class="nf">sub3</span> <span class="p">()</span> <span class="kt">int</span>
 <span class="p">}</span>
+
 <span class="kd">type</span> <span class="nx">SubSub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">super</span> <span class="nx">Sub</span>
+    <span class="nx">Sub</span>
     <span class="nx">val3</span> <span class="kt">int</span>
-    <span class="nx">fp</span> <span class="nx">SubSubMtd</span>
+    <span class="nx">FP</span> <span class="nx">SubSubMtd</span>
+<span class="p">}</span>
+<span class="kd">type</span> <span class="nx">SubSubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">obj</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Sub</span>
+<span class="p">}</span>
+<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <ul>
@@ -698,7 +800,7 @@ SubSub クラスのメソッドを表現するため、次のレシーバ関数�
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
 <span class="p">}</span>
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub2</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span>
+    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span>
 <span class="p">}</span>
 <span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub3</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
@@ -708,16 +810,12 @@ SubSub クラスのメソッドを表現するため、次のレシーバ関数�
 override していないメソッド定義
 </h6>
 <p>
-上記で注目すべきは、 sub2() メソッドで <code class="verbatim">self.super.sub2()</code> をコールしている点。
+上記で注目すべきは、 sub2() メソッドで <code class="verbatim">self.Sub.sub2()</code> をコールしている点。
 </p>
 <p>
 SubSub クラスは、 sub2 メソッドを override していない。
 つまりは、SubSub の sub2 メソッドは Sub クラスのメソッドが使用されることになる。
-よって、 super (Sub クラス) の sub2 メソッドをコールしている。
-</p>
-<p>
-継承関係が 1 段階の場合 super になるが、
-<strong>2 段階の場合は super.super になることを注意する。</strong>
+よって、 Sub.sub2 メソッドをコールしている。
 </p>
 <h5 id="headline-26">
 コンストラクタ
@@ -727,11 +825,11 @@ SubSub クラスのコンストラクタとして、次を定義する。
 </p>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newSubSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span><span class="p">,</span><span class="nx">val3</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
-    <span class="nx">subsub</span> <span class="o">:=</span> <span class="nx">SubSub</span><span class="p">{</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val3</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">fp</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">subsub</span>
+    <span class="nx">subsub</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">SubSub</span><span class="p">{</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val3</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
+    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">subsub</span>
+    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">subsub</span>
+    <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">subsub</span>
+    <span class="k">return</span> <span class="nx">subsub</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <p>
@@ -745,22 +843,17 @@ SubSub クラスのコンストラクタとして、次を定義する。
 </li>
 <li>
 <p>
-fp の設定
+FP の設定
 </p>
 <ul>
 <li>
 <p>
-<strong>super の fp もここで設定する</strong>
+<strong>Parent, Sub の FP もここで設定する</strong>
 </p>
 </li>
 <li>
 <p>
-<strong>super.super の fp も ここで設定する</strong> 
-</p>
-</li>
-<li>
-<p>
-この super の fp に &amp;super ではなく &amp;sub を設定することで、ポリモーフィズムを実現する
+Parent, Sub の FP に &amp;subsub を設定することで、ポリモーフィズムを実現する
 </p>
 </li>
 </ul>
@@ -794,12 +887,12 @@ Parent クラスのメソッドを呼び出すには、次のように行なう�
 </p>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">test</span><span class="p">(</span><span class="nx">parent</span> <span class="o">*</span><span class="nx">Parent</span><span class="p">)</span> <span class="kt">int</span> <span class="p">{</span>
-  <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nx">fp</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
   <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <h5 id="headline-30">
-parent.fp.sub1() と parent.sub1() の違い
+parent.FP.sub1() と parent.sub1() の違い
 </h5>
 <p>
 メソッド呼び出しには、次の 2 つのパターンがある。
@@ -807,7 +900,7 @@ parent.fp.sub1() と parent.sub1() の違い
 <ul>
 <li>
 <p>
-parent.fp.sub1()
+parent.FP.sub1()
 </p>
 <ul>
 <li>
@@ -872,7 +965,7 @@ up-cast / down-cast
 <ul>
 <li>
 <p>
-up-cast は、メンバの super のポインタにアクセスすることで実現する
+up-cast は、埋め込みのポインタにアクセスすることで実現する
 </p>
 <ul>
 <li>
@@ -886,12 +979,21 @@ up-cast は、メンバの super のポインタにアクセスすることで�
 <p>
 down-cast は、 interface を型アサーションで実現する。
 </p>
+<ul>
+<li>
+<p>
+各クラスごとに DownCast インタフェースを定義して、
+そのインタフェースにキャストしてから、
+さらに目的のクラスへのキャスト関数を実行する
+</p>
+</li>
+</ul>
 </li>
 </ul>
 <div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ifObj</span> <span class="nx">IF</span> <span class="p">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">fp</span> <span class="c1">// インタフェースをセットする
-</span><span class="c1"></span><span class="nx">super</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">super</span> <span class="c1">// アップキャスト
-</span><span class="c1"></span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span><span class="p">.(</span><span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ifObj</span> <span class="nx">IF</span> <span class="p">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span> <span class="c1">// インタフェースをセットする
+</span><span class="c1"></span><span class="nx">parent</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span> <span class="c1">// アップキャスト
+</span><span class="c1"></span><span class="p">(</span><span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)).</span><span class="nf">ToSub</span><span class="p">()</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
 </div>
 <h3 id="headline-33">
 Class のまとめ
@@ -904,7 +1006,7 @@ Class のまとめ
 <ul>
 <li>
 <p>
-Super クラスで定義しているメソッドは除外する
+Super クラスで定義しているメソッドの interface を埋め込む
 </p>
 </li>
 </ul>
@@ -912,6 +1014,7 @@ Super クラスで定義しているメソッドは除外する
 </ul>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">TestMtd</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nx">SuperMtd</span>
     <span class="nf">method</span><span class="p">()</span> <span class="kt">int</span>
 <span class="p">}</span></code></pre></div>
 </div>
@@ -923,7 +1026,7 @@ Super クラスで定義しているメソッドは除外する
 <ul>
 <li>
 <p>
-継承は、 Super クラス型のメンバを持つ
+継承は、 継承する型を埋め込む
 </p>
 </li>
 </ul>
@@ -931,9 +1034,40 @@ Super クラスで定義しているメソッドは除外する
 </ul>
 <div class="src src-go">
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Test</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">super</span> <span class="nx">Super</span>
+    <span class="nx">Super</span>
     <span class="nx">val</span> <span class="kt">int</span>
-    <span class="nx">fp</span> <span class="nx">TestMtd</span>
+    <span class="nx">FP</span> <span class="nx">TestMtd</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+ダウンキャスト用の interface を定義する
+</p>
+</li>
+</ul>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">TestDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
+    <span class="nf">ToTest</span><span class="p">()</span> <span class="o">*</span><span class="nx">Test</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+ダウンキャスト用のメソッドを定義する
+</p>
+<ul>
+<li>
+<p>
+このメソッドは、 Super クラスの分を全て宣言する
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Sub</span>
 <span class="p">}</span></code></pre></div>
 </div>
 <ul>
@@ -963,19 +1097,19 @@ override していない関数は、そのメソッドを定義している構�
 <ul>
 <li>
 <p>
-コンストラクタで、メンバの初期化と interface fp を初期化する
+コンストラクタで、メンバの初期化と interface FP を初期化する
 </p>
 <ul>
 <li>
 <p>
-interface は、 Super クラスの interface fp を含めて初期化する
+interface は、 Super クラスの interface FP を含めて初期化する
 </p>
 </li>
 </ul>
 </li>
 <li>
 <p>
-メソッド呼び出しは、 interface fp 経由でコールする
+メソッド呼び出しは、 interface FP 経由でコールする
 </p>
 <ul>
 <li>
@@ -987,13 +1121,13 @@ interface は、 Super クラスの interface fp を含めて初期化する
 </li>
 </ul>
 <div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">obj</span><span class="p">.</span><span class="nx">fp</span><span class="p">.</span><span class="nf">method</span><span class="p">()</span> <span class="c1">// ポリモーフィズム有効
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">method</span><span class="p">()</span> <span class="c1">// ポリモーフィズム有効
 </span><span class="c1"></span><span class="nx">obj</span><span class="p">.</span><span class="nf">method</span><span class="p">()</span>    <span class="o">//</span> <span class="nx">ポリモーフィズム無効</span></code></pre></div>
 </div>
 <ul>
 <li>
 <p>
-up-cast は、メンバの super のポインタにアクセスすることで実現する
+up-cast は、メンバの Super クラスのポインタにアクセスすることで実現する
 </p>
 <ul>
 <li>
@@ -1005,14 +1139,14 @@ up-cast は、メンバの super のポインタにアクセスすることで�
 </li>
 <li>
 <p>
-down-cast は、 interface を型アサーションで実現する。
+down-cast は、 interface を型アサーションと、ダウンキャスト用 interface で実現する。
 </p>
 </li>
 </ul>
 <div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ifObj</span> <span class="nx">IF</span> <span class="p">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">fp</span> <span class="c1">// インタフェースをセットする
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ifObj</span> <span class="nx">IF</span> <span class="p">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span> <span class="c1">// インタフェースをセットする
 </span><span class="c1"></span><span class="nx">super</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">super</span> <span class="c1">// アップキャスト
-</span><span class="c1"></span><span class="nx">super</span><span class="p">.</span><span class="nx">fp</span><span class="p">.(</span><span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
+</span><span class="c1"></span><span class="p">(</span><span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)).</span><span class="nf">ToSub</span><span class="p">()</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
 </div>
 <ul>
 <li>
@@ -1022,13 +1156,137 @@ down-cast は、 interface を型アサーションで実現する。
 <ul>
 <li>
 <p>
-クラスオブジェクトからインタフェースに up-cast する場合、 interface fp を使用する
+クラスオブジェクトからインタフェースに up-cast する場合、 interface FP を使用する
 </p>
 </li>
 </ul>
 </li>
 </ul>
 <h2 id="headline-34">
+シンボル名
+</h2>
+<p>
+LuneScript と go のシンボル名は、次の点で大きく異なる。
+</p>
+<ul>
+<li>
+<p>
+名前空間
+</p>
+<ul>
+<li>
+<p>
+LuneScript は、同一ファイル(モジュール)内
+</p>
+</li>
+<li>
+<p>
+go は、同一ディレクトリ(パッケージ)内
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+公開・非公開の制御方法
+</p>
+<ul>
+<li>
+<p>
+LuneScript は、 pub/pro などで制御する
+</p>
+</li>
+<li>
+<p>
+go は、 シンボルの先頭文字の大文字/小文字で制御する
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+この違いによって次の問題が発生する。
+</p>
+<ul>
+<li>
+<p>
+LuneScript で異なるファイル FileA.lns, FileB.lns それぞれに
+同名のシンボル sym を定義している時、
+これを go に変換する際に同じ構成で
+FileA.go, FileB.go に同名のシンボル sym を定義すると、
+シンボル sym が重複定義エラーとなる。
+</p>
+</li>
+<li>
+<p>
+LuneScript で小文字で公開定義したシンボルが、 go では非公開になる。
+</p>
+<ul>
+<li>
+<p>
+LuneScript で大文字で非公開定義したシンボルが、 go では公開になる。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+この問題に対応するため、次の通りシンボル名を処理する。
+</p>
+<p>
+公開・非公開制御対象の関数あるいはクラスのシンボルの先頭にファイル名を付加する。
+さらに公開なら G ( GLOBAL の G)、非公開なら l (local の l) を付加する。
+</p>
+<p>
+つまり次の LuneScript のソースを go に変換する場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func() {
+}
+pub Class {
+   let val1:int;
+   pub let val2:int;
+}</code></pre>
+</div>
+<p>
+LuneScript と go のシンボルの関係は次のようになる。
+</p>
+<table>
+<thead>
+<tr>
+<th>公開/非公開</th>
+<th>lns</th>
+<th>go</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>非公開</td>
+<td>func</td>
+<td>lfile_func</td>
+</tr>
+<tr>
+<td>公開</td>
+<td>Class</td>
+<td>Gfile_Class</td>
+</tr>
+<tr>
+<td>非公開</td>
+<td>val1</td>
+<td>lval1</td>
+</tr>
+<tr>
+<td>公開</td>
+<td>val2</td>
+<td>Gval2</td>
+</tr>
+</tbody>
+</table>
+<p>
+なお、引数やローカル変数は LuneScript と go とでスコープに違いはないため、
+基本的にそのまま変換する。
+</p>
+<h2 id="headline-35">
 Lua VM
 </h2>
 <p>
@@ -1091,7 +1349,7 @@ Gopherlua
 <p>
 上記から、 LuneScript のトランスコンパイラでは liblua を利用する。
 </p>
-<h3 id="headline-35">
+<h3 id="headline-36">
 cgo
 </h3>
 <p>

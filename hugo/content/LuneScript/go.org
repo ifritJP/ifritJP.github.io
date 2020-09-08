@@ -29,23 +29,23 @@ LuneScript から Go 言語へのトランスコンパイルの狙いは次の�
 
 * 値
 
-| LuneScriptの型 | Go の型                    | Go 用 Lns ランタム での type     |
-|----------------+----------------------------+----------------|
-| nil, null      | interface{}                | nil            |
-| int            | int                        | LnsInt (alias) |
-| real           | float64                    | LnsReal(alias) |
-| str            | string                     | LnsStr (alias) |
-| bool           | bool                       | LnsBool(alias) |
-| List           | スライス                   | LnsList        |
-| Array          | 配列                       | LnsArray       |
-| Map            | map                        | LnsMap         |
-| Set            | map (key に item を入れる) | LnsSet         |
-| class          | 構造体                     |                |
-| interface      | interface                  |                |
-| form           | func                       | LnsForm        |
-| enum           | int/floag64/string         | LnsEnum        |
-| stem           | interface{}                | LnsStem        |
-| nilable        | interface{}                |                |
+| LuneScriptの型 | Go の型                    | Go 用 Lns ランタム での type |
+|----------------+----------------------------+------------------------------|
+| nil, null      | interface{}                | nil                          |
+| int            | int                        | LnsInt (alias)               |
+| real           | float64                    | LnsReal(alias)               |
+| str            | string                     | LnsStr (alias)               |
+| bool           | bool                       | LnsBool(alias)               |
+| List           | 独自構造体                 | LnsList                      |
+| Array          | 配列                       | LnsArray                     |
+| Map            | map                        | LnsMap                       |
+| Set            | map (key に item を入れる) | LnsSet                       |
+| class          | 構造体                     |                              |
+| interface      | interface                  |                              |
+| form           | func                       | LnsForm                      |
+| enum           | int/float64/string         | LnsEnum                      |
+| stem           | interface{}                | LnsStem                      |
+| nilable        | interface{}                |                              |
 
 ** int/real の扱い
 
@@ -53,7 +53,7 @@ LuneScript int/real は、 go の type alias を使用して次のように定�
 
 #+BEGIN_SRC go
 type LnsInt = int
-type LnsReal = floag64
+type LnsReal = float64
 #+END_SRC
 
 
@@ -162,37 +162,55 @@ class SubSub extend Sub {
 Go による等価コードを示す
    
 #+BEGIN_SRC go
-type IF interface {
-    sub1 () int
-}
+package main
+
+import "fmt"
 
 type ParentMtd interface {
     sub1 () int
 }
-
 type Parent struct {
     val1 int
-    fp ParentMtd
+    FP ParentMtd
 }
+type ParentDownCast interface {
+    ToParent() *Parent
+}
+
+func (obj *Parent ) ToParent() *Parent {
+    return obj
+}
+
+
 func (self *Parent) sub1() int {
     return self.val1
 }
 
-func newParent(val1 int) *Parent {
+func NewParent(val1 int) *Parent {
     parent := Parent{ val1, nil }
-    parent.fp = &parent
+    parent.FP = &parent
     return &parent
 }
 
 type SubMtd interface {
+    ParentMtd
     sub2 () int
 }
 
 type Sub struct {
-    super Parent
+    Parent
     val2 int
-    fp SubMtd
+    FP SubMtd
 }
+type SubDownCast interface {
+    ToSub() *Sub
+}
+
+func (obj *Sub ) ToSub() *Sub {
+    return obj
+}
+
+
 func (self *Sub) sub1() int {
     return self.val2
 }
@@ -202,26 +220,38 @@ func (self *Sub) sub2() int {
 
 func newSub(val1,val2 int) *Sub {
     sub := Sub{ Parent{ val1, nil }, val2, nil }
-    sub.super.fp = &sub
-    sub.fp = &sub
+    sub.Parent.FP = &sub
+    sub.FP = &sub
     return &sub
 }
 
 
 type SubSubMtd interface {
+    SubMtd
     sub3 () int
 }
 
 type SubSub struct {
-    super Sub
+    Sub
     val3 int
-    fp SubSubMtd
+    FP SubSubMtd
 }
+type SubSubDownCast interface {
+    ToSubSub() *SubSub
+}
+
+func (obj *SubSub ) ToSubSub() *SubSub {
+    return obj
+}
+func (obj *SubSub ) ToSub() *Sub {
+    return &obj.Sub
+}
+
 func (self *SubSub) sub1() int {
     return self.val3
 }
 func (self *SubSub) sub2() int {
-    return self.super.sub2()
+    return self.Sub.sub2()
 }
 func (self *SubSub) sub3() int {
     return self.val3
@@ -230,10 +260,44 @@ func (self *SubSub) sub3() int {
 
 func newSubSub(val1,val2,val3 int) *SubSub {
     subsub := SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
-    subsub.super.super.fp = &subsub
-    subsub.super.fp = &subsub
-    subsub.fp = &subsub
+    subsub.Parent.FP = &subsub
+    subsub.Sub.FP = &subsub
+    subsub.FP = &subsub
     return &subsub
+}
+
+func testParent( obj *Parent ) {
+    fmt.Println( obj.FP.sub1() )
+}
+
+func testSub( mess string, obj *Sub ) {
+    fmt.Println( mess, obj.FP.sub1(), obj.FP.sub2() )
+}
+
+func testCast( obj *Parent ) {
+    cast, ok := obj.FP.(SubDownCast)
+    if ok {
+        testSub( "cast", cast.ToSub() )
+    } else {
+        fmt.Println( "cast NG" )
+    }
+    
+}
+
+func Lns_init() {
+    subsub := newSubSub( 1, 2, 3 )
+    fmt.Println( subsub.val1, subsub.val2, subsub.val3 )
+    fmt.Println( subsub.FP.sub1(), subsub.FP.sub2(), subsub.FP.sub3() )
+    testSub( "subsub.Sub", &subsub.Sub )
+    testParent( &subsub.Parent )
+    testCast( &subsub.Parent )
+
+    sub := newSub( 1, 2 )
+    testSub( "sub", sub )
+    testParent( &sub.Parent )
+    testCast( &sub.Parent )
+
+    testCast( NewParent( 1 ) )
 }
 #+END_SRC
    
@@ -264,7 +328,13 @@ type ParentMtd interface {
 }
 type Parent struct {
     val1 int
-    fp ParentMtd
+    FP ParentMtd
+}
+type ParentDownCast interface {
+    ToParent() *Parent
+}
+func (obj *Parent ) ToParent() *Parent {
+    return obj
 }
 #+END_SRC
 
@@ -272,6 +342,7 @@ type Parent struct {
   - Parent クラスのメソッドを定義
   - Parent クラスのモリモーフィズムを表現する
 - Parent 構造体は、メンバと ParentMtd を持つ
+- ParentDownCast は、ダウンキャスト用にクラスごとに定義する
 
 **** メソッド
 
@@ -288,16 +359,16 @@ func (self *Parent) sub1() int {
 Parent クラスのコンストラクタとして、次を定義する。
    
 #+BEGIN_SRC go
-func newParent(val1 int) *Parent {
-    super := Parent{ val1, nil }
-    super.fp = &super
-    return &super
+func NewParent(val1 int) *Parent {
+    super := &Parent{ val1, nil }
+    super.FP = super
+    return super
 }
 #+END_SRC
    
 このコンストラクタは次の処理を行なう。
 - メンバの初期化
-- fp の設定
+- FP の設定
 
 
 **** Parent クラスの使用方法
@@ -305,9 +376,11 @@ func newParent(val1 int) *Parent {
 Parent は次のように使用する。
 
 #+BEGIN_SRC go
-parent := newParent( 1 )
-print( parent.fp.sub1() )
+parent := NewParent( 1 )
+print( parent.FP.sub1() )
 #+END_SRC
+
+メソッドをコールする場合、必ず FP インタフェースを介してコールする。
 
 *** Sub クラス
     
@@ -332,12 +405,22 @@ Sub クラスを表現するため、次の構造体と interface を定義す�
 
 #+BEGIN_SRC go
 type SubMtd interface {
+    ParentMtd
     sub2 () int
 }
 type Sub struct {
-    super Parent
+    Parent
     val2 int
-    fp SubMtd
+    FP SubMtd
+}
+type SubDownCast interface {
+    ToSub() *Sub
+}
+func (obj *Sub ) ToSub() *Sub {
+    return obj
+}
+func (obj *Sub ) ToParent() *Parent {
+    return &obj.Parent
 }
 #+END_SRC
 
@@ -351,7 +434,7 @@ Sub クラスのメソッドを表現するため、次のレシーバ関数を�
    
 #+BEGIN_SRC go
 func (self *Sub) sub1() int {
-    return self.val1
+    return self.val2
 }
 func (self *Sub) sub2() int {
     return self.val2
@@ -364,18 +447,18 @@ Sub クラスのコンストラクタとして、次を定義する。
    
 #+BEGIN_SRC go
 func newSub(val1,val2 int) *Sub {
-    sub := Sub{ Parent{ val1, nil }, val2, nil }
-    sub.super.fp = &sub
-    sub.fp = &sub
-    return &sub
+    sub := &Sub{ Parent{ val1, nil }, val2, nil }
+    sub.Parent.FP = sub
+    sub.FP = sub
+    return sub
 }
 #+END_SRC
    
 このコンストラクタは次の処理を行なう。
 - メンバの初期化
-- fp の設定
-  - *super の fp もここで設定する*
-  - この super の fp に &super ではなく &sub を設定することで、ポリモーフィズムを実現する
+- FP の設定
+  - *super の FP もここで設定する*
+  - この super の FP に &super ではなく &sub を設定することで、ポリモーフィズムを実現する
   
 
 
@@ -402,12 +485,26 @@ SubSub クラスを表現するため、次の構造体と interface を定義�
 
 #+BEGIN_SRC go
 type SubSubMtd interface {
+    SubMtd
     sub3 () int
 }
+
 type SubSub struct {
-    super Sub
+    Sub
     val3 int
-    fp SubSubMtd
+    FP SubSubMtd
+}
+type SubSubDownCast interface {
+    ToSubSub() *SubSub
+}
+func (obj *SubSub ) ToSubSub() *SubSub {
+    return obj
+}
+func (obj *SubSub ) ToSub() *Sub {
+    return &obj.Sub
+}
+func (obj *SubSub ) ToParent() *Parent {
+    return &obj.Parent
 }
 #+END_SRC
 
@@ -424,7 +521,7 @@ func (self *SubSub) sub1() int {
     return self.val3
 }
 func (self *SubSub) sub2() int {
-    return self.super.sub2()
+    return self.Sub.sub2()
 }
 func (self *SubSub) sub3() int {
     return self.val3
@@ -434,14 +531,12 @@ func (self *SubSub) sub3() int {
 
 ***** override していないメソッド定義
       
-上記で注目すべきは、 sub2() メソッドで =self.super.sub2()= をコールしている点。
+上記で注目すべきは、 sub2() メソッドで =self.Sub.sub2()= をコールしている点。
 
 SubSub クラスは、 sub2 メソッドを override していない。
 つまりは、SubSub の sub2 メソッドは Sub クラスのメソッドが使用されることになる。
-よって、 super (Sub クラス) の sub2 メソッドをコールしている。
+よって、 Sub.sub2 メソッドをコールしている。
 
-継承関係が 1 段階の場合 super になるが、
-*2 段階の場合は super.super になることを注意する。*
 
 **** コンストラクタ
 
@@ -449,20 +544,19 @@ SubSub クラスのコンストラクタとして、次を定義する。
    
 #+BEGIN_SRC go
 func newSubSub(val1,val2,val3 int) *SubSub {
-    subsub := SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
-    subsub.super.super.fp = &subsub
-    subsub.super.fp = &subsub
-    subsub.fp = &subsub
-    return &subsub
+    subsub := &SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
+    subsub.Parent.FP = subsub
+    subsub.Sub.FP = subsub
+    subsub.FP = subsub
+    return subsub
 }
 #+END_SRC
    
 このコンストラクタは次の処理を行なう。
 - メンバの初期化
-- fp の設定
-  - *super の fp もここで設定する*
-  - *super.super の fp も ここで設定する* 
-  - この super の fp に &super ではなく &sub を設定することで、ポリモーフィズムを実現する
+- FP の設定
+  - *Parent, Sub の FP もここで設定する*
+  - Parent, Sub の FP に &subsub を設定することで、ポリモーフィズムを実現する
   
 
 *** IF インタフェース
@@ -492,16 +586,16 @@ Parent クラスのメソッドを呼び出すには、次のように行なう�
     
 #+BEGIN_SRC go
 func test(parent *Parent) int {
-  print( parent.fp.sub1() )
+  print( parent.FP.sub1() )
   print( parent.sub1() )
 }  
 #+END_SRC
 
-**** parent.fp.sub1() と parent.sub1() の違い
+**** parent.FP.sub1() と parent.sub1() の違い
 
 メソッド呼び出しには、次の 2 つのパターンがある。
 
-- parent.fp.sub1()
+- parent.FP.sub1()
   - ポリモーフィズムに対応したメソッド呼び出し
 - parent.sub1()
   - Parent クラスに定義しているメソッド呼び出し
@@ -519,35 +613,54 @@ func test(parent *Parent) int {
 
 *** up-cast / down-cast
 
-- up-cast は、メンバの super のポインタにアクセスすることで実現する
+- up-cast は、埋め込みのポインタにアクセスすることで実現する
   - インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
 - down-cast は、 interface を型アサーションで実現する。
+  - 各クラスごとに DownCast インタフェースを定義して、
+    そのインタフェースにキャストしてから、
+    さらに目的のクラスへのキャスト関数を実行する
+    
 
 #+BEGIN_SRC go
-var ifObj IF = obj.fp // インタフェースをセットする
-super := &obj.super // アップキャスト
-super.fp.(*Sub) // obj を Sub にダウンキャストする
+var ifObj IF = obj.FP // インタフェースをセットする
+parent := &obj.Parent // アップキャスト
+(parent.FP.(SubDownCast)).ToSub() // obj を Sub にダウンキャストする
 #+END_SRC
 
 
 ** Class のまとめ
 
 - クラスのメソッドを定義する interface を宣言する
-  - Super クラスで定義しているメソッドは除外する
+  - Super クラスで定義しているメソッドの interface を埋め込む
 #+BEGIN_SRC go
 type TestMtd interface {
+    SuperMtd
     method() int
 }
 #+END_SRC
 - クラスのメンバと前記の interface を保持する構造体を宣言する
-  - 継承は、 Super クラス型のメンバを持つ
+  - 継承は、 継承する型を埋め込む
 #+BEGIN_SRC go
 type Test struct {
-    super Super
+    Super
     val int
-    fp TestMtd
+    FP TestMtd
 }
 #+END_SRC
+- ダウンキャスト用の interface を定義する
+#+BEGIN_SRC go
+type TestDownCast interface {
+    ToTest() *Test
+}
+#+END_SRC
+- ダウンキャスト用のメソッドを定義する
+ - このメソッドは、 Super クラスの分を全て宣言する
+#+BEGIN_SRC go
+func (obj *SubSub) ToSub() *Sub {
+    return &obj.Sub
+}
+#+END_SRC
+
 - クラスのメソッドの動作を定義するレシーバを宣言する
   - レシーバは Super クラスのメソッドを含めて宣言する
   - override していない関数は、そのメソッドを定義している構造体のメソッドをコールする
@@ -557,24 +670,75 @@ func (self *Test) method() int {
 }
 #+END_SRC
     
-- コンストラクタで、メンバの初期化と interface fp を初期化する
-  - interface は、 Super クラスの interface fp を含めて初期化する
-- メソッド呼び出しは、 interface fp 経由でコールする
+- コンストラクタで、メンバの初期化と interface FP を初期化する
+  - interface は、 Super クラスの interface FP を含めて初期化する
+- メソッド呼び出しは、 interface FP 経由でコールする
   - ポリモーフィズム無効なメソッド呼び出しは、構造体のメソッドを直接コールする
 #+BEGIN_SRC go
-obj.fp.method() // ポリモーフィズム有効
+obj.FP.method() // ポリモーフィズム有効
 obj.method()    // ポリモーフィズム無効
 #+END_SRC
-- up-cast は、メンバの super のポインタにアクセスすることで実現する
+- up-cast は、メンバの Super クラスのポインタにアクセスすることで実現する
   - インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
-- down-cast は、 interface を型アサーションで実現する。
+- down-cast は、 interface を型アサーションと、ダウンキャスト用 interface で実現する。
 #+BEGIN_SRC go
-var ifObj IF = obj.fp // インタフェースをセットする
+var ifObj IF = obj.FP // インタフェースをセットする
 super := &obj.super // アップキャスト
-super.fp.(*Sub) // obj を Sub にダウンキャストする
+(parent.FP.(SubDownCast)).ToSub() // obj を Sub にダウンキャストする
 #+END_SRC
 - インタフェースは、 Go の interface をそのまま利用する
-  - クラスオブジェクトからインタフェースに up-cast する場合、 interface fp を使用する
+  - クラスオブジェクトからインタフェースに up-cast する場合、 interface FP を使用する
+
+
+* シンボル名
+
+LuneScript と go のシンボル名は、次の点で大きく異なる。
+
+- 名前空間
+  - LuneScript は、同一ファイル(モジュール)内
+  - go は、同一ディレクトリ(パッケージ)内
+- 公開・非公開の制御方法
+  - LuneScript は、 pub/pro などで制御する
+  - go は、 シンボルの先頭文字の大文字/小文字で制御する
+
+この違いによって次の問題が発生する。
+
+- LuneScript で異なるファイル FileA.lns, FileB.lns それぞれに
+  同名のシンボル sym を定義している時、
+  これを go に変換する際に同じ構成で
+  FileA.go, FileB.go に同名のシンボル sym を定義すると、
+  シンボル sym が重複定義エラーとなる。
+- LuneScript で小文字で公開定義したシンボルが、 go では非公開になる。
+  - LuneScript で大文字で非公開定義したシンボルが、 go では公開になる。
+
+この問題に対応するため、次の通りシンボル名を処理する。
+
+
+公開・非公開制御対象の関数あるいはクラスのシンボルの先頭にファイル名を付加する。
+さらに公開なら G ( GLOBAL の G)、非公開なら l (local の l) を付加する。
+
+つまり次の LuneScript のソースを go に変換する場合、
+
+#+BEGIN_SRC lns
+fn func() {
+}
+pub Class {
+   let val1:int;
+   pub let val2:int;
+}
+#+END_SRC
+
+LuneScript と go のシンボルの関係は次のようになる。
+
+| 公開/非公開 | lns   | go          |
+|-------------+-------+-------------|
+| 非公開      | func  | lfile_func  |
+| 公開        | Class | Gfile_Class |
+| 非公開      | val1  | lval1       |
+| 公開        | val2  | Gval2       |
+
+なお、引数やローカル変数は LuneScript と go とでスコープに違いはないため、
+基本的にそのまま変換する。
 
 
 * Lua VM
