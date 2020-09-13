@@ -36,7 +36,7 @@
 <meta itemprop="name" content="07. 変数 編">
 <meta itemprop="description" content="今回は LuneScript の変数について説明します。 変数 LuneScript は静的型付け言語であり、変数は型を持ちます。 変数は、次のように let で宣言します。 // @lnsFront: ok let val:int = 1; 上記の例">
 
-<meta itemprop="wordCount" content="4279">
+<meta itemprop="wordCount" content="4742">
 
 
 
@@ -533,12 +533,13 @@ let mut val3, mut val4 = func();</code></pre>
 <p>
 mut は各変数名の前に宣言します。
 </p>
-<h3 id="headline-11">
+<h3 id="access_check">
 アクセスチェック
 </h3>
 <p>
-宣言した変数に対し、
-そのスコープ内で変数に対して参照も設定もしないと警告を出力する。
+宣言したローカル変数に対し、
+値を設定後の変数を参照しないと警告を出力する。
+クラスのメンバや、関数の引数などはアクセスチェックの対象にならない。
 </p>
 <p>
 次のサンプルは、
@@ -556,7 +557,8 @@ fn func() {
 }</code></pre>
 </div>
 <p>
-このような場合に警告を出さないようにするには、&#39;_&#39; シンボルを使用する。
+このような多値返却の 2 番目以降の値にアクセスするためだけに宣言した変数に対して、
+警告を出さないようにするには、次のように &#39;_&#39; シンボルを使用する。
 </p>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
@@ -570,6 +572,7 @@ fn func() {
 </div>
 <p>
 なお、 &#39;_&#39; シンボルで宣言した変数にはアクセスできない。
+アクセスするとエラーになる。
 </p>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
@@ -582,7 +585,78 @@ fn func() {
    print( val2 );
 }</code></pre>
 </div>
-<h3 id="headline-12">
+<p>
+アクセスチェックは、変数の値を更新した後にも行なう。
+</p>
+<p>
+例えば次の場合、 val1 は警告される。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func() {
+   let mut val1 = 1;
+   print( val1 );
+   val1 = 2; // warning
+}</code></pre>
+</div>
+<p>
+これは、 val1 に 1 をセット後に print( val1 ) で val1 を参照しているが、
+次に <code class="verbatim">val1 = 2</code> で val1 を更新後に val1 を参照していないためである。
+</p>
+<h4 id="headline-12">
+クロージャのアクセスチェック
+</h4>
+<p>
+このアクセスチェックはクロージャでも動作する。
+</p>
+<p>
+次のサンプルは  <code class="verbatim">val1 = 2</code> 後、
+sub() のコールがあることで val1 を参照していると判断して警告しない。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func() {
+   let mut val1 = 1;
+   fn sub() {
+      print( val1 );
+   }
+   val1 = 2;
+   sub();
+}</code></pre>
+</div>
+<p>
+ただし、次の制限がある。
+</p>
+<ul>
+<li>
+<p>
+<strong>クロージャの関数コールではなく、参照した時点で、値の参照があったものとして処理する</strong>
+</p>
+<ul>
+<li>
+<p>
+例えば、クロージャ関数を変数に代入したり、別の関数の引数に渡した時点で処理する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+<strong>クロージャによるアクセスは参照、設定を区別しない</strong>
+</p>
+<ul>
+<li>
+<p>
+クロージャ関数内で設定しかしていない場合も参照として扱う。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+クロージャのアクセスチェックについては実験的な機能である。
+</p>
+<h3 id="headline-13">
 特殊シンボル
 </h3>
 <p>
@@ -614,7 +688,7 @@ fn func() {
 なお、 <code>__mod__</code>, <code>__func__</code> が展開する名前の書式は、
 <strong>将来変更する可能性</strong> があります。
 </p>
-<h2 id="headline-13">
+<h2 id="headline-14">
 型変換(キャスト)
 </h2>
 <p>
@@ -646,7 +720,7 @@ let val2:int = val1; // error</code></pre>
 <p>
 <a href="../cast">../cast</a>
 </p>
-<h2 id="headline-14">
+<h2 id="headline-15">
 参照
 </h2>
 <p>
@@ -751,7 +825,7 @@ wrapList の 3 番目に新しいリストオブジェクトを追加してい�
 インクリメントされた値が出力される。
 wrapList[3] は新しいリストオブジェクトになるため、インクリメントの影響はない。
 </p>
-<h2 id="headline-15">
+<h2 id="headline-16">
 まとめ
 </h2>
 <p>
