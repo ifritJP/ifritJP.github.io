@@ -36,7 +36,7 @@
 <meta itemprop="name" content="04. 値編">
 <meta itemprop="description" content="今回は、 LuneScript で扱える値について説明します。 値の型 LuneScript で扱える値の型と、トランスコンパイラ後の Lua の値との対応表を示します。 LuneScript Lua 用途 LuneScript での定義方法 nil,">
 
-<meta itemprop="wordCount" content="3115">
+<meta itemprop="wordCount" content="3425">
 
 
 
@@ -637,7 +637,7 @@ let array:Array&lt;real&gt; = [@];  // real を要素に持つ配列
 let map:Map&lt;str,int&gt; = {}; // str をキー、int を値に持つマップ</code></pre>
 </div>
 <h3 id="headline-15">
-リスト、マップコンストラクタの型
+コレクションの型
 </h3>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
@@ -645,13 +645,19 @@ let list = [ 1, 2, 3 ];
 let map = { &#34;A&#34;: 10, &#34;B&#34;: 11, &#34;C&#34;: 12 };</code></pre>
 </div>
 <p>
-リスト、マップは、上記のようにリテラルを宣言できます。
+リストやマップなどのコレクションは、上記のようにリテラルを宣言できます。
 この時生成される リスト、マップの型は、 構成する値によって決まります。
 </p>
 <p>
-マップコンストラクタで利用されるキー、あるいは値が全て同じ型なら、
-マップのキー、値の型は、そのキー、値の型になります。
-いずれかが異なれば stem 型になります。
+コレクションのコンストラクタで利用される値が全て同じ型なら、
+そのコレクションの型は、その値の型となります。
+</p>
+<p>
+例えば上記サンプルの <code>[ 1, 2, 3 ]</code> は List&lt;int&gt; となります。
+</p>
+<p>
+コレクションのコンストラクタで利用される値が異なれば、
+そのコレクションの型は stem となります。
 </p>
 <p>
 具体的には、次のようになります。
@@ -667,6 +673,37 @@ let map3 = { &#34;a&#34;: &#39;z&#39;, &#34;b&#34;: &#39;y&#39;, &#34;c&#34;: &#
 let map4 = { &#34;a&#34;: 1, &#34;b&#34;: &#39;Z&#39; };		// Map&lt;str,stem&gt;</code></pre>
 </div>
 <h3 id="headline-16">
+継承関係のある複数クラスを混在したコレクションのコンストラクタ
+</h3>
+<p>
+継承関係のある複数クラスを混在したコレクションのコンストラクタは、
+型推論が解決できずにエラーすることがあります。
+</p>
+<p>
+その場合は、型を明示してください。
+</p>
+<p>
+次のサンプルを示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
+}
+class Sub extend Test {
+}
+{
+   let mut val1 = [ [ new Test() ], [ new Sub() ] ]; // error
+   let mut val2:List&lt;List&lt;Test&gt;&gt; = [ [ new Test() ], [ new Sub() ] ]; // ok
+   let mut val3 = [ [ new Test() ], [ new Test() ] ]; // ok
+   let mut val4 = [ [ new Sub() ], [ new Sub() ] ]; // ok
+}</code></pre>
+</div>
+<p>
+ここで、型推論を利用している val1 はエラーになります。
+一方で、型を明示している val2 は OK です。
+val3, val4 は、クラスを混在していないため、型推論できます。
+</p>
+<h3 id="headline-17">
 enum
 </h3>
 <p>
@@ -678,7 +715,7 @@ LuneScript は enum に対応しています。
 <p>
 <a href="../enum/">../enum/</a>
 </p>
-<h3 id="headline-17">
+<h3 id="headline-18">
 stem
 </h3>
 <p>
@@ -696,7 +733,7 @@ nil 以外のどのような値を与えられてもコンパイルエラーし�
 stem! は nil を含む全ての値を扱える型です。
 Lua の変数そのものと考えて問題ありません。
 </p>
-<h3 id="headline-18">
+<h3 id="headline-19">
 form
 </h3>
 <p>
