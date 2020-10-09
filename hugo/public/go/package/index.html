@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>16. クラス override 編 - 公開技術情報</title>
+<title>Go のパッケージ - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.71.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/classoverride/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/go/package/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
@@ -25,18 +25,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="16. クラス override 編" />
-<meta property="og:description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の" />
+<meta property="og:title" content="Go のパッケージ" />
+<meta property="og:description" content="go の名前空間は、次の 4 つあります。 ユニバース print や panic などの go の組込み関数用の名前空間 パッケージ fmt や log など import で使用可能になる名前空間 ファイル ファ" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/classoverride/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/go/package/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="16. クラス override 編"/>
-<meta name="twitter:description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の"/>
-<meta itemprop="name" content="16. クラス override 編">
-<meta itemprop="description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の">
+<meta name="twitter:title" content="Go のパッケージ"/>
+<meta name="twitter:description" content="go の名前空間は、次の 4 つあります。 ユニバース print や panic などの go の組込み関数用の名前空間 パッケージ fmt や log など import で使用可能になる名前空間 ファイル ファ"/>
+<meta itemprop="name" content="Go のパッケージ">
+<meta itemprop="description" content="go の名前空間は、次の 4 つあります。 ユニバース print や panic などの go の組込み関数用の名前空間 パッケージ fmt や log など import で使用可能になる名前空間 ファイル ファ">
 
-<meta itemprop="wordCount" content="799">
+<meta itemprop="wordCount" content="1761">
 
 
 
@@ -54,168 +54,270 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>16. クラス override 編</h1>
+<main><h1>Go のパッケージ</h1>
 
 <p>
-LuneScript は、メソッドの override をサポートします。
-</p>
-<h2 id="headline-1">
-メソッドの override
-</h2>
-<p>
-クラスのメソッドは全て override 可能です。
-</p>
-<p>
-むしろ、現在は override を抑制することができません。
-</p>
-<p>
-メソッドの override の例を次に示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Super {
-   pub fn func() {
-      print( __func__ );
-   }
-}
-class Sub extend Super {
-   pub override fn func() {
-      print( __func__ );
-   }
-}
-fn test( obj:Super ) {
-   obj.func();
-}
-test( new Super() ); // Super.func
-test( new Sub() ); // Sub.func</code></pre>
-</div>
-<p>
-ここで、 Sub クラスは Super クラスの func メソッドを override しています。
-</p>
-<p>
-override する Sub クラス側のメソッドは、
-override キーワードで明示する必要があります。
-</p>
-<h2 id="headline-2">
-親クラスのメソッド呼び出し
-</h2>
-<p>
-override しているサブクラスから、親クラスのメソッドをコールするには、
-super() を使用します。
-</p>
-<p>
-次に super() の例を示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Super {
-   pub fn func(): int {
-      return 1;
-   }
-}
-class Sub extend Super {
-   pub override fn func(): int {
-      return 10 + super();
-   }
-}
-fn test( obj:Super ) {
-   print( obj.func() );
-}
-test( new Sub() ); // 11</code></pre>
-</div>
-<p>
-この例では、 Super クラスの func() メソッドを Sub クラスで override しています。
-そして、 Sub クラスの func() から super() を使用して、
-Super クラスの func() メソッドを呼び出しています。
-</p>
-<h2 id="headline-3">
-abstract
-</h2>
-<p>
-実体を持たない abstract メソッドを定義できます。
-</p>
-<p>
-次に abstract の例を示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-abstract class Super {
-   pub abstract fn func(): int;
-}
-class Sub extend Super {
-   pub override fn func(): int {
-      return 10;
-   }
-}
-fn test( obj:Super ) {
-   print( obj.func() );
-}
-test( new Sub() );</code></pre>
-</div>
-<p>
-この例で、 func() メソッドは実体を持たない abstract メソッドです。
-</p>
-<p>
-なお、 abstract メソッドを持つクラスは abstract クラスとして宣言する必要があります。
-</p>
-<p>
-abstract メソッドの実体は、 継承したクラスで定義されます。
-もしも、親クラスの全ての abstract メソッドを継承したクラスで override しないと、
-その継承したクラスは abstract として宣言する必要があります。
-</p>
-<p>
-abstract クラスは、それ単体ではインスタンスを生成できなくなります。
-</p>
-<h2 id="headline-4">
-まとめ
-</h2>
-<p>
-LuneScript のメソッド override/abstract の仕様は次の通りです。
+go の名前空間は、次の 4 つあります。
 </p>
 <ul>
 <li>
 <p>
-全てのメソッドは override 出来る
+ユニバース
+</p>
+<ul>
+<li>
+<p>
+print や panic などの go の組込み関数用の名前空間
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+パッケージ
+</p>
+<ul>
+<li>
+<p>
+fmt や log など import で使用可能になる名前空間
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+ファイル
+</p>
+<ul>
+<li>
+<p>
+ファイル内に閉じた名前空間
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+ブロック
+</p>
+<ul>
+<li>
+<p>
+関数や構造体など <code class="verbatim">{}</code> で閉じられた名前空間
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+ここでは、パッケージについて記載します。
+</p>
+<h2 id="headline-1">
+パッケージのルール
+</h2>
+<p>
+パッケージには次のルールがあります。
+</p>
+<ul>
+<li>
+<p>
+パッケージ == ディレクトリ
 </p>
 </li>
 <li>
 <p>
-override するクラスは、 override を明示する必要がある
+パッケージは名前を持つ
 </p>
 </li>
 <li>
 <p>
-override しているメソッドから、 override 元のメソッドをコールするには super() を利用する。
-</p>
-</li>
-<li>
-<p>
-実体の持たない abstract メソッドを宣言できる
-</p>
-</li>
-<li>
-<p>
-abstract メソッドを持つクラスは abstract クラスとなる
-</p>
-</li>
-<li>
-<p>
-abstract メソッドは、サブクラスで override しなければならない
-</p>
-</li>
-<li>
-<p>
-abstract クラスは、単体ではインスタンスを生成できない
+パッケージの外部に公開するシンボルは、先頭を大文字にする
 </p>
 </li>
 </ul>
 <p>
-次回は、 class の advertise について説明します。
+これらのルールについて以降で説明します。
+</p>
+<h3 id="headline-2">
+パッケージ == ディレクトリ
+</h3>
+<p>
+1 つのパッケージは、1つのディレクトリです。
+</p>
+<p>
+逆に言えば、1 つのディレクトリに複数のパッケージを含めることは出来ません。
+</p>
+<p>
+<code class="verbatim">import &#34;fmt&#34;</code> など import に指定する <code class="verbatim">&#34;&#34;</code> の部分には、
+パッケージへの PATH を書きます。
+</p>
+<p>
+この指定の PATH のディレクトリを検索する検索パスが、
+GOROOT あるいは GOPATH です。
+ここで、GOROOT は go の標準パッケージを検索するパスで、
+GOPATH はサードパーティパッケージを検索するパスです。
+</p>
+<p>
+つまり import &#34;PATH&#34; は、
+PATH で指定されたディレクトリを GOROOT あるいは GOPATH から検索し、
+発見したディレクトリ内の .go ファイルを名前空間に含める処理を行なう命令です。
+</p>
+<h3 id="headline-3">
+パッケージは名前を持つ
+</h3>
+<p>
+パッケージは名前を持ちます。
+</p>
+<p>
+その名前を宣言するのが package 命令です。
+</p>
+<p>
+<code class="verbatim">packege main</code> と書けば、そのパッケージ名が main として宣言されます。
+</p>
+<p>
+パッケージ名には次のルールがあります。
+</p>
+<ul>
+<li>
+<p>
+1 つのディレクトリでは、1つのパッケージ名しか利用できない
+</p>
+</li>
+<li>
+<p>
+main は特別なパッケージ名
+</p>
+</li>
+<li>
+<p>
+パッケージ名はディレクトリ名に依存しない
+</p>
+</li>
+<li>
+<p>
+パッケージ名はユニークでなくて良い
+</p>
+<h4 id="headline-4">
+1 つのディレクトリでは、1つのパッケージ名しか宣言できない
+</h4>
+</li>
+</ul>
+<p>
+前述した通り、
+1 つのディレクトリに複数のパッケージを含めることは出来ません。
+また、1 つのパッケージは 1 つの名前しか持てないので、
+1 つのディレクトリでは、1つのパッケージ名しか宣言できません。
+</p>
+<h4 id="headline-5">
+main は特別なパッケージ名
+</h4>
+<p>
+go は main パッケージの main 関数を、
+プログラムのエントリポイントとして処理します。
+</p>
+<p>
+よって、ライブラリのパッケージ名は main 以外でなければなりません。
+</p>
+<h4 id="headline-6">
+パッケージ名はディレクトリ名に依存しない
+</h4>
+<p>
+パッケージを import する際に、
+そのパッケージの PATH を指定します。
+しかしこの PATH は、パッケージを検索するためであって、
+そのパッケージの名前とは関係ありません。
+</p>
+<p>
+例えば <code class="verbatim">import &#34;hoge&#34;</code> としてインポートしたパッケージの名前が、
+hoge になるとは限りません。
+</p>
+<p>
+<code class="verbatim">import &#34;hoge&#34;</code>  としてインポートしたパッケージ内で <code class="verbatim">packege foo</code> が
+宣言されていれば、そのパッケージ名は <strong>foo</strong> です。
+</p>
+<p>
+つまり、そのパッケージのシンボルにアクセスするには、
+<code class="verbatim">foo.Func()</code> のように foo を付加します。
+</p>
+<p>
+あくまでもパッケージ名は package で宣言した名前であって、
+import のパスとは別ものです。
+</p>
+<p>
+もちろん、ディレクトリ名とパッケージ名は一致させておいた方が分かり易いので、
+ディレクトリ名を設定しておくべきです。
+</p>
+<p>
+例えば <code class="verbatim">import &#34;foo/bar/hoge&#34;</code> としてアクセスするパッケージであれば、
+そのパッケージ名は hoge とするのが原則です。
+</p>
+<h4 id="headline-7">
+パッケージ名はユニークでなくて良い
+</h4>
+<p>
+パッケージ名はユニークである必要はありません。
+</p>
+<p>
+例えば、全てのパッケージ名が hoge あっても問題ありません。
+ただし、 同じ名前のパッケージを import するとエラーします。
+</p>
+<p>
+このエラーは、import のエイリアスを利用することで回避できます。
+例えば <code class="verbatim">import sage &#34;hoge&#34;</code> とすることで、
+hoge のパスにあるパッケージを sage としてアクセスできます。
+</p>
+<h3 id="headline-8">
+パッケージの外部に公開するシンボルは、先頭を大文字にする
+</h3>
+<p>
+go は、public や private などのアクセス制御をキーワードで行なうのではなく、
+シンボルの先頭が大文字かどうかでパッケージ外部に公開するかどうかを制御します。
+</p>
+<p>
+このシンボルは、関数だけでなく、構造体や構造体のメンバなども含みます。
+</p>
+<p>
+なお、パッケージ内は大文字小文字関係なく、全てのシンボルにアクセス可能です。
+</p>
+<p>
+ただし、ファイル内でインポートしたパッケージのシンボルは、
+そのファイルに閉じています。
+</p>
+<p>
+まとめると、次のようになります。
+</p>
+<table>
+<thead>
+<tr>
+<th>参照するシンボルとの関係</th>
+<th>アクセス可能なシンボル</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>異なるパッケージ間</td>
+<td>先頭が大文字のシンボル</td>
+</tr>
+<tr>
+<td>同一パッケージ内のファイル間</td>
+<td>import したパッケージを除く全てのシンボル</td>
+</tr>
+<tr>
+<td>同一ファイル内</td>
+<td>全てのシンボル</td>
+</tr>
+</tbody>
+</table>
+<p>
+ここで上記のシンボルは、ファイル内の最上位スコープで定義したシンボルを指します。
+</p>
+<p>
+ブロック内で定義したシンボルは、一般的なレキシカルスコープです。
 </p>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/classadvertise/" title="15. クラス advertise 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 15. クラス advertise 編</a>
-<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/interface/" title="17. インタフェース 編">Next - 17. インタフェース 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/go/" title="Gos"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Gos</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/go/guide/" title="Go 入門">Next - Go 入門 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -269,10 +371,10 @@ abstract クラスは、単体ではインスタンスを生成できない
   
 </li>
 
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
   
@@ -311,7 +413,7 @@ abstract クラスは、単体ではインスタンスを生成できない
   
 </li>
 
-<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
@@ -335,7 +437,7 @@ abstract クラスは、単体ではインスタンスを生成できない
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
