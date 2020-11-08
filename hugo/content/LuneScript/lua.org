@@ -1,0 +1,284 @@
+#+TITLE: 22.2. Lua と連携 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は Lua のコードを実行できます。
+
+しかし、Lua コードを実行するには幾つかの点で注意が必要です。
+
+以降では、 LuneScript 上で Lua コードを実行する際の注意点を説明します。
+
+
+* Lua コードの実行
+
+LuneScript では、
+_load() 関数などを利用することで LuneScript 内から Lua のコードを実行できます。
+
+_load() 関数は、 lua の load() 関数と基本的に同じ仕様です。
+
+以下にサンプルを示します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      forsort val, key in obj@@Map<str,int> {
+         print( key, val + 100 ); 
+      }
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+このサンプルは、次の値を出力します。
+
+#+BEGIN_SRC txt
+val1	110
+val2	120
+#+END_SRC
+
+これは、Lua のコード ~return { val1 = 10, val2 = 20 }~ が返す Lua のテーブルを、
+forsort で列挙して =print( key, val + 100 );= で出力した結果です。
+
+上記サンプルは、以下の LuneScript のコードとほぼ同じと言えます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func():Map<str,int> {
+   return { "val1":10, "val2":20 };
+}
+forsort val, key in func() {
+   print( key, val + 100 ); 
+}
+#+END_SRC
+
+このように、 LuneScript と Lua は連携して動作することが出来ます。
+
+* Lua → LuneScript のデータ変換
+
+LuneScript から Lua のコードを実行したとき、
+その Lua コードの実行結果は Luaval 型になります。
+
+Luaval 型は、Lua コード内のデータを保持する型で、
+LuneScript の型 T に相当する Lua コード内のデータは =Luaval<T>= となります。
+
+例えば上記サンプルの ~{ val1 = 10, val2 = 20 }~ は、
+LuneScritp の Map<str,int> に相当し、 =Luaval<Map<str,int>>= となります。
+
+なお、 LuneScript から Lua にトランスコンパイルする場合、
+*Luaval<T> は T と完全に一致した型* になります。
+LuneScript から Lua にトランスコンパイルする場合、
+例え Luaval<T> と明示的に宣言しても内部的に T として変換されるため、
+Luaval<T> を意識する必要はありません。
+
+LuneScript から Lua 以外の言語(現在は go に変換可能)に変換する場合、
+Luaval<T> と T は明確に扱いが異なるため、
+Lua 以外に変換する場合は Luaval<T> を意識する必要があります。
+
+*トランスコンパイルのオプションに "--valid-luaval" を指定* することで、
+Lua にトランスコンパイルする際も、Luaval<T> と T を分けて管理します。
+
+
+上記サンプルは、次のように =Luaval<Map<str,int>>= の引数を持つ
+func() を使用するように書き換えることが出来ます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(map:Luaval<&Map<str,int>>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+また上記のサンプルの様に Map の Luaval 型のデータに対しても、
+LuneScript の Map と同様に
+foreach や =[]= を使用した要素アクセスなどで、Map 内のデータを参照できます。
+ただし参照は出来ますが、 *変更は出来ません。*
+
+** 相互変換可能な型
+
+Lua コード内のデータの型が次の場合、
+Luaval 型とはならずにそのままの型になります。
+
+- int, real, bool, str
+- 上記の nilable
+
+str に関しては、 *文字列長に比例したオーバーヘッド* が掛かります。
+
+* Luaval 型のキャスト
+
+Luaval 型のキャストには制限があります。
+  
+上記サンプルは、次のように func の引数に  =obj@@Map<str,int>= を渡しています。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip   
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+   }
+#+END_SRC
+
+これは obj を Map<str,int> 型にキャストする演算ですが、
+ここで obj の型は Luaval<stem> 型であり、
+それを Map<str,int> にキャストすると、
+そのキャスト後の型は Luaval<Map<str,int>> になります。
+
+ある型 T1 から T2 型にキャストが可能だった時、
+Luaval<T1> から T2 へのキャストを指示した場合、
+そのキャスト結果は Luaval<T2> になります。
+
+また、次のキャストは出来ません。
+
+- T1 型から Luaval<T1> 型へのキャスト
+- Luaval<T1> 型から T1 型へのキャスト
+
+具体的には Map<str,int> から Luaval<Map<str,int>> へのキャストは出来ません。
+
+ただし、 stem 型は例外的に Luaval との相互キャストが可能です。
+
+なお、次のように stem 型を経由することで、
+Luaval 型から非 Luaval 型へのキャストが可能ですが、
+
+: Luaval => stem => Luaval
+
+本来とは異なる型にキャストした時の動作は *未定義* です。
+
+
+** expandLuavalMap
+
+Lua コード内の collection のデータは、 Luaval として扱います。
+
+たとえば、 Map 型のデータは Luaval<Map> です。
+Map 型と Luaval<Map> 型のデータは互換性がないため、代入などは出来ません。
+
+この collection の Luaval 型のデータを LuneScript の値として展開する方法として、
+次の関数を提供しています。
+
+: fn expandLuavalMap( Luaval<stem>! ) : stem!;
+
+この関数を使用すると、次のような処理が掛けます。
+
+#+BEGIN_SRC lns
+fn func(map:Luaval<&Map<str,int>>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+fn func2(map:&Map<str,int>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+      if! let map = expandLuavalMap( obj ) {
+         func2( map@@Map<str,int> );
+      }
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+このサンプルでは、 Luaval<&Map<str,int>> を列挙する func() 関数と、
+&Map<str,int> を列挙する func2() 関数があります。
+
+func2() をコールする前に expandLuavalMap() で Luaval 型のデータを展開し、
+それを Map<str,int> にキャストするこおで Luaval<Map<str,int>> ではなく、
+Map<str,int> として処理しています。
+
+なお expandLuavalMap() は、
+引数で与えられた Luaval 型のデータを展開したクローンを作成します。
+
+   
+* Luaval 型の型変換
+
+ある nilable 型の T! を保持する Luaval 型は、 Luaval<T>! になります。
+Luaval<T!> にはなりません。
+
+また、 Luaval<T> の Immutable は Luaval<&T> になります。
+
+
+
+* Luaval 型の関数、Luaval 型オブジェクトのメソッド
+
+関数型の Luaval は、その引数、戻り値も Luaval 型になります。
+
+例えば次のサンプルの func 関数の引数 proc は、
+Luaval<Process> 型の From であり、
+この Form の引数は Luaval<&List<int>> 、
+戻り値は Luaval<&List<int>> になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip
+   form Process( val:&List<int> ) : &Map<int>;
+   fn func( proc:Luaval<Process> ) {
+      let list = proc( [ 1, 2, 3 ] );
+   }
+#+END_SRC
+ 
+
+* LuneScript → Lua のデータ変換
+
+Lua の関数に LuneScript の値を渡す時は、Luaval 型の値を渡す必要があります。
+
+ただし、 Lua の関数の引数が次の値の場合、
+Luava 型ではなくそのままの型になります。
+
+- int, real, bool, str
+- 上記を要素に持つ List などのコレクション型  
+- 上記の nilable
+
+次にサンプルを示します。
+
+#+BEGIN_SRC lns
+let code = ```
+return function( tbl )
+   for key, val in pairs( tbl ) do
+      print( key, val )
+   end
+end
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+   let map = { "val1":1, "val2":10 };
+      (obj@@form)( map );  // Lua の関数コール
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+このサンプルは、
+引数で与えられた Lua のテーブルの要素を出力する関数をコールします。
+
+このサンプルでは、
+Map<str,int> 型のデータ map を Lua の関数の引数に指定して実行しています。
+
+このとき、内部的に Map<str,int> 型のデータが Lua のテーブルに変換されています。

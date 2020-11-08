@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Tags - 公開技術情報</title>
+<title>22.2. Lua と連携 編 - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.71.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/tags/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/lua/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
@@ -25,16 +25,22 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="Tags" />
-<meta property="og:description" content="" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/tags/" />
+<meta property="og:title" content="22.2. Lua と連携 編" />
+<meta property="og:description" content="LuneScript は Lua のコードを実行できます。 しかし、Lua コードを実行するには幾つかの点で注意が必要です。 以降では、 LuneScript 上で Lua コードを実行する際の注意点を説" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/lua/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Tags"/>
-<meta name="twitter:description" content=""/>
-<meta itemprop="name" content="Tags">
-<meta itemprop="description" content=""></head>
+<meta name="twitter:title" content="22.2. Lua と連携 編"/>
+<meta name="twitter:description" content="LuneScript は Lua のコードを実行できます。 しかし、Lua コードを実行するには幾つかの点で注意が必要です。 以降では、 LuneScript 上で Lua コードを実行する際の注意点を説"/>
+<meta itemprop="name" content="22.2. Lua と連携 編">
+<meta itemprop="description" content="LuneScript は Lua のコードを実行できます。 しかし、Lua コードを実行するには幾つかの点で注意が必要です。 以降では、 LuneScript 上で Lua コードを実行する際の注意点を説">
+
+<meta itemprop="wordCount" content="2192">
+
+
+
+<meta itemprop="keywords" content="" /></head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -48,9 +54,362 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>Tags</h1><div class="edit-meta">
+<main><h1>22.2. Lua と連携 編</h1>
 
-<br></div><nav class="pagination"><a class="nav nav-next" href="https://ifritjp.github.io/documents/lctags/" title="C/C&#43;&#43; ソースコードタグシステム lctags の紹介">Next - C/C&#43;&#43; ソースコードタグシステム lctags の紹介 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<p>
+LuneScript は Lua のコードを実行できます。
+</p>
+<p>
+しかし、Lua コードを実行するには幾つかの点で注意が必要です。
+</p>
+<p>
+以降では、 LuneScript 上で Lua コードを実行する際の注意点を説明します。
+</p>
+<h2 id="headline-1">
+Lua コードの実行
+</h2>
+<p>
+LuneScript では、
+_load() 関数などを利用することで LuneScript 内から Lua のコードを実行できます。
+</p>
+<p>
+_load() 関数は、 lua の load() 関数と基本的に同じ仕様です。
+</p>
+<p>
+以下にサンプルを示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      forsort val, key in obj@@Map&lt;str,int&gt; {
+         print( key, val + 100 ); 
+      }
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+このサンプルは、次の値を出力します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">val1	110
+val2	120</code></pre></div>
+</div>
+<p>
+これは、Lua のコード <code>return { val1 = 10, val2 = 20 }</code> が返す Lua のテーブルを、
+forsort で列挙して <code class="verbatim">print( key, val + 100 );</code> で出力した結果です。
+</p>
+<p>
+上記サンプルは、以下の LuneScript のコードとほぼ同じと言えます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func():Map&lt;str,int&gt; {
+   return { &#34;val1&#34;:10, &#34;val2&#34;:20 };
+}
+forsort val, key in func() {
+   print( key, val + 100 ); 
+}</code></pre>
+</div>
+<p>
+このように、 LuneScript と Lua は連携して動作することが出来ます。
+</p>
+<h2 id="headline-2">
+Lua → LuneScript のデータ変換
+</h2>
+<p>
+LuneScript から Lua のコードを実行したとき、
+その Lua コードの実行結果は Luaval 型になります。
+</p>
+<p>
+Luaval 型は、Lua コード内のデータを保持する型で、
+LuneScript の型 T に相当する Lua コード内のデータは <code class="verbatim">Luaval&lt;T&gt;</code> となります。
+</p>
+<p>
+例えば上記サンプルの <code>{ val1 = 10, val2 = 20 }</code> は、
+LuneScritp の Map&lt;str,int&gt; に相当し、 <code class="verbatim">Luaval&lt;Map&lt;str,int&gt;&gt;</code> となります。
+</p>
+<p>
+なお、 LuneScript から Lua にトランスコンパイルする場合、
+<strong>Luaval&lt;T&gt; は T と完全に一致した型</strong> になります。
+LuneScript から Lua にトランスコンパイルする場合、
+例え Luaval&lt;T&gt; と明示的に宣言しても内部的に T として変換されるため、
+Luaval&lt;T&gt; を意識する必要はありません。
+</p>
+<p>
+LuneScript から Lua 以外の言語(現在は go に変換可能)に変換する場合、
+Luaval&lt;T&gt; と T は明確に扱いが異なるため、
+Lua 以外に変換する場合は Luaval&lt;T&gt; を意識する必要があります。
+</p>
+<p>
+<strong>トランスコンパイルのオプションに &#34;–valid-luaval&#34; を指定</strong> することで、
+Lua にトランスコンパイルする際も、Luaval&lt;T&gt; と T を分けて管理します。
+</p>
+<p>
+上記サンプルは、次のように <code class="verbatim">Luaval&lt;Map&lt;str,int&gt;&gt;</code> の引数を持つ
+func() を使用するように書き換えることが出来ます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(map:Luaval&lt;&amp;Map&lt;str,int&gt;&gt;) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map&lt;str,int&gt; );
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+また上記のサンプルの様に Map の Luaval 型のデータに対しても、
+LuneScript の Map と同様に
+foreach や <code class="verbatim">[]</code> を使用した要素アクセスなどで、Map 内のデータを参照できます。
+ただし参照は出来ますが、 <strong>変更は出来ません。</strong>
+</p>
+<h3 id="headline-3">
+相互変換可能な型
+</h3>
+<p>
+Lua コード内のデータの型が次の場合、
+Luaval 型とはならずにそのままの型になります。
+</p>
+<ul>
+<li>
+<p>
+int, real, bool, str
+</p>
+</li>
+<li>
+<p>
+上記の nilable
+</p>
+</li>
+</ul>
+<p>
+str に関しては、 <strong>文字列長に比例したオーバーヘッド</strong> が掛かります。
+</p>
+<h2 id="headline-4">
+Luaval 型のキャスト
+</h2>
+<p>
+Luaval 型のキャストには制限があります。
+</p>
+<p>
+上記サンプルは、次のように func の引数に  <code class="verbatim">obj@@Map&lt;str,int&gt;</code> を渡しています。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip   
+   if! let obj = loaded( ## ) {
+      func( obj@@Map&lt;str,int&gt; );
+   }</code></pre>
+</div>
+<p>
+これは obj を Map&lt;str,int&gt; 型にキャストする演算ですが、
+ここで obj の型は Luaval&lt;stem&gt; 型であり、
+それを Map&lt;str,int&gt; にキャストすると、
+そのキャスト後の型は Luaval&lt;Map&lt;str,int&gt;&gt; になります。
+</p>
+<p>
+ある型 T1 から T2 型にキャストが可能だった時、
+Luaval&lt;T1&gt; から T2 へのキャストを指示した場合、
+そのキャスト結果は Luaval&lt;T2&gt; になります。
+</p>
+<p>
+また、次のキャストは出来ません。
+</p>
+<ul>
+<li>
+<p>
+T1 型から Luaval&lt;T1&gt; 型へのキャスト
+</p>
+</li>
+<li>
+<p>
+Luaval&lt;T1&gt; 型から T1 型へのキャスト
+</p>
+</li>
+</ul>
+<p>
+具体的には Map&lt;str,int&gt; から Luaval&lt;Map&lt;str,int&gt;&gt; へのキャストは出来ません。
+</p>
+<p>
+ただし、 stem 型は例外的に Luaval との相互キャストが可能です。
+</p>
+<p>
+なお、次のように stem 型を経由することで、
+Luaval 型から非 Luaval 型へのキャストが可能ですが、
+</p>
+<pre class="example">
+Luaval =&gt; stem =&gt; Luaval
+</pre>
+<p>
+本来とは異なる型にキャストした時の動作は <strong>未定義</strong> です。
+</p>
+<h3 id="headline-5">
+expandLuavalMap
+</h3>
+<p>
+Lua コード内の collection のデータは、 Luaval として扱います。
+</p>
+<p>
+たとえば、 Map 型のデータは Luaval&lt;Map&gt; です。
+Map 型と Luaval&lt;Map&gt; 型のデータは互換性がないため、代入などは出来ません。
+</p>
+<p>
+この collection の Luaval 型のデータを LuneScript の値として展開する方法として、
+次の関数を提供しています。
+</p>
+<pre class="example">
+fn expandLuavalMap( Luaval&lt;stem&gt;! ) : stem!;
+</pre>
+<p>
+この関数を使用すると、次のような処理が掛けます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func(map:Luaval&lt;&amp;Map&lt;str,int&gt;&gt;) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+fn func2(map:&amp;Map&lt;str,int&gt;) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map&lt;str,int&gt; );
+      if! let map = expandLuavalMap( obj ) {
+         func2( map@@Map&lt;str,int&gt; );
+      }
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+このサンプルでは、 Luaval&lt;&amp;Map&lt;str,int&gt;&gt; を列挙する func() 関数と、
+&amp;Map&lt;str,int&gt; を列挙する func2() 関数があります。
+</p>
+<p>
+func2() をコールする前に expandLuavalMap() で Luaval 型のデータを展開し、
+それを Map&lt;str,int&gt; にキャストするこおで Luaval&lt;Map&lt;str,int&gt;&gt; ではなく、
+Map&lt;str,int&gt; として処理しています。
+</p>
+<p>
+なお expandLuavalMap() は、
+引数で与えられた Luaval 型のデータを展開したクローンを作成します。
+</p>
+<h2 id="headline-6">
+Luaval 型の型変換
+</h2>
+<p>
+ある nilable 型の T! を保持する Luaval 型は、 Luaval&lt;T&gt;! になります。
+Luaval&lt;T!&gt; にはなりません。
+</p>
+<p>
+また、 Luaval&lt;T&gt; の Immutable は Luaval&lt;&amp;T&gt; になります。
+</p>
+<h2 id="headline-7">
+Luaval 型の関数、Luaval 型オブジェクトのメソッド
+</h2>
+<p>
+関数型の Luaval は、その引数、戻り値も Luaval 型になります。
+</p>
+<p>
+例えば次のサンプルの func 関数の引数 proc は、
+Luaval&lt;Process&gt; 型の From であり、
+この Form の引数は Luaval&lt;&amp;List&lt;int&gt;&gt; 、
+戻り値は Luaval&lt;&amp;List&lt;int&gt;&gt; になります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   form Process( val:&amp;List&lt;int&gt; ) : &amp;Map&lt;int&gt;;
+   fn func( proc:Luaval&lt;Process&gt; ) {
+      let list = proc( [ 1, 2, 3 ] );
+   }</code></pre>
+</div>
+<h2 id="headline-8">
+LuneScript → Lua のデータ変換
+</h2>
+<p>
+Lua の関数に LuneScript の値を渡す時は、Luaval 型の値を渡す必要があります。
+</p>
+<p>
+ただし、 Lua の関数の引数が次の値の場合、
+Luava 型ではなくそのままの型になります。
+</p>
+<ul>
+<li>
+<p>
+int, real, bool, str
+</p>
+</li>
+<li>
+<p>
+上記を要素に持つ List などのコレクション型  
+</p>
+</li>
+<li>
+<p>
+上記の nilable
+</p>
+</li>
+</ul>
+<p>
+次にサンプルを示します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let code = ```
+return function( tbl )
+   for key, val in pairs( tbl ) do
+      print( key, val )
+   end
+end
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+   let map = { &#34;val1&#34;:1, &#34;val2&#34;:10 };
+      (obj@@form)( map );  // Lua の関数コール
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+このサンプルは、
+引数で与えられた Lua のテーブルの要素を出力する関数をコールします。
+</p>
+<p>
+このサンプルでは、
+Map&lt;str,int&gt; 型のデータ map を Lua の関数の引数に指定して実行しています。
+</p>
+<p>
+このとき、内部的に Map&lt;str,int&gt; 型のデータが Lua のテーブルに変換されています。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/glue/" title="22.1. glue コードの半自動生成"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 22.1. glue コードの半自動生成</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/make/" title="23. ビルド 編">Next - 23. ビルド 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -146,7 +505,7 @@
   
 </li>
 
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
@@ -178,7 +537,7 @@
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua/">22.2. Lua と連携 編</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/lua/">22.2. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
