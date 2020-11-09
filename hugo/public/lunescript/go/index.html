@@ -3,7 +3,7 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Z. Go 言語へのトランスコンパイル - 公開技術情報</title>
+<title>@.1 Go 言語へのトランスコンパイル - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.71.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/go/">
@@ -25,18 +25,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="Z. Go 言語へのトランスコンパイル" />
-<meta property="og:description" content="LuneScript から Go 言語へのトランスコンパイルを検討中。 ここでは、検討中の内容を記録する。 ねらい LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。 LuneScript の" />
+<meta property="og:title" content="@.1 Go 言語へのトランスコンパイル" />
+<meta property="og:description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go にトラ" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/go/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Z. Go 言語へのトランスコンパイル"/>
-<meta name="twitter:description" content="LuneScript から Go 言語へのトランスコンパイルを検討中。 ここでは、検討中の内容を記録する。 ねらい LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。 LuneScript の"/>
-<meta itemprop="name" content="Z. Go 言語へのトランスコンパイル">
-<meta itemprop="description" content="LuneScript から Go 言語へのトランスコンパイルを検討中。 ここでは、検討中の内容を記録する。 ねらい LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。 LuneScript の">
+<meta name="twitter:title" content="@.1 Go 言語へのトランスコンパイル"/>
+<meta name="twitter:description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go にトラ"/>
+<meta itemprop="name" content="@.1 Go 言語へのトランスコンパイル">
+<meta itemprop="description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go にトラ">
 
-<meta itemprop="wordCount" content="4615">
+<meta itemprop="wordCount" content="2316">
 
 
 
@@ -54,1357 +54,331 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>Z. Go 言語へのトランスコンパイル</h1>
+<main><h1>@.1 Go 言語へのトランスコンパイル</h1>
 
 <p>
-LuneScript から Go 言語へのトランスコンパイルを検討中。
+LuneScript はトランスコンパイル先の言語として Lua だけでなく、
+Go へのトランスコンパイルが可能です。
 </p>
 <p>
-ここでは、検討中の内容を記録する。
+この機能により、
+LuneScript のセルフホスティングコードを go にトランスコンパイルし、
+go でビルドすることで、 LuneScript の高速化を実現しています。
+</p>
+<p>
+ただし、
+LuneScript のセルフホスティングに必要な機能に限定したサポートになっているため、
+一部の機能は対応できていません。
+</p>
+<p>
+とはいえ、LuneScript のセルフホスティング自体が、
+LuneScript のほとんどの機能を使用しているので、
+普通に使う分には問題なく対応出来ています。
 </p>
 <h2 id="headline-1">
-ねらい
+go 言語へのトランスコンパイル方法
 </h2>
 <p>
-LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。
+go 言語へのトランスコンパイルは、
+LuneScript のコマンドラインオプション save あるいは SAVE 時に
+ <strong>-langGo</strong> を指定することで、
+.go 拡張子のファイルに go へのトランスコンパイル結果を出力します。
 </p>
-<ul>
-<li>
-<p>
-LuneScript の動作高速化
-</p>
-<ul>
-<li>
-<p>
-LuneScript はコード補完機能をサポートしているが、
-規模の大きいコードだと重くなって使い勝手が悪い。
-</p>
-</li>
-<li>
-<p>
-高速化することで、LuneScript のコード補完機能の使い勝手を向上させる。
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-高速化による、 LuneScript 自体のバージョンアップ作業効率改善
-</p>
-<ul>
-<li>
-<p>
-LuneScript のセルフホストのビルド・テスト時間が、現状 2 分弱掛っている。
-</p>
-</li>
-<li>
-<p>
-変更する毎に 2 分かかるのは辛いので、Go で高速化を図る。
-</p>
-</li>
-<li>
-<p>
-C 言語へのトランスコンパイルの対応を進めていたが、
-C 言語での GC 実装が思うように進まなかったので、
-言語レベルで GC 対応している Go を先に対応する。
-</p>
-</li>
-</ul>
-</li>
-</ul>
 <h2 id="headline-2">
-値
+Lua との連携動作
 </h2>
-<table>
-<thead>
-<tr>
-<th>LuneScriptの型</th>
-<th>Go の型</th>
-<th>Go 用 Lns ランタム での type</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>nil, null</td>
-<td>interface{}</td>
-<td>nil</td>
-</tr>
-<tr>
-<td>int</td>
-<td>int</td>
-<td>LnsInt (alias)</td>
-</tr>
-<tr>
-<td>real</td>
-<td>float64</td>
-<td>LnsReal(alias)</td>
-</tr>
-<tr>
-<td>str</td>
-<td>string</td>
-<td>LnsStr (alias)</td>
-</tr>
-<tr>
-<td>bool</td>
-<td>bool</td>
-<td>LnsBool(alias)</td>
-</tr>
-<tr>
-<td>List</td>
-<td>独自構造体</td>
-<td>LnsList</td>
-</tr>
-<tr>
-<td>Array</td>
-<td>配列</td>
-<td>LnsArray</td>
-</tr>
-<tr>
-<td>Map</td>
-<td>map</td>
-<td>LnsMap</td>
-</tr>
-<tr>
-<td>Set</td>
-<td>map (key に item を入れる)</td>
-<td>LnsSet</td>
-</tr>
-<tr>
-<td>class</td>
-<td>構造体</td>
-<td></td>
-</tr>
-<tr>
-<td>interface</td>
-<td>interface</td>
-<td></td>
-</tr>
-<tr>
-<td>form</td>
-<td>func</td>
-<td>LnsForm</td>
-</tr>
-<tr>
-<td>enum</td>
-<td>int/float64/string</td>
-<td>LnsEnum</td>
-</tr>
-<tr>
-<td>stem</td>
-<td>interface{}</td>
-<td>LnsStem</td>
-</tr>
-<tr>
-<td>nilable</td>
-<td>interface{}</td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<h3 id="headline-3">
-int/real の扱い
-</h3>
 <p>
-LuneScript int/real は、 go の type alias を使用して次のように定義する。
+go 言語へのトランスコンパイルを行なう場合、
+Lua との連携動作を行なう際に特別な型を使用する必要があります。
 </p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="kt">int</span>
-<span class="kd">type</span> <span class="nx">LnsReal</span> <span class="p">=</span> <span class="kt">float64</span></code></pre></div>
+<p>
+詳しくは以下を参照してください。
+</p>
+<p>
+<a href="../lua">../lua</a>
+</p>
+<h2 id="headline-3">
+Go 言語へのトランスコンパイル後の構成
+</h2>
+<p>
+LuneScript は Lua へのトランスコンパイラであり、
+LuneScript から Lua のコードを直接利用できるという特徴があります。
+</p>
+<p>
+この特徴は、 Go 言語へトランスコンパイルした後でも引き継がれます。
+</p>
+<p>
+例えば、次のようなコードを Go 言語へ変換した後でも動かせます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let step = 40;
+
+// Lua のフィボナッチ関数
+let code = ```
+local function fib ( n )
+   if n &lt; 2 then return n end
+   return fib(n - 2) + fib(n - 1)
+end
+return fib
+```;
+
+// Lua コードのロード
+form fibFunc( num:int ):int;
+fn loadLua( txt:str ) : Luaval&lt;fibFunc&gt; {
+   let loaded = unwrap _load( txt ## );
+   let fib = unwrap loaded(##);
+   return fib@@fibFunc;
+}
+
+// プロファイル用マクロ
+macro _profile( exec:__exp ) {
+   {}
+   {
+      let prev = os.clock();
+      print( &#34;%s = %d: step = %d: time = %g&#34;
+             (,,,,exec, ,,exec, step, os.clock() - prev ) );
+   }
+}
+
+// Lua のコードをロードして実行
+let fib_lua = loadLua( code );
+_profile( fib_lua( step ) );
+
+
+// LuneScript のフィボナッチ関数
+fn fib_lns( num:int ) : int {
+   if num &lt; 2 {
+      return num;
+   }
+   return fib_lns( num - 2 ) + fib_lns( num - 1 );
+}
+// Go で定義した fib_lns 関数を実行
+_profile( fib_lns( step ) );</code></pre>
 </div>
+<p>
+このコードは、 フィボナッチの計算を lua と LuneScript で行なうものです。
+</p>
+<p>
+最初の code 変数で定義しているのが lua のコードで、
+それをロードするのが loadLua() 関数で、ロードされた Lua の関数が fib_lua です。
+そして、後半の fib_lns() 関数は フィボナッチの計算を行なう LuneScript の関数です。
+</p>
 <h3 id="headline-4">
-nilable の扱い
+Lua へトランスコンパイルした場合
 </h3>
 <p>
-LuneScript の nilable は、そのままでは元の値として扱えない。
-しかし、等しいかどうかのチェックは行なえる。
-これは go と LuneScript と同じ。
+上記コードを Lua にトランスコンパイルして動かすと、次が出力されます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">fib_lua( step ) = 24157817: step = 37: time = 5.69
+fib_lns( step ) = 24157817: step = 37: time = 5.38</code></pre></div>
+</div>
+<p>
+これは、fib_lua() と fib_lns() それぞれの計算結果と、計算時間を表しています。
+</p>
+<p>
+これを見ると、
+Lua でロードされた関数 fib_lua() と、
+Lns の関数 fib_lns() の実行時間がほとんど同じ時間掛ることが分かります。
+</p>
+<p>
+これは当然の結果です。
+なぜならば、 LuneScript を Lua に変換した場合は、
+LuneScript で書いた fib_lns() と Lua の fib_lua() は、
+ほとんど同じ Lua のコードになるからです。
+</p>
+<p>
+上記のコードを Lua にトランスコンパイルした際のコードは次のようになります。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--miniGo.lns</span>
+<span class="kd">local</span> <span class="n">_moduleObj</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;@miniGo&#39;</span>
+<span class="kd">local</span> <span class="n">_lune</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s2">&#34;lune.base.runtime2&#34;</span> <span class="p">)</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune2</span> <span class="kr">then</span>
+   <span class="n">_lune2</span> <span class="o">=</span> <span class="n">_lune</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="n">step</span> <span class="o">=</span> <span class="mi">37</span>
+<span class="kd">local</span> <span class="n">code</span> <span class="o">=</span> <span class="s">[==[
+</span><span class="s">local function fib ( n )
+</span><span class="s">   if n &lt; 2 then return n end
+</span><span class="s">   return fib(n - 2) + fib(n - 1)
+</span><span class="s">end
+</span><span class="s">return fib
+</span><span class="s">]==]</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">loadLua</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span>
+   <span class="kd">local</span> <span class="n">loaded</span> <span class="o">=</span> <span class="n">_lune.unwrap</span><span class="p">(</span> <span class="n">_lune.loadstring52</span><span class="p">(</span> <span class="n">txt</span> <span class="p">))</span>
+   <span class="kd">local</span> <span class="n">fib</span> <span class="o">=</span> <span class="n">_lune.unwrap</span><span class="p">(</span> <span class="n">loaded</span><span class="p">(</span>  <span class="p">))</span>
+   <span class="kr">return</span> <span class="n">fib</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="n">fib_lua</span> <span class="o">=</span> <span class="n">loadLua</span><span class="p">(</span> <span class="n">code</span> <span class="p">)</span>
+<span class="kr">do</span>
+   <span class="kd">local</span> <span class="n">prev</span> <span class="o">=</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="s2">&#34;fib_lua( step )&#34;</span><span class="p">,</span> <span class="n">fib_lua</span><span class="p">(</span> <span class="n">step</span> <span class="p">),</span> <span class="n">step</span><span class="p">,</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="p">)</span>
+   <span class="kr">if</span> <span class="n">num</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="kr">then</span>
+      <span class="kr">return</span> <span class="n">num</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">2</span> <span class="p">)</span> <span class="o">+</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kr">do</span>
+   <span class="kd">local</span> <span class="n">prev</span> <span class="o">=</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="s2">&#34;fib_lns( step )&#34;</span><span class="p">,</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">step</span> <span class="p">),</span> <span class="n">step</span><span class="p">,</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kr">return</span> <span class="n">_moduleObj</span></code></pre></div>
+</div>
+<p>
+注目すべき fib_lns() 関数の定義を抜き出したものが以下です。
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="p">)</span>
+   <span class="kr">if</span> <span class="n">num</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="kr">then</span>
+      <span class="kr">return</span> <span class="n">num</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">2</span> <span class="p">)</span> <span class="o">+</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="kr">end</span></code></pre></div>
+</div>
+<p>
+これを見ると分かる通り、
+fib_lns() と fib_lub() は等価のコードになっています。
+</p>
+<p>
+よって、fib_lns() と fib_lua() が同程度時間がかかるのは当然と言えます。
 </p>
 <h3 id="headline-5">
-真偽値の扱い
+go へトランスコンパイルした場合
 </h3>
 <p>
-LuneScript は nil と false が偽で、それ以外は真となる。
-go は true/false で判断が必要なので、 LuneScript 用の条件変換関数を用意する。
+一方、 go へトランスコンパイルした場合、実行結果は次の通りです。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">fib_lua( step ) = 24157817: step = 37: time = 6.07
+fib_lns( step ) = 24157817: step = 37: time = 0.34</code></pre></div>
+</div>
+<p>
+明らかに fib_lns() の方が、fib_lua() よりも
+計算時間が約 <strong>1/18</strong> に短かくなっていることが分かります。
+</p>
+<p>
+go へトランスコンパイルした結果は次の通りです。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// This code is transcompiled by LuneScript.
+</span><span class="c1"></span><span class="kn">package</span> <span class="nx">lnsc</span>
+<span class="kn">import</span> <span class="p">.</span> <span class="s">&#34;lnsc/lune/base/runtime_go&#34;</span>
+<span class="kd">var</span> <span class="nx">init_miniGo</span> <span class="kt">bool</span>
+<span class="kd">var</span> <span class="nx">miniGo__mod__</span> <span class="kt">string</span>
+<span class="kd">var</span> <span class="nx">miniGo_step</span> <span class="nx">LnsInt</span>
+<span class="kd">var</span> <span class="nx">miniGo_code</span> <span class="kt">string</span>
+<span class="kd">var</span> <span class="nx">miniGo_fib_lua</span> <span class="o">*</span><span class="nx">Lns_luaValue</span>
+<span class="kd">type</span> <span class="nx">miniGo_fibFunc_1003_</span> <span class="kd">func</span> <span class="p">(</span><span class="nx">arg1</span> <span class="nx">LnsInt</span><span class="p">)</span> <span class="nx">LnsInt</span>
+<span class="c1">// 14: decl @miniGo.loadLua
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">miniGo_loadLua_1009_</span><span class="p">(</span><span class="nx">txt</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="nx">Lns_luaValue</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">loaded</span> <span class="o">*</span><span class="nx">Lns_luaValue</span>
+    <span class="nx">loaded</span> <span class="p">=</span> <span class="nf">Lns_unwrap</span><span class="p">(</span> <span class="nf">Lns_car</span><span class="p">(</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">Load</span><span class="p">(</span><span class="nx">txt</span><span class="p">,</span> <span class="kc">nil</span><span class="p">))).(</span><span class="o">*</span><span class="nx">Lns_luaValue</span><span class="p">)</span>
+    <span class="kd">var</span> <span class="nx">fib</span> <span class="nx">LnsAny</span>
+    <span class="nx">fib</span> <span class="p">=</span> <span class="nf">Lns_unwrap</span><span class="p">(</span> <span class="nf">Lns_car</span><span class="p">(</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">RunLoadedfunc</span><span class="p">(</span><span class="nx">loaded</span><span class="p">,</span><span class="nf">Lns_2DDD</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{}))[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="nx">fib</span><span class="p">.(</span><span class="o">*</span><span class="nx">Lns_luaValue</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// 36: decl @miniGo.fib_lns
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="nx">LnsInt</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">num</span> <span class="p">&lt;</span> <span class="mi">2</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nx">num</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Lns_miniGo_init</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">init_miniGo</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">true</span>
+    <span class="nx">miniGo__mod__</span> <span class="p">=</span> <span class="s">&#34;@miniGo&#34;</span>
+    <span class="nf">Lns_InitMod</span><span class="p">()</span>
+    <span class="nx">miniGo_step</span> <span class="p">=</span> <span class="mi">37</span>
+    <span class="nx">miniGo_code</span> <span class="p">=</span> <span class="s">&#34;local function fib ( n )\n   if n &lt; 2 then return n end\n   return fib(n - 2) + fib(n - 1)\nend\nreturn fib\n&#34;</span>
+    <span class="nx">miniGo_fib_lua</span> <span class="p">=</span> <span class="nf">miniGo_loadLua_1009_</span><span class="p">(</span><span class="nx">miniGo_code</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">prev</span> <span class="nx">LnsReal</span>
+        <span class="nx">prev</span> <span class="p">=</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+        <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">String_format</span><span class="p">(</span><span class="s">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="p">[]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="s">&#34;fib_lua( step )&#34;</span><span class="p">,</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">RunLoadedfunc</span><span class="p">(</span><span class="nx">miniGo_fib_lua</span><span class="p">,</span><span class="nf">Lns_2DDD</span><span class="p">(</span><span class="nx">miniGo_step</span><span class="p">))[</span><span class="mi">0</span><span class="p">].(</span><span class="nx">LnsInt</span><span class="p">),</span> <span class="nx">miniGo_step</span><span class="p">,</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">prev</span><span class="p">})})</span>
+    <span class="p">}</span>
+    
+    <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">prev</span> <span class="nx">LnsReal</span>
+        <span class="nx">prev</span> <span class="p">=</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+        <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">String_format</span><span class="p">(</span><span class="s">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="p">[]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="s">&#34;fib_lns( step )&#34;</span><span class="p">,</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">miniGo_step</span><span class="p">),</span> <span class="nx">miniGo_step</span><span class="p">,</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">prev</span><span class="p">})})</span>
+    <span class="p">}</span>
+    
+<span class="p">}</span>
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">false</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+非常に読み難いので fib_lns() 関数の定義部分を抜き出すと、次になります。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="nx">LnsInt</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">num</span> <span class="p">&lt;</span> <span class="mi">2</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nx">num</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+関数名が長くなっていますが、
+LuneScript のコードがそのまま go に変換されていることがわかります。
+関数を実行する際も次のように普通に関数コールしているだけです。
+</p>
+<pre class="example">
+ miniGo_fib_lns_1025_(miniGo_step)
+</pre>
+<p>
+一方で Lua の fib_lua() 関数は、
+<code class="verbatim">miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)</code> によって
+Lua のコードを実行するための関数がロードされていて、
+実行する際も次のように関数コールしています。
+</p>
+<pre class="example">
+Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
+</pre>
+<p>
+このように、fib_lns() と fib_lua() では全く処理が異なることが分かります。
 </p>
 <h3 id="headline-6">
-and/or の扱い
+go へトランスコンパイル後は Lua ライブラリのリンクが必要
 </h3>
 <p>
-LuneScript の and/or は論理演算ではなく、式の評価を制御し、評価結果も bool ではない。
-go は評価結果が bool になる。
+上記の通り、 LuneScript は Lua と密接に連携して動作しています。
+そして、go へのトランスコンパイル後もその連携動作をサポートしています。
 </p>
-<h3 id="headline-7">
-Generics の扱い
-</h3>
 <p>
-go は Generics がないので、 Generics の型は全て interface{} で扱う。
+この連携動作を実現するために、 go へのトランスコンパイル後のコードでは、
+lua の処理を行なうための lua VM を必要とします。
 </p>
-<h3 id="headline-8">
-Set の扱い
-</h3>
 <p>
-go は Set がないので、 Map で代用する。   
+細かいことを言うと、この Lua との連携動作以外にも、
+LuneScript には Lua VM を必要とする処理があります。
+具体的にはマクロ展開の処理や、一部の組込み関数の処理に Lua VM を利用しています。
 </p>
-<h2 id="headline-9">
-多値返却
-</h2>
 <p>
-go と LuneScript の多値返却は動きが異なる。
+その lua VM は、公式の <strong>lua-5.3.4</strong> を前提としていて、 <strong>liblua5.3.so</strong> をリンクします。
 </p>
 <p>
-hoge() が x, y を返す多値返却の関数としたとき、それぞれ次の動きになる。
+go 言語には、
+「環境に依存しない 1 つの実行ファイルを生成できる」という利点がありますが、
+残念ながら LuneScript を go へトランスコンパイルする場合、
+liblua5.3.so へのリンクが必要になります。
 </p>
-<table>
-<thead>
-<tr>
-<th>コード</th>
-<th>LuneScript 展開結果</th>
-<th>go 展開結果</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>(hoge())</td>
-<td>x</td>
-<td>x, y</td>
-</tr>
-<tr>
-<td>hoge(), val</td>
-<td>x, val</td>
-<td>x, y, val</td>
-</tr>
-</tbody>
-</table>
 <p>
-上記違いを実現するために、 go では次の変換関数を用意する。
+なお、実行時に liblua5.3.so が必要になるだけではなく、
+ビルド時には lua-5.3.4 のインクルードファイルも必要になります。
 </p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// 多値返却の先頭 int を返す
-</span><span class="c1"></span><span class="kd">func</span> <span class="nf">carInt</span><span class="p">(</span> <span class="nx">multi</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{}</span> <span class="p">)</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="nx">multi</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
-        <span class="nb">panic</span><span class="p">(</span> <span class="s">&#34;nothing&#34;</span> <span class="p">)</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="nx">multi</span><span class="p">[</span><span class="mi">0</span><span class="p">].(</span><span class="kt">int</span><span class="p">)</span>
-<span class="p">}</span>
-<span class="c1">// 多値返却の先頭 int! を返す
-</span><span class="c1"></span><span class="kd">func</span> <span class="nf">carIntN</span><span class="p">(</span> <span class="nx">multi</span> <span class="o">...</span><span class="kd">interface</span><span class="p">{}</span> <span class="p">)</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span> <span class="nx">multi</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">nil</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="nx">multi</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">nil</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="nx">multi</span><span class="p">[</span><span class="mi">0</span><span class="p">].(</span><span class="kt">int</span><span class="p">)</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<h2 id="headline-10">
-クラスと継承
-</h2>
-<p>
-Go は構造体とレシーバはあるが、継承がない。
-</p>
-<p>
-LuneScript は継承を持つので、 Go で継承を実現する必要がある。
-</p>
-<p>
-次の LuneScript のクラスを Go で対応する方法を示す。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-interface IF {
-  pub fn sub1():int;
-}
-class Parent {
-   let val1:int;
-   pub fn sub1():int {
-      return self.val1;
-   }
-}
-class Sub extend Parent {
-   let val2:int;
-   pub override fn sub1():int {
-      return self.val2;
-   }
-   pub fn sub2():int {
-      return self.val2;
-   }
-}
-class SubSub extend Sub {
-   let val3:int;
-   pub override fn sub1():int {
-      return self.val3;
-   }
-   pub fn sub3():int {
-      return self.val3;
-   }
-}</code></pre>
-</div>
-<h3 id="headline-11">
-Go による等価コード
-</h3>
-<p>
-Go による等価コードを示す
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">package</span> <span class="nx">main</span>
-
-<span class="kn">import</span> <span class="s">&#34;fmt&#34;</span>
-
-<span class="kd">type</span> <span class="nx">ParentMtd</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">sub1</span> <span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">Parent</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">val1</span> <span class="kt">int</span>
-    <span class="nx">FP</span> <span class="nx">ParentMtd</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">ParentDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">obj</span>
-<span class="p">}</span>
-
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Parent</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val1</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">NewParent</span><span class="p">(</span><span class="nx">val1</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
-    <span class="nx">parent</span> <span class="o">:=</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">parent</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">parent</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">SubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nx">ParentMtd</span>
-    <span class="nf">sub2</span> <span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">Sub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">Parent</span>
-    <span class="nx">val2</span> <span class="kt">int</span>
-    <span class="nx">FP</span> <span class="nx">SubMtd</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">SubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">obj</span>
-<span class="p">}</span>
-
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="nf">sub2</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">newSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="nx">sub</span> <span class="o">:=</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">sub</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">sub</span>
-<span class="p">}</span>
-
-
-<span class="kd">type</span> <span class="nx">SubSubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nx">SubMtd</span>
-    <span class="nf">sub3</span> <span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">SubSub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">Sub</span>
-    <span class="nx">val3</span> <span class="kt">int</span>
-    <span class="nx">FP</span> <span class="nx">SubSubMtd</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">SubSubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">obj</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Sub</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub2</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub3</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
-<span class="p">}</span>
-
-
-<span class="kd">func</span> <span class="nf">newSubSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span><span class="p">,</span><span class="nx">val3</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
-    <span class="nx">subsub</span> <span class="o">:=</span> <span class="nx">SubSub</span><span class="p">{</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val3</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">subsub</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">testParent</span><span class="p">(</span> <span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">testSub</span><span class="p">(</span> <span class="nx">mess</span> <span class="kt">string</span><span class="p">,</span> <span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">mess</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">(),</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span> <span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">testCast</span><span class="p">(</span> <span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="nx">cast</span><span class="p">,</span> <span class="nx">ok</span> <span class="o">:=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nx">ok</span> <span class="p">{</span>
-        <span class="nf">testSub</span><span class="p">(</span> <span class="s">&#34;cast&#34;</span><span class="p">,</span> <span class="nx">cast</span><span class="p">.</span><span class="nf">ToSub</span><span class="p">()</span> <span class="p">)</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="s">&#34;cast NG&#34;</span> <span class="p">)</span>
-    <span class="p">}</span>
-    
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">Lns_init</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">subsub</span> <span class="o">:=</span> <span class="nf">newSubSub</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span> <span class="p">)</span>
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">val1</span><span class="p">,</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">val2</span><span class="p">,</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">val3</span> <span class="p">)</span>
-    <span class="nx">fmt</span><span class="p">.</span><span class="nf">Println</span><span class="p">(</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">(),</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub2</span><span class="p">(),</span> <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub3</span><span class="p">()</span> <span class="p">)</span>
-    <span class="nf">testSub</span><span class="p">(</span> <span class="s">&#34;subsub.Sub&#34;</span><span class="p">,</span> <span class="o">&amp;</span><span class="nx">subsub</span><span class="p">.</span><span class="nx">Sub</span> <span class="p">)</span>
-    <span class="nf">testParent</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
-    <span class="nf">testCast</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
-
-    <span class="nx">sub</span> <span class="o">:=</span> <span class="nf">newSub</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="p">)</span>
-    <span class="nf">testSub</span><span class="p">(</span> <span class="s">&#34;sub&#34;</span><span class="p">,</span> <span class="nx">sub</span> <span class="p">)</span>
-    <span class="nf">testParent</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
-    <span class="nf">testCast</span><span class="p">(</span> <span class="o">&amp;</span><span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span> <span class="p">)</span>
-
-    <span class="nf">testCast</span><span class="p">(</span> <span class="nf">NewParent</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<h3 id="headline-12">
-継承実現方法
-</h3>
-<h4 id="headline-13">
-Parent クラス
-</h4>
-<p>
-まず、 Parent クラスについて説明する。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Parent {
-   let val1:int;
-   pub fn sub1():int {
-      return self.val1;
-   }
-}</code></pre>
-</div>
-<h5 id="headline-14">
-データ構造
-</h5>
-<p>
-Parent クラスを表現するため、次の構造体と interface を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">ParentMtd</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">sub1</span> <span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">Parent</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">val1</span> <span class="kt">int</span>
-    <span class="nx">FP</span> <span class="nx">ParentMtd</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">ParentDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">obj</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-ParentMtd インタフェースは、次の役割を持つ
-</p>
-<ul>
-<li>
-<p>
-Parent クラスのメソッドを定義
-</p>
-</li>
-<li>
-<p>
-Parent クラスのモリモーフィズムを表現する
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-Parent 構造体は、メンバと ParentMtd を持つ
-</p>
-</li>
-<li>
-<p>
-ParentDownCast は、ダウンキャスト用にクラスごとに定義する
-</p>
-</li>
-</ul>
-<h5 id="headline-15">
-メソッド
-</h5>
-<p>
-Parent クラスのメソッドを表現するため、次のレシーバ関数を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Parent</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val1</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<h5 id="headline-16">
-コンストラクタ
-</h5>
-<p>
-Parent クラスのコンストラクタとして、次を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">NewParent</span><span class="p">(</span><span class="nx">val1</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
-    <span class="nx">super</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">super</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">super</span>
-    <span class="k">return</span> <span class="nx">super</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<p>
-このコンストラクタは次の処理を行なう。
-</p>
-<ul>
-<li>
-<p>
-メンバの初期化
-</p>
-</li>
-<li>
-<p>
-FP の設定
-</p>
-</li>
-</ul>
-<h5 id="headline-17">
-Parent クラスの使用方法
-</h5>
-<p>
-Parent は次のように使用する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">parent</span> <span class="o">:=</span> <span class="nf">NewParent</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span></code></pre></div>
-</div>
-<p>
-メソッドをコールする場合、必ず FP インタフェースを介してコールする。
-</p>
-<h4 id="headline-18">
-Sub クラス
-</h4>
-<p>
-Sub クラスについて説明する。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Sub extend Parent {
-   let val2:int;
-   pub override fn sub1():int {
-      return self.val2;
-   }
-   pub fn sub2():int {
-      return self.val2;
-   }
-}</code></pre>
-</div>
-<h5 id="headline-19">
-データ構造
-</h5>
-<p>
-Sub クラスを表現するため、次の構造体と interface を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nx">ParentMtd</span>
-    <span class="nf">sub2</span> <span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">Sub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">Parent</span>
-    <span class="nx">val2</span> <span class="kt">int</span>
-    <span class="nx">FP</span> <span class="nx">SubMtd</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">SubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">obj</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-SubMtd インタフェースは、 Sub で定義しているメソッドを宣言する。
-</p>
-<ul>
-<li>
-<p>
-Parent のメソッドは含めない 
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-Sub 構造体は、Parent 構造体のデータと、 Sub で定義しているメンバを宣言する。
-</p>
-</li>
-</ul>
-<h5 id="headline-20">
-メソッド
-</h5>
-<p>
-Sub クラスのメソッドを表現するため、次のレシーバ関数を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Sub</span><span class="p">)</span> <span class="nf">sub2</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<h5 id="headline-21">
-コンストラクタ
-</h5>
-<p>
-Sub クラスのコンストラクタとして、次を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="nx">sub</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">sub</span>
-    <span class="nx">sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">sub</span>
-    <span class="k">return</span> <span class="nx">sub</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<p>
-このコンストラクタは次の処理を行なう。
-</p>
-<ul>
-<li>
-<p>
-メンバの初期化
-</p>
-</li>
-<li>
-<p>
-FP の設定
-</p>
-<ul>
-<li>
-<p>
-<strong>super の FP もここで設定する</strong>
-</p>
-</li>
-<li>
-<p>
-この super の FP に &amp;super ではなく &amp;sub を設定することで、ポリモーフィズムを実現する
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="headline-22">
-SubSub クラス
-</h4>
-<p>
-SubSub クラスについて説明する。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class SubSub extend Sub {
-   let val3:int;
-   pub override fn sub1():int {
-      return self.val3;
-   }
-   pub fn sub3():int {
-      return self.val3;
-   }
-}</code></pre>
-</div>
-<h5 id="headline-23">
-データ構造
-</h5>
-<p>
-SubSub クラスを表現するため、次の構造体と interface を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">SubSubMtd</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nx">SubMtd</span>
-    <span class="nf">sub3</span> <span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span>
-
-<span class="kd">type</span> <span class="nx">SubSub</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">Sub</span>
-    <span class="nx">val3</span> <span class="kt">int</span>
-    <span class="nx">FP</span> <span class="nx">SubSubMtd</span>
-<span class="p">}</span>
-<span class="kd">type</span> <span class="nx">SubSubDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSubSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">obj</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Sub</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">)</span> <span class="nf">ToParent</span><span class="p">()</span> <span class="o">*</span><span class="nx">Parent</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-SubSubMtd インタフェースは、 SubSub で定義しているメソッドを宣言する。
-</p>
-<ul>
-<li>
-<p>
-Sub のメソッドは含めない 
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-SubSub 構造体は、Sub 構造体のデータと、 SubSub で定義しているメンバを宣言する。
-</p>
-</li>
-</ul>
-<h5 id="headline-24">
-メソッド
-</h5>
-<p>
-SubSub クラスのメソッドを表現するため、次のレシーバ関数を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub1</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub2</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nf">sub2</span><span class="p">()</span>
-<span class="p">}</span>
-<span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">sub3</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<h6 id="headline-25">
-override していないメソッド定義
-</h6>
-<p>
-上記で注目すべきは、 sub2() メソッドで <code class="verbatim">self.Sub.sub2()</code> をコールしている点。
-</p>
-<p>
-SubSub クラスは、 sub2 メソッドを override していない。
-つまりは、SubSub の sub2 メソッドは Sub クラスのメソッドが使用されることになる。
-よって、 Sub.sub2 メソッドをコールしている。
-</p>
-<h5 id="headline-26">
-コンストラクタ
-</h5>
-<p>
-SubSub クラスのコンストラクタとして、次を定義する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">newSubSub</span><span class="p">(</span><span class="nx">val1</span><span class="p">,</span><span class="nx">val2</span><span class="p">,</span><span class="nx">val3</span> <span class="kt">int</span><span class="p">)</span> <span class="o">*</span><span class="nx">SubSub</span> <span class="p">{</span>
-    <span class="nx">subsub</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">SubSub</span><span class="p">{</span> <span class="nx">Sub</span><span class="p">{</span> <span class="nx">Parent</span><span class="p">{</span> <span class="nx">val1</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val2</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">},</span> <span class="nx">val3</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">}</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Parent</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">Sub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">subsub</span>
-    <span class="nx">subsub</span><span class="p">.</span><span class="nx">FP</span> <span class="p">=</span> <span class="nx">subsub</span>
-    <span class="k">return</span> <span class="nx">subsub</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<p>
-このコンストラクタは次の処理を行なう。
-</p>
-<ul>
-<li>
-<p>
-メンバの初期化
-</p>
-</li>
-<li>
-<p>
-FP の設定
-</p>
-<ul>
-<li>
-<p>
-<strong>Parent, Sub の FP もここで設定する</strong>
-</p>
-</li>
-<li>
-<p>
-Parent, Sub の FP に &amp;subsub を設定することで、ポリモーフィズムを実現する
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="headline-27">
-IF インタフェース
-</h4>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-interface IF {
-  pub fn sub1():int;
-}</code></pre>
-</div>
-<h5 id="headline-28">
-データ構造
-</h5>
-<p>
-LuneScript の interface は、 Go のインタフェースをそのまま使用する。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">interface</span> <span class="nx">IF</span> <span class="p">{</span>
-  <span class="nx">pub</span> <span class="nx">fn</span> <span class="nf">sub1</span><span class="p">():</span><span class="kt">int</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<h4 id="headline-29">
-メソッド呼び出し
-</h4>
-<p>
-Parent クラスのメソッドを呼び出すには、次のように行なう。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">test</span><span class="p">(</span><span class="nx">parent</span> <span class="o">*</span><span class="nx">Parent</span><span class="p">)</span> <span class="kt">int</span> <span class="p">{</span>
-  <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
-  <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<h5 id="headline-30">
-parent.FP.sub1() と parent.sub1() の違い
-</h5>
-<p>
-メソッド呼び出しには、次の 2 つのパターンがある。
-</p>
-<ul>
-<li>
-<p>
-parent.FP.sub1()
-</p>
-<ul>
-<li>
-<p>
-ポリモーフィズムに対応したメソッド呼び出し
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-parent.sub1()
-</p>
-<ul>
-<li>
-<p>
-Parent クラスに定義しているメソッド呼び出し
-</p>
-<ul>
-<li>
-<p>
-ポリモーフィズムに非対応
-</p>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-<h5 id="headline-31">
-オーバーヘッド
-</h5>
-<ul>
-<li>
-<p>
-ポリモーフィズムに対応したメソッド呼び出しは、オーバーヘッドが大きい。
-</p>
-</li>
-<li>
-<p>
-ポリモーフィズムに対応したメソッド呼び出しは、
-<strong>ポリモーフィズムが必要な場合に限定すべき。</strong>
-</p>
-</li>
-<li>
-<p>
-ポリモーフィズムが必要かどうかは、 <strong>LuneScript では現状定義がない。</strong>
-</p>
-<ul>
-<li>
-<p>
-<strong>クラスとメソッドに final 宣言を導入</strong> し、
-ポリモーフィズムが不要であることを明示できるようにする対応が必要
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<h4 id="headline-32">
-up-cast / down-cast
-</h4>
-<ul>
-<li>
-<p>
-up-cast は、埋め込みのポインタにアクセスすることで実現する
-</p>
-<ul>
-<li>
-<p>
-インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-down-cast は、 interface を型アサーションで実現する。
-</p>
-<ul>
-<li>
-<p>
-各クラスごとに DownCast インタフェースを定義して、
-そのインタフェースにキャストしてから、
-さらに目的のクラスへのキャスト関数を実行する
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ifObj</span> <span class="nx">IF</span> <span class="p">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span> <span class="c1">// インタフェースをセットする
-</span><span class="c1"></span><span class="nx">parent</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span> <span class="c1">// アップキャスト
-</span><span class="c1"></span><span class="p">(</span><span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)).</span><span class="nf">ToSub</span><span class="p">()</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
-</div>
-<h3 id="headline-33">
-Class のまとめ
-</h3>
-<ul>
-<li>
-<p>
-クラスのメソッドを定義する interface を宣言する
-</p>
-<ul>
-<li>
-<p>
-Super クラスで定義しているメソッドの interface を埋め込む
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">TestMtd</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nx">SuperMtd</span>
-    <span class="nf">method</span><span class="p">()</span> <span class="kt">int</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-クラスのメンバと前記の interface を保持する構造体を宣言する
-</p>
-<ul>
-<li>
-<p>
-継承は、 継承する型を埋め込む
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">Test</span> <span class="kd">struct</span> <span class="p">{</span>
-    <span class="nx">Super</span>
-    <span class="nx">val</span> <span class="kt">int</span>
-    <span class="nx">FP</span> <span class="nx">TestMtd</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-ダウンキャスト用の interface を定義する
-</p>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">TestDownCast</span> <span class="kd">interface</span> <span class="p">{</span>
-    <span class="nf">ToTest</span><span class="p">()</span> <span class="o">*</span><span class="nx">Test</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-ダウンキャスト用のメソッドを定義する
-</p>
-<ul>
-<li>
-<p>
-このメソッドは、 Super クラスの分を全て宣言する
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">obj</span> <span class="o">*</span><span class="nx">SubSub</span><span class="p">)</span> <span class="nf">ToSub</span><span class="p">()</span> <span class="o">*</span><span class="nx">Sub</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Sub</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-クラスのメソッドの動作を定義するレシーバを宣言する
-</p>
-<ul>
-<li>
-<p>
-レシーバは Super クラスのメソッドを含めて宣言する
-</p>
-</li>
-<li>
-<p>
-override していない関数は、そのメソッドを定義している構造体のメソッドをコールする
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="p">(</span><span class="nx">self</span> <span class="o">*</span><span class="nx">Test</span><span class="p">)</span> <span class="nf">method</span><span class="p">()</span> <span class="kt">int</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">super</span><span class="p">.</span><span class="nf">method</span><span class="p">()</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-コンストラクタで、メンバの初期化と interface FP を初期化する
-</p>
-<ul>
-<li>
-<p>
-interface は、 Super クラスの interface FP を含めて初期化する
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-メソッド呼び出しは、 interface FP 経由でコールする
-</p>
-<ul>
-<li>
-<p>
-ポリモーフィズム無効なメソッド呼び出しは、構造体のメソッドを直接コールする
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span><span class="p">.</span><span class="nf">method</span><span class="p">()</span> <span class="c1">// ポリモーフィズム有効
-</span><span class="c1"></span><span class="nx">obj</span><span class="p">.</span><span class="nf">method</span><span class="p">()</span>    <span class="o">//</span> <span class="nx">ポリモーフィズム無効</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-up-cast は、メンバの Super クラスのポインタにアクセスすることで実現する
-</p>
-<ul>
-<li>
-<p>
-インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-down-cast は、 interface を型アサーションと、ダウンキャスト用 interface で実現する。
-</p>
-</li>
-</ul>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">var</span> <span class="nx">ifObj</span> <span class="nx">IF</span> <span class="p">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">FP</span> <span class="c1">// インタフェースをセットする
-</span><span class="c1"></span><span class="nx">super</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">super</span> <span class="c1">// アップキャスト
-</span><span class="c1"></span><span class="p">(</span><span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)).</span><span class="nf">ToSub</span><span class="p">()</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
-</div>
-<ul>
-<li>
-<p>
-インタフェースは、 Go の interface をそのまま利用する
-</p>
-<ul>
-<li>
-<p>
-クラスオブジェクトからインタフェースに up-cast する場合、 interface FP を使用する
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<h2 id="headline-34">
-シンボル名
-</h2>
-<p>
-LuneScript と go のシンボル名は、次の点で大きく異なる。
-</p>
-<ul>
-<li>
-<p>
-名前空間
-</p>
-<ul>
-<li>
-<p>
-LuneScript は、同一ファイル(モジュール)内
-</p>
-</li>
-<li>
-<p>
-go は、同一ディレクトリ(パッケージ)内
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-公開・非公開の制御方法
-</p>
-<ul>
-<li>
-<p>
-LuneScript は、 pub/pro などで制御する
-</p>
-</li>
-<li>
-<p>
-go は、 シンボルの先頭文字の大文字/小文字で制御する
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>
-この違いによって次の問題が発生する。
-</p>
-<ul>
-<li>
-<p>
-LuneScript で異なるファイル FileA.lns, FileB.lns それぞれに
-同名のシンボル sym を定義している時、
-これを go に変換する際に同じ構成で
-FileA.go, FileB.go に同名のシンボル sym を定義すると、
-シンボル sym が重複定義エラーとなる。
-</p>
-</li>
-<li>
-<p>
-LuneScript で小文字で公開定義したシンボルが、 go では非公開になる。
-</p>
-<ul>
-<li>
-<p>
-LuneScript で大文字で非公開定義したシンボルが、 go では公開になる。
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>
-この問題に対応するため、次の通りシンボル名を処理する。
-</p>
-<p>
-公開・非公開制御対象の関数あるいはクラスのシンボルの先頭にファイル名を付加する。
-さらに公開なら G ( GLOBAL の G)、非公開なら l (local の l) を付加する。
-</p>
-<p>
-つまり次の LuneScript のソースを go に変換する場合、
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func() {
-}
-pub Class {
-   let val1:int;
-   pub let val2:int;
-}</code></pre>
-</div>
-<p>
-LuneScript と go のシンボルの関係は次のようになる。
-</p>
-<table>
-<thead>
-<tr>
-<th>公開/非公開</th>
-<th>lns</th>
-<th>go</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>非公開</td>
-<td>func</td>
-<td>lfile_func</td>
-</tr>
-<tr>
-<td>公開</td>
-<td>Class</td>
-<td>Gfile_Class</td>
-</tr>
-<tr>
-<td>非公開</td>
-<td>val1</td>
-<td>lval1</td>
-</tr>
-<tr>
-<td>公開</td>
-<td>val2</td>
-<td>Gval2</td>
-</tr>
-</tbody>
-</table>
-<p>
-なお、引数やローカル変数は LuneScript と go とでスコープに違いはないため、
-基本的にそのまま変換する。
-</p>
-<h2 id="headline-35">
-Lua VM
-</h2>
-<p>
-現状の LuneScript では、 Macro 展開時に Lua VM を使用する。
-Go で Lua VM を使用する方法として、次の 2 つがある。
-</p>
-<ul>
-<li>
-<p>
-Lua を Go に移植した gopher-lua を使用する
-</p>
-</li>
-<li>
-<p>
-liblua を使用する
-</p>
-</li>
-</ul>
-<p>
-gopher-lua を使用すると Lua VM の扱いが楽になるが、次の制限がある。
-</p>
-<ul>
-<li>
-<p>
-Lua VM のバージョンが Lua5.1 になる
-</p>
-</li>
-<li>
-<p>
-liblua と比べると遅い
-</p>
-<ul>
-<li>
-<p>
-公式 Wiki(&lt;<a href="https://github.com/yuin/gopher-lua/wiki/Benchmarks">https://github.com/yuin/gopher-lua/wiki/Benchmarks</a>&gt;) の情報によると、
-fib(35) の実行時間が次になる。
-</p>
-<dl>
-<dt>
-lua5.1.4
-</dt>
-<dd>
-<p>
-1.71sec
-</p>
-</dd>
-<dt>
-Gopherlua
-</dt>
-<dd>
-<p>
-5.40sec
-</p>
-</dd>
-</dl>
-</li>
-</ul>
-</li>
-</ul>
-<p>
-上記から、 LuneScript のトランスコンパイラでは liblua を利用する。
-</p>
-<h3 id="headline-36">
-cgo
-</h3>
-<p>
-Go から liblua を利用するため cgo を使う。
-</p>
-<p>
-cgo は Go から C 言語のライブラリをコールするためのパッケージ。
-</p>
-<p>
-以下のように import &#34;C&#34; の前のコメントに書いた C コードが解析され、
-Go からアクセスできるように C パッケージ内に展開される。
-</p>
-<div class="src src-go">
-<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// #include &lt;stdlib.h&gt;
-</span><span class="c1">// #cgo CFLAGS: -I/usr/include/lua
-</span><span class="c1">// #cgo LDFLAGS: -ldl -lm -llua
-</span><span class="c1">// #include &lt;lauxlib.h&gt;
-</span><span class="c1">// #include &lt;lualib.h&gt;
-</span><span class="c1"></span><span class="kn">import</span> <span class="s">&#34;C&#34;</span>
-
-<span class="kn">import</span> <span class="s">&#34;unsafe&#34;</span>
-
-<span class="c1">// lua のコードを実行する
-</span><span class="c1"></span><span class="kd">func</span> <span class="nf">lua_runScript</span><span class="p">(</span> <span class="nx">script</span> <span class="kt">string</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">vm</span> <span class="o">*</span> <span class="nx">C</span><span class="p">.</span><span class="nx">lua_State</span> <span class="p">=</span> <span class="nx">C</span><span class="p">.</span><span class="nf">luaL_newstate</span><span class="p">()</span>
-    <span class="k">if</span> <span class="nx">vm</span> <span class="o">==</span> <span class="kc">nil</span> <span class="p">{</span>
-        <span class="k">return</span>
-    <span class="p">}</span>
-    <span class="k">defer</span> <span class="nx">C</span><span class="p">.</span><span class="nf">lua_close</span><span class="p">(</span> <span class="nx">vm</span> <span class="p">)</span>
-    
-    <span class="nx">C</span><span class="p">.</span><span class="nf">luaL_openlibs</span><span class="p">(</span> <span class="nx">vm</span> <span class="p">)</span>
-
-    <span class="nx">block</span> <span class="o">:=</span> <span class="nx">C</span><span class="p">.</span><span class="nf">CString</span><span class="p">(</span> <span class="nx">script</span> <span class="p">)</span>
-    <span class="k">defer</span> <span class="nx">C</span><span class="p">.</span><span class="nf">free</span><span class="p">(</span> <span class="nx">unsafe</span><span class="p">.</span><span class="nf">Pointer</span><span class="p">(</span> <span class="nx">block</span> <span class="p">)</span> <span class="p">)</span>
-    
-    <span class="nx">C</span><span class="p">.</span><span class="nf">luaL_loadstring</span><span class="p">(</span> <span class="nx">vm</span><span class="p">,</span> <span class="nx">block</span> <span class="p">)</span>
-    <span class="nx">C</span><span class="p">.</span><span class="nf">lua_pcallk</span><span class="p">(</span> <span class="nx">vm</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">C</span><span class="p">.</span><span class="nx">LUA_MULTRET</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">)</span>
-<span class="p">}</span>
-
-<span class="kd">func</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-   <span class="nf">lua_runScript</span><span class="p">(</span> <span class="s">&#34;print( &#39;hello world&#39; )&#34;</span> <span class="p">)</span>
-<span class="p">}</span></code></pre></div>
-</div>
-<p>
-<strong>cgo</strong> は #define マクロ関数には対応していないので、
-次のようなマクロ定義された関数は、自前で展開して処理を書かなければならない。
-</p>
-<div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#define luaL_dostring(L, s) \
-</span><span class="cp">	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))</span></code></pre></div>
-</div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/test/" title="X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a>
-<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/all/" title="全文検索用結合ファイル">Next - 全文検索用結合ファイル <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/subfile/" title="26. subfile 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 26. subfile 編</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/async/" title="@.2 非同期処理">Next - @.2 非同期処理 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -1537,13 +511,15 @@ Go からアクセスできるように C パッケージ内に展開される�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go/">Z. Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_study/">Z. Go 言語へのトランスコンパイル (検討段階)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
 </ul>
   

@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>21. import/provide 編 - 公開技術情報</title>
+<title>@.2 非同期処理 - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.71.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/import/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/async/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
@@ -25,18 +25,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="21. import/provide 編" />
-<meta property="og:description" content="今回は LuneScript のモジュール管理について説明します。 モジュール LuneScript のモジュール管理は、基本的に Lua と同じです。 Lua との違いを、次に挙げます。 特に宣言しない" />
+<meta property="og:title" content="@.2 非同期処理" />
+<meta property="og:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/import/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/async/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="21. import/provide 編"/>
-<meta name="twitter:description" content="今回は LuneScript のモジュール管理について説明します。 モジュール LuneScript のモジュール管理は、基本的に Lua と同じです。 Lua との違いを、次に挙げます。 特に宣言しない"/>
-<meta itemprop="name" content="21. import/provide 編">
-<meta itemprop="description" content="今回は LuneScript のモジュール管理について説明します。 モジュール LuneScript のモジュール管理は、基本的に Lua と同じです。 Lua との違いを、次に挙げます。 特に宣言しない">
+<meta name="twitter:title" content="@.2 非同期処理"/>
+<meta name="twitter:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく"/>
+<meta itemprop="name" content="@.2 非同期処理">
+<meta itemprop="description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく">
 
-<meta itemprop="wordCount" content="1717">
+<meta itemprop="wordCount" content="1823">
 
 
 
@@ -54,271 +54,273 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>21. import/provide 編</h1>
+<main><h1>@.2 非同期処理</h1>
 
 <p>
-今回は LuneScript のモジュール管理について説明します。
+LuneScript から go 言語へのトランスコンパイル対応したのを機に、
+LuneScript による非同期処理を対応しました。
+</p>
+<p>
+ただし、これは非常に実験的な内容なので参考程度にしてください。
 </p>
 <h2 id="headline-1">
-モジュール
+LuneScript のランタイム
 </h2>
 <p>
-LuneScript のモジュール管理は、基本的に Lua と同じです。
+LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
+差を埋めるためのランタイムがあります。
 </p>
 <p>
-Lua との違いを、次に挙げます。
-</p>
-<ul>
-<li>
-<p>
-特に宣言しない場合、ファイルそれぞれが 1 つのモジュールとなる。
-</p>
-</li>
-<li>
-<p>
-ファイル名の拡張子は .lns で、 .lns を除いた名前がモジュール名となる。
-</p>
-</li>
-<li>
-<p>
-init.lns は非サポート。
-</p>
-</li>
-<li>
-<p>
-LuneScript の組込みキーワード(class 等)のファイル名は非サポート。
-</p>
-</li>
-</ul>
-<p>
-念のため、LuneScript と Lua のモジュール管理の共通部分を説明します。
+例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
 </p>
 <ul>
 <li>
 <p>
-パッケージの検索パスは package.path に格納されているパス情報によって制御される。
+lua との連携動作
 </p>
 </li>
 <li>
 <p>
-モジュール名は . で区切り、サブディレクトリを表わす。
-</p>
-</li>
-<li>
-<p>
-相互参照モジュールをサポートしない。
+and or 演算子の挙動
 </p>
 </li>
 </ul>
 <p>
-例えば、ファイル hoge/test.lns のモジュール名は hoge.test になります。
+これら処理は、ランタイム内で宣言しているデータにアクセスしています。
 </p>
 <p>
-上記から分かるように、ディレクトリ名、ファイル名(拡張子以外)に
-. を含めることは出来ません。
+LuneScript を非同期処理に対応する場合、
+ランタイム内のデータアクセスを排他対応する必要があります。
 </p>
 <p>
-LuneScript のソースは、特に何も宣言しなくても 1 つのモジュールとなります。
+一方で、 mutex などによる排他制御は、
+シングルスレッド時にもパフォーマンスに影響してしまいます。
 </p>
 <p>
-例えば、次のような Test.lns は関数 func を持つモジュールとなります。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-// Test.lns
-fn func(): str, str {
-   return __mod__, __func__;
-}</code></pre>
-</div>
-<p>
-ただし、モジュール内の情報を外部に公開するには、 pub 宣言が必要です。
+今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
+排他制御は最低限にし、
+必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
 </p>
 <p>
-具体的には、次のように pub を宣言する必要があります。
+具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
+スレッド毎に複製し、スレッド毎に切り替えて利用します。
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-// Test.lns
-pub fn func(): str, str {
-   return __mod__, __func__;
-}</code></pre>
-</div>
 <p>
-これによって、このモジュールの func() 関数が外部から利用できるようになります。
+ここで一つ問題があります。
+</p>
+<p>
+それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
+</p>
+<p>
+スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
+現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
+アクセス先を切り替える、という処理を行なえます。
+</p>
+<p>
+しかし、スレッド ID の取得が出来ないため、それが出来ません。
+</p>
+<p>
+これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
+という方法が必要になります。
+</p>
+<p>
+さすがにこれはやりたくないので、別の方法を考えました。
+</p>
+<p>
+以降では、今回導入した非同期処理の方法について説明します。
 </p>
 <h2 id="headline-2">
-import
+LnsThread クラスの導入と制限
 </h2>
 <p>
-import は、外部モジュールの利用を宣言します。
+LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
 </p>
 <p>
-import は、モジュールの先頭に宣言してください。
-</p>
-<p>
-<strong>(2019/6/24) 関数内部でも宣言できるように対応しました。</strong>
-</p>
-<p>
-上記 Test.lns を利用するには、次の様にします。
+LnsThread クラスは、次のようなクラスです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-import Test;
-
-print( Test.func() ); // @Test   Test.func</code></pre>
+<pre><code class="language-lns" data-lang="lns">abstract class LnsThread {
+   pro abstract fn loop() mut;
+}</code></pre>
 </div>
 <p>
-上記の例では、 Test.func() で Test モジュール内の func() を呼び出しています。
+LnsThread のサブクラスでは、 loop() メソッドを override し、
+その中で非同期処理を行ないます。
 </p>
 <p>
-このように import することで、
-外部モジュールが pub 宣言しているシンボルにアクセス出来ます。
+LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
+</p>
+<pre class="example">
+_lune_control run_async_pipe;
+</pre>
+<p>
+go routine loop() メソッドが実行されます。
 </p>
 <p>
-なお、work/Test.lns を import する場合は、次のようになります。
+なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
+</p>
+<pre class="example">
+_lune_control use_async;
+</pre>
+<p>
+これは、 非同期処理を行なうことを宣言するコマンドです。
+</p>
+<p>
+このコマンドが実行されているモジュー内では、
+次の演算が制限がかかり、
+LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
+</p>
+<ul>
+<li>
+<p>
+and/or 演算
+</p>
+</li>
+<li>
+<p>
+nil 条件演算
+</p>
+</li>
+<li>
+<p>
+一部のビルトイン関数、メソッドアクセス
+</p>
+</li>
+</ul>
+<p>
+また、非同期処理とのデータを送受信するための手段として、
+__pipe&lt;T&gt; クラスを追加しています。
+</p>
+<p>
+__pipe&lt;T&gt; クラスは、 go の chan と等価と思ってください。
+</p>
+<p>
+__pipe&lt;T&gt; クラスは、次のようなクラスです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-import work.Test;
-
-print( Test.func() ); // work.Test	Test.func</code></pre>
+<pre><code class="language-lns" data-lang="lns">class __pipe&lt;T&gt; {
+  pub fn get() mut : T!;
+  pub fn put( val:T! ) mut;
+}</code></pre>
 </div>
 <p>
-上記例から分かるように、import したモジュールにアクセスするには、
-そのモジュール名の最後の . 以降の名前を使用します。
-上記例の場合、 work.Test を import しているので、シンボル Test でアクセスします。
+ここで、__pipe&lt;T&gt;  の T には __AsyncItem インタフェースを implement したクラスを
+指定する必要があります。
 </p>
 <p>
-なお、複数モジュールを import する時に、
-アクセス名が同じになる場合は(例えば foo.bar と hoge.bar を import する場合)、
-次に説明する as を利用してください。
-</p>
-<h3 id="headline-3">
-import as
-</h3>
-<p>
-import as は、 import 後のアクセス名を指定します。
+put() した val が、 get() で取得できるようになります。
+put(val:T!) に nil を与えると、その __pipe の通信は終了し、
+その後 nil 意外を put() しても、 get() は nil を返すようになります。
 </p>
 <p>
-例えば、上記の work.Test を import as で foo とすると、次のようになります。
+__AsyncItem インタフェースを implement クラスは、
+同時に Mapping インタフェースも implement が必要です。
+</p>
+<p>
+__AsyncItem インタフェースを implement したクラスには、
+次のメソッドが追加されます。
+</p>
+<pre class="example">
+pub static fn _createPipe( num:int ) : __pipe&lt;T&gt;!;
+</pre>
+<p>
+ここで 引数 num は、 chan の cap と同じです。
+</p>
+<p>
+なお、 Lua にトランスコンパイルした場合、
+この <code class="verbatim">_createPipe()</code> 関数は必ず nil を返します。
+</p>
+<p>
+上記をまとめると、非同期処理は次のように書きます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-import work.Test as foo;
+<pre><code class="language-lns" data-lang="lns">_lune_control use_async;
 
-print( foo.func() ); // work.Test	Test.func</code></pre>
-</div>
-<h2 id="headline-4">
-LuneScript でトランスコンパイルしたモジュールを Lua から require() する
-</h2>
-<p>
-LuneScript は、Lua のトランスコンパイラです。
-つまり、 LuneScript で書いたモジュールは、
-Lua から require() して使用することが出来ます。
-</p>
-<p>
-この場合、 LuneScript で書いたモジュールは、必ずテーブルとなります。
-</p>
-<p>
-例えば、上記 Test.lns のトランスコンパイル後の Lua ソースは、次のようになります。
-</p>
-<div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--work/Test.lns</span>
-<span class="kd">local</span> <span class="n">_moduleObj</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;work.Test&#39;</span>
-<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune</span> <span class="kr">then</span>
-   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="kr">end</span>
-<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span>  <span class="p">)</span>
-   <span class="kd">local</span> <span class="n">__func__</span> <span class="o">=</span> <span class="s1">&#39;Test.func&#39;</span>
-
-   <span class="kr">return</span> <span class="n">__mod__</span><span class="p">,</span> <span class="n">__func__</span>
-<span class="kr">end</span>
-<span class="n">_moduleObj.func</span> <span class="o">=</span> <span class="n">func</span>
-<span class="kr">return</span> <span class="n">_moduleObj</span></code></pre></div>
-</div>
-<p>
-上記のソースを見ると分かりますが、
-Lua からこのソースを require() すると、_moduleObj が得られることになります。
-</p>
-<p>
-一方で、 Lua の require() は任意の値を返すこと出来ます。
-そして、この動作を期待される場合があります。
-</p>
-<p>
-つまり、LuneScript でトランスコンパイルした Lua モジュールは、
-テーブル以外のオブジェクトが得られることを期待した Lua から、
-直接 require して使用することが出来ないことになります。
-</p>
-<p>
-このような Lua モジュールとの互換を可能にする仕組みが、 provide です。
-</p>
-<h2 id="headline-5">
-provide
-</h2>
-<p>
-provide は、既存の Lua モジュールとの互換性を提供するものです。
-</p>
-<p>
-<strong>Lua モジュールとの互換性が不要な場合の使用は避けてください。</strong>
-</p>
-<p>
-次に provide の例を示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-// Test.lns
-pub fn func(): str, str {
-   return __mod__, __func__;
+class Test extend (__AsyncItem,Mapping) {
+   let val:str {pub};
 }
 
-provide func;</code></pre>
-</div>
-<p>
-上記例は、 provide に 関数 func() を与えています。
-</p>
-<p>
-これによって、この Test.lns モジュールのトランスコンパイル結果は、
-次のようになります。
-</p>
-<div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--work/Test.lns</span>
-<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;work.Test&#39;</span>
-<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune</span> <span class="kr">then</span>
-   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="kr">end</span>
-<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span>  <span class="p">)</span>
-   <span class="kd">local</span> <span class="n">__func__</span> <span class="o">=</span> <span class="s1">&#39;Test.func&#39;</span>
+class Async extend LnsThread {
+   let mut count:int {pub};
+   let mut pipe:__pipe&lt;Test&gt;!;
+   
+   pub fn __init( pipe:__pipe&lt;Test&gt;! ) {
+      super();
+      self.pipe = pipe;
+      self.count = 0;
+   }
+   
+   pro override fn loop() mut {
+      print( &#34;hoge:&#34; );
+      while true {
+         if! let mut pipe = self.pipe {
+            let! val = pipe.get() {  // pipe からデータを取得
+               print( &#34;hoge:&#34; );
+               break;
+            };
+            val.$val.find( &#34;%d&#34; (self.count) ## );
+            self.count = self.count + 1;
+         }
+      }
+   }
+   pub fn start() {
+      _lune_control run_async_pipe;  // loop() 起動
+   }
+   pub fn put( test:Test ) mut {
+      if! let mut pipe = self.pipe { // pipe にデータをセット
+         pipe.put( test );
+      }
+   }
+}
 
-   <span class="kr">return</span> <span class="n">__mod__</span><span class="p">,</span> <span class="n">__func__</span>
-<span class="kr">end</span>
-<span class="kr">return</span> <span class="n">func</span></code></pre></div>
+let mut async = new Async( Test._createPipe( 10 ) );
+async.start();
+let mut async2 = new Async( Test._createPipe( 10 ) );
+async2.start();
+
+for _ = 1, 100000 {
+   async.put( new Test( &#34;abcdefg&#34; ) );
+   async2.put( new Test( &#34;abcdefg&#34; ) );
+}
+print( async.$count, async2.$count );</code></pre>
 </div>
+<h3 id="headline-3">
+非同期処理の制限
+</h3>
 <p>
-上記から分かるように、 Lua からこのモジュールを require() すると、
-関数 func が得られます。
+次の処理を行なった場合の動作は未定義です。
+</p>
+<ul>
+<li>
+<p>
+Loop() 内から、別モジュールのデータ、メソッドにアクセスする
+</p>
+</li>
+<li>
+<p>
+別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
+</p>
+</li>
+<li>
+<p>
+LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
+</p>
+</li>
+</ul>
+<p>
+以上のように、非常に限定的で使い勝手の悪い仕様になっています。
+この仕様は間違いなく将来変更になるので、
+冒頭で書いたようにあくまで参考程度にしてください。
 </p>
 <p>
-このように provide を利用すると、
-既存の Lua モジュールとの互換性のあるモジュールを生成することが出来ます。
-</p>
-<p>
-なお、 provide に指定できるのは <strong>シンボルだけ</strong> です。
-プリミティブな値を指定することは出来ません。
-</p>
-<h2 id="headline-6">
-まとめ
-</h2>
-<p>
-LuneScript は、簡単にモジュールを作成でき、既存の Lua モジュールとの互換性もあります。
-</p>
-<p>
-次回は、 LuneScript から既存の Lua  モジュールを利用する方法について説明します。
+ちなみに、これだけ制限の多い非同期処理ですが、
+LuneScript の parse 処理に利用していて、
+LuneScript の高速化にほんの少し貢献しています。
 </p>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/nilcond/" title="20. nil 条件演算子 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 20. nil 条件演算子 編</a>
-<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/require/" title="22. require/module 編">Next - 22. require/module 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/lunescript/go/" title="@.1 Go 言語へのトランスコンパイル"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.1 Go 言語へのトランスコンパイル</a>
+<a class="nav nav-next" href="https://ifritjp.github.io/documents/lunescript/reason/" title="A. Lua のトランスコンパイラ LuneScript を開発した理由">Next - A. Lua のトランスコンパイラ LuneScript を開発した理由 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -443,7 +445,7 @@ LuneScript は、簡単にモジュールを作成でき、既存の Lua モジ�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua/">22.2. Lua と連携 編</a></li>
@@ -452,7 +454,7 @@ LuneScript は、簡単にモジュールを作成でき、既存の Lua モジ�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
