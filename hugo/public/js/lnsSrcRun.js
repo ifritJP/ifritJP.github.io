@@ -77,5 +77,8 @@
             }( element, codeNo ) );
             element.appendChild( button );
         });
+        Array.from( document.getElementsByClassName( "language-dot" ) ).forEach( function( element ) {
+            element.display = none;
+        });
     } );
 }

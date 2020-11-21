@@ -15,6 +15,7 @@ SRCS += loop.org
 SRCS += func.org
 SRCS += multipleRetVal.org
 SRCS += defaultArg.org
+SRCS += arg.org
 SRCS += nilable.org
 SRCS += closure.org
 SRCS += class1.org
@@ -29,14 +30,21 @@ SRCS += nilcond.org
 SRCS += import.org
 SRCS += require.org
 SRCS += glue.org
+SRCS += lua.org
 SRCS += make.org
 SRCS += macro.org
 SRCS += cast.org
 SRCS += subfile.org
+SRCS += lazyLoading.org
+SRCS += async.org
+SRCS += go.org
+SRCS += go_study.org
 SRCS += reason.org
 SRCS += recommend.org
 SRCS += completion.org
 SRCS += onWeb.org
+SRCS += test.org
+SRCS += Box.org
 
 SRCS := $(addprefix content/LuneScript/, $(SRCS))
 INDEX := $(addprefix content/LuneScript/, $(INDEX))
@@ -44,13 +52,18 @@ INDEX := $(addprefix content/LuneScript/, $(INDEX))
 HEAD := content/LuneScript/_all.org.head
 
 EXCLUDE = -e '^\#+TITLE:' -e '^\#+AUTHOR:' -e '^\#+date:'
-SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z]*\. *\(.*\)/-----\n* *\2*/g'
+SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z@]*\. *\(.*\)/-----\n* *\2*/g'
 
 help:
 	@echo make all
 	@echo make concat_all
 
 concat_all:
+	echo $(SRCS) | sed 's@ @\n@g' | sort > dump.list
+	find content/LuneScript -iname '*.org' | sort | \
+		grep -v -e 'all.org' -e '_index.org' > dump2.list
+	diff dump.list dump2.list 
+
 	cat $(INDEX) | sed 's@\[\[@[[../@g' | cat - $(SRCS) |		\
 		sed 's/^*/**/g'  | sed $(SEDPAT) |			\
 		grep -v $(EXCLUDE) > dump

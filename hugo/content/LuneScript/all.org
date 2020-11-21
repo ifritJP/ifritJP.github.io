@@ -4050,6 +4050,84 @@ warning を error として扱います。
 
 
 -----
+* *4. 可変長引数、戻り値 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+** 可変長引数、戻り値
+
+引数、 戻り値に ... を利用することで、
+可変長引数、可変長戻り値の関数を定義できます。
+
+... を利用したサンプルを次に示します。
+
+#+BEGIN_SRC lns
+fn func( ... ) : int, ... {
+   let argList = [ ... ];
+   let mut total = 0;
+   foreach arg in argList {
+      when! arg {
+         total = total + arg@@int;
+      }
+   }
+   return total, ...;
+}
+
+print( func( 1, 2, 3, 4 ) ); // 10 1 2 3 4 
+#+END_SRC
+
+上記の例では、与えられた可変長引数の値を合計し、
+合計値と与えられた可変長引数を返す関数 func() を定義、実行しています。
+
+関数本体で ... を使用することで、可変長引数そのものを示します。
+ここで ... は、 0 個以上の stem! の値となります。
+stem! については後述します。
+
+可変長引数をもつ関数をコールする側は、 0 個以上のあらゆる型の引数を指定できます。
+
+** Generics
+
+上記の通り ... を利用することで、可変長引数、戻り値を宣言できます。
+
+しかし、 ... の値は全て stem! として扱うため型情報が失なわれてしまいます。
+
+上のサンプルでも、 func() には int のデータを渡しているのに、
+型情報が失なわれるため
+func() 内で値にアクセスするには unwrap やキャストが必要になっています。
+
+型情報を保つには、次のように ~...<type>~ を使用します。
+
+#+BEGIN_SRC lns
+fn func( ...<int> ) : int, ...<int> {
+   let argList = [ ... ];
+   let mut total = 0;
+   foreach arg in argList {
+      total = total + arg;
+   }
+   return total, ...;
+}
+print( func( 1, 2, 3, 4 ) ); // 10 1 2 3 4 
+#+END_SRC
+
+~...<int>~ を使用することで、
+int の型情報を保持したまま可変長引数、戻り値を扱うことが出来ます。
+
+なお、次のサンプルの func1() と func2() は同義です。
+
+#+BEGIN_SRC lns
+fn func1( ...<stem!> ) {
+   print( ... );
+}
+fn func2( ... ) {
+   print( ... );
+}
+func1( 1, "abc" );
+func2( 1, "abc" );
+#+END_SRC
+-----
 * *nilable 編*
 # -*- coding:utf-8 -*-
 #+STARTUP: nofold
@@ -6862,6 +6940,290 @@ $ gcc -std=c99 -fPIC -shared -o test/ext.so glue.c test_ext_glue.c
 #+END_SRC
 
 -----
+* *2. Lua と連携 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は Lua のコードを実行できます。
+
+しかし、Lua コードを実行するには幾つかの点で注意が必要です。
+
+以降では、 LuneScript 上で Lua コードを実行する際の注意点を説明します。
+
+
+** Lua コードの実行
+
+LuneScript では、
+_load() 関数などを利用することで LuneScript 内から Lua のコードを実行できます。
+
+_load() 関数は、 lua の load() 関数と基本的に同じ仕様です。
+
+以下にサンプルを示します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      forsort val, key in obj@@Map<str,int> {
+         print( key, val + 100 ); 
+      }
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+このサンプルは、次の値を出力します。
+
+#+BEGIN_SRC txt
+val1	110
+val2	120
+#+END_SRC
+
+これは、Lua のコード ~return { val1 = 10, val2 = 20 }~ が返す Lua のテーブルを、
+forsort で列挙して =print( key, val + 100 );= で出力した結果です。
+
+上記サンプルは、以下の LuneScript のコードとほぼ同じと言えます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func():Map<str,int> {
+   return { "val1":10, "val2":20 };
+}
+forsort val, key in func() {
+   print( key, val + 100 ); 
+}
+#+END_SRC
+
+このように、 LuneScript と Lua は連携して動作することが出来ます。
+
+** Lua → LuneScript のデータ変換
+
+LuneScript から Lua のコードを実行したとき、
+その Lua コードの実行結果は Luaval 型になります。
+
+Luaval 型は、Lua コード内のデータを保持する型で、
+LuneScript の型 T に相当する Lua コード内のデータは =Luaval<T>= となります。
+
+例えば上記サンプルの ~{ val1 = 10, val2 = 20 }~ は、
+LuneScritp の Map<str,int> に相当し、 =Luaval<Map<str,int>>= となります。
+
+なお、 LuneScript から Lua にトランスコンパイルする場合、
+**Luaval<T> は T と完全に一致した型* になります。
+LuneScript から Lua にトランスコンパイルする場合、
+例え Luaval<T> と明示的に宣言しても内部的に T として変換されるため、
+Luaval<T> を意識する必要はありません。
+
+LuneScript から Lua 以外の言語(現在は go に変換可能)に変換する場合、
+Luaval<T> と T は明確に扱いが異なるため、
+Lua 以外に変換する場合は Luaval<T> を意識する必要があります。
+
+**トランスコンパイルのオプションに "--valid-luaval" を指定* することで、
+Lua にトランスコンパイルする際も、Luaval<T> と T を分けて管理します。
+
+
+上記サンプルは、次のように =Luaval<Map<str,int>>= の引数を持つ
+func() を使用するように書き換えることが出来ます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(map:Luaval<&Map<str,int>>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+また上記のサンプルの様に Map の Luaval 型のデータに対しても、
+LuneScript の Map と同様に
+foreach や =[]= を使用した要素アクセスなどで、Map 内のデータを参照できます。
+ただし参照は出来ますが、 *変更は出来ません。*
+
+*** 相互変換可能な型
+
+Lua コード内のデータの型が次の場合、
+Luaval 型とはならずにそのままの型になります。
+
+- int, real, bool, str
+- 上記の nilable
+
+str に関しては、 *文字列長に比例したオーバーヘッド* が掛かります。
+
+** Luaval 型のキャスト
+
+Luaval 型のキャストには制限があります。
+  
+上記サンプルは、次のように func の引数に  =obj@@Map<str,int>= を渡しています。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip   
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+   }
+#+END_SRC
+
+これは obj を Map<str,int> 型にキャストする演算ですが、
+ここで obj の型は Luaval<stem> 型であり、
+それを Map<str,int> にキャストすると、
+そのキャスト後の型は Luaval<Map<str,int>> になります。
+
+ある型 T1 から T2 型にキャストが可能だった時、
+Luaval<T1> から T2 へのキャストを指示した場合、
+そのキャスト結果は Luaval<T2> になります。
+
+また、次のキャストは出来ません。
+
+- T1 型から Luaval<T1> 型へのキャスト
+- Luaval<T1> 型から T1 型へのキャスト
+
+具体的には Map<str,int> から Luaval<Map<str,int>> へのキャストは出来ません。
+
+ただし、 stem 型は例外的に Luaval との相互キャストが可能です。
+
+なお、次のように stem 型を経由することで、
+Luaval 型から非 Luaval 型へのキャストが可能ですが、
+
+: Luaval => stem => Luaval
+
+本来とは異なる型にキャストした時の動作は *未定義* です。
+
+
+*** expandLuavalMap
+
+Lua コード内の collection のデータは、 Luaval として扱います。
+
+たとえば、 Map 型のデータは Luaval<Map> です。
+Map 型と Luaval<Map> 型のデータは互換性がないため、代入などは出来ません。
+
+この collection の Luaval 型のデータを LuneScript の値として展開する方法として、
+次の関数を提供しています。
+
+: fn expandLuavalMap( Luaval<stem>! ) : stem!;
+
+この関数を使用すると、次のような処理が掛けます。
+
+#+BEGIN_SRC lns
+fn func(map:Luaval<&Map<str,int>>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+fn func2(map:&Map<str,int>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+      if! let map = expandLuavalMap( obj ) {
+         func2( map@@Map<str,int> );
+      }
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+このサンプルでは、 Luaval<&Map<str,int>> を列挙する func() 関数と、
+&Map<str,int> を列挙する func2() 関数があります。
+
+func2() をコールする前に expandLuavalMap() で Luaval 型のデータを展開し、
+それを Map<str,int> にキャストするこおで Luaval<Map<str,int>> ではなく、
+Map<str,int> として処理しています。
+
+なお expandLuavalMap() は、
+引数で与えられた Luaval 型のデータを展開したクローンを作成します。
+
+   
+** Luaval 型の型変換
+
+ある nilable 型の T! を保持する Luaval 型は、 Luaval<T>! になります。
+Luaval<T!> にはなりません。
+
+また、 Luaval<T> の Immutable は Luaval<&T> になります。
+
+
+
+** Luaval 型の関数、Luaval 型オブジェクトのメソッド
+
+関数型の Luaval は、その引数、戻り値も Luaval 型になります。
+
+例えば次のサンプルの func 関数の引数 proc は、
+Luaval<Process> 型の From であり、
+この Form の引数は Luaval<&List<int>> 、
+戻り値は Luaval<&List<int>> になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip
+   form Process( val:&List<int> ) : &Map<int>;
+   fn func( proc:Luaval<Process> ) {
+      let list = proc( [ 1, 2, 3 ] );
+   }
+#+END_SRC
+ 
+
+** LuneScript → Lua のデータ変換
+
+Lua の関数に LuneScript の値を渡す時は、Luaval 型の値を渡す必要があります。
+
+ただし、 Lua の関数の引数が次の値の場合、
+Luava 型ではなくそのままの型になります。
+
+- int, real, bool, str
+- 上記を要素に持つ List などのコレクション型  
+- 上記の nilable
+
+次にサンプルを示します。
+
+#+BEGIN_SRC lns
+let code = ```
+return function( tbl )
+   for key, val in pairs( tbl ) do
+      print( key, val )
+   end
+end
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+   let map = { "val1":1, "val2":10 };
+      (obj@@form)( map );  // Lua の関数コール
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+このサンプルは、
+引数で与えられた Lua のテーブルの要素を出力する関数をコールします。
+
+このサンプルでは、
+Map<str,int> 型のデータ map を Lua の関数の引数に指定して実行しています。
+
+このとき、内部的に Map<str,int> 型のデータが Lua のテーブルに変換されています。
+-----
 * *ビルド 編*
 # -*- coding:utf-8 -*-
 #+STARTUP: nofold
@@ -7946,6 +8308,1534 @@ pub let val2 = 1;
 #+END_SRC
 
 -----
+* *遅延ロード 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+ある程度の規模のプロジェクトでは、複数のモジュールを import することになります。
+そして import したモジュール内でまた別のモジュールを import しています。
+
+スクリプト言語における import は、動的なロード処理を意味します。
+あるスクリプトを起動すると、
+そのスクリプトが利用している全てのモジュールのロード処理が行なわれた後に、
+ようやくスクリプトのメイン処理が動き出します。
+
+例えば、次の図に示すような import の関係があった場合、
+メインの mod モジュールの処理が行なわれるのは、
+関連する全てのモジュールのロードが終ってから
+mod モジュールの処理が行なわれます。
+
+#+begin_src dot :file lazy.svg :cache yes  :results silent
+digraph G {
+rankdir = TB;
+mod -> funcA
+mod -> funcB
+mod -> funcC
+
+funcA -> subA_1
+funcA -> subA_2
+funcA -> subA_3
+
+funcB -> subB_1
+funcB -> subB_2
+funcB -> subB_3
+
+funcC -> subC_1
+funcC -> subC_2
+funcC -> subC_3
+}
+#+end_src
+
+[[../lazy.svg]]
+
+しかし、 import したモジュールを全て常に使うとは限りません。
+
+例えば、3 つの機能(funcA,funcB,funcC)を提供するプログラムを考えます。
+このプログラムの 3 つの内の一つを選択して実行するような場合、
+選択されなかった残りの 2 つの機能は使われないことになります。
+
+import は、モジュールが使われるかどうかに関係なく、
+モジュールをロードします。
+つまり、モジュールのロード処理に掛る時間や、
+ロードしたデータを格納しておくメモリ領域を無駄にすることになります。
+
+上記の図で説明すると、
+funcA が選択された場合 funcB, funcB_1 〜 funcB_3、
+func_C, funcC_1 〜 funcC_3 が無駄になります。
+
+プロジェクトの規模が小さい場合、
+この無駄を気にする必要はほとんどありません。
+しかし、プロジェクトの規模が大きくなった場合、
+この無駄を無視できなくなってきます。
+
+例えば一つのモジュールのロード処理に必要な時間が 0.01 秒だったとして、
+100 個のモジュールがあれば 1 秒かかります。
+
+プログラムが常駐するのであれば、ロード処理は一度きりなので、
+多少起動時間がかかっても我慢できますが、
+常駐せずにリクエスト毎に起動しなければならない場合、
+この無駄なロード処理は無視できなくなります。
+
+
+このロード処理の無駄を無くすのが遅延ロードです。
+
+** 遅延ロード
+
+遅延ロードは、起動時に関連する全てのモジュールをロードするのではなく、
+モジュールが必要になったタイミングでロードする処理方式です。
+
+上記の図で説明すると、
+funcA が選択された場合、
+アクセスされない funcB, funcB_1 〜 funcB_3、
+func_C, funcC_1 〜 funcC_3 はロードされません。
+
+これにより、ロード処理の時間、
+ロードしたデータを格納しておくメモリ領域を無駄にしません。
+
+
+*** 遅延ロードの実現方法
+
+遅延ロードは、モジュールにアクセスしたタイミングでロード済みかどうかを判断し、
+ロードしていなければロードし、
+ロードしていなければロード済みのデータを利用します。
+
+一方通常のロードは、
+起動時(import したタイミング)に数珠繋ぎでモジュールをロードします。
+				      
+つまり、遅延ロードでは、通常のロードと比べて判定処理が入るので
+その分のオーバーヘッドがあります。
+もちろんオーバーヘッドは非常に少ないです。
+しかし、オーバーヘッドが掛るのは事実であるので、
+非常にクリティカルかケースでは性能劣化が発生することも考えられます。
+
+遅延ロードを利用する場合、このようなケースの考慮が必要です。
+
+*** 遅延ロードの影響
+
+前述している通り、遅延ロードには僅かなオーバーヘッドがあります。
+
+しかし、それが影響することはほとんどないでしょう。
+
+それよりも影響が考えられるのが、実行順序の違いです。
+
+**** ロード方式の違いによる実行順序の影響
+
+モジュールのトップスコープに書いた処理は、
+そのモジュールがロードされた時に実行されます。
+
+例えば次のようなモジュールがあった場合、
+
+#+BEGIN_SRC lns
+print( "hoge" );
+fn func() {
+    print( "foo" );
+}
+#+END_SRC
+
+このモジュールがロードされたタイミングで hoge が出力されます。
+一方で、 func() は実行されないので foo は出力されません。
+
+そして、このモジュールを import する次のモジュールがある場合、
+
+#+BEGIN_SRC lns
+import Hoge;
+
+print( "bar" );
+Hoge.func();
+#+END_SRC
+
+通常ロードの場合、次の出力が行なわれます。
+
+#+BEGIN_SRC txt
+hoge
+bar
+foo
+#+END_SRC
+
+一方で遅延ロードの場合、次の出力が行なわれます。
+
+#+BEGIN_SRC txt
+bar
+hoge
+foo
+#+END_SRC
+
+出力結果を比較すると、
+**bar と hoge の出力順番* が入れ替わっています。
+
+なぜこのようなことが起るかというと、
+通常ロードでは
+
+- import したタイミングでサブモジュール Hoge がロードされ、
+- そのタイミングで =print( "hoge" )= が実行され、
+- サブモジュール Hoge のロード終了後に =print( "bar" )= が実行される。
+
+一方で遅延ロードでは、
+通常ロードでは import したタイミングでサブモジュール Hoge がロードされず、
+
+- 最初に =print( "hoge" )= が実行され、
+- 次の =Hoge.func()= を実行する直前に、
+  サブモジュール Hoge がロードされ、
+- =print( "hoge" )= が処理される。
+
+通常ロードと遅延ロードには、このような違いが起る。
+
+**** ロード方式の違いによる global の影響
+
+LuneScript のアクセス制御には pub/pro/pri/local の他に、global があります。
+
+global の詳細については他の記事を参照していただくとして、
+global はモジュールをロードしたタイミングで登録されます。
+
+つまり、遅延ロードの影響で *global のデータが登録されるタイミングがズレます。*
+
+global を使うケースは少ないと思いますが、注意してください。
+
+** 使用方法
+
+遅延ロードは次の命令で利用できます。
+
+- import
+- module
+
+| 命令     | ロード処理               |
+|----------+--------------------------|
+| import   | コンパイルオプション依存 |
+| import.l | 遅延ロード               |
+| import.d | 通常ロード               |
+
+| 命令     | ロード処理               |
+|----------+--------------------------|
+| module   | コンパイルオプション依存 |
+| module.l | 遅延ロード               |
+| module.d | 通常ロード               |
+
+例えば以下のようにすることで、 Sub モジュールは遅延ロードされます。
+
+#+BEGIN_SRC lns
+import.l Sub;
+#+END_SRC
+
+
+import, module はコンパイルオプション依存です。
+
+コンパイルオプションに次を指定した場合、
+
+: --default-lazy
+
+import, module は遅延ロードになります。
+
+なお、import.d, module.d を指定した場合は、
+=--default-lazy= を指定している時も通常ロードになります。
+
+-----
+* *2 非同期処理*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript から go 言語へのトランスコンパイル対応したのを機に、
+LuneScript による非同期処理を対応しました。
+
+ただし、これは非常に実験的な内容なので参考程度にしてください。
+
+** LuneScript のランタイム
+
+LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
+差を埋めるためのランタイムがあります。
+
+例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
+
+- lua との連携動作
+- and or 演算子の挙動
+
+これら処理は、ランタイム内で宣言しているデータにアクセスしています。
+
+LuneScript を非同期処理に対応する場合、
+ランタイム内のデータアクセスを排他対応する必要があります。
+
+一方で、 mutex などによる排他制御は、
+シングルスレッド時にもパフォーマンスに影響してしまいます。
+
+今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
+排他制御は最低限にし、
+必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
+
+具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
+スレッド毎に複製し、スレッド毎に切り替えて利用します。
+
+ここで一つ問題があります。
+
+それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
+
+スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
+現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
+アクセス先を切り替える、という処理を行なえます。
+
+しかし、スレッド ID の取得が出来ないため、それが出来ません。
+
+これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
+という方法が必要になります。
+
+さすがにこれはやりたくないので、別の方法を考えました。
+
+以降では、今回導入した非同期処理の方法について説明します。
+
+** LnsThread クラスの導入と制限
+
+LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
+
+LnsThread クラスは、次のようなクラスです。
+
+#+BEGIN_SRC lns
+abstract class LnsThread {
+   pro abstract fn loop() mut;
+}
+#+END_SRC
+
+LnsThread のサブクラスでは、 loop() メソッドを override し、
+その中で非同期処理を行ないます。
+
+LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
+
+: _lune_control run_async_pipe;
+
+go routine loop() メソッドが実行されます。
+
+なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
+
+: _lune_control use_async;
+
+これは、 非同期処理を行なうことを宣言するコマンドです。
+
+このコマンドが実行されているモジュー内では、
+次の演算が制限がかかり、
+LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
+
+- and/or 演算
+- nil 条件演算
+- 一部のビルトイン関数、メソッドアクセス
+
+また、非同期処理とのデータを送受信するための手段として、
+__pipe<T> クラスを追加しています。
+
+__pipe<T> クラスは、 go の chan と等価と思ってください。
+
+__pipe<T> クラスは、次のようなクラスです。
+#+BEGIN_SRC lns
+class __pipe<T> {
+  pub fn get() mut : T!;
+  pub fn put( val:T! ) mut;
+}
+#+END_SRC
+
+ここで、__pipe<T>  の T には __AsyncItem インタフェースを implement したクラスを
+指定する必要があります。
+
+put() した val が、 get() で取得できるようになります。
+put(val:T!) に nil を与えると、その __pipe の通信は終了し、
+その後 nil 意外を put() しても、 get() は nil を返すようになります。
+
+
+__AsyncItem インタフェースを implement クラスは、
+同時に Mapping インタフェースも implement が必要です。
+
+__AsyncItem インタフェースを implement したクラスには、
+次のメソッドが追加されます。
+
+: pub static fn _createPipe( num:int ) : __pipe<T>!;
+
+ここで 引数 num は、 chan の cap と同じです。
+
+なお、 Lua にトランスコンパイルした場合、
+この =_createPipe()= 関数は必ず nil を返します。
+
+上記をまとめると、非同期処理は次のように書きます。
+
+#+BEGIN_SRC lns
+_lune_control use_async;
+
+class Test extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+class Async extend LnsThread {
+   let mut count:int {pub};
+   let mut pipe:__pipe<Test>!;
+   
+   pub fn __init( pipe:__pipe<Test>! ) {
+      super();
+      self.pipe = pipe;
+      self.count = 0;
+   }
+   
+   pro override fn loop() mut {
+      print( "hoge:" );
+      while true {
+         if! let mut pipe = self.pipe {
+            let! val = pipe.get() {  // pipe からデータを取得
+               print( "hoge:" );
+               break;
+            };
+            val.$val.find( "%d" (self.count) ## );
+            self.count = self.count + 1;
+         }
+      }
+   }
+   pub fn start() {
+      _lune_control run_async_pipe;  // loop() 起動
+   }
+   pub fn put( test:Test ) mut {
+      if! let mut pipe = self.pipe { // pipe にデータをセット
+         pipe.put( test );
+      }
+   }
+}
+
+let mut async = new Async( Test._createPipe( 10 ) );
+async.start();
+let mut async2 = new Async( Test._createPipe( 10 ) );
+async2.start();
+
+for _ = 1, 100000 {
+   async.put( new Test( "abcdefg" ) );
+   async2.put( new Test( "abcdefg" ) );
+}
+print( async.$count, async2.$count );
+#+END_SRC
+
+*** 非同期処理の制限
+
+次の処理を行なった場合の動作は未定義です。
+
+- Loop() 内から、別モジュールのデータ、メソッドにアクセスする
+- 別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
+- LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
+
+以上のように、非常に限定的で使い勝手の悪い仕様になっています。
+この仕様は間違いなく将来変更になるので、
+冒頭で書いたようにあくまで参考程度にしてください。
+
+ちなみに、これだけ制限の多い非同期処理ですが、
+LuneScript の parse 処理に利用していて、
+LuneScript の高速化にほんの少し貢献しています。
+
+
+-----
+* *1 Go 言語へのトランスコンパイル*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript はトランスコンパイル先の言語として Lua だけでなく、
+Go へのトランスコンパイルが可能です。
+
+この機能により、
+LuneScript のセルフホスティングコードを go にトランスコンパイルし、
+go でビルドすることで、 LuneScript の高速化を実現しています。
+
+
+ただし、
+LuneScript のセルフホスティングに必要な機能に限定したサポートになっているため、
+一部の機能は対応できていません。
+
+とはいえ、LuneScript のセルフホスティング自体が、
+LuneScript のほとんどの機能を使用しているので、
+普通に使う分には問題なく対応出来ています。
+
+** go 言語へのトランスコンパイル方法
+
+go 言語へのトランスコンパイルは、
+LuneScript のコマンドラインオプション save あるいは SAVE 時に
+ *-langGo* を指定することで、
+.go 拡張子のファイルに go へのトランスコンパイル結果を出力します。
+
+
+** Lua との連携動作
+
+go 言語へのトランスコンパイルを行なう場合、
+Lua との連携動作を行なう際に特別な型を使用する必要があります。
+
+詳しくは以下を参照してください。
+
+[[../lua]]
+
+
+** Go 言語へのトランスコンパイル後の構成
+
+LuneScript は Lua へのトランスコンパイラであり、
+LuneScript から Lua のコードを直接利用できるという特徴があります。
+
+この特徴は、 Go 言語へトランスコンパイルした後でも引き継がれます。
+
+例えば、次のようなコードを Go 言語へ変換した後でも動かせます。
+
+#+BEGIN_SRC lns
+let step = 40;
+
+// Lua のフィボナッチ関数
+let code = ```
+local function fib ( n )
+   if n < 2 then return n end
+   return fib(n - 2) + fib(n - 1)
+end
+return fib
+```;
+
+// Lua コードのロード
+form fibFunc( num:int ):int;
+fn loadLua( txt:str ) : Luaval<fibFunc> {
+   let loaded = unwrap _load( txt ## );
+   let fib = unwrap loaded(##);
+   return fib@@fibFunc;
+}
+
+// プロファイル用マクロ
+macro _profile( exec:__exp ) {
+   {}
+   {
+      let prev = os.clock();
+      print( "%s = %d: step = %d: time = %g"
+             (,,,,exec, ,,exec, step, os.clock() - prev ) );
+   }
+}
+
+// Lua のコードをロードして実行
+let fib_lua = loadLua( code );
+_profile( fib_lua( step ) );
+
+
+// LuneScript のフィボナッチ関数
+fn fib_lns( num:int ) : int {
+   if num < 2 {
+      return num;
+   }
+   return fib_lns( num - 2 ) + fib_lns( num - 1 );
+}
+// Go で定義した fib_lns 関数を実行
+_profile( fib_lns( step ) );
+#+END_SRC
+
+このコードは、 フィボナッチの計算を lua と LuneScript で行なうものです。
+
+最初の code 変数で定義しているのが lua のコードで、
+それをロードするのが loadLua() 関数で、ロードされた Lua の関数が fib_lua です。
+そして、後半の fib_lns() 関数は フィボナッチの計算を行なう LuneScript の関数です。
+
+*** Lua へトランスコンパイルした場合
+
+上記コードを Lua にトランスコンパイルして動かすと、次が出力されます。
+
+#+BEGIN_SRC txt
+fib_lua( step ) = 24157817: step = 37: time = 5.69
+fib_lns( step ) = 24157817: step = 37: time = 5.38
+#+END_SRC
+
+これは、fib_lua() と fib_lns() それぞれの計算結果と、計算時間を表しています。
+
+これを見ると、
+Lua でロードされた関数 fib_lua() と、
+Lns の関数 fib_lns() の実行時間がほとんど同じ時間掛ることが分かります。
+
+これは当然の結果です。
+なぜならば、 LuneScript を Lua に変換した場合は、
+LuneScript で書いた fib_lns() と Lua の fib_lua() は、
+ほとんど同じ Lua のコードになるからです。
+
+上記のコードを Lua にトランスコンパイルした際のコードは次のようになります。
+
+#+BEGIN_SRC lua
+--miniGo.lns
+local _moduleObj = {}
+local __mod__ = '@miniGo'
+local _lune = require( "lune.base.runtime2" )
+if not _lune2 then
+   _lune2 = _lune
+end
+local step = 37
+local code = [==[
+local function fib ( n )
+   if n < 2 then return n end
+   return fib(n - 2) + fib(n - 1)
+end
+return fib
+]==]
+local function loadLua( txt )
+   local loaded = _lune.unwrap( _lune.loadstring52( txt ))
+   local fib = _lune.unwrap( loaded(  ))
+   return fib
+end
+local fib_lua = loadLua( code )
+do
+   local prev = os.clock(  )
+   print( string.format( "%s = %d: step = %d: time = %g", "fib_lua( step )", fib_lua( step ), step, os.clock(  ) - prev) )
+end
+local function fib_lns( num )
+   if num < 2 then
+      return num
+   end
+   return fib_lns( num - 2 ) + fib_lns( num - 1 )
+end
+do
+   local prev = os.clock(  )
+   print( string.format( "%s = %d: step = %d: time = %g", "fib_lns( step )", fib_lns( step ), step, os.clock(  ) - prev) )
+end
+return _moduleObj
+#+END_SRC
+
+注目すべき fib_lns() 関数の定義を抜き出したものが以下です。
+
+#+BEGIN_SRC lua
+local function fib_lns( num )
+   if num < 2 then
+      return num
+   end
+   return fib_lns( num - 2 ) + fib_lns( num - 1 )
+end
+#+END_SRC
+
+これを見ると分かる通り、
+fib_lns() と fib_lub() は等価のコードになっています。
+
+
+よって、fib_lns() と fib_lua() が同程度時間がかかるのは当然と言えます。
+
+
+*** go へトランスコンパイルした場合
+
+一方、 go へトランスコンパイルした場合、実行結果は次の通りです。
+
+#+BEGIN_SRC txt
+fib_lua( step ) = 24157817: step = 37: time = 6.07
+fib_lns( step ) = 24157817: step = 37: time = 0.34
+#+END_SRC
+
+明らかに fib_lns() の方が、fib_lua() よりも
+計算時間が約 *1/18* に短かくなっていることが分かります。
+
+go へトランスコンパイルした結果は次の通りです。
+
+#+BEGIN_SRC go
+// This code is transcompiled by LuneScript.
+package lnsc
+import . "lnsc/lune/base/runtime_go"
+var init_miniGo bool
+var miniGo__mod__ string
+var miniGo_step LnsInt
+var miniGo_code string
+var miniGo_fib_lua *Lns_luaValue
+type miniGo_fibFunc_1003_ func (arg1 LnsInt) LnsInt
+// 14: decl @miniGo.loadLua
+func miniGo_loadLua_1009_(txt string) *Lns_luaValue {
+    var loaded *Lns_luaValue
+    loaded = Lns_unwrap( Lns_car(Lns_getVM().Load(txt, nil))).(*Lns_luaValue)
+    var fib LnsAny
+    fib = Lns_unwrap( Lns_car(Lns_getVM().RunLoadedfunc(loaded,Lns_2DDD([]LnsAny{}))[0]))
+    return fib.(*Lns_luaValue)
+}
+
+// 36: decl @miniGo.fib_lns
+func miniGo_fib_lns_1025_(num LnsInt) LnsInt {
+    if num < 2{
+        return num
+    }
+    return miniGo_fib_lns_1025_(num - 2) + miniGo_fib_lns_1025_(num - 1)
+}
+
+func Lns_miniGo_init() {
+    if init_miniGo { return }
+    init_miniGo = true
+    miniGo__mod__ = "@miniGo"
+    Lns_InitMod()
+    miniGo_step = 37
+    miniGo_code = "local function fib ( n )\n   if n < 2 then return n end\n   return fib(n - 2) + fib(n - 1)\nend\nreturn fib\n"
+    miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)
+    {
+        var prev LnsReal
+        prev = Lns_getVM().OS_clock()
+        Lns_print([]LnsAny{Lns_getVM().String_format("%s = %d: step = %d: time = %g", []LnsAny{"fib_lua( step )", Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))[0].(LnsInt), miniGo_step, Lns_getVM().OS_clock() - prev})})
+    }
+    
+    {
+        var prev LnsReal
+        prev = Lns_getVM().OS_clock()
+        Lns_print([]LnsAny{Lns_getVM().String_format("%s = %d: step = %d: time = %g", []LnsAny{"fib_lns( step )", miniGo_fib_lns_1025_(miniGo_step), miniGo_step, Lns_getVM().OS_clock() - prev})})
+    }
+    
+}
+func init() {
+    init_miniGo = false
+}
+#+END_SRC
+
+非常に読み難いので fib_lns() 関数の定義部分を抜き出すと、次になります。
+
+#+BEGIN_SRC go
+func miniGo_fib_lns_1025_(num LnsInt) LnsInt {
+    if num < 2{
+        return num
+    }
+    return miniGo_fib_lns_1025_(num - 2) + miniGo_fib_lns_1025_(num - 1)
+}
+#+END_SRC
+
+関数名が長くなっていますが、
+LuneScript のコードがそのまま go に変換されていることがわかります。
+関数を実行する際も次のように普通に関数コールしているだけです。
+
+:  miniGo_fib_lns_1025_(miniGo_step)
+
+一方で Lua の fib_lua() 関数は、
+=miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)= によって
+Lua のコードを実行するための関数がロードされていて、
+実行する際も次のように関数コールしています。
+
+: Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
+
+このように、fib_lns() と fib_lua() では全く処理が異なることが分かります。
+
+*** go へトランスコンパイル後は Lua ライブラリのリンクが必要
+
+上記の通り、 LuneScript は Lua と密接に連携して動作しています。
+そして、go へのトランスコンパイル後もその連携動作をサポートしています。
+
+この連携動作を実現するために、 go へのトランスコンパイル後のコードでは、
+lua の処理を行なうための lua VM を必要とします。
+
+細かいことを言うと、この Lua との連携動作以外にも、
+LuneScript には Lua VM を必要とする処理があります。
+具体的にはマクロ展開の処理や、一部の組込み関数の処理に Lua VM を利用しています。
+
+
+その lua VM は、公式の *lua-5.3.4* を前提としていて、 *liblua5.3.so* をリンクします。
+
+go 言語には、
+「環境に依存しない 1 つの実行ファイルを生成できる」という利点がありますが、
+残念ながら LuneScript を go へトランスコンパイルする場合、
+liblua5.3.so へのリンクが必要になります。
+
+なお、実行時に liblua5.3.so が必要になるだけではなく、
+ビルド時には lua-5.3.4 のインクルードファイルも必要になります。
+-----
+* *Go 言語へのトランスコンパイル (検討段階)*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+Go 言語へのトランスコンパイル対応については、次の記事を参考に。
+
+[[../go]]
+
+**ここの情報は古いが、参考程度に残しておく。*
+
+
+LuneScript から Go 言語へのトランスコンパイルを検討中。
+
+ここでは、検討中の内容を記録する。
+
+** ねらい
+
+LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。
+
+- LuneScript の動作高速化
+  - LuneScript はコード補完機能をサポートしているが、
+    規模の大きいコードだと重くなって使い勝手が悪い。
+  - 高速化することで、LuneScript のコード補完機能の使い勝手を向上させる。
+- 高速化による、 LuneScript 自体のバージョンアップ作業効率改善
+  - LuneScript のセルフホストのビルド・テスト時間が、現状 2 分弱掛っている。
+  - 変更する毎に 2 分かかるのは辛いので、Go で高速化を図る。
+  - C 言語へのトランスコンパイルの対応を進めていたが、
+    C 言語での GC 実装が思うように進まなかったので、
+    言語レベルで GC 対応している Go を先に対応する。
+
+
+
+** 値
+
+| LuneScriptの型 | Go の型                    | Go 用 Lns ランタム での type |
+|----------------+----------------------------+------------------------------|
+| nil, null      | interface{}                | nil                          |
+| int            | int                        | LnsInt (alias)               |
+| real           | float64                    | LnsReal(alias)               |
+| str            | string                     | LnsStr (alias)               |
+| bool           | bool                       | LnsBool(alias)               |
+| List           | 独自構造体                 | LnsList                      |
+| Array          | 配列                       | LnsArray                     |
+| Map            | map                        | LnsMap                       |
+| Set            | map (key に item を入れる) | LnsSet                       |
+| class          | 構造体                     |                              |
+| interface      | interface                  |                              |
+| form           | func                       | LnsForm                      |
+| enum           | int/float64/string         | LnsEnum                      |
+| stem           | interface{}                | LnsStem                      |
+| nilable        | interface{}                |                              |
+
+*** int/real の扱い
+
+LuneScript int/real は、 go の type alias を使用して次のように定義する。
+
+#+BEGIN_SRC go
+type LnsInt = int
+type LnsReal = float64
+#+END_SRC
+
+
+
+*** nilable の扱い
+
+LuneScript の nilable は、そのままでは元の値として扱えない。
+しかし、等しいかどうかのチェックは行なえる。
+これは go と LuneScript と同じ。
+
+*** 真偽値の扱い
+
+LuneScript は nil と false が偽で、それ以外は真となる。
+go は true/false で判断が必要なので、 LuneScript 用の条件変換関数を用意する。
+
+*** and/or の扱い
+
+LuneScript の and/or は論理演算ではなく、式の評価を制御し、評価結果も bool ではない。
+go は評価結果が bool になる。
+
+*** Generics の扱い
+
+go は Generics がないので、 Generics の型は全て interface{} で扱う。
+
+
+
+*** Set の扱い
+
+go は Set がないので、 Map で代用する。   
+   
+
+** 多値返却
+
+go と LuneScript の多値返却は動きが異なる。
+
+hoge() が x, y を返す多値返却の関数としたとき、それぞれ次の動きになる。
+
+| コード      | LuneScript 展開結果 | go 展開結果 |
+|-------------+---------------------+-------------|
+| (hoge())    | x                   | x, y        |
+| hoge(), val | x, val              | x, y, val   |
+
+上記違いを実現するために、 go では次の変換関数を用意する。
+
+#+BEGIN_SRC go
+// 多値返却の先頭 int を返す
+func carInt( multi ...interface{} ) int {
+    if len( multi ) == 0 {
+        panic( "nothing" )
+    }
+    return multi[0].(int)
+}
+// 多値返却の先頭 int! を返す
+func carIntN( multi ...interface{} ) interface{} {
+    if len( multi ) == 0 {
+        return nil
+    }
+    if multi[0] == nil {
+        return nil
+    }
+    return multi[0].(int)
+}
+#+END_SRC
+
+** クラスと継承
+  
+Go は構造体とレシーバはあるが、継承がない。
+
+LuneScript は継承を持つので、 Go で継承を実現する必要がある。
+
+次の LuneScript のクラスを Go で対応する方法を示す。
+   
+#+BEGIN_SRC lns
+// @lnsFront: ok
+interface IF {
+  pub fn sub1():int;
+}
+class Parent {
+   let val1:int;
+   pub fn sub1():int {
+      return self.val1;
+   }
+}
+class Sub extend Parent {
+   let val2:int;
+   pub override fn sub1():int {
+      return self.val2;
+   }
+   pub fn sub2():int {
+      return self.val2;
+   }
+}
+class SubSub extend Sub {
+   let val3:int;
+   pub override fn sub1():int {
+      return self.val3;
+   }
+   pub fn sub3():int {
+      return self.val3;
+   }
+}
+#+END_SRC
+
+*** Go による等価コード
+
+Go による等価コードを示す
+   
+#+BEGIN_SRC go
+package main
+
+import "fmt"
+
+type ParentMtd interface {
+    sub1 () int
+}
+type Parent struct {
+    val1 int
+    FP ParentMtd
+}
+type ParentDownCast interface {
+    ToParent() *Parent
+}
+
+func (obj *Parent ) ToParent() *Parent {
+    return obj
+}
+
+
+func (self *Parent) sub1() int {
+    return self.val1
+}
+
+func NewParent(val1 int) *Parent {
+    parent := Parent{ val1, nil }
+    parent.FP = &parent
+    return &parent
+}
+
+type SubMtd interface {
+    ParentMtd
+    sub2 () int
+}
+
+type Sub struct {
+    Parent
+    val2 int
+    FP SubMtd
+}
+type SubDownCast interface {
+    ToSub() *Sub
+}
+
+func (obj *Sub ) ToSub() *Sub {
+    return obj
+}
+
+
+func (self *Sub) sub1() int {
+    return self.val2
+}
+func (self *Sub) sub2() int {
+    return self.val2
+}
+
+func newSub(val1,val2 int) *Sub {
+    sub := Sub{ Parent{ val1, nil }, val2, nil }
+    sub.Parent.FP = &sub
+    sub.FP = &sub
+    return &sub
+}
+
+
+type SubSubMtd interface {
+    SubMtd
+    sub3 () int
+}
+
+type SubSub struct {
+    Sub
+    val3 int
+    FP SubSubMtd
+}
+type SubSubDownCast interface {
+    ToSubSub() *SubSub
+}
+
+func (obj *SubSub ) ToSubSub() *SubSub {
+    return obj
+}
+func (obj *SubSub ) ToSub() *Sub {
+    return &obj.Sub
+}
+
+func (self *SubSub) sub1() int {
+    return self.val3
+}
+func (self *SubSub) sub2() int {
+    return self.Sub.sub2()
+}
+func (self *SubSub) sub3() int {
+    return self.val3
+}
+
+
+func newSubSub(val1,val2,val3 int) *SubSub {
+    subsub := SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
+    subsub.Parent.FP = &subsub
+    subsub.Sub.FP = &subsub
+    subsub.FP = &subsub
+    return &subsub
+}
+
+func testParent( obj *Parent ) {
+    fmt.Println( obj.FP.sub1() )
+}
+
+func testSub( mess string, obj *Sub ) {
+    fmt.Println( mess, obj.FP.sub1(), obj.FP.sub2() )
+}
+
+func testCast( obj *Parent ) {
+    cast, ok := obj.FP.(SubDownCast)
+    if ok {
+        testSub( "cast", cast.ToSub() )
+    } else {
+        fmt.Println( "cast NG" )
+    }
+    
+}
+
+func Lns_init() {
+    subsub := newSubSub( 1, 2, 3 )
+    fmt.Println( subsub.val1, subsub.val2, subsub.val3 )
+    fmt.Println( subsub.FP.sub1(), subsub.FP.sub2(), subsub.FP.sub3() )
+    testSub( "subsub.Sub", &subsub.Sub )
+    testParent( &subsub.Parent )
+    testCast( &subsub.Parent )
+
+    sub := newSub( 1, 2 )
+    testSub( "sub", sub )
+    testParent( &sub.Parent )
+    testCast( &sub.Parent )
+
+    testCast( NewParent( 1 ) )
+}
+#+END_SRC
+   
+
+*** 継承実現方法
+
+**** Parent クラス
+    
+まず、 Parent クラスについて説明する。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Parent {
+   let val1:int;
+   pub fn sub1():int {
+      return self.val1;
+   }
+}
+#+END_SRC
+
+***** データ構造
+   
+Parent クラスを表現するため、次の構造体と interface を定義する。
+
+#+BEGIN_SRC go
+type ParentMtd interface {
+    sub1 () int
+}
+type Parent struct {
+    val1 int
+    FP ParentMtd
+}
+type ParentDownCast interface {
+    ToParent() *Parent
+}
+func (obj *Parent ) ToParent() *Parent {
+    return obj
+}
+#+END_SRC
+
+- ParentMtd インタフェースは、次の役割を持つ
+  - Parent クラスのメソッドを定義
+  - Parent クラスのモリモーフィズムを表現する
+- Parent 構造体は、メンバと ParentMtd を持つ
+- ParentDownCast は、ダウンキャスト用にクラスごとに定義する
+
+***** メソッド
+
+Parent クラスのメソッドを表現するため、次のレシーバ関数を定義する。
+   
+#+BEGIN_SRC go
+func (self *Parent) sub1() int {
+    return self.val1
+}
+#+END_SRC
+
+***** コンストラクタ
+
+Parent クラスのコンストラクタとして、次を定義する。
+   
+#+BEGIN_SRC go
+func NewParent(val1 int) *Parent {
+    super := &Parent{ val1, nil }
+    super.FP = super
+    return super
+}
+#+END_SRC
+   
+このコンストラクタは次の処理を行なう。
+- メンバの初期化
+- FP の設定
+
+
+***** Parent クラスの使用方法
+
+Parent は次のように使用する。
+
+#+BEGIN_SRC go
+parent := NewParent( 1 )
+print( parent.FP.sub1() )
+#+END_SRC
+
+メソッドをコールする場合、必ず FP インタフェースを介してコールする。
+
+**** Sub クラス
+    
+Sub クラスについて説明する。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Sub extend Parent {
+   let val2:int;
+   pub override fn sub1():int {
+      return self.val2;
+   }
+   pub fn sub2():int {
+      return self.val2;
+   }
+}
+#+END_SRC
+
+***** データ構造
+   
+Sub クラスを表現するため、次の構造体と interface を定義する。
+
+#+BEGIN_SRC go
+type SubMtd interface {
+    ParentMtd
+    sub2 () int
+}
+type Sub struct {
+    Parent
+    val2 int
+    FP SubMtd
+}
+type SubDownCast interface {
+    ToSub() *Sub
+}
+func (obj *Sub ) ToSub() *Sub {
+    return obj
+}
+func (obj *Sub ) ToParent() *Parent {
+    return &obj.Parent
+}
+#+END_SRC
+
+- SubMtd インタフェースは、 Sub で定義しているメソッドを宣言する。
+  - Parent のメソッドは含めない 
+- Sub 構造体は、Parent 構造体のデータと、 Sub で定義しているメンバを宣言する。
+
+***** メソッド
+
+Sub クラスのメソッドを表現するため、次のレシーバ関数を定義する。
+   
+#+BEGIN_SRC go
+func (self *Sub) sub1() int {
+    return self.val2
+}
+func (self *Sub) sub2() int {
+    return self.val2
+}
+#+END_SRC
+
+***** コンストラクタ
+
+Sub クラスのコンストラクタとして、次を定義する。
+   
+#+BEGIN_SRC go
+func newSub(val1,val2 int) *Sub {
+    sub := &Sub{ Parent{ val1, nil }, val2, nil }
+    sub.Parent.FP = sub
+    sub.FP = sub
+    return sub
+}
+#+END_SRC
+   
+このコンストラクタは次の処理を行なう。
+- メンバの初期化
+- FP の設定
+  - *super の FP もここで設定する*
+  - この super の FP に &super ではなく &sub を設定することで、ポリモーフィズムを実現する
+  
+
+
+**** SubSub クラス
+    
+SubSub クラスについて説明する。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class SubSub extend Sub {
+   let val3:int;
+   pub override fn sub1():int {
+      return self.val3;
+   }
+   pub fn sub3():int {
+      return self.val3;
+   }
+}
+#+END_SRC
+
+***** データ構造
+   
+SubSub クラスを表現するため、次の構造体と interface を定義する。
+
+#+BEGIN_SRC go
+type SubSubMtd interface {
+    SubMtd
+    sub3 () int
+}
+
+type SubSub struct {
+    Sub
+    val3 int
+    FP SubSubMtd
+}
+type SubSubDownCast interface {
+    ToSubSub() *SubSub
+}
+func (obj *SubSub ) ToSubSub() *SubSub {
+    return obj
+}
+func (obj *SubSub ) ToSub() *Sub {
+    return &obj.Sub
+}
+func (obj *SubSub ) ToParent() *Parent {
+    return &obj.Parent
+}
+#+END_SRC
+
+- SubSubMtd インタフェースは、 SubSub で定義しているメソッドを宣言する。
+  - Sub のメソッドは含めない 
+- SubSub 構造体は、Sub 構造体のデータと、 SubSub で定義しているメンバを宣言する。
+
+***** メソッド
+
+SubSub クラスのメソッドを表現するため、次のレシーバ関数を定義する。
+   
+#+BEGIN_SRC go
+func (self *SubSub) sub1() int {
+    return self.val3
+}
+func (self *SubSub) sub2() int {
+    return self.Sub.sub2()
+}
+func (self *SubSub) sub3() int {
+    return self.val3
+}
+#+END_SRC
+
+
+****** override していないメソッド定義
+      
+上記で注目すべきは、 sub2() メソッドで =self.Sub.sub2()= をコールしている点。
+
+SubSub クラスは、 sub2 メソッドを override していない。
+つまりは、SubSub の sub2 メソッドは Sub クラスのメソッドが使用されることになる。
+よって、 Sub.sub2 メソッドをコールしている。
+
+
+***** コンストラクタ
+
+SubSub クラスのコンストラクタとして、次を定義する。
+   
+#+BEGIN_SRC go
+func newSubSub(val1,val2,val3 int) *SubSub {
+    subsub := &SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
+    subsub.Parent.FP = subsub
+    subsub.Sub.FP = subsub
+    subsub.FP = subsub
+    return subsub
+}
+#+END_SRC
+   
+このコンストラクタは次の処理を行なう。
+- メンバの初期化
+- FP の設定
+  - *Parent, Sub の FP もここで設定する*
+  - Parent, Sub の FP に &subsub を設定することで、ポリモーフィズムを実現する
+  
+
+**** IF インタフェース
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+interface IF {
+  pub fn sub1():int;
+}
+#+END_SRC
+
+
+***** データ構造
+
+LuneScript の interface は、 Go のインタフェースをそのまま使用する。
+
+     
+#+BEGIN_SRC go
+interface IF {
+  pub fn sub1():int;
+}
+#+END_SRC
+
+**** メソッド呼び出し
+
+Parent クラスのメソッドを呼び出すには、次のように行なう。
+    
+#+BEGIN_SRC go
+func test(parent *Parent) int {
+  print( parent.FP.sub1() )
+  print( parent.sub1() )
+}  
+#+END_SRC
+
+***** parent.FP.sub1() と parent.sub1() の違い
+
+メソッド呼び出しには、次の 2 つのパターンがある。
+
+- parent.FP.sub1()
+  - ポリモーフィズムに対応したメソッド呼び出し
+- parent.sub1()
+  - Parent クラスに定義しているメソッド呼び出し
+    - ポリモーフィズムに非対応
+
+  
+***** オーバーヘッド
+
+- ポリモーフィズムに対応したメソッド呼び出しは、オーバーヘッドが大きい。
+- ポリモーフィズムに対応したメソッド呼び出しは、
+  *ポリモーフィズムが必要な場合に限定すべき。*
+- ポリモーフィズムが必要かどうかは、 *LuneScript では現状定義がない。*
+  - *クラスとメソッドに final 宣言を導入* し、
+    ポリモーフィズムが不要であることを明示できるようにする対応が必要
+
+**** up-cast / down-cast
+
+- up-cast は、埋め込みのポインタにアクセスすることで実現する
+  - インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
+- down-cast は、 interface を型アサーションで実現する。
+  - 各クラスごとに DownCast インタフェースを定義して、
+    そのインタフェースにキャストしてから、
+    さらに目的のクラスへのキャスト関数を実行する
+    
+
+#+BEGIN_SRC go
+var ifObj IF = obj.FP // インタフェースをセットする
+parent := &obj.Parent // アップキャスト
+(parent.FP.(SubDownCast)).ToSub() // obj を Sub にダウンキャストする
+#+END_SRC
+
+
+*** Class のまとめ
+
+- クラスのメソッドを定義する interface を宣言する
+  - Super クラスで定義しているメソッドの interface を埋め込む
+#+BEGIN_SRC go
+type TestMtd interface {
+    SuperMtd
+    method() int
+}
+#+END_SRC
+- クラスのメンバと前記の interface を保持する構造体を宣言する
+  - 継承は、 継承する型を埋め込む
+#+BEGIN_SRC go
+type Test struct {
+    Super
+    val int
+    FP TestMtd
+}
+#+END_SRC
+- ダウンキャスト用の interface を定義する
+#+BEGIN_SRC go
+type TestDownCast interface {
+    ToTest() *Test
+}
+#+END_SRC
+- ダウンキャスト用のメソッドを定義する
+ - このメソッドは、 Super クラスの分を全て宣言する
+#+BEGIN_SRC go
+func (obj *SubSub) ToSub() *Sub {
+    return &obj.Sub
+}
+#+END_SRC
+
+- クラスのメソッドの動作を定義するレシーバを宣言する
+  - レシーバは Super クラスのメソッドを含めて宣言する
+  - override していない関数は、そのメソッドを定義している構造体のメソッドをコールする
+#+BEGIN_SRC go
+func (self *Test) method() int {
+    return self.super.method()
+}
+#+END_SRC
+    
+- コンストラクタで、メンバの初期化と interface FP を初期化する
+  - interface は、 Super クラスの interface FP を含めて初期化する
+- メソッド呼び出しは、 interface FP 経由でコールする
+  - ポリモーフィズム無効なメソッド呼び出しは、構造体のメソッドを直接コールする
+#+BEGIN_SRC go
+obj.FP.method() // ポリモーフィズム有効
+obj.method()    // ポリモーフィズム無効
+#+END_SRC
+- up-cast は、メンバの Super クラスのポインタにアクセスすることで実現する
+  - インタフェースへの up-cast は、オブジェクトが保持する interface 型を使用する
+- down-cast は、 interface を型アサーションと、ダウンキャスト用 interface で実現する。
+#+BEGIN_SRC go
+var ifObj IF = obj.FP // インタフェースをセットする
+super := &obj.super // アップキャスト
+(parent.FP.(SubDownCast)).ToSub() // obj を Sub にダウンキャストする
+#+END_SRC
+- インタフェースは、 Go の interface をそのまま利用する
+  - クラスオブジェクトからインタフェースに up-cast する場合、 interface FP を使用する
+
+
+** シンボル名
+
+LuneScript と go のシンボル名は、次の点で大きく異なる。
+
+- 名前空間
+  - LuneScript は、同一ファイル(モジュール)内
+  - go は、同一ディレクトリ(パッケージ)内
+- 公開・非公開の制御方法
+  - LuneScript は、 pub/pro などで制御する
+  - go は、 シンボルの先頭文字の大文字/小文字で制御する
+
+この違いによって次の問題が発生する。
+
+- LuneScript で異なるファイル FileA.lns, FileB.lns それぞれに
+  同名のシンボル sym を定義している時、
+  これを go に変換する際に同じ構成で
+  FileA.go, FileB.go に同名のシンボル sym を定義すると、
+  シンボル sym が重複定義エラーとなる。
+- LuneScript で小文字で公開定義したシンボルが、 go では非公開になる。
+  - LuneScript で大文字で非公開定義したシンボルが、 go では公開になる。
+
+この問題に対応するため、次の通りシンボル名を処理する。
+
+
+公開・非公開制御対象の関数あるいはクラスのシンボルの先頭にファイル名を付加する。
+さらに公開なら G ( GLOBAL の G)、非公開なら l (local の l) を付加する。
+
+つまり次の LuneScript のソースを go に変換する場合、
+
+#+BEGIN_SRC lns
+fn func() {
+}
+pub Class {
+   let val1:int;
+   pub let val2:int;
+}
+#+END_SRC
+
+LuneScript と go のシンボルの関係は次のようになる。
+
+| 公開/非公開 | lns   | go          |
+|-------------+-------+-------------|
+| 非公開      | func  | lfile_func  |
+| 公開        | Class | Gfile_Class |
+| 非公開      | val1  | lval1       |
+| 公開        | val2  | Gval2       |
+
+なお、引数やローカル変数は LuneScript と go とでスコープに違いはないため、
+基本的にそのまま変換する。
+
+
+** Lua VM
+
+現状の LuneScript では、 Macro 展開時に Lua VM を使用する。
+Go で Lua VM を使用する方法として、次の 2 つがある。
+
+- Lua を Go に移植した gopher-lua を使用する
+- liblua を使用する
+
+gopher-lua を使用すると Lua VM の扱いが楽になるが、次の制限がある。
+
+- Lua VM のバージョンが Lua5.1 になる
+- liblua と比べると遅い
+  - 公式 Wiki(<https://github.com/yuin/gopher-lua/wiki/Benchmarks>) の情報によると、
+    fib(35) の実行時間が次になる。
+    - lua5.1.4 :: 1.71sec
+    - Gopherlua :: 5.40sec
+
+上記から、 LuneScript のトランスコンパイラでは liblua を利用する。
+
+*** cgo
+
+Go から liblua を利用するため cgo を使う。
+
+cgo は Go から C 言語のライブラリをコールするためのパッケージ。
+
+以下のように import "C" の前のコメントに書いた C コードが解析され、
+Go からアクセスできるように C パッケージ内に展開される。
+#+BEGIN_SRC go
+// #include <stdlib.h>
+// #cgo CFLAGS: -I/usr/include/lua
+// #cgo LDFLAGS: -ldl -lm -llua
+// #include <lauxlib.h>
+// #include <lualib.h>
+import "C"
+
+import "unsafe"
+
+// lua のコードを実行する
+func lua_runScript( script string ) {
+    var vm * C.lua_State = C.luaL_newstate()
+    if vm == nil {
+        return
+    }
+    defer C.lua_close( vm )
+    
+    C.luaL_openlibs( vm )
+
+    block := C.CString( script )
+    defer C.free( unsafe.Pointer( block ) )
+    
+    C.luaL_loadstring( vm, block )
+    C.lua_pcallk( vm, 0, C.LUA_MULTRET, 0, 0, nil )
+}
+
+func main() {
+   lua_runScript( "print( 'hello world' )" )
+}
+#+END_SRC
+
+**cgo* は #define マクロ関数には対応していないので、
+次のようなマクロ定義された関数は、自前で展開して処理を書かなければならない。
+
+#+BEGIN_SRC c
+#define luaL_dostring(L, s) \
+	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))
+#+END_SRC
+-----
 * *Lua のトランスコンパイラ LuneScript を開発した理由*
 # -*- coding:utf-8 -*-
 #+STARTUP: nofold
@@ -8961,3 +10851,262 @@ lnsFront.compile( frontId, maxTime )
 
 maxTime を省略した場合、デフォルトの 2 秒がリミットになります。
 なお 10 秒以上を指定した場合、無効値として扱い、デフォルト値がセットされます。
+-----
+* *言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+Qiita の読者であれば、
+日々「プログラミング言語」でコーディングしている方がほとんどだと思います。
+そして、誰かが仕込んだバグ潰し作業に追われている方も多いでしょう。
+
+そんな日々お世話になっている「プログラミング言語」も
+誰かが作ったソフトウェアであるので、いかにバグを出さないか、
+という品質コントロールが重要になります。
+
+私は運が良いいのか(？)、プログラミング言語を仕事で利用してきた中で
+言語のバグに遭遇したことはありません。
+
+/バグの様に思える言語の規格とかはありますが。。。/
+
+プログラミング言語のバグに遭遇してしまった場合、
+その対処は数あるソフトウェアバグの中でもかなり厄介な部類になると思います。
+
+/そもそもプログラミング言語のバグだということに辿り着くのが困難です。/
+
+ここでは、
+私が開発している独自言語のテスト方法について紹介したいと思います。
+
+なお、プログラミング言語は次の 2 つに分類できます。
+
+- コンパイラ型
+- インタプリタ型
+
+私が開発している言語はコンパイラ型であるため、
+以降はコンパイラ型のテストについて話をします。
+
+ちなみに私が開発している独自言語の LuneScript については、次の記事で紹介しています。
+
+https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
+
+今後、独自言語を開発しようと考えている方のテスト設計検討に、
+少しでも役にたてれば幸いです。
+
+
+*** コンパイラは関数
+
+コンパイラ型プログラミング言語は、
+そのプログラミング言語で書かれたコードをマシン語などに変換するのが仕事です。
+
+例えば、
+
+- C 言語のコンパイラは Native コードに変換
+- Java のコンパイラは JVM コードに変換
+- C# は CIL に変換
+- Clang は LLVM-IR に変換し、 LLVM が各種コードに変換
+
+つまりコンパイラとは、
+「入力を与えると、その入力に応じた出力を返す 1 つの大きな関数」と考えられます。
+
+コンパイラを 1 つの関数と考えれば、そのテストは非常に単純です。
+様々な入力を与えて、その出力と期待値とを比較すればテストが出来ます。
+
+日頃作成している関数の UNIT TEST と考え方は全く同じです。
+
+*** コンパイラのテスト
+
+独自言語である LuneScript では、次のテストを実施しています。
+
+- セルフホスティングしている LuneScript 自身のビルド
+- 言語が対応する全構文の正常系
+- 言語が対応する全構文の異常系
+
+ここで特に重要なのがセルフホスティングしていることです。
+
+セルフホスティングしていることで、あえてテストコードを書かなくても、
+自分自身のコードがそのままテストコードになります。
+
+ある程度の規模で、意味のあるテストコードを作成する、
+というのは中々骨の折れる作業です。
+
+特に自分以外誰も使っていないような独自言語の場合、
+テストのためのコードではなく、
+ちゃんとした実用的なコードというものが github を探せば簡単に出てくる、
+**なんてことはない* ので、
+ある程度の規模のテストコードというのは貴重になります。
+
+セルフホスティングしていると、
+自分自身のコードがその貴重なテストコードになるのです。
+
+ただ、「自分自身のコードがそのままテストコードになる」と言っても、
+それだけでは十分なテストにはなりません。
+使用する構文やデザインパターン等に偏りが出てしまい、
+網羅性という意味ではイマイチなテストになってしまいます。
+また、コンパイルエラーになるような異常系コードは、
+セルフホスティングしている自分自身のコードに仕込んでおけません。
+よって、セルフホスティングしている自分自身のコードだけでは
+テストケースとして不十分であり、
+網羅的に正常系を確認するテストと、
+コンパイルエラーを検出する異常系のテストが別途必要になります。
+
+この正常系と、異常系のテストは、
+予め期待値を用意しておくことで、テストの成否を確認出来ます。
+
+一方で「自分自身のコードをコンパイルした結果が正しいかどうか」、
+をどのように判定すれば良いか？が問題です。
+
+テストケースのコードは一般的に不変なので、そのコンパイル結果も不変です。
+つまり、テストケースと期待値のペアを一度作成すれば、
+テストケースを変更しないかぎりは同じ期待値を使い続けられます。
+
+一方で、セルフホスティングしている自分自身のコードは当然変っていきます。
+つまり、期待値も常に変わるため、期待値を事前に用意しておくことは不可能です。
+
+では、セルフホスティングしている自分自身のコードのコンパイル結果が正しいかどうかを、
+どのように判断するのかというと、 次が成り立つかどうかで判断します。
+
+: 「使用中のコンパイラでのテストケースの結果」 == 「新しくコンパイルしたコンパイラでのテストケースの結果」
+
+
+これは、使用中のコンパイラが正しい動作をしていることを前提に、
+その正しい動作をしている使用中のコンパイラで実行したテストケースの結果と、
+新しくコンパイルしたコンパイラで実行したテストケースの結果が同一であるならば、
+新しくコンパイルしたコンパイラも正しい、という論理です。
+
+
+さらに、新しくコンパイルしたコンパイラで、もう一度自分自身をコンパイルしています。
+これは、同じコードをコンパイルしたときに、
+その出力結果が全く同じ結果になることを確認するために実行しています。
+
+
+まとめると、 LuneScript のテストは次を実行します。
+
+- step1 :: 現在使用中のコンパイラ A を使って、セルフホスティングしている自身のコードをコンパイルしコンパイラ B を生成
+- step2 :: コンパイラ B を使って、再度自身のコードをコンパイルしコンパイラ C を生成
+- step3 :: コンパイラ C を使って、再度自身のコードをコンパイルしコンパイラ D を生成
+- step4 :: コンパイラ C とコンパイラ D が同一であることを確認
+- step5 :: コンパイラ A の正常系、異常系のテストを実行し、テスト結果を result A に保存
+- step6 :: コンパイラ D の正常系、異常系のテストを実行し、テスト結果を result D に保存
+- step7 :: result A と result D が同一であることを確認
+
+上記テストをパスしたら、コンパイラ D を最新のコンパイラ A として次回から利用します。
+また、拡張した言語仕様の正常系、異常系のテストを随時追加します。
+
+
+セルフホスティングの場合、
+不具合があると自分自身のコンパイル自体が出来なくなって、
+開発を進められなくなってしまう可能性があります。
+このテストを行なうことで、
+新しくビルドしたコンパイラが正常に動作することを確実に保証でき、
+安全に言語の機能拡張を進められます。
+
+
+独自言語の場合、
+セルフホスティングへの移行タイミングというのは非常に重要になると思います。
+
+コンパイラのコード規模が大きくなると移植作業に掛かる時間も大きくなってくるので、
+独自言語をフルスクラッチで開発する場合、
+セルフホスティングに必要な機能を優先的に実現し、
+出来るだけ早い段階でセルフホスティングに移行することをオススメします。
+
+** それでもバグは残る
+
+独自言語開発で実施しているテストについて紹介しましたが、
+テストをしても残念ながらバグは残ります。
+
+そのバグの原因を分類すると次の 2 つになります。
+
+- 異常系が検出できないケース
+- 本来正常に動作しなければならないのに動作しないケース
+
+上記の 2 つの内、異常系が検出できないケースが圧倒的に多いです。
+
+というのも、
+正常系のパスは言語仕様通りのコードを書いて動くことを確認すれば良いのに対し、
+異常系のパスは言語仕様から外れたコードを書いてエラーを検出する必要があります。
+
+この「言語仕様から外れる」というのが結構難しく、穴が空いてしまうことが多いです。
+
+最初から完璧なテストを求めるのではなく、
+こういう「穴」を見つけ、
+それを塞ぐテストケースを追加していき、
+再度同じ「穴」が開いた時に検出できるように対応することが
+テストでは重要だと考えます。
+
+** 最後に
+
+独自言語の開発を続けてこられたのも、
+次のテスト方針で進めて来たことが大きいと考えています。
+
+- 早期にセルフホスティングに移行したこと
+  - セルフホスティングに移行すると、否応なく一定以上の品質保証が必要になる
+    - 品質が悪ければセルフホスティングに支障が出るため、自ずと品質が保たれる
+- 始めから 100% のテストを目指さないこと
+  - 目的は独自言語の開発であって、テストの開発ではない。
+  - 独自言語に集中できる。
+- 言語の仕様拡充とテストコード拡充を同期して行なって来たこと
+  - テストの抜け漏れ、デグレードを防止できる
+- 関数レベルのテストではなく、コンパイラ入出力レベルでのテストを行なったこと
+  - 関数レベルのテストだと、設計変更の度にテストケース変更が必要だが、
+    コンパイラ入出力レベルでのテストならば、
+    コンパイラの仕様変更がない限りはテストケースの変更が不要
+
+独自言語の開発を行なう場合は、品質を確保するという意味でも、
+まずはセルフホスティングを目指すのが効率的だと思います。
+
+以上。
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+
+**これは、検討中の情報です。 現在は利用できません。*
+
+
+** Nilable 型
+
+前述している通り、 Generics の実型パラメータに nilable は指定できません。
+
+この制限により、次の ~new Test( val )~ はエラーになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test<T> {
+   let val:T;
+}
+let val:int! = 1;
+let test = new Test( val ); // error
+#+END_SRC
+
+このエラーを回避するには、 2 つのパターンがあります。
+
+- T! を利用する
+- Nilable 型を利用する
+
+「T! を利用する」のケースでは、上記処理は次のように書けます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test<T> {
+   let val:T!; // <--- T! とする
+}
+let val:int! = 1;
+let test = new Test( val );
+#+END_SRC
+
+ただこうすると、多くの場合は 非 nilable で良いケースでも nilable として宣言しなければならないため、
+unwrap 処理が必須となってしまい面倒です。
+
+そこで、 Nilable 型を利用します。
+
+*** Nilable 型とは
+
+Nilable 型は、 nilable の値をラッピングする型です。
+Java で言うところの int に対する Integer クラスと思ってください。
+
+
+
