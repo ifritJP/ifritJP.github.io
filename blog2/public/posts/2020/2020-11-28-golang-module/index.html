@@ -40,7 +40,7 @@
 <meta itemprop="description" content="LuneScript 向けの別ツールを作ろうと思い、 LuneScript の go 向けランタイムを単独モジュールとして分割して管理すべく 奮闘した際の備忘録。 go のモジュール go は、 github に公開">
 <meta itemprop="datePublished" content="2020-11-28T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-11-28T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="1272">
+<meta itemprop="wordCount" content="1518">
 
 
 
@@ -302,8 +302,8 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-11-28-golang-module/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">1272</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">3 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1518</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">4 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
@@ -449,6 +449,41 @@ $ go build -mod vendor
 グルーバルに有効にならないので、
 更新作業を忘れずに行なう必要がある。
 </p>
+<h2 id="headline-7">
+外部ライブラリを利用している場合
+</h2>
+<p>
+LuneScript は、外部ラリブラリとして lua を利用している。
+</p>
+<p>
+go は cgo を使うことで C 言語のライブラリを利用できるが、
+cgo では外部ライブラリの include パスやリンクオプションを
+.go のソースファイル内にコメントとして指定する必要がある。
+</p>
+<p>
+外部ライブラリのパスは環境によって異なるため、
+全ての環境に合せて include パスやリンクオプションを指定しておくことは出来ない。
+</p>
+<p>
+そこで pkg-config を利用する。
+</p>
+<p>
+cgo で pkg-config を利用するには、次のように指定する。
+</p>
+<pre class="example">
+// #cgo pkg-config: package1 package2 package3
+</pre>
+<p>
+LuneScript では、次のように指定している。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// #include &lt;string.h&gt;
+</span><span class="c1">// #include &lt;stdlib.h&gt;
+</span><span class="c1">// #cgo pkg-config: lua-5.3
+</span><span class="c1">// #include &lt;lauxlib.h&gt;
+</span><span class="c1">// #include &lt;lualib.h&gt;
+</span><span class="c1"></span><span class="n">import</span> <span class="s">&#34;C&#34;</span></code></pre></div>
+</div>
 
     </div>
     <div class="article-footer">
