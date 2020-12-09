@@ -1,0 +1,195 @@
+#+title: WSL2 と cygwin xorg を使って GUI 表示するまでのハマりどころ
+#+DATE: 2020-12-09
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: lunescript go
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+WSL2 と virtual BOX が共存できるようになったらしいので、
+家の環境に WSL2 を入れてみました。
+
+セットアップ自体は上手くいきましたが、
+結果として virtual BOX のパフォーマンス(DISK IO？)は 1,2 割程度落ちたようです。
+
+WSL2 のパフォーマンスが Hyper-V 無効時の virtual BOX と同等程度なので、
+virtual BOX から WSL2 に完全移行できるなら問題ないと思いますが、
+WSL2 に完全移行できず、かつ、1,2 割程度のパフォーマンスダウンが許容出来ない場合は、
+従来通り Hyper-V 無効で運用することになると思います。
+
+個人的には、試しに暫く WSL2 で運用し、
+問題なければそのまま WSL2 に移行する予定です。
+
+
+今回の作業でいくつかハマったポイントがあるので、
+備忘録として残します。
+
+基本的な WSL2 セットアップに関しては、
+ネットにいくつも手順が載っているのでそれを参考にしてもらうとして、
+ここでは個人的にハマった点に絞って書きます。
+
+* VirtualBox での Guest OS 起動が失敗する
+
+以下の 2 つのポイントがあります。
+
+** VirtualBox の プロセッサー設定で、ネステッド VT-x/AMD-V を有効化をチェックしている
+
+Hyper-V を有効にすると、
+VirtualBox などの既存の仮想化アプリに制限がかかり、
+一部機能を利用できなくなります。
+
+その一つに「ネステッド VT-x/AMD-V」があるようです。
+    
+** 「Windows ハイパーバイザー プラットフォーム」を有効化していない
+
+Hyper-V を有効にしている環境で VirtualBox などの既存の仮想化アプリを実行するには、
+上記機能を有効化する必要があります。
+
+Hyper-V が有効な環境では、VirtualBox などの既存の仮想化アプリは、
+「Windows ハイパーバイザー プラットフォーム」という機能を経由して、
+仮想化制御を行なうようです。
+
+なお、VirtualBox などの既存の仮想化アプリはこの機能を経由するため、
+Hyper-V 無効環境と比べるとパフォーマンスが落ちているような気がします。
+
+
+* wsl コマンドを実行する際の Shell は管理者権限で起動してはならない
+
+WSL2 のセットアップで、ディストリビューションのイメージの一覧を確認する際、
+次のコマンドを入力します。
+
+: wsl -l
+
+この wsl コマンドを実行する際、Shell を管理者権限で実行していると、
+ubuntu をインストールしているのにも関わらず次のように出力されました。
+
+#+BEGIN_SRC txt
+> wsl -l
+Linux 用 Windows サブシステムには、ディストリビューションがインストールされていません。
+ディストリビューションは Microsoft Store にアクセスしてインストールすることができます:
+#+END_SRC
+
+何故このようなことになったかというと、
+私は普段 Windows を使用する際、
+管理者権限のないアカウントで作業してます。
+そして、管理者権限が必要な作業をする時に、
+管理者権限で実行したり、管理者アカウントで入って作業しています。
+
+今回も、一般ユーザのアカウントで WSL2 をセットアップしていました。
+
+そして、 Web の作業手順に管理者権限で実行するように書いてあったため、
+PowerShell を管理者権限で実行していました。
+
+しかし管理者権限の PowerShell で "wsl -l" を実行すると、
+管理者権限のユーザ環境にインストールされている
+ディストリビューション情報がリストされるため、
+一般ユーザのアカウントにインストールしていた ubuntu の情報は出力されない、
+ということです。
+
+wsl コマンドの操作に管理者権限は不要です。
+というか、管理者権限で実行するとこのような現象が発生するため、
+管理者権限は付けずにそのまま実行してください。
+
+
+WSL2 を使うようなユーザは管理者権限を持つアカウントで作業すると思うので、
+こんなことにハマらないでしょうが、
+一応気をつけてください。
+
+* cygwin xorg で GUI 表示できない
+
+virtual Box で作業する際、
+ssh で入ってX11トンネリングした xwindow で作業しています。
+
+WSL2 の場合は、 ssh ではなく直接 DISPLAY を指定して作業する例が紹介されています。
+
+その例に沿って作業すると、xwindow の接続が出来なかったので、
+それの対応方法を説明します。
+
+** Error: Can't open display:
+
+最初は次のようなエラーになりました。
+
+#+BEGIN_SRC txt
+$ DISPLAY=xxx.xxx.xxx.xxx:0 xeyes
+Error: Can't open display: xxx.xxx.xxx.xxx:0
+#+END_SRC
+
+これは、指定の DISPLAY に接続できないことを示します。
+
+これを解決するには、
+cygwin の xserver 起動のショートカットに次のオプションを追加します。
+
+: -- -listen tcp
+
+ssh のX11トンネリングの場合、
+xserver のサービスを listen しなくても接続できるのですが、
+ssh のX11トンネリングではなく直接通信を行なう場合は、
+xserver のサービスを listen しておく必要があります。
+
+
+** Authorization required, but no authorization protocol specified
+
+xserver のサービスを listen しても、次のようなエラーになりました。
+
+#+BEGIN_SRC txt
+$ DISPLAY=xxx.xxx.xxx.xxx:0 xeyes
+Authorization required, but no authorization protocol specified
+Error: Can't open display: xxx.xxx.xxx.xxx:0
+#+END_SRC
+
+これは、 xserver に接続するには認証が必要なことを示しています。
+
+これを解決するには、次の手順を行ないます。
+
+- windows 側で次を実行
+
+#+BEGIN_SRC txt
+$ xauth list
+NAME:0 MIT-MAGIC-COOKIE-1 ?????????????????????? 
+#+END_SRC
+
+ここで出力された =MIT-MAGIC-COOKIE-1 ??????????????????????= をコピーしておきます。
+
+- クライアント側 (ubuntu)で次を実行
+
+#+BEGIN_SRC txt
+$ xauth add xxx.xxx.xxx.xxx:0 MIT-MAGIC-COOKIE-1 ?????????????????????? 
+#+END_SRC
+
+これで、 ubuntu から windows の xwindow に表示されます。
+
+なお、 server の auth control を無効化する方法
+(startxwin の -auth を与えないように修正する方法)でも対応できますが、
+xauth を使っておいた方が無難でしょう。
+
+* WSL2 のイメージデータの置き場所
+
+WSL2 のイメージデータは、次の場所で管理されています。
+
+: C:\Users\?????\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04onWindows_????????\LocalState
+
+このイメージデータを直接操作することはありませんが、
+実体が何処にあるかは意識しておいた方が良いでしょう。
+
+自分の PC 環境は、 C ドライブは m.2 NVMe で、 D ドライブを HDD にしていて、
+開発作業は D の HDD で行なっています。
+
+開発作業は docker イメージの作成などによって、
+そこそこ書き込み量が多いので、
+イメージデータが C ドライブにあるのはあまり望ましくないです。
+
+なので、しばらくこのまま使ってみて、
+C への書き込み量が急激に増えるようならイメージデータを D に移すか、
+virtual box に戻すかしようと思います。
+
+ちなみ現在 (2020/12/09) の書き込み総サイズは、
+
+: 1522 GB
+
+スペック上、 200TB までは大丈夫なはず。
+
+なお、既に 1 年ちょっと使っている状態なので、
+今のペースだと単純計算で 100 年くらいは大丈夫なはずだったｗｗ
+
+以上。
