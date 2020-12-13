@@ -9,6 +9,10 @@
 - https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html
 
 
+
+*2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。* 
+
+
 RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
 Web に載っていますが、幾つかハマったポイントがあったので、
 そのポイントを解説していきます。
@@ -17,29 +21,16 @@ Web に載っていますが、幾つかハマったポイントがあったの�
 ペアリングして音声が再生出来るようになるまでに、
 いくつかハマるポイントがあります。
 
-なお、基本的には次の URL に記載されている設定手順を参考にしますが、
-その URL に記載されている多くの手順は不要です。
-
-https://www.raspberrypi.org/forums/viewtopic.php?t=68779
-
-
 * OS イメージ
 
-https://www.raspberrypi.org/downloads/raspbian/
+https://www.raspberrypi.org/software/operating-systems/
 
 RaspberryPi の OS イメージは、
-必ず *Raspbian Stretch with desktop* を使用してください。
-ちなみに今回使用したのは現時点で最新 2018-04-18 4.14 を使用しました。
+必ず *Raspberry Pi OS* を使用してください。
+Raspberry Pi OS であれば、
+Lite でも with desktop でも and recommended software でも OK です。
 
-当初は Raspbian Stretch lite を使っていて、
-これが原因で A2DP を認識出来ない問題が発生していました。
-これについては後述します。
-
-Raspbian のバージョンによっては lite でも問題ないかもしれませんが、
-ここでは *Raspbian Stretch with desktop* を使用します。
-
-
-*2020/3/08 追記*
+ちなみに今回使用したのは現時点で最新 2020-12-02 5.4 を使用しました。
 
 *2020/3 現在、 Raspbian Buster と RaspberryPi3 Model B の組み合わせだと、A2DP 再生時の音声ノイズを改善できません。*
 Raspbian Stretch でも、バージョンが異なるとノイズを改善できない可能性があります。
@@ -53,6 +44,11 @@ https://pc.watch.impress.co.jp/docs/news/1237645.html
 この記事では、末尾で WiFi を無効化しているので影響はありませんが、
 もしも WiFi を有効化している場合は *各自の自己責任* のもと、
 注意して運用してください。
+
+*Raspberry pi 4 では、ノイズの問題はありません。*
+
+*最新 OS イメージ +  Raspberry pi 3 でノイズが発生するかどうかは確認していません。*
+
 
 * sshd 有効化
 
@@ -74,7 +70,7 @@ OS イメージ書き込み時にファイルを作成しておいた方が良�
 
 これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。
 
-※ デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。
+*※デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。*
 
 * apt パッケージ更新
 
@@ -82,7 +78,7 @@ OS イメージ書き込み時にファイルを作成しておいた方が良�
 
 #+BEGIN_SRC txt
 $ sudo apt-get update
-$ sudo apt-get upgrade # ※※※※ 2020/3 現在、 upgrade すると bluetooth の音声ノイズを改善できません
+$ sudo apt-get upgrade
 #+END_SRC
 
 これはお決まりのパターンなんで、特に理由がない限りやっておきます。
@@ -122,49 +118,58 @@ Controller XX:XX:XX:XX:XX:XX
 	UUID: Generic Access Profile    
 	UUID: PnP Information           
 	UUID: A/V Remote Control Target 
-	UUID: Audio Sink                
-	UUID: Audio Source              
-	UUID: Handsfree                 
-	UUID: Handsfree Audio Gateway   
-	UUID: Headset                   
 	Discovering: no
 #+END_SRC	
 
-上記出力で、UUID: Audio Sink が含まれていることを確認してください。
+上記出力のようになると思います。
+
+この出力には、以下がないです。
+
+: UUID: Audio Sink
+
 これがないと A2DP で接続出来ません。
 
-最初に Raspbian の lite を使うと A2DP を認識しなかったと書きましたが、
-lite だとこの出力が次のようになっていました。
+以下では、Audio Sink を出すための設定について説明します。
 
-#+BEGIN_SRC txt
-Controller XX:XX:XX:XX:XX:XX
-	Name: raspberrypi
-	Alias: raspberrypi
-	Class: 0x000000
-	Powered: yes
-	Discoverable: no
-	Pairable: yes
-	UUID: Generic Attribute Profile 
-	UUID: A/V Remote Control        
-	UUID: PnP Information           
-	UUID: Generic Access Profile    
-	UUID: A/V Remote Control Target 
-	Discovering: no
-#+END_SRC
-
-この症状を改善する方法を検索しましたが、
-Raspbian の with desktop を使う以外の方法を見つけられませんでした。
-
-*2019/6/15 追記*
-
-2019-04-08 版の Raspbian だと、
-desktop 版でもデフォルト状態では Audio Sink が含まれません。
-
-別途、次のパッケージをインストールしてください。
+まずは、 bluetoothctl を抜けてから以下を実行します。
 
 : sudo apt-get install pulseaudio-module-bluetooth
 
+これはデフォルトで入っているはずですが、念のため実行しておきます。
+
 インストール後に再起動が必要です。
+
+次に以下のコマンドを実行します。
+
+$ sudo pulseaudio -D
+$ sudo service bluetooth restart
+
+ここで、再度 bluetoothctl の show を実行すると、次のようになっているはずです。
+
+#+BEGIN_SRC txt
+[bluetooth]# show
+Controller XX:XX:XX:XX:XX:XX
+        Name: raspberrypi4
+        Alias: raspberrypi4
+        Class: 0x000c0000
+        Powered: yes
+        Discoverable: no
+        Pairable: yes
+        UUID: Headset AG                
+        UUID: Generic Attribute Profile 
+        UUID: A/V Remote Control        
+        UUID: Generic Access Profile    
+        UUID: PnP Information           
+        UUID: A/V Remote Control Target 
+        UUID: Audio Source              
+        UUID: Audio Sink                
+        UUID: Headset                   
+        Discovering: no
+#+END_SRC
+
+これで Audio Sink が認識されたので、 A2DP が利用できます。
+
+次はペアリングです。
 
 ** ペアリング方法
 
@@ -213,7 +218,7 @@ Bluetooth を使用したことがあれば分かると思いますが、
 	
 この状態で、 client 側で検索し、ペアリングします。
 
-ペアリングすると、 discoverable が自動で off になりますが、
+一定時間経過すると、 discoverable が自動で off になりますが、
 念のため show コマンドで discoverable の状態を確認します。
 
 discoverable が on の状態だと新規にペアリングを登録可能なので、
@@ -279,19 +284,17 @@ client 側の設定で出力を A2DP に変更してください。
 
 : $ sudo service bluetooth restart
 
-これで出力される場合、 rc.local に次の処理を追加します。
+* /etc/rc.local の編集
+
+デフォルトの起動状態では Audio Sink が有効にならないので、
+Audio Sink を有効にするために /etc/rc.local に次の処理を追加します。
 
 #+BEGIN_SRC txt
-sleep 10
+sleep 10 # 10 は環境によって変更する
+pulseaudio -D
 service bluetooth restart
 #+END_SRC
 
-対処療法でしかないですが、 自分の環境ではこれで正常に再生されるようになりました。
-
-Web には対応方法として、
-/etc/bluetooth/audio.conf の設定や、
-loadmodule のタイミング変更などが紹介されていましたが、
-私の環境では効果がありませんでした。
 
 * pulseaudio 出力先変更
 
