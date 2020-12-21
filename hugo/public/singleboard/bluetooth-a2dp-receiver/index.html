@@ -4,15 +4,15 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.71.1" />
+<meta name="generator" content="Hugo 0.68.3" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
-<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
@@ -36,7 +36,7 @@
 <meta itemprop="name" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説">
 <meta itemprop="description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html 2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。 RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が">
 
-<meta itemprop="wordCount" content="2717">
+<meta itemprop="wordCount" content="2950">
 
 
 
@@ -226,10 +226,10 @@ sudo apt-get install pulseaudio-module-bluetooth
 <p>
 次に以下のコマンドを実行します。
 </p>
-<p>
-$ sudo pulseaudio -D
-$ sudo service bluetooth restart
-</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo pulseaudio -D
+$ sudo service bluetooth restart</code></pre></div>
+</div>
 <p>
 ここで、再度 bluetoothctl の show を実行すると、次のようになっているはずです。
 </p>
@@ -458,6 +458,7 @@ RaspberryPi3 の WiFi を有効にしていると、干渉ノイズが入りま�
 WiFi 無効化は /boot/config.txt に次の設定を追加します。
 </p>
 <pre class="example">
+# WiFi off
 dtoverlay=pi3-disable-wifi
 </pre>
 <h2 id="headline-13">
@@ -482,7 +483,7 @@ resample-method = trivial
 <strong>2018/6/7 追記</strong>
 </p>
 <p>
-Client によっては、デフォルトだとペアリングできないことがあります。
+Client によっては、ペアリングできないことがあります。
 その場合 /etc/bluetooth/main.conf に次を設定します。
 </p>
 <pre class="example">
@@ -492,6 +493,46 @@ Class = 0x240404
 Amazon Fire TV とペアリングする場合、この設定が必要でした。
 </p>
 <h2 id="headline-15">
+ボリューム  (AVRCP Absolute Volume)
+</h2>
+<p>
+client 側のボリュームを変更しても、音量が変わらない場合があります。
+</p>
+<p>
+<em>私の環境では、ボリューム最小(ミュート)から 1 上げると最大の音量になる現象でした。</em>
+</p>
+<p>
+これは、 AVRCP Absolute Volume (絶対音量) というものが影響しているらしく、
+この設定をオフにする必要があります。
+</p>
+<p>
+なお、 pulseaudio ではこの問題を認識しているようなので、
+将来的にはこの問題はクリアになると思います。
+</p>
+<p>
+https://gitlab.freedesktop.org/pulseaudio/pulseaudio/-/merge_requests/239
+</p>
+<h3 id="headline-16">
+windows
+</h3>
+<p>
+次のレジストリに 1 をセットしてください。
+</p>
+<pre class="example">
+HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Bluetooth\Audio\AVRCP\CT の
+名前: DisableAbsoluteVolume
+値: 1  (DWORD)
+</pre>
+<p>
+※再起動が必要
+</p>
+<h3 id="headline-17">
+android
+</h3>
+<p>
+開発者オプションで絶対音量機能を off にしてください。
+</p>
+<h2 id="headline-18">
 参考
 </h2>
 <ul>
@@ -543,8 +584,8 @@ Amazon Fire TV とペアリングする場合、この設定が必要でした�
 <li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
 </ul>
   

@@ -23,7 +23,7 @@ go は、 github に公開されているモジュールを取得して使用で
 
 go にはモジュール管理機能が内包されており、
 基本的には次の手順でコマンドを実行するだけで、
-依存モジュールを管理できる。
+使用している依存モジュールを管理できる。
 
 #+BEGIN_SRC txt
 $ go mod init
@@ -37,13 +37,15 @@ $ go build あるいは go mod tidy
 モジュールを github へ公開しないと始まらないので、
 まずは github に公開する。
 
-ここで最も重要な点は、次の 1 点。
+この時ディレクトリ構成は何でも良い。
+
+最も重要な点は、次の 1 点。
 
 *タグを付ける*
 
 このタグは *v0.0.0* (数値はモジュールのバージョン)で付ける。
 
-これがないと、 意図したモジュールを go が取ってきてくれない。
+これがないと、 意図したリビジョンのモジュールを go が取ってきてくれない。
 
 go は初回の *go build* あるいは *mod init* した際に、
 プログラムで import しているモジュール情報を収集し、
@@ -111,6 +113,39 @@ vendor 機能は、依存モジュールをローカルの vendor ディレク�
 なお、当然 vendor で修正している内容は最終的に push & タグ付けしなければ
 グルーバルに有効にならないので、
 更新作業を忘れずに行なう必要がある。
+
+* master
+
+前述の通り go.mod は依存モジュールをバージョンと紐付けて管理している。
+
+#+BEGIN_SRC txt
+module hoge
+
+go 1.14
+
+require github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+require github.com/ifritJP/LuneScript v1.1.12-0.20201216131727-df4ec0979d4d
+#+END_SRC
+
+ここで、次のようにバージョンに master を指定し、
+go mod tidy あるいは go build することで、
+master の最新が取ってこれる。
+
+#+BEGIN_SRC txt
+module hoge
+
+go 1.14
+
+require github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+require github.com/ifritJP/LuneScript master
+#+END_SRC
+
+ただし、go mod tidy あるいは go build すると、
+master の部分が =v1.1.12-0.20201216131727-df4ec0979d4d= のように
+最新のバージョンに置き変わるので、
+依存ライブラリを再度更新した場合、 go.mod も master に書き直す必要がある。
+
+
 
 * 外部ライブラリを利用している場合
 

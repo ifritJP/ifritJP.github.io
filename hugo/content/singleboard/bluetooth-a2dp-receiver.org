@@ -9,7 +9,6 @@
 - https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html
 
 
-
 *2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。* 
 
 
@@ -141,8 +140,10 @@ Controller XX:XX:XX:XX:XX:XX
 
 次に以下のコマンドを実行します。
 
+#+BEGIN_SRC txt
 $ sudo pulseaudio -D
 $ sudo service bluetooth restart
+#+END_SRC
 
 ここで、再度 bluetoothctl の show を実行すると、次のようになっているはずです。
 
@@ -323,7 +324,7 @@ RaspberryPi3 の WiFi を有効にしていると、干渉ノイズが入りま�
 
 WiFi 無効化は /boot/config.txt に次の設定を追加します。
 
-# WiFi off
+: # WiFi off
 : dtoverlay=pi3-disable-wifi
 
 
@@ -342,12 +343,42 @@ WiFi 無効化は /boot/config.txt に次の設定を追加します。
 
 *2018/6/7 追記*
 
-Client によっては、デフォルトだとペアリングできないことがあります。
+Client によっては、ペアリングできないことがあります。
 その場合 /etc/bluetooth/main.conf に次を設定します。
 
 : Class = 0x240404
 
 Amazon Fire TV とペアリングする場合、この設定が必要でした。
+
+* ボリューム  (AVRCP Absolute Volume)
+
+client 側のボリュームを変更しても、音量が変わらない場合があります。
+
+/私の環境では、ボリューム最小(ミュート)から 1 上げると最大の音量になる現象でした。/
+
+
+これは、 AVRCP Absolute Volume (絶対音量) というものが影響しているらしく、
+この設定をオフにする必要があります。
+
+なお、 pulseaudio ではこの問題を認識しているようなので、
+将来的にはこの問題はクリアになると思います。
+
+https://gitlab.freedesktop.org/pulseaudio/pulseaudio/-/merge_requests/239
+
+
+** windows
+
+次のレジストリに 1 をセットしてください。
+
+: HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Bluetooth\Audio\AVRCP\CT の
+: 名前: DisableAbsoluteVolume
+: 値: 1  (DWORD)
+
+※再起動が必要
+
+** android
+
+開発者オプションで絶対音量機能を off にしてください。
 
 * 参考
 

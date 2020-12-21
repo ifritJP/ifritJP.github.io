@@ -21,7 +21,7 @@
     
     
     <meta name="description" content="LuneScript 向けの別ツールを作ろうと思い、 LuneScript の go 向けランタイムを単独モジュールとして分割して管理すべく 奮闘した際の備忘録。 go のモジュール go は、 github に公開" />
-    <meta name="generator" content="Hugo 0.71.1 with theme pure" />
+    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
     <title>go の自作モジュールを github で公開して import するまで - hoge blog</title>
     
     <link rel="stylesheet" href="https://cdn.staticfile.org/highlight.js/10.0.3/styles/atom-one-dark-reasonable.min.css" async>
@@ -40,7 +40,7 @@
 <meta itemprop="description" content="LuneScript 向けの別ツールを作ろうと思い、 LuneScript の go 向けランタイムを単独モジュールとして分割して管理すべく 奮闘した際の備忘録。 go のモジュール go は、 github に公開">
 <meta itemprop="datePublished" content="2020-11-28T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-11-28T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="1518">
+<meta itemprop="wordCount" content="1722">
 
 
 
@@ -302,7 +302,7 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-11-28-golang-module/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">1518</span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1722</span>
 		<span class="post-readcount hidden-xs" itemprop="timeRequired">4 </span>
       </div>
     </div>
@@ -331,7 +331,7 @@ go のモジュール管理のおさらい
 <p>
 go にはモジュール管理機能が内包されており、
 基本的には次の手順でコマンドを実行するだけで、
-依存モジュールを管理できる。
+使用している依存モジュールを管理できる。
 </p>
 <div class="src src-txt">
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ go mod init
@@ -348,7 +348,10 @@ $ go build あるいは go mod tidy</code></pre></div>
 まずは github に公開する。
 </p>
 <p>
-ここで最も重要な点は、次の 1 点。
+この時ディレクトリ構成は何でも良い。
+</p>
+<p>
+最も重要な点は、次の 1 点。
 </p>
 <p>
 <strong>タグを付ける</strong>
@@ -357,7 +360,7 @@ $ go build あるいは go mod tidy</code></pre></div>
 このタグは <strong>v0.0.0</strong> (数値はモジュールのバージョン)で付ける。
 </p>
 <p>
-これがないと、 意図したモジュールを go が取ってきてくれない。
+これがないと、 意図したリビジョンのモジュールを go が取ってきてくれない。
 </p>
 <p>
 go は初回の <strong>go build</strong> あるいは <strong>mod init</strong> した際に、
@@ -450,6 +453,39 @@ $ go build -mod vendor
 更新作業を忘れずに行なう必要がある。
 </p>
 <h2 id="headline-7">
+master
+</h2>
+<p>
+前述の通り go.mod は依存モジュールをバージョンと紐付けて管理している。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">module hoge
+
+go 1.14
+
+require github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+require github.com/ifritJP/LuneScript v1.1.12-0.20201216131727-df4ec0979d4d</code></pre></div>
+</div>
+<p>
+ここで、次のようにバージョンに master を指定し、
+go mod tidy あるいは go build することで、
+master の最新が取ってこれる。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">module hoge
+
+go 1.14
+
+require github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e
+require github.com/ifritJP/LuneScript master</code></pre></div>
+</div>
+<p>
+ただし、go mod tidy あるいは go build すると、
+master の部分が <code class="verbatim">v1.1.12-0.20201216131727-df4ec0979d4d</code> のように
+最新のバージョンに置き変わるので、
+依存ライブラリを再度更新した場合、 go.mod も master に書き直す必要がある。
+</p>
+<h2 id="headline-8">
 外部ライブラリを利用している場合
 </h2>
 <p>

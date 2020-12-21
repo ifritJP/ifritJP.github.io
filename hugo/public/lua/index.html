@@ -4,15 +4,15 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.71.1" />
+<meta name="generator" content="Hugo 0.68.3" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lua/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
-<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
 <script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
@@ -116,13 +116,6 @@ Lua で利用できる標準ライブラリの詳細は、次の公式 URL を�
 </li>
 </ul>
 <p>
-Lua によるオブジェクト指向継承方法については次のサイトを参考にさせていただきました。
-</p>
-<p>
-<del>&lt;http://www.geocities.jp/m_hiroi/light/lua06.html&gt;</del>
-2019/3 月末で geocities サービス停止
-</p>
-<p>
 Lua 初心者の方は、次の記事も是非確認してください。
 </p>
 <ul>
@@ -173,7 +166,27 @@ generics により、型情報を保ったままの処理が可能。
 </li>
 <li>
 <p>
+パターンマッチ対応。
+</p>
+</li>
+<li>
+<p>
+遅延ロード対応。
+</p>
+</li>
+<li>
+<p>
+構造化データと非構造化データとの相互変換。
+</p>
+</li>
+<li>
+<p>
 マクロ により、ポリモーフィズム等の動的処理に頼らないデザインを実現可能。
+</p>
+</li>
+<li>
+<p>
+Lua と go へのトランスコンパイル。
 </p>
 </li>
 <li>
@@ -204,20 +217,13 @@ LuneScript は Lua 上で動作し、Lua 標準モジュール以外を必要と
 </li>
 <li>
 <p>
-Lua5.1, Lua5.2, 5.3 をサポート。
-</p>
-<ul>
-<li>
-<p>
-Lua5.1 については次を参照してください。
+LuneScript から変換した Lua モジュールを、 他の Lua モジュールから利用可能。
 </p>
 </li>
 <li>
 <p>
-<a href="./crosscompile">./crosscompile</a>
+Lua5.1 〜 5.4 をサポート。
 </p>
-</li>
-</ul>
 </li>
 <li>
 <p>
@@ -357,7 +363,7 @@ Lua は、スクリプトを一旦 Lua VM 用のバイトコードに変換し�
 C の様なコンパイル/リンク作業は不要です。
 </p>
 <p>
-なお、VM 上で動作するため Native よりも実行速度は遅くなります。
+VM 上で動作するため Native よりも実行速度は遅くなります。
 </p>
 <h3 id="headline-5">
 ガーベジコレクション
@@ -372,7 +378,8 @@ C の様に、メモリの解放を意識して行なう必要はありません
 不要になった値は参照しないようにする必要があります。
 例えば不要になった値は、その値を保持する変数に nil を上書きします。
 これにより参照を無くせます。
-ローカル変数であれば、明示的に nil を代入しなくともローカル変数のスコープが外れることでも同じです。
+ローカル変数であれば、
+明示的に nil を代入しなくともローカル変数のスコープが外れることでも同じです。
 </p>
 <p>
 なお、オブジェクトが参照されなくなったタイミングと、
@@ -583,7 +590,7 @@ Lua の文字列は、C とは異なり &#39;\0&#39; で終端されていませ
 サイズ情報には # でアクセスできます。
 </p>
 <p>
-例えば #&#34;123&#34; は 3 になります。
+例えば #&#34;abc&#34; は 3 になります。
 </p>
 <p>
 なお、Lua の文字列には文字コードの概念はありません。
@@ -913,7 +920,7 @@ Lua の代入は、1つの文で複数の値を代入できます。
 </div>
 <p>
 なお、Lua の代入は、値を持ちません。
-よって、C の様な代入はできません。
+よって、次の C の様な代入はできません。
 </p>
 <div class="src src-lua">
 <div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">int</span> <span class="n">value1</span> <span class="o">=</span> <span class="n">value2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span></code></pre></div>
@@ -1028,7 +1035,7 @@ for 文は 2 種類あります。
 <strong>for</strong> v <strong>=</strong> e1, e2 [, e3] <strong>do</strong> block <strong>end</strong>
 </h5>
 <p>
-これは、C の for 文と似ています。
+これは、次の C の for 文と似ています。
 </p>
 <div class="src src-c">
 <div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="n">v</span><span class="p">;</span>
@@ -1043,6 +1050,13 @@ for 文は 2 種類あります。
 <p>
 e1, e2, e3 は、ループ開始前の一度だけ評価される
 </p>
+<ul>
+<li>
+<p>
+つまり e2, e3 に関数や変数を指定しても、その値はループ中に変化しません。
+</p>
+</li>
+</ul>
 </li>
 <li>
 <p>
@@ -1082,7 +1096,7 @@ local func, param, prev = exp
 local next_1, next_2, …, next_n = func( param, prev )
 </p>
 <p>
-ここで next_1 〜 next_n は、イテレータ関数で列挙する値の 1 集合です。
+ここで next_1 〜 next_n は、イテレータ関数で列挙する値の集合です。
 上の pairs の例では、 key, value がそれにあたります。
 n はイテレータ関数側によって定義します。
 イテレータ関数 func は、prev が nil の場合に列挙する先頭の値の集合を返す必要があります。
@@ -1552,7 +1566,8 @@ local <strong>function</strong> name <strong>(</strong> args <strong>)</strong> 
 直接 () を付けても実行できます。
 </p>
 <p>
-与えた引数と関数オブジェクトで定義した引数に違いがある場合は、
+関数呼び出し時に与えた引数の数と、
+関数オブジェクトで定義した引数の数に違いがある場合は、
 代入文で説明した通り足りない場合は nil を設定、多い場合は無視されます。
 </p>
 <p>
@@ -1587,7 +1602,8 @@ return … で、可変長引数をそのまま返すこともできます。
 <p>
 … に何が与えられているのかを調べたい場合は、
 {…} で、その可変長引数を要素に持つテーブルを生成できるので、
-テーブルを作成した後でそのテーブルに対して操作することで可変長引数の要素にアクセスできます。
+テーブルを作成した後でそのテーブルに対して操作することで
+可変長引数の要素にアクセスできます。
 </p>
 <p>
 なお、これは上記のテーブルコンストラクタで説明した通り
@@ -1613,7 +1629,7 @@ return
 関数を終了し、戻り値を返します。
 </p>
 <p>
-なお、関数の戻り値も複数個返すことができます。
+なお、関数は戻り値を複数個返すことができます。
 </p>
 <div class="src src-lua">
 <div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
@@ -1686,9 +1702,9 @@ C++ の this と同じです。
 </p>
 <ul>
 <li>
-<pre class="example">
-ではなく . になっている
-</pre>
+<p>
+<code class="verbatim">:</code> ではなく . になっている
+</p>
 </li>
 <li>
 <p>
@@ -1702,7 +1718,7 @@ C++ の this と同じです。
 </li>
 </ul>
 <p>
-<code>: を利用することで、Lua が上記の処理を行なっている、ということです。</code>
+これは <strong>: を利用することで、 self の処理を Lua が行なっている、</strong> ということです。
 </p>
 <p>
 なお、: を利用したメソッド定義は self が自動的に利用されますが、
@@ -1734,7 +1750,7 @@ C++ の this と同じです。
 継承
 </h5>
 <p>
-Lua でクラスの継承が可能です。
+Lua は、クラスの継承が可能です。
 継承の実現方法には複数の実装方法があります。
 今回紹介する方法は、あくまで 1 つのサンプルです。
 </p>
@@ -2095,7 +2111,7 @@ loadfile の mode, env 引数を指定する必要がある場合。
 コルーチン
 </h3>
 <p>
-コルーチンは、値の受渡しが可能になった RTOS 等のプリエンプティブなタスク切り替え機構と考えると分かり易いです。
+コルーチンは、値の受渡しが可能になった RTOS 等のノンプリエンプティブなタスク切り替え機構と考えると分かり易いです。
 </p>
 <p>
 coroutine.resume() と coroutine.yield() が、タスクの再開、一時停止にあたります。
@@ -2103,24 +2119,24 @@ coroutine.resume() と coroutine.yield() が、タスクの再開、一時停止
 <ul>
 <li>
 <p>
-coroutine.resume( crn, arg ) は、コルーチン crn の実行を再開します。
+coroutine.resume( crn, arg_c ) は、コルーチン crn の実行を再開します。
 </p>
 <ul>
 <li>
 <p>
-このとき、コルーチン crn は arg を受けとります。
+このとき、コルーチン crn は arg_c を受けとります。
 </p>
 </li>
 </ul>
 </li>
 <li>
 <p>
-coroutine.yield(arg) は、実行中のコルーチンを suspend にし、coroutine.resume() 呼び出した元の処理に戻ります。
+coroutine.yield(arg_r) は、実行中のコルーチンを suspend にし、coroutine.resume() を呼び出した元の処理に戻ります。
 </p>
 <ul>
 <li>
 <p>
-このとき、coroutine.resume() の戻り値として arg が返ります。
+このとき、coroutine.resume() の戻り値として arg_r が返ります。
 </p>
 </li>
 <li>
@@ -2149,12 +2165,12 @@ coroutine.resume() の戻り値が true の場合、コルーチンの処理は�
 <ul>
 <li>
 <p>
-この状態で 再度 coroutine.resume( crn, arg ) を実行することで、コルーチンの処理の続きから実行されます。
+この状態で 再度 coroutine.resume( crn, arg_c ) を実行することで、コルーチンの処理の続きから実行されます。
 </p>
 </li>
 <li>
 <p>
-resume の引数 arg は、coroutine.yield() の戻り値となります。
+resume の引数 arg_c は、coroutine.yield() の戻り値となります。
 </p>
 </li>
 </ul>
@@ -2893,8 +2909,8 @@ lctags を利用することで、
 <li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
 </ul>
   
