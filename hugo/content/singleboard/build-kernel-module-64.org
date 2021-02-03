@@ -1,0 +1,232 @@
+#+TITLE: 64bit 版 Raspberry Pi OS のカーネルモジュールのビルド環境設定
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+Raspberry Pi の公式ページには、
+カーネルのビルド方法についての情報が載っています。
+
+<https://www.raspberrypi.org/documentation/linux/kernel/building.md>
+
+上記ページには、ビルド環境として次の 2 つについて説明があります。
+
+- Local building
+  - Raspberry Pi 上でビルドする
+- Cross-compiling
+  - Ubuntu などの環境上で Raspberry Pi 用の kernel を     ビルドする
+
+現在(2021/01)この Local building の説明には、
+64bit 版の Raspberry Pi OS のビルド方法についての記載がありません。
+
+ネットで Raspberry Pi OS のカーネルモジュールのビルド方法を調べると
+いくつかのサイトがヒットしますが、
+その通りにビルドしても上手くいきませんでした。
+
+次のコンパイルエラーや、
+
+: unrecognized command line option ‘-mgeneral-regs-only'
+
+ビルドが出来ても、 modprobe すると次のようなエラーが出力され、
+
+: Exec format error
+
+エラー内容を確認するため dmesg すると以下のエラーが記録されているなど、
+様々な問題が発生しました。
+
+: disagrees about version of symbol module_layout
+
+これは、それらサイトが 32bit 版のカーネルモジュールのビルド方法の説明で、
+64bit 版のカーネルモジュールのビルド方法ではなかったのが原因のようです。
+
+Raspberry Pi の標準 OS の Raspberry Pi OS は、デフォルト 32bit です。
+64bit 版のカーネルを利用することも出来ますが、
+まだ 64bit 版の利用者は少ないようです。
+
+Raspberry Pi は、 Raspberry Pi OS 以外に Ubuntu も利用可能です。
+この Raspberry Pi 用 Ubuntu にも 64bit 版があります。
+
+ネットで検索すると、 Raspberry Pi で 64bit OS を利用する場合、
+Raspberry Pi OS ではなく Ubuntu を推奨しているケースが多いです。
+
+つまり、 64bit 版 Raspberry Pi OS の利用者は 32bit 版と比較して少ないようです。
+
+それでもなんとかネットの情報を組み合わせて、
+64bit 版のカーネルモジュールのビルド環境を構築することができました。
+
+以降では、
+64bit 版 Raspberry Pi OS 上でカーネルモジュールのビルド環境の
+構築方法について説明します。
+
+作業概要は以下の通りです。
+
+- gcc のビルド
+- =/boot/.firmware_revision= の作成
+- rpi-source のパッチ
+- rpi-source を実行
+
+
+現時点で 64bit 版 Raspberry Pi OS は、気軽に使うにはハードルが高いです。
+ネットで調べてもそのままズバリな回答はないと考えた方が良いです。
+
+なにか問題が発生した場合、カーネル関連の問題となるので、
+最低限 C 言語の知識がないと解決は難しいと覚悟をしておくべきです。
+
+単なるユーザとしてではなく、
+「デベロッパー」あるいは「ギーク」としてのマインドで臨む必要があるでしょう。
+
+
+* gcc のビルド
+
+64bit 版 Raspberry Pi OS のカーネルは、 aarch64 向けにビルドされています。
+
+一方、 2021/1 現在、 Raspberry Pi OS に apt でインストールできる gcc は、
+arm(32bit) 向けのコンパイラです。
+
+つまり、aarch64 対応した gcc を別途ビルドする必要があります。
+
+<https://www.tal.org/tutorials/raspberry-pi3-build-64-bit-kernel>
+
+上記の URL に、 aarch64 対応した gcc のビルド方法について記載があります。
+詳細は上記 URL を参照していただくとして、
+ここでは必要最低限のコマンドを抜粋しておきます。
+
+*なお、 Raspberry pi 4 上でビルドすると 40 分以上かかります。*
+
+- apt
+: $ sudo apt-get install build-essential libgmp-dev libmpfr-dev \
+:      libmpc-dev libisl-dev libncurses5-dev bc git-core bison flex textinfo
+
+- binutils
+: $ wget https://ftp.gnu.org/gnu/binutils/binutils-2.34.tar.bz2
+: $ tar xf binutils-2.34.tar.bz2
+: $ mkdir binutils-obj
+: $ cd binutils-obj
+: $ ../binutils-2.34/configure --prefix=/opt/aarch64 --target=aarch64-linux-gnu --disable-nls
+: $ make -j4
+: $ sudo make install
+: $ cd ..
+
+- path
+: $ export PATH=$PATH:/opt/aarch64/bin/
+
+- gcc
+: $ wget https://ftp.gnu.org/gnu/gcc/gcc-8.4.0/gcc-8.4.0.tar.xz
+: $ tar xf gcc-8.4.0.tar.xz
+: $ mkdir gcc-out
+: $ cd gcc-out
+: $ ../gcc-8.4.0/configure --prefix=/opt/aarch64 --target=aarch64-linux-gnu --with-newlib --without-headers \
+: $  --disable-nls --disable-shared --disable-threads --disable-libssp --disable-decimal-float \
+: $  --disable-libquadmath --disable-libvtv --disable-libgomp --disable-libatomic \
+: $  --enable-languages=c
+: $ make all-gcc -j4
+: $ sudo make install-gcc
+: $ cd ..
+
+以上で、 =/opt/aarch64/bin/= に aarch64 向けの gcc がインストールされます。
+
+* カーネルモジュールビルドに必要なパッケージの取得
+
+以下を実行します。
+
+: sudo apt-get install bc bison flex libssl-dev libncurses5-dev
+
+* Raspberry PI OS kernel ソースの取得
+
+カーネルモジュールのビルドには、
+対象のカーネルのソースが必要です。
+
+** カーネルのソースリビジョン特定
+
+Raspberry pi OS のカーネルソースは github で管理されています。
+この github から、対象のカーネルソースのリビジョンを調べます。
+
+カーネルソースのリビジョンを調べるには、
+Raspberry pi OS 上で以下のコマンドを実行します。
+
+: $ uname -r
+: 5.10.4-v8+
+
+ここで、 =-v8+= の前の =5.10.4= がカーネルのバージョンです。
+
+<https://github.com/Hexxeh/rpi-firmware/commits/master>
+
+次に上記の URL にアクセスし、次のコミットを探します。
+
+: kernel: Bump to 5.10.4
+
+※ 5.10.4 は、カーネルバージョンに合せてください。
+
+このコミットの hash を取得します。
+
+: 2a52dbc947a262309987db2e0444709187579209
+
+なお、このコミットの後に次のコミットがあります。
+
+: kernel: Temporary reversions to fix vchiq
+
+このように =Bump to x.x.x= のパターンにないコミットがある場合、
+直前のコミットのパッチ的なもなので、取得するのはこちらの hash にしてください。
+
+つまり、5.10.4 の hash は、以下になります。
+
+: 252ff0e943b461764a38498657b05c3f7908d8c9
+
+この hash を、 =/boot/.firmware_revision= に書き込みます。
+
+: $ sudo bash -c 'echo 252ff0e943b461764a38498657b05c3f7908d8c9 > /boot/.firmware_revision'
+
+カーネルソースの取得にはまだいくつかの手順があるのですが、
+その手順を簡略化するためのツール rpi-source があります。
+
+<https://github.com/RPi-Distro/rpi-source.git>
+
+しかし、この rpi-source も 64bit 対応されていません。
+今回は、この rpi-source にパッチをあてて使用します。
+
+** rpi-source パッチ
+  
+: $ git clone https://github.com/RPi-Distro/rpi-source.git
+
+この =rpi-source/rpi-source= に以下を追加します。
+
+#+BEGIN_SRC diff
+ def processor_type_suffix():
++    kernel = os.environ.get('KERNEL')
++    if kernel != None:
++        return kernel.replace( 'kernel', '' )
+     if processor_type == 0:
+         return ''
+#+END_SRC
+
+** rpi-source の使用方法
+
+次を実行します。   
+
+: $ ARCH=arm64 CROSS_COMPILE=/opt/aarch64/bin/aarch64-linux-gnu- KERNEL=kernel8 ./rpi-source 
+
+ここで =ARCH=arm64= は 64bit カーネルを指し、
+=CROSS_COMPILE=/opt/aarch64/bin/aarch64-linux-gnu-= は 使用する gcc を、
+ビルドした gcc に切り替え、
+=KERNEL=kernel8= はカーネルの種別を指定します。
+
+これによって、
+カーネルソースが取得され、カーネルモジュールのビルドに必要な準備が完了です。
+
+* カーネルモジュールのビルド
+
+カーネルモジュールのビルド方法は、
+対象のカーネルモジュールのビルド方法に依存します。
+
+ただし、次のオプションを忘れずに指定してください。
+
+: $ KERNEL=kernel8 make ARCH=arm64 CROSS_COMPILE=/opt/aarch64/bin/aarch64-linux-gnu-
+
+*※ ビルドコマンドが make の場合*
+
+* 参考情報
+
+ビルドしたカーネルモジュールを modprobe した際のエラーについて、
+以下のサイトが非常に有用でした。
+
+<https://enakai00.hatenablog.com/entry/20110509/1304910773>
