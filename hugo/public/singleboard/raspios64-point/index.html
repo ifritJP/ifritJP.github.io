@@ -39,7 +39,7 @@
 <meta itemprop="name" content="64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法">
 <meta itemprop="description" content="8GB 版 Raspberry Pi を購入したので、 せっかく 8GB を使うなら 32bit よりも 64bit 版の方が良いだろうと軽い気持で 64bit 版 Raspberry Pi OS をインストールしたものの、何故かエラーが発生し">
 
-<meta itemprop="wordCount" content="2445">
+<meta itemprop="wordCount" content="2966">
 
 
 
@@ -389,8 +389,91 @@ int* が 64bit 長になってしまうので、
 32bit 長になるように <code class="verbatim">int*</code> 部分を適宜書き換えが必要です。
 </p>
 <h2 id="headline-4">
-BUS ERROR
+BUS ERROR (SIGBUS)
 </h2>
+<p>
+BUS ERROR は、アクセスしているアドレスに問題があることを示すエラーです。
+</p>
+<p>
+https://www.wdic.org/w/TECH/SIGBUS
+</p>
+<p>
+上記 URL の情報によると、次の 2 つのケースを表わします。
+</p>
+<ul>
+<li>
+<p>
+有効なメモリーアドレスだが、アクセス許可が無い領域にアクセスしようとした場合
+</p>
+</li>
+<li>
+<p>
+アドレス境界(ワード境界、ダブルワード境界など)を無視してアクセスしようとした場合 (アドレスエラー)
+</p>
+</li>
+</ul>
+<p>
+今回問題になったのは、後者のケースです。
+</p>
+<p>
+これはどういうことかというと、次のようなケースで発生します。
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">int32_t</span> <span class="n">buf</span><span class="p">[</span> <span class="mi">2</span> <span class="p">];</span>
+    <span class="n">int32_t</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="n">int32_t</span><span class="o">*</span><span class="p">)((</span><span class="n">int8_t</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
+    <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// error
+</span><span class="c1"></span>    <span class="n">printf</span><span class="p">(</span> <span class="s">&#34;%p: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pVal</span><span class="p">,</span> <span class="o">*</span><span class="n">pVal</span> <span class="p">);</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+上記の <code>*pVal = 0;</code> でエラーが発生します。
+</p>
+<p>
+ただし多くの環境で、上記のサンプルコードはエラーしません。
+</p>
+<p>
+これは、アライメントされていない非境界整列へのアクセスがあった場合、
+エラーとせずに CPU 側で処理するように設定がされているからです。
+</p>
+<p>
+ARM では、これをエラーとするかどうかを制御する CPU の制御フラグがあります。
+</p>
+<p>
+raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの設定が異なるようです。
+</p>
+<table>
+<thead>
+<tr>
+<th>raspberry pi OS</th>
+<th>フラグ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>32bit カーネル</td>
+<td>エラーとしない</td>
+</tr>
+<tr>
+<td>64bit カーネル</td>
+<td>エラーとする</td>
+</tr>
+</tbody>
+</table>
+<p>
+なぜこのような違いがあるかネットで調べてみましたが、
+そのものズバリな回答はありませんでした。
+</p>
+<p>
+ただ、ネットで調べた情報から推測すると以下が考えられます。
+</p>
+<p>
+非境界整列へのアクセスが
+</p>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev" href="https://ifritjp.github.io/documents/singleboard/" title="Singleboards"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Singleboards</a>

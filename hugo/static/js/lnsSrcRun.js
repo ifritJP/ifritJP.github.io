@@ -59,13 +59,13 @@
 
     var codeNo = 0;
     window.addEventListener( "load",function() {
-        Array.from( document.getElementsByClassName( "language-lns" ) ).forEach( function( element ) {
+        Array.from( document.getElementsByClassName( "src-lns" ) ).forEach( function( element ) {
             if ( element.innerText.indexOf( "@lnsFront: ok" ) == -1 &&
                  element.innerText.indexOf( "@lnsFront: error" ) == -1 ) {
                 return;
             }
             codeNo++;
-            element.appendChild( document.createElement( "br" ) );
+            //element.appendChild( document.createElement( "br" ) );
 
             var button = document.createElement( "input" );
             button.type = "button";
