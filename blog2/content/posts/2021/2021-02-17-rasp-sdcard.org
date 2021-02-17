@@ -1,0 +1,68 @@
+#+TITLE: raspberry pi の sdcard 書き換え回数寿命を考える
+#+DATE: 2021-02-17
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: javascript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+raspberry pi でローカルサーバを立ち上げているが、
+この sdcard 寿命が気になったので調べてみた。
+
+sdcard はでなく、 hdd や ssd で運用する方法もあるが、
+sdcard で運用できる方がランニングコストが良いので、できれば sdcard で運用したい。
+
+* sdcard の寿命の見積り
+
+=iostat -h= で sdcard への書き込み量を調べると、 **1日約 1GB の書き込み** がある。
+
+この書き込みが sdcard の **何ブロックを書き換えているのか不明** なので、
+とりあえず 10 倍の **10GB 相当** のブロックを書き換えたとする。
+
+次に sdcard が SLC か MLC か TLC かだが、
+パッケージも何も残っていないので予測でしかないが、
+数年前にアキバの最安値のものを買ったはずなので TLC と予想する。
+
+そして 16GB の sdcard なので、TLC ならば 約 16TB の書き込みが可能だとすると、
+1 日 10GB の書き換えで **約 4 年間** で寿命を越えることになる。
+
+ほとんどが予想でしかないが、少なくとも 1 年は寿命を気にせずに使用できるだろう。
+
+そんな訳で、このままの構成で1年程度運用してから、
+来年あたりに MLC の高耐久モデルの sdcard に入れ替えて運用しようと思う。
+そうすれば、10 年程度は運用できるだろう。
+
+もちろん 10 年間も運用するとは思えないので、
+今のサーバ構成で MLC の sdcard を使用すれば、
+実質的に寿命を気にする必要はないだろう。
+
+
+もしも 1 年の運用中に sdcard の寿命を越えるようなことがあれば、
+sdcard のブロック書き換え数の見積りが想定以上だったか、
+ハズれの sdcard を引いたかになる。
+
+ブロック書き換え数の見積りが想定以上なのだとしたら、
+sdcard の容量を大きめのサイズにすることで対応できるだろう。
+
+ちなみに現状の sdcard の書き込みサイズ情報は以下の通り。 
+
+**約 185 GB (+ 129 56)**
+
+#+BEGIN_SRC txt
+$ sudo dumpe2fs -h /dev/mmcblk0p2 | grep "Lifetime writes"
+dumpe2fs 1.44.5 (15-Dec-2018)
+Lifetime writes:          129 GB
+#+END_SRC
+
+
+#+BEGIN_SRC txt
+$ iostat -h
+Linux 5.10.4-v8+ (raspberrypi4) 	17/02/21 	_aarch64_	(4 CPU)
+
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           2.9%    3.8%    1.6%    0.3%    0.0%   91.5%
+
+      tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn Device
+     0.41         3.4k        24.8k       7.7G      56.3G mmcblk0
+#+END_SRC
