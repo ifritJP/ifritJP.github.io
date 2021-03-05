@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編) - 公開技術情報</title>
+<title>@.1.2 Go 言語へのトランスコンパイル時のパッケージ - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.68.3" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lctags/rename/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/go_package/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -28,18 +28,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)" />
-<meta property="og:description" content="lctags は、変数名、引数名のリネームをサポートします。 多くの場合は、emacs が提供している文字列置換でも問題なくリネームできますが、 リネーム対象" />
+<meta property="og:title" content="@.1.2 Go 言語へのトランスコンパイル時のパッケージ" />
+<meta property="og:description" content="go のパッケージ管理されているモジュールを LuneScript から利用できます。 go のパッケージ管理概要 go は go.mod でパッケージを管理します。 この go.mod で管理されたパッケー" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lctags/rename/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/go_package/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)"/>
-<meta name="twitter:description" content="lctags は、変数名、引数名のリネームをサポートします。 多くの場合は、emacs が提供している文字列置換でも問題なくリネームできますが、 リネーム対象"/>
-<meta itemprop="name" content="C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)">
-<meta itemprop="description" content="lctags は、変数名、引数名のリネームをサポートします。 多くの場合は、emacs が提供している文字列置換でも問題なくリネームできますが、 リネーム対象">
+<meta name="twitter:title" content="@.1.2 Go 言語へのトランスコンパイル時のパッケージ"/>
+<meta name="twitter:description" content="go のパッケージ管理されているモジュールを LuneScript から利用できます。 go のパッケージ管理概要 go は go.mod でパッケージを管理します。 この go.mod で管理されたパッケー"/>
+<meta itemprop="name" content="@.1.2 Go 言語へのトランスコンパイル時のパッケージ">
+<meta itemprop="description" content="go のパッケージ管理されているモジュールを LuneScript から利用できます。 go のパッケージ管理概要 go は go.mod でパッケージを管理します。 この go.mod で管理されたパッケー">
 
-<meta itemprop="wordCount" content="406">
+<meta itemprop="wordCount" content="872">
 
 
 
@@ -57,68 +57,221 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</h1>
+<main><h1>@.1.2 Go 言語へのトランスコンパイル時のパッケージ</h1>
 
 <p>
-lctags は、変数名、引数名のリネームをサポートします。
-</p>
-<p>
-多くの場合は、emacs が提供している文字列置換でも問題なくリネームできますが、
-リネーム対象と同じ名前のメンバが存在しているような場合、
-単純な文字列置換では意図しないものまでリネームしてしまうことがあります。
-</p>
-<p>
-lctags では、構文解析した情報を基にリネームを行なうため、確実にリネームできます。
+go のパッケージ管理されているモジュールを LuneScript から利用できます。
 </p>
 <h2 id="headline-1">
-デモ
+go のパッケージ管理概要
 </h2>
 <p>
-<a href="https://www.youtube.com/watch?v=HovGT2yTUPA"><a href="https://www.youtube.com/watch?v=HovGT2yTUPA">https://www.youtube.com/watch?v=HovGT2yTUPA</a></a>
+go は go.mod でパッケージを管理します。
 </p>
 <p>
-lctags で引数をリネームしているデモ動画です。
-この動画では、引数と同名のメンバ名が存在していますが、
-メンバ名は変わらずに指定の変数だけがリネームされています。
+この go.mod で管理されたパッケージは、
+環境変数 GOPATH で指定されたローカルディレクトリにキャッシュされます。
+</p>
+<p>
+LuneScript は、このキャッシュされたモジュールを利用できます。
+</p>
+<p>
+github 上のパッケージを go で利用するには、次のように書きます。
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kn">import</span> <span class="s">&#34;github.com/ifritJP/lnshttpd&#34;</span></code></pre></div>
+</div>
+<p>
+これと同じ感覚で、 LuneScript は go のモジュールにアクセスできます。
 </p>
 <h2 id="headline-2">
-使用方法
+import
 </h2>
 <p>
-リネームしたい変数の位置にカーソルを合せ、次のいずれかを実行します。
+go のパッケージ内にある .lns ファイルを LuneScript で import するには、
+次のように書きます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">import go/github:com.ifritJP.lnshttpd.lnsservlet;</code></pre>
+</div>
+<p>
+これは <a href="https://github.com/ifritJP/lnshttpd">https://github.com/ifritJP/lnshttpd</a> の lnsservlet.lns を
+import する時の例です。
+</p>
+<p>
+ここで、 <code class="verbatim">go/github:com.ifritJP.lnshttpd.lnsservlet</code> に注目します。
+</p>
+<p>
+<code class="verbatim">https://github.com/ifritJP/lnshttpd</code> と
+<code class="verbatim">go/github:com.ifritJP.lnshttpd.lnsservlet</code> を見比べればだいたい想像が付くと思いますが、
+go のパッケージを使用する場合、次の追加ルールがあります。
 </p>
 <ul>
 <li>
 <p>
-M-x lctags-rename-at
+先頭に <code class="verbatim">go/</code> を付加する
 </p>
 </li>
 <li>
 <p>
-C-c l r r  
+github.com のように . が付く場合、 . の代わりに : を指定する
 </p>
 </li>
 </ul>
 <p>
-mini-buffer に変数名が表示されるので、これを編集し RET します。
+LuneScript は、上記形式のモジュールが指定された場合、
+通常の検索パスではなく、 go のパッケージパスからモジュールを検索します。
 </p>
 <p>
-指定された変数名に置換されます。
+具体的には、次の順番にファイルを検索します。
 </p>
+<ul>
+<li>
 <p>
-このとき、置換された変数はハイライト表示されます。
+vendor/github.com/ifritJP/lnshttpd/lnsservlet.lns 
+</p>
+</li>
+<li>
+<p>
+${GOPATH}/pkg/mod/github.com/ifrit!j!p/lnshttpd@XXXXXXXXXXXXXXXXX/lnsservlet.lns
+</p>
+</li>
+</ul>
+<p>
+ここで、 <code class="verbatim">@XXXXXXXXXXXXXXXXX/lnsservlet.lns</code> の <code class="verbatim">XXXXXXXXXXXXXXXXX</code> の部分は、
+go.mod に記載されているモジュールの TAG 情報から取得します。
+つまり、事前に go mod tidy を実施しておく必要があります。
 </p>
 <h2 id="headline-3">
-制限
+module
 </h2>
 <p>
-lctags は、リネーム対象を引数と変数に制限しています。
-そのため、メンバーや関数等のリネームはできません。
+go のモジュールを LuneScript から利用するには、 module 宣言が必要です。
 </p>
+<p>
+module 宣言は LuneScript から Lua モジュールを利用する際にも使用していますが、
+go モジュールを利用する場合、次の追加ルールがあります。
+</p>
+<ul>
+<li>
+<p>
+go のモジュールを利用していることを module 宣言に追加する
+</p>
+</li>
+</ul>
+<p>
+以下は github.com.ifritJP.lnshttpd の servlet.go を利用する際の宣言例です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">module servlet require &#34;go/github:com.ifritJP.lnshttpd.servlet&#34; of &#34;&#34; {
+   pub static fn Start( listenPort:int,
+                        handlerList: &amp;List&lt;&amp;lnsservlet.HandlerInfo&gt;,
+                        hostingList:&amp;List&lt;&amp;lnsservlet.HostingInfo&gt; );
+}</code></pre>
+</div>
+<p>
+ここで <code class="verbatim">module servlet require &#34;go/github:com.ifritJP.lnshttpd.servlet&#34; of &#34;&#34;</code> の
+<code class="verbatim">of &#34;&#34;</code> は、利用するモジュールの種別を宣言しています。
+</p>
+<p>
+指定可能な文字列は次の通りです。
+</p>
+<table>
+<thead>
+<tr>
+<th>文字列</th>
+<th>モジュールの言語</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&#34;&#34;</td>
+<td>トランスコンパイル先言語と同じ</td>
+</tr>
+<tr>
+<td>&#34;Lua&#34;</td>
+<td>lua</td>
+</tr>
+<tr>
+<td>&#34;Go&#34;</td>
+<td>go</td>
+</tr>
+</tbody>
+</table>
+<h3 id="headline-4">
+利用可能な言語
+</h3>
+<p>
+トランスコンパイル先の言語と、
+module で利用可能な言語の組み合わせには制限があります。
+</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>go module</th>
+<th>lua module</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>go へトランスコンパイル</td>
+<td>可能</td>
+<td>可能</td>
+</tr>
+<tr>
+<td>lua へトランスコンパイル</td>
+<td><strong>不能</strong></td>
+<td>可能</td>
+</tr>
+</tbody>
+</table>
+<h3 id="headline-5">
+型の互換性
+</h3>
+<p>
+module 宣言で go モジュールを LuneScript から利用可能です。
+</p>
+<p>
+しかし、型の互換性は制限されます。
+</p>
+<p>
+以下の型は LuneScript と go とで対になっています。
+</p>
+<table>
+<thead>
+<tr>
+<th>LuneScript の型</th>
+<th>go の型</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>int</td>
+<td>int</td>
+</tr>
+<tr>
+<td>real</td>
+<td>float64</td>
+</tr>
+<tr>
+<td>bool</td>
+<td>bool</td>
+</tr>
+<tr>
+<td>str</td>
+<td>string</td>
+</tr>
+<tr>
+<td>nilable</td>
+<td>interface{}</td>
+</tr>
+</tbody>
+</table>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lctags/highlight/" title="C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lctags/introduce/" title="C/C&#43;&#43; ソースコードタグシステム lctags の紹介">Next - C/C&#43;&#43; ソースコードタグシステム lctags の紹介 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/go/" title="@.1 Go 言語へのトランスコンパイル"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.1 Go 言語へのトランスコンパイル</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/async/" title="@.2 非同期処理">Next - @.2 非同期処理 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -127,13 +280,13 @@ lctags は、リネーム対象を引数と変数に制限しています。
 <ul>
 <li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
 
-<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark opened">-</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
@@ -216,7 +369,7 @@ lctags は、リネーム対象を引数と変数に制限しています。
   
 </li>
 
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
@@ -256,7 +409,7 @@ lctags は、リネーム対象を引数と変数に制限しています。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

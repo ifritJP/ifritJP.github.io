@@ -179,6 +179,7 @@ Map 型と Luaval<Map> 型のデータは互換性がないため、代入など
 この関数を使用すると、次のような処理が掛けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func(map:Luaval<&Map<str,int>>) {
    forsort val, key in map {
       print( key, val + 100 ); 
@@ -257,18 +258,21 @@ Luava 型ではなくそのままの型になります。
 次にサンプルを示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let code = ```
 return function( tbl )
+   local total = 0
    for key, val in pairs( tbl ) do
-      print( key, val )
+      total = total + val
    end
+   return total
 end
 ```;
 let loaded, err = _load( code, nil );
 when! loaded {
    if! let obj = loaded( ## ) {
    let map = { "val1":1, "val2":10 };
-      (obj@@form)( map );  // Lua の関数コール
+      print( (obj@@form)( map ) );  // Lua の関数コール
    }
 } else {
    print( err );
@@ -276,7 +280,7 @@ when! loaded {
 #+END_SRC
 
 このサンプルは、
-引数で与えられた Lua のテーブルの要素を出力する関数をコールします。
+引数で与えられた Lua のテーブルの要素の値の合計を計算する関数をコールします。
 
 このサンプルでは、
 Map<str,int> 型のデータ map を Lua の関数の引数に指定して実行しています。

@@ -1,0 +1,116 @@
+#+title: @.1.2 Go 言語へのトランスコンパイル時のパッケージ
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+go のパッケージ管理されているモジュールを LuneScript から利用できます。
+
+* go のパッケージ管理概要
+
+go は go.mod でパッケージを管理します。
+
+この go.mod で管理されたパッケージは、
+環境変数 GOPATH で指定されたローカルディレクトリにキャッシュされます。
+
+LuneScript は、このキャッシュされたモジュールを利用できます。
+
+github 上のパッケージを go で利用するには、次のように書きます。
+
+#+BEGIN_SRC go
+import "github.com/ifritJP/lnshttpd"
+#+END_SRC
+
+これと同じ感覚で、 LuneScript は go のモジュールにアクセスできます。
+
+* import
+
+go のパッケージ内にある .lns ファイルを LuneScript で import するには、
+次のように書きます。
+
+#+BEGIN_SRC lns
+import go/github:com.ifritJP.lnshttpd.lnsservlet;
+#+END_SRC
+
+これは https://github.com/ifritJP/lnshttpd の lnsservlet.lns を
+import する時の例です。
+
+ここで、 =go/github:com.ifritJP.lnshttpd.lnsservlet= に注目します。
+
+=https://github.com/ifritJP/lnshttpd= と
+=go/github:com.ifritJP.lnshttpd.lnsservlet= を見比べればだいたい想像が付くと思いますが、
+go のパッケージを使用する場合、次の追加ルールがあります。
+
+- 先頭に =go/= を付加する
+- github.com のように . が付く場合、 . の代わりに : を指定する
+
+LuneScript は、上記形式のモジュールが指定された場合、
+通常の検索パスではなく、 go のパッケージパスからモジュールを検索します。
+
+
+具体的には、次の順番にファイルを検索します。
+
+- vendor/github.com/ifritJP/lnshttpd/lnsservlet.lns 
+- ${GOPATH}/pkg/mod/github.com/ifrit!j!p/lnshttpd@XXXXXXXXXXXXXXXXX/lnsservlet.lns
+
+ここで、 =@XXXXXXXXXXXXXXXXX/lnsservlet.lns= の =XXXXXXXXXXXXXXXXX= の部分は、
+go.mod に記載されているモジュールの TAG 情報から取得します。
+つまり、事前に go mod tidy を実施しておく必要があります。
+
+* module
+
+go のモジュールを LuneScript から利用するには、 module 宣言が必要です。
+
+module 宣言は LuneScript から Lua モジュールを利用する際にも使用していますが、
+go モジュールを利用する場合、次の追加ルールがあります。
+
+- go のモジュールを利用していることを module 宣言に追加する
+
+以下は github.com.ifritJP.lnshttpd の servlet.go を利用する際の宣言例です。
+
+#+BEGIN_SRC lns
+module servlet require "go/github:com.ifritJP.lnshttpd.servlet" of "" {
+   pub static fn Start( listenPort:int,
+                        handlerList: &List<&lnsservlet.HandlerInfo>,
+                        hostingList:&List<&lnsservlet.HostingInfo> );
+}
+#+END_SRC
+
+ここで =module servlet require "go/github:com.ifritJP.lnshttpd.servlet" of ""= の
+=of ""= は、利用するモジュールの種別を宣言しています。
+
+指定可能な文字列は次の通りです。
+
+| 文字列 | モジュールの言語               |
+|--------+--------------------------------|
+| ""     | トランスコンパイル先言語と同じ |
+| "Lua"  | lua                            |
+| "Go"   | go                             |
+
+** 利用可能な言語
+
+トランスコンパイル先の言語と、
+module で利用可能な言語の組み合わせには制限があります。
+
+|                          | go module | lua module |
+|--------------------------+-----------+------------|
+| go へトランスコンパイル  | 可能      | 可能       |
+| lua へトランスコンパイル | *不能*    | 可能       |
+
+** 型の互換性
+
+module 宣言で go モジュールを LuneScript から利用可能です。
+
+しかし、型の互換性は制限されます。
+
+以下の型は LuneScript と go とで対になっています。
+
+| LuneScript の型 | go の型     |
+|-----------------+-------------|
+| int             | int         |
+| real            | float64     |
+| bool            | bool        |
+| str             | string      |
+| nilable         | interface{} |
+

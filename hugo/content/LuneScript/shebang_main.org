@@ -1,0 +1,109 @@
+#+TITLE: 28. shebang とコマンドライン引数
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は shebang に対応しています。
+
+* shebang 対応
+
+shebang とは、シェルスクリプト等で良く見られるスクリプトファイルの最初の行に、
+使用するインタプリタをコメントに指定する機能です。
+bash では次のように指定します。
+
+#+BEGIN_SRC sh
+#! /bin/bash
+#+END_SRC
+
+LuneScript では、次のように指定します。
+
+#+BEGIN_SRC lns
+#! /usr/bin/lnsc -shebang
+#+END_SRC
+
+ここで、 =/usr/bin/lnsc= は環境に合せた指定が必要です。
+
+これによって、 =#!= が記載された LuneScript ファイルをそのまま実行できます。
+
+例えば次のようなファイル hello.lns があった場合、
+
+#+BEGIN_SRC lns 
+#! /usr/bin/lnsc -shebang
+print( "hello world" );
+#+END_SRC
+
+この hello.lns を直接起動できます。
+
+#+BEGIN_SRC txt
+$ hello.lns
+hello world
+#+END_SRC
+
+
+
+
+この時、次の制限があります。
+
+- go 版 lnsc では、 import している .lns ファイルに対応する .lua を
+  事前に生成しておく必要がある。
+
+* コマンドライン引数
+
+shebang で起動された場合や、 go へトランスコンパイルした場合など、
+コマンドライン引数を処理したいケースがあります。
+
+このコマンドライン引数を処理するためには、
+次の __main 関数を定義し、
+この関数の引数に渡されるコマンドライン引数を処理します。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip   
+pub fn __main( argList:List<str> ):int
+#+END_SRC
+
+__main 関数の型は、
+引数 argList 名以外、必ず上記の型での宣言が必要です。
+
+** __main の実行順
+
+この __main 関数の実行順序は、トップスコープの処理終了後に行なわれます。
+つまり、次のスクリプトの場合、
+
+#+BEGIN_SRC lns
+#! /usr/bin/lnsc -shebang
+// @lnsFront: skip   
+print( "hello world" );
+
+pub fn __main( argList:List<str> ):int {
+   print( "hoge" );
+   return 0;
+}
+#+END_SRC
+
+出力結果は以下になります。 hello
+
+#+BEGIN_SRC txt
+$ ./mini.lns 
+hello world
+hoge
+#+END_SRC
+
+** __main の引数
+
+=__main= の引数は =List<str>= です。
+
+このリストには、先頭にスクリプトのパス、次以降にコマンドライン引数が格納されます。
+
+#+BEGIN_SRC lns
+#! /usr/bin/lnsc -shebang
+// @lnsFront: skip   
+pub fn __main( argList:List<str> ):int {
+   foreach arg in argList {
+      print( arg );
+   }
+   return 0;
+}
+#+END_SRC
+

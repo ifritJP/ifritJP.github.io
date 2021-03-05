@@ -30,6 +30,11 @@
                 keywords: KEYWORDS,
                 contains: [
                     {
+                        className: "comment",
+                        begin: /^#!/,
+                        end: /$/
+                    },
+                    {
                         className: "keyword",
                         begin: /import\.l|import\.d|import/
                     },

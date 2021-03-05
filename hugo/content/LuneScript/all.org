@@ -4745,7 +4745,8 @@ pub class Test {
 
 クラスのインスタンス生成は、次のように new 演算子を使用します。
 
-#+BEGIN_SRC lsn
+#+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
 }
 let test = new Test();
@@ -6009,7 +6010,8 @@ fn func<T1,T2>( val1:T1, val2:T2 ) : Set<T1>, List<T2> {
 
 これにより、次のような処理を書けます。
 
-#+BEGIN_SRC lsn
+#+BEGIN_SRC lns
+// @lnsFront: error
 fn func1<T>( val:T ) : T {
    return val;
 }
@@ -7222,6 +7224,7 @@ Map 型と Luaval<Map> 型のデータは互換性がないため、代入など
 この関数を使用すると、次のような処理が掛けます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func(map:Luaval<&Map<str,int>>) {
    forsort val, key in map {
       print( key, val + 100 ); 
@@ -7300,18 +7303,21 @@ Luava 型ではなくそのままの型になります。
 次にサンプルを示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let code = ```
 return function( tbl )
+   local total = 0
    for key, val in pairs( tbl ) do
-      print( key, val )
+      total = total + val
    end
+   return total
 end
 ```;
 let loaded, err = _load( code, nil );
 when! loaded {
    if! let obj = loaded( ## ) {
    let map = { "val1":1, "val2":10 };
-      (obj@@form)( map );  // Lua の関数コール
+      print( (obj@@form)( map ) );  // Lua の関数コール
    }
 } else {
    print( err );
@@ -7319,7 +7325,7 @@ when! loaded {
 #+END_SRC
 
 このサンプルは、
-引数で与えられた Lua のテーブルの要素を出力する関数をコールします。
+引数で与えられた Lua のテーブルの要素の値の合計を計算する関数をコールします。
 
 このサンプルでは、
 Map<str,int> 型のデータ map を Lua の関数の引数に指定して実行しています。
@@ -8633,6 +8639,115 @@ import, module は遅延ロードになります。
 =--default-lazy= を指定している時も通常ロードになります。
 
 -----
+* *shebang とコマンドライン引数*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は shebang に対応しています。
+
+** shebang 対応
+
+shebang とは、シェルスクリプト等で良く見られるスクリプトファイルの最初の行に、
+使用するインタプリタをコメントに指定する機能です。
+bash では次のように指定します。
+
+#+BEGIN_SRC sh
+#! /bin/bash
+#+END_SRC
+
+LuneScript では、次のように指定します。
+
+#+BEGIN_SRC lns
+#! /usr/bin/lnsc -shebang
+#+END_SRC
+
+ここで、 =/usr/bin/lnsc= は環境に合せた指定が必要です。
+
+これによって、 =#!= が記載された LuneScript ファイルをそのまま実行できます。
+
+例えば次のようなファイル hello.lns があった場合、
+
+#+BEGIN_SRC lns 
+#! /usr/bin/lnsc -shebang
+print( "hello world" );
+#+END_SRC
+
+この hello.lns を直接起動できます。
+
+#+BEGIN_SRC txt
+$ hello.lns
+hello world
+#+END_SRC
+
+
+
+
+この時、次の制限があります。
+
+- go 版 lnsc では、 import している .lns ファイルに対応する .lua を
+  事前に生成しておく必要がある。
+
+** コマンドライン引数
+
+shebang で起動された場合や、 go へトランスコンパイルした場合など、
+コマンドライン引数を処理したいケースがあります。
+
+このコマンドライン引数を処理するためには、
+次の __main 関数を定義し、
+この関数の引数に渡されるコマンドライン引数を処理します。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip   
+pub fn __main( argList:List<str> ):int
+#+END_SRC
+
+__main 関数の型は、
+引数 argList 名以外、必ず上記の型での宣言が必要です。
+
+*** __main の実行順
+
+この __main 関数の実行順序は、トップスコープの処理終了後に行なわれます。
+つまり、次のスクリプトの場合、
+
+#+BEGIN_SRC lns
+#! /usr/bin/lnsc -shebang
+// @lnsFront: skip   
+print( "hello world" );
+
+pub fn __main( argList:List<str> ):int {
+   print( "hoge" );
+   return 0;
+}
+#+END_SRC
+
+出力結果は以下になります。 hello
+
+#+BEGIN_SRC txt
+$ ./mini.lns 
+hello world
+hoge
+#+END_SRC
+
+*** __main の引数
+
+=__main= の引数は =List<str>= です。
+
+このリストには、先頭にスクリプトのパス、次以降にコマンドライン引数が格納されます。
+
+#+BEGIN_SRC lns
+#! /usr/bin/lnsc -shebang
+// @lnsFront: skip   
+pub fn __main( argList:List<str> ):int {
+   foreach arg in argList {
+      print( arg );
+   }
+   return 0;
+}
+#+END_SRC
+
+-----
 * *2 非同期処理*
 # -*- coding:utf-8 -*-
 #+STARTUP: nofold
@@ -9122,6 +9237,122 @@ liblua5.3.so へのリンクが必要になります。
 
 なお、実行時に liblua5.3.so が必要になるだけではなく、
 ビルド時には lua-5.3.4 のインクルードファイルも必要になります。
+-----
+* *1.2 Go 言語へのトランスコンパイル時のパッケージ*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+go のパッケージ管理されているモジュールを LuneScript から利用できます。
+
+** go のパッケージ管理概要
+
+go は go.mod でパッケージを管理します。
+
+この go.mod で管理されたパッケージは、
+環境変数 GOPATH で指定されたローカルディレクトリにキャッシュされます。
+
+LuneScript は、このキャッシュされたモジュールを利用できます。
+
+github 上のパッケージを go で利用するには、次のように書きます。
+
+#+BEGIN_SRC go
+import "github.com/ifritJP/lnshttpd"
+#+END_SRC
+
+これと同じ感覚で、 LuneScript は go のモジュールにアクセスできます。
+
+** import
+
+go のパッケージ内にある .lns ファイルを LuneScript で import するには、
+次のように書きます。
+
+#+BEGIN_SRC lns
+import go/github:com.ifritJP.lnshttpd.lnsservlet;
+#+END_SRC
+
+これは https://github.com/ifritJP/lnshttpd の lnsservlet.lns を
+import する時の例です。
+
+ここで、 =go/github:com.ifritJP.lnshttpd.lnsservlet= に注目します。
+
+=https://github.com/ifritJP/lnshttpd= と
+=go/github:com.ifritJP.lnshttpd.lnsservlet= を見比べればだいたい想像が付くと思いますが、
+go のパッケージを使用する場合、次の追加ルールがあります。
+
+- 先頭に =go/= を付加する
+- github.com のように . が付く場合、 . の代わりに : を指定する
+
+LuneScript は、上記形式のモジュールが指定された場合、
+通常の検索パスではなく、 go のパッケージパスからモジュールを検索します。
+
+
+具体的には、次の順番にファイルを検索します。
+
+- vendor/github.com/ifritJP/lnshttpd/lnsservlet.lns 
+- ${GOPATH}/pkg/mod/github.com/ifrit!j!p/lnshttpd@XXXXXXXXXXXXXXXXX/lnsservlet.lns
+
+ここで、 =@XXXXXXXXXXXXXXXXX/lnsservlet.lns= の =XXXXXXXXXXXXXXXXX= の部分は、
+go.mod に記載されているモジュールの TAG 情報から取得します。
+つまり、事前に go mod tidy を実施しておく必要があります。
+
+** module
+
+go のモジュールを LuneScript から利用するには、 module 宣言が必要です。
+
+module 宣言は LuneScript から Lua モジュールを利用する際にも使用していますが、
+go モジュールを利用する場合、次の追加ルールがあります。
+
+- go のモジュールを利用していることを module 宣言に追加する
+
+以下は github.com.ifritJP.lnshttpd の servlet.go を利用する際の宣言例です。
+
+#+BEGIN_SRC lns
+module servlet require "go/github:com.ifritJP.lnshttpd.servlet" of "" {
+   pub static fn Start( listenPort:int,
+                        handlerList: &List<&lnsservlet.HandlerInfo>,
+                        hostingList:&List<&lnsservlet.HostingInfo> );
+}
+#+END_SRC
+
+ここで =module servlet require "go/github:com.ifritJP.lnshttpd.servlet" of ""= の
+=of ""= は、利用するモジュールの種別を宣言しています。
+
+指定可能な文字列は次の通りです。
+
+| 文字列 | モジュールの言語               |
+|--------+--------------------------------|
+| ""     | トランスコンパイル先言語と同じ |
+| "Lua"  | lua                            |
+| "Go"   | go                             |
+
+*** 利用可能な言語
+
+トランスコンパイル先の言語と、
+module で利用可能な言語の組み合わせには制限があります。
+
+|                          | go module | lua module |
+|--------------------------+-----------+------------|
+| go へトランスコンパイル  | 可能      | 可能       |
+| lua へトランスコンパイル | *不能*    | 可能       |
+
+*** 型の互換性
+
+module 宣言で go モジュールを LuneScript から利用可能です。
+
+しかし、型の互換性は制限されます。
+
+以下の型は LuneScript と go とで対になっています。
+
+| LuneScript の型 | go の型     |
+|-----------------+-------------|
+| int             | int         |
+| real            | float64     |
+| bool            | bool        |
+| str             | string      |
+| nilable         | interface{} |
+
 -----
 * *Go 言語へのトランスコンパイル (検討段階)*
 # -*- coding:utf-8 -*-
