@@ -40,6 +40,7 @@ SRCS += shebang_main.org
 SRCS += async.org
 SRCS += go.org
 SRCS += go_package.org
+SRCS += lua_runtime.org
 SRCS += go_study.org
 SRCS += reason.org
 SRCS += recommend.org

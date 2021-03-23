@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Emacs - 公開技術情報</title>
+<title>@.1.3 Go へトランスコンパイルした際の Lua ランタイム - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.68.3" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/emacs/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -28,16 +28,22 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="Emacs" />
-<meta property="og:description" content="" />
-<meta property="og:type" content="website" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/emacs/" />
+<meta property="og:title" content="@.1.3 Go へトランスコンパイルした際の Lua ランタイム" />
+<meta property="og:description" content="LuneScript は、 Lua のトランスコンパイラとして開発を始めたプロジェクトだ。 そして Lua の資産を活かすために、 LuneScript は Lua と連携させた動作もサポートしている。 この LuneScript" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/lua_runtime/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="Emacs"/>
-<meta name="twitter:description" content=""/>
-<meta itemprop="name" content="Emacs">
-<meta itemprop="description" content=""></head>
+<meta name="twitter:title" content="@.1.3 Go へトランスコンパイルした際の Lua ランタイム"/>
+<meta name="twitter:description" content="LuneScript は、 Lua のトランスコンパイラとして開発を始めたプロジェクトだ。 そして Lua の資産を活かすために、 LuneScript は Lua と連携させた動作もサポートしている。 この LuneScript"/>
+<meta itemprop="name" content="@.1.3 Go へトランスコンパイルした際の Lua ランタイム">
+<meta itemprop="description" content="LuneScript は、 Lua のトランスコンパイラとして開発を始めたプロジェクトだ。 そして Lua の資産を活かすために、 LuneScript は Lua と連携させた動作もサポートしている。 この LuneScript">
+
+<meta itemprop="wordCount" content="1321">
+
+
+
+<meta itemprop="keywords" content="" /></head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -51,10 +57,175 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>Emacs</h1><div class="edit-meta">
+<main><h1>@.1.3 Go へトランスコンパイルした際の Lua ランタイム</h1>
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lua/pointer/" title="ポインタ編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - ポインタ編</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/emacs/simple-httpd/" title="emacs 簡易 HTTPD 化パケージ simple-httpd.el">Next - emacs 簡易 HTTPD 化パケージ simple-httpd.el <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<p>
+LuneScript は、 Lua のトランスコンパイラとして開発を始めたプロジェクトだ。
+そして Lua の資産を活かすために、
+LuneScript は Lua と連携させた動作もサポートしている。
+</p>
+<p>
+この LuneScript と Lua を連携させた動作は、
+go へトランスコンパイルした際も利用可能である。
+つまり、Go と Lua とで連携動作している。
+</p>
+<p>
+これを実現するため、 Go と Native lua のランタイムのリンクが必要になる。
+なお、LuneScript のコード上で Lua との連携動作を利用していなくても、
+内部的に Lua のランタイム機能を利用しているため、
+Lua ランタイムのリンクは切り離せない。
+</p>
+<p>
+LuneScript と Lua の連携動作は、
+Lua のトランスコンパイラという性質上重要な機能である。
+一方で LuneScript を Go のトランスコンパイラと考えた場合、
+Lua との連携動作はさほど重要とは言えない。
+</p>
+<p>
+また、go の長所として以下がある。
+</p>
+<ul>
+<li>
+<p>
+実行環境のライブラリに依存せず、単一で動作するシングルファイルが作成可能
+</p>
+</li>
+<li>
+<p>
+さまざまな環境へのクロスコンパイルをサポート
+</p>
+</li>
+</ul>
+<p>
+Lua ランタイムのリンクが必要になると、上記の長所が失われてしまう。
+</p>
+<p>
+Lua ランタイムは環境依存の少ない構成であるが、
+上記の長所を維持するには大きな足枷になってしまう。
+</p>
+<p>
+そこで、 Native Lua ランタイムをリンクしなくても
+トランスコンパイル後のコードを実行できるよう対応している。
+</p>
+<h2 id="headline-1">
+gopher-lua の利用
+</h2>
+<p>
+gopher-lua は、 go で実装された Lua ランタイムである。
+gopher-lua を利用することで、 Native Lua ランタイムとのリンクを回避する。
+</p>
+<p>
+gopher-lua を利用するには、 go build 時のオプションとして -tags を指定する。
+</p>
+<pre class="example">
+go build -tags gopherlua
+</pre>
+<p>
+このオプションを指定することで、
+Lua ランタイムが Native Lua から gopher-lua に切り替わる。
+</p>
+<h3 id="headline-2">
+gopher-lua の注意点
+</h3>
+<p>
+gopher-lua を利用する場合、
+Lua ランタイムの仕様が gopher-lua の仕様によって制限される。
+</p>
+<p>
+以下に具体的な例を挙げる。
+</p>
+<ul>
+<li>
+<p>
+lua のバージョンが 5.1
+</p>
+</li>
+<li>
+<p>
+string.dump など一部の API が利用できない
+</p>
+</li>
+<li>
+<p>
+luasocket など pure Lua ではない Lua ライブラリを利用できない
+</p>
+</li>
+<li>
+<p>
+Native Lua に比べて遅い  
+</p>
+</li>
+</ul>
+<p>
+LuneScript と Lua の連携を使用していない場合は
+気にしなくても問題ない範囲ではあるが、
+Native Lua と gopher-lua とでは違いがあることは認識しておく必要がある。
+</p>
+<h2 id="headline-3">
+他の Lua ランタイム
+</h2>
+<p>
+go で実装された Lua ランタイムには幾つか種類がある。
+</p>
+<p>
+その代表的なものとして次がある。
+</p>
+<ul>
+<li>
+<p>
+<a href="https://github.com/yuin/gopher-lua">https://github.com/yuin/gopher-lua</a>
+</p>
+</li>
+<li>
+<p>
+<a href="https://github.com/Azure/golua">https://github.com/Azure/golua</a>
+</p>
+</li>
+<li>
+<p>
+<a href="https://github.com/Shopify/go-lua">https://github.com/Shopify/go-lua</a>  
+</p>
+</li>
+</ul>
+<p>
+yuin/gopher-lua は、今回利用している実装である。
+代表例として挙げた中で、
+LuneScript のセルフホストの Lua コードを実行できた唯一の実装。
+</p>
+<p>
+Azure/golua は、 Microsoft が立ち上げたプロジェクトのようだ。
+lua5.3 ベースということで期待していたが、
+実際に実行すると期待した動きを全くしていない(Lua を parse できない)状態だった。
+なお、 github の repository は Archived になっているため、
+今後の展開は期待できない。
+</p>
+<p>
+Shopify/go-lua は、 lua5.2 ベースで開発されている。
+シンプルな Lua スクリプトは動くが、
+LuneScript をセルフホストする lua をロードできなかった。
+このため、互換性に問題がありそうなことが予想されたので、
+今回は LuneScript での採用を見送った。
+</p>
+<p>
+今回 go による Lua 実装をいくつか試してみたが、
+LuneScript を実行できるレベルの互換性をサポートする
+Lua 実装が少なかったのは残念だった。
+</p>
+<p>
+もしも今後、 Lua を実装するような場合、
+LuneScript が動くかどうかを確認することで、
+Lua の互換性を確認するテストケースとして使えるのではないかと思ったりもした。
+</p>
+<p>
+ただし、動かなかった場合、
+何が原因で動かないのかが簡単には分からないので、
+テストケースとして使い勝手が良いとは言えないことを考えると、
+イマイチ現実的ではないか。
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/go_package/" title="@.1.2 Go 言語へのトランスコンパイル時のパッケージ"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.1.2 Go 言語へのトランスコンパイル時のパッケージ</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/async/" title="@.2 非同期処理">Next - @.2 非同期処理 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -95,7 +266,7 @@
   
 </li>
 
-<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark opened">-</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
@@ -152,7 +323,7 @@
   
 </li>
 
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
@@ -193,7 +364,7 @@
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

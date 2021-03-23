@@ -9354,6 +9354,112 @@ module 宣言で go モジュールを LuneScript から利用可能です。
 | nilable         | interface{} |
 
 -----
+* *1.3 Go へトランスコンパイルした際の Lua ランタイム*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は、 Lua のトランスコンパイラとして開発を始めたプロジェクトだ。
+そして Lua の資産を活かすために、
+LuneScript は Lua と連携させた動作もサポートしている。
+
+この LuneScript と Lua を連携させた動作は、
+go へトランスコンパイルした際も利用可能である。
+つまり、Go と Lua とで連携動作している。
+
+これを実現するため、 Go と Native lua のランタイムのリンクが必要になる。
+なお、LuneScript のコード上で Lua との連携動作を利用していなくても、
+内部的に Lua のランタイム機能を利用しているため、
+Lua ランタイムのリンクは切り離せない。
+
+
+LuneScript と Lua の連携動作は、
+Lua のトランスコンパイラという性質上重要な機能である。
+一方で LuneScript を Go のトランスコンパイラと考えた場合、
+Lua との連携動作はさほど重要とは言えない。
+
+また、go の長所として以下がある。
+
+- 実行環境のライブラリに依存せず、単一で動作するシングルファイルが作成可能
+- さまざまな環境へのクロスコンパイルをサポート
+
+Lua ランタイムのリンクが必要になると、上記の長所が失われてしまう。
+
+Lua ランタイムは環境依存の少ない構成であるが、
+上記の長所を維持するには大きな足枷になってしまう。
+
+そこで、 Native Lua ランタイムをリンクしなくても
+トランスコンパイル後のコードを実行できるよう対応している。
+
+** gopher-lua の利用
+
+gopher-lua は、 go で実装された Lua ランタイムである。
+gopher-lua を利用することで、 Native Lua ランタイムとのリンクを回避する。
+
+gopher-lua を利用するには、 go build 時のオプションとして -tags を指定する。
+
+: go build -tags gopherlua
+
+このオプションを指定することで、
+Lua ランタイムが Native Lua から gopher-lua に切り替わる。
+
+*** gopher-lua の注意点
+
+gopher-lua を利用する場合、
+Lua ランタイムの仕様が gopher-lua の仕様によって制限される。
+
+以下に具体的な例を挙げる。
+
+- lua のバージョンが 5.1
+- string.dump など一部の API が利用できない
+- luasocket など pure Lua ではない Lua ライブラリを利用できない
+- Native Lua に比べて遅い  
+
+LuneScript と Lua の連携を使用していない場合は
+気にしなくても問題ない範囲ではあるが、
+Native Lua と gopher-lua とでは違いがあることは認識しておく必要がある。
+
+
+** 他の Lua ランタイム
+
+go で実装された Lua ランタイムには幾つか種類がある。
+
+その代表的なものとして次がある。
+
+- https://github.com/yuin/gopher-lua
+- https://github.com/Azure/golua
+- https://github.com/Shopify/go-lua  
+
+yuin/gopher-lua は、今回利用している実装である。
+代表例として挙げた中で、
+LuneScript のセルフホストの Lua コードを実行できた唯一の実装。
+
+Azure/golua は、 Microsoft が立ち上げたプロジェクトのようだ。
+lua5.3 ベースということで期待していたが、
+実際に実行すると期待した動きを全くしていない(Lua を parse できない)状態だった。
+なお、 github の repository は Archived になっているため、
+今後の展開は期待できない。
+
+Shopify/go-lua は、 lua5.2 ベースで開発されている。
+シンプルな Lua スクリプトは動くが、
+LuneScript をセルフホストする lua をロードできなかった。
+このため、互換性に問題がありそうなことが予想されたので、
+今回は LuneScript での採用を見送った。
+
+今回 go による Lua 実装をいくつか試してみたが、
+LuneScript を実行できるレベルの互換性をサポートする
+Lua 実装が少なかったのは残念だった。
+
+もしも今後、 Lua を実装するような場合、
+LuneScript が動くかどうかを確認することで、
+Lua の互換性を確認するテストケースとして使えるのではないかと思ったりもした。
+
+ただし、動かなかった場合、
+何が原因で動かないのかが簡単には分からないので、
+テストケースとして使い勝手が良いとは言えないことを考えると、
+イマイチ現実的ではないか。
+-----
 * *Go 言語へのトランスコンパイル (検討段階)*
 # -*- coding:utf-8 -*-
 #+STARTUP: nofold
