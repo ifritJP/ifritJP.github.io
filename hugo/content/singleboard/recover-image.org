@@ -1,0 +1,150 @@
+#+TITLE: 誤ってパーティションテーブル (LBA 0) を消して(0クリアして)しまった場合の対処
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+raspberry pi のイメージを PC でバックアップしたとき、
+SD CARD のパーティションテーブル(LBA 0)を消してしまった。
+
+もちろん意図して消した訳ではない。
+むしろ、消していることに気が付かずに、
+SD CARD を raspberry pi に戻して再起動させた時に起動しなくなっていて、
+意味が分からずかなり焦った。
+
+起動しない原因がパーティションテーブルを消していたことだと気付くのに、
+かなりの時間を要した。
+
+そんな訳で、パーティションテーブルを復旧させる方法を説明する。
+
+* パーティションテーブル復旧方法
+
+パーティションテーブル復旧方法の手順は次の通り。
+
+- 物理パーティションの場所を特定する
+- マウントして中身を確認する
+- PARTUUID を復旧する
+- fsck する  
+
+以降、それぞれの対応手順を説明する。
+
+復旧処理中にデータを壊してしまう可能性があるため、
+以降では *バックアップを取ったイメージファイルに対して処理* を行なうものとする。
+
+** 物理パーティションの場所を特定する
+
+パーティションテーブルの主な役割は、
+物理パーティションの場所を示すことである。
+
+つまり、物理パーティションがどこにあるのかを調べなければならない。
+
+この作業を行なってくれるツールとして testdisk がある。
+
+testdisk に関しては、次の URL を参考にすること。
+
+https://www.atmarkit.co.jp/flinux/rensai/linuxtips/991testdisk.html
+
+上記 URL の手順と違うのは、
+起動する際のコマンドオプションとして
+以下のようにバックアップファイル名を指定する。
+
+: $ sudo testdisk /log /backupfile.img
+
+*testdisk で物理パーティションが見つからなかった場合は、次の方法を試す。*
+
+*** testdisk で物理パーティションを見つけられなかった場合
+
+raspberry pi をインストールする際に使用した元のイメージファイルに対し fdisk する。
+
+: $ fdisk /org_image.img
+
+パーティション情報を確認する。
+
+: Command (m for help): p
+: Disk org_image.img: 1.75 GiB, 1858076672 bytes, 3629056 sectors
+: Units: sectors of 1 * 512 = 512 bytes
+: Sector size (logical/physical): 512 bytes / 512 bytes
+: I/O size (minimum/optimal): 512 bytes / 512 bytes
+: Disklabel type: dos
+: Disk identifier: 0x067e19d7
+: 
+: Device         Boot  Start     End Sectors  Size Id Type
+: org_image.img1        8192  532479  524288  256M  c W95 
+: org_image.img2      532480 3629055 3096576  1.5G 83 Linu
+
+このパーティション情報を元に、バックアップファイルのパーティション情報を設定する。
+
+: $ fdisk /backupfile.img
+
+ただし、パーティション 2 の End 位置は、オリジナルと異なる。
+基本的に End 位置は、最大サイズになるように設定しておけば良い。
+
+** マウント
+
+パーティションが見付かったら、そのパーティションをマウントする。
+
+マウントする場合、次のコマンドを実行する。
+
+: $ sudo mkdir -p /mnt/recovery
+: $ sudo mount -o loop,offset=272629760 /backupfile.img /mnt/recovery
+
+ここで offset には、パーティションの開始セクタ番号 x 512 を指定する。
+
+** PARTUUID を復旧する
+
+物理パーティションの情報が復旧できても、
+PARTUUID が復旧できていないと、ブートできない。
+
+そこで、 fstab に記載されている PARTUUID を確認する。
+
+: $ cat /mnt/recovery/etc/fstab 
+: PARTUUID=3729482f-01  /boot           vfat    defaults          0       2
+: PARTUUID=3729482f-02  /               ext4    defaults,noatime  0       1
+
+この 3729482f を PARTUUID に設定する。
+
+: $ fdisk /backupfile.img 
+: 
+: Welcome to fdisk (util-linux 2.34).
+: Changes will remain in memory only, until you decide to write them.
+: Be careful before using the write command.
+: 
+: 
+: Command (m for help): x
+: 
+: Expert command (m for help): i
+: 
+: Enter the new disk identifier: 0x3729482f
+: 
+: Expert command (m for help): r
+: 
+: Command (m for help): w
+
+** fsck
+
+念のため fsck を掛けてファイルが壊れていないか確認する。
+
+マウントされていると fsck を掛けられないので解除する。
+
+: $ df
+: Filesystem      1K-blocks       Used Available Use% Mounted on
+: /dev/loop0       15022248   12407452   1972256  87% /mnt/recovery
+: $ sudo umount /dev/loop0
+
+次に loop デバイスにイメージを設定。
+
+: $ sudo losetup /dev/loop0 --offset 272629760 /backupfile.img
+
+そして loop デバイスを fsck。
+
+: $ sudo fsck -a /dev/loop0
+
+
+** バックアップファイルを SD カードに書き戻す
+
+以上で、バックアップファイル内のパーティションテーブルの復旧が出来たので、
+SDカードにバックアップファイルを書き戻す。
+
+なお、 fsck で問題が出ていなかった場合、LBA 0 だけ書き戻せば良い。
+
+以上。

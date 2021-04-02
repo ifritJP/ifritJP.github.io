@@ -10,10 +10,16 @@
             
             var frontDiv = document.createElement( "div" );
             frontDiv.spellcheck = false;
+            var warnEle = document.createElement( "div" );
+            warnEle.innerHTML = "初回 Run は時間がかかります。" +
+                "以下の textarea は編集可能です。" +
+                "編集後に Run すると、編集した内容を実行します。";
+            warnEle.style.color = "#f00";
+            warnEle.style.textDecorationLine = "blink";
             var lnsCodeEle = document.createElement( "textarea" );
             lnsCodeEle.class = "lnsFront";
             lnsCodeEle.id = "lns-code-" + idSeed;
-            lnsCodeEle.value = '// ここは編集可能です。編集後に Run してください。\n' + element.innerText;
+            lnsCodeEle.value = element.innerText;
             lnsCodeEle.style.width = "100%";
             lnsCodeEle.rows = 10;
             var lineNo = lnsCodeEle.value.split("\n").length;
@@ -25,6 +31,7 @@
             outputEle.id = "output-" + idSeed;
             outputEle.style.width = "100%";
             outputEle.rows = 5;
+            frontDiv.appendChild( warnEle );
             frontDiv.appendChild( lnsCodeEle );
             frontDiv.appendChild( document.createElement( "br" ) );
 
