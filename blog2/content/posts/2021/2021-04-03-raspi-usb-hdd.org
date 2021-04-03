@@ -1,0 +1,87 @@
+#+TITLE: Rapberry pi 4 で構築する NAS (USB HDD UASP) の性能  
+#+DATE: 2021-04-03
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: raspberrypi usb hdd
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+Rapberry pi 4 で簡易的な NAS を構築している。
+
+メイン PC の OS が Windows なので、
+NAS で使っている HDD を Windows PC と直接接続してアクセスすることを考えて、
+NTFS フォーマットの USB HDD を raspi にマウントしていた。
+
+しかし、これだとパフォーマンスが全く出ない(ntfs-3g が重すぎる)。
+
+次回の windows 10 アップデートで、
+WSL2 の機能をつかった ext4 マウントがサポートさるようなので、
+USB HDD のファイルシステムを NTFS から ext4 に変更することにした。
+
+これによって、NTFS の時は smb 経由で *30MB/sec* 程度だったのが、
+ext4 では *80MB/sec* 程度まで向上した。
+
+| FS   | SMB 転送速度 (MB/sec) |
+|------+-----------------------|
+| NTFS | 約 30MB               |
+| ext4 | 約 80MB               |
+
+ただ、やはりまだ windows での *SATA 接続(170MB程度)* と比べると、まだだいぶ遅い。
+
+そこで、 UASP ならもう少し速くなるのではないか？
+と思ったので、UASP に対応した USB HDD ケースに入れ替えて試した結果が次の表。
+
+| protcol | local 書き込み速度 (MB/sec) |
+|---------+-----------------------------|
+| USB3.0  | 約 115MB                    |
+| UASP    | 約 119MB                    |
+
+「なんということでしょう。」
+
+UASP を利用することで、 *書き込み速度が 4MB も向上した。。。*
+
+- USB3.0 対応 USB-HDD ケースのアクセス速度計測
+  
+: pi4$ sudo dd if=/dev/zero of=/mnt/usb/share/dump bs=1M count=1000
+: 1000+0 records in
+: 1000+0 records out
+: 1048576000 bytes (1.0 GB, 1000 MiB) copied, 12.4745 s, 84.1 MB/s
+: pi4$ sudo dd if=/dev/zero of=/mnt/usb/share/dump bs=1M count=1000
+: 1000+0 records in
+: 1000+0 records out
+: 1048576000 bytes (1.0 GB, 1000 MiB) copied, 9.12218 s, 115 MB/s
+: pi4$ sudo dd if=/dev/zero of=/mnt/usb/share/dump bs=1M count=1000
+: 1000+0 records in
+: 1000+0 records out
+: 1048576000 bytes (1.0 GB, 1000 MiB) copied, 9.16875 s, 114 MB/s
+
+- UASP 対応 USB-HDD ケースのアクセス速度計測
+
+: pi4$ sudo dd if=/dev/zero of=/mnt/usb/share/dump bs=1M count=1000
+: 1000+0 records in
+: 1000+0 records out
+: 1048576000 bytes (1.0 GB, 1000 MiB) copied, 11.6425 s, 90.1 MB/s
+: pi4$ sudo dd if=/dev/zero of=/mnt/usb/share/dump bs=1M count=1000
+: 1000+0 records in
+: 1000+0 records out
+: 1048576000 bytes (1.0 GB, 1000 MiB) copied, 8.80392 s, 119 MB/s
+: pi4$ sudo dd if=/dev/zero of=/mnt/usb/share/dump bs=1M count=1000
+: 1000+0 records in
+: 1000+0 records out
+: 1048576000 bytes (1.0 GB, 1000 MiB) copied, 8.82478 s, 119 MB/s
+  
+UASP に入れ替えた結果は、 *誤差レベル* のパフォーマンス改善だった。
+
+もちろん、 UASP に入れ替え後の SMB 転送速度も誤差レベルだった。
+
+ただ、そもそも SMB 転送速度に関しては、
+*80MB/sec で既に smbd の CPU 占有率が 100% を越えている状態* なので、
+HDD の書き込み速度が改善されたとしても、
+smb 経由のパフォーマンスはほとんど改善されないのかもしれない。
+
+raspi は、手軽に NAS を構築できる。
+その NAS は、数 GB 程度のファイルのアクセスなら、ストレスなく運用できる。
+
+しかし、大量のファイルコピーするような場合は、
+windows などの PC に HDD を SATA で接続して作業するのが得策のようだ。
