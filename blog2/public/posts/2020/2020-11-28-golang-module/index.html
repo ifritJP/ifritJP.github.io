@@ -39,7 +39,7 @@
 <meta itemprop="description" content="LuneScript 向けの別ツールを作ろうと思い、 LuneScript の go 向けランタイムを単独モジュールとして分割して管理すべく 奮闘した際の備忘録。 go のモジュール go は、 github に公開">
 <meta itemprop="datePublished" content="2020-11-28T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2020-11-28T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="1713">
+<meta itemprop="wordCount" content="2012">
 
 
 
@@ -301,8 +301,8 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-11-28-golang-module/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">1713</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">4 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2012</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">5 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
@@ -353,45 +353,117 @@ $ go mod tidy</code></pre></div>
 最も重要な点は、次の 1 点。
 </p>
 <p>
-<strong>タグを付ける</strong>
+<del><strong>タグを付ける</strong></del>
 </p>
 <p>
-このタグは <strong>v0.0.0</strong> (数値はモジュールのバージョン)で付ける。
+<del>このタグは <strong>v0.0.0</strong> (数値はモジュールのバージョン)で付ける。</del>
 </p>
 <p>
-これがないと、 意図したリビジョンのモジュールを go が取ってきてくれない。
+<del>これがないと、 意図したリビジョンのモジュールを go が取ってきてくれない。</del>
 </p>
 <p>
-go <strong>mod init</strong> した際に、
-プログラムで import しているモジュール情報を収集し、
-そのモジュールの最新のタグを拾ってきて go.mod に記録している。
+<strong>タグは必須ではない。</strong>
 </p>
 <p>
-このときに依存モジュールの git に一つもタグがないと、
-依存モジュールの初回コミットが利用される。
-一つでもタグがある場合は、そのタグが利用される。
+タグはバージョン管理する際に必要だが、
+タグがなくても go でモジュールを利用できる。
 </p>
 <p>
-なお、タグ付けした後に更新があったとしても、
+<del>go <strong>mod init</strong> した際に、</del>
+<del>プログラムで import しているモジュール情報を収集し、</del>
+<del>そのモジュールの最新のタグを拾ってきて go.mod に記録している。</del>
+</p>
+<p>
+<del>このときに依存モジュールの git に一つもタグがないと、</del>
+<del>依存モジュールの初回コミットが利用される。</del>
+<del>一つでもタグがある場合は、そのタグが利用される。</del>
+</p>
+<p>
+go のバージョンアップで <strong>go mod init</strong> , <strong>go mod tidy</strong> の動きが変っている。
+</p>
+<p>
+go 1.16 では、以下の動作になる。
+</p>
+<ul>
+<li>
+<p>
+go mod init
+</p>
+<ul>
+<li>
+<p>
+go のコードは解析せず、 module 名と go のバージョンだけ記載した go.mod を作成する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+go mod tidy
+</p>
+<ul>
+<li>
+<p>
+go のコードを解析し、 import しているモジュール情報を取得し go.mod に反映する。
+</p>
+</li>
+<li>
+<p>
+このとき、 import しているモジュールにタグが付いていれば、
+最新タグのモジュールを取得する。
+</p>
+<ul>
+<li>
+<p>
+タグ付けした後に更新があったとしても、
 それにタグが無ければその更新は無視される。
 </p>
+</li>
+</ul>
+</li>
+<li>
 <p>
-go の依存モジュール管理は、あくまでもタグで制御する。
+import しているモジュールにタグが付いていなければ、最新のコミットを取得する
 </p>
+</li>
+<li>
 <p>
-よって、タグ付けは必須である。
+go.mod に、既にモジュール情報、バージョン情報が記載されていれば、
+その情報は更新しない。
 </p>
+</li>
+<li>
+<p>
+バージョン情報にブランチ名を書いていると、そのブランチの最新コミットを取得する
+</p>
+<ul>
+<li>
+<p>
+これは、モジュールにタグが付いている場合でも、最新コミットを取得する。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
 <h2 id="headline-4">
 自作モジュールの更新
 </h2>
 <p>
-自作モジュールを更新した場合、
-git への push はもちろんのこと、
-タグを付けなければならない。
+<del>自作モジュールを更新した場合、</del>
+<del>git への push はもちろんのこと、</del>
+<del>タグを付けなければならない。</del>
 </p>
 <p>
-前述した通り、go の依存モジュール管理は、あくまでもタグで制御しているため、
-その修正を有効にするにはタグ付けが必須である。
+<del>前述した通り、go の依存モジュール管理は、あくまでもタグで制御しているため、</del>
+<del>その修正を有効にするにはタグ付けが必須である。</del>
+</p>
+<p>
+自作モジュールを更新した場合、git への push するだけで良い。
+</p>
+<p>
+なお、ローカルで試す際は git への push せずに確認できる。
 </p>
 <h2 id="headline-5">
 go.mod の更新
@@ -408,48 +480,42 @@ import しているモジュールと、そのバージョン(タグ)を紐付�
 使用する依存モジュールのバージョンを更新するには、
 go.mod で指定されているバージョンを書き換える必要がある。
 </p>
+<p>
+最新に変更するだけなら、バージョン情報にブランチ名を書けば良い。
+たいていは <strong>master</strong> を指定するだけでよい。
+</p>
 <h2 id="headline-6">
-vendor 
+replace
 </h2>
 <p>
 以上のように、
-依存モジュールはタグで管理されている。
+依存モジュールはバージョン情報で管理されている。
 </p>
 <p>
 これは、依存モジュールの再現性を担保するには必要な機能である。
 </p>
 <p>
 しかし、自分でモジュールを開発している場合、
-そのモジュールの結合動作を確認するために push してタグを付けるというのは
-ナンセンスなので、
+そのモジュールの結合動作を確認するために push するのはナンセンスなので、
 ローカルで修正してローカルで確認したいというケースでは、
-vendor 機能を利用する。
+replace 機能を利用する。
 </p>
 <p>
-vendor 機能は、依存モジュールをローカルの vendor ディレクトリで管理するもの。
+replace 機能は、
+require しているモジュールを他の場所から取得できるように置き換える機能である。
 </p>
 <p>
-依存モジュールを利用する側で、
-次のコマンドを実行することで、
-依存モジュールが vendor ディレクトリ以下にコピーされる。
+たとえば、 github.com/ifritJP/lnssqlite3 のモジュールを
+../ のローカルディレクトリから取得したい場合は、
+次のように書く。
 </p>
-<pre class="example">
-$ go mod vendor
-</pre>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">require github.com/ifritJP/lnssqlite3 v0.0.0
+replace github.com/ifritJP/lnssqlite3 =&gt; ../</code></pre></div>
+</div>
 <p>
-この vendor ディレクトリ以下のモジュールを利用してビルドするには、
-次のコマンドでビルドを行なう。
-</p>
-<pre class="example">
-$ go build -mod vendor
-</pre>
-<p>
-これによって、ローカルで依存モジュールの修正と確認が可能になる。
-</p>
-<p>
-なお、当然 vendor で修正している内容は最終的に push &amp; タグ付けしなければ
-グルーバルに有効にならないので、
-更新作業を忘れずに行なう必要がある。
+これにより github.com/ifritJP/lnssqlite3 は、
+リポジトリではなく、 ../ ディレクトリのものを利用する。
 </p>
 <h2 id="headline-7">
 ブランチ名

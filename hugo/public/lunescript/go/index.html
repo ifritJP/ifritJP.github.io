@@ -39,7 +39,7 @@
 <meta itemprop="name" content="@.1 Go 言語へのトランスコンパイル">
 <meta itemprop="description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go にトラ">
 
-<meta itemprop="wordCount" content="2342">
+<meta itemprop="wordCount" content="2733">
 
 
 
@@ -350,6 +350,91 @@ Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
 このように、fib_lns() と fib_lua() では全く処理が異なることが分かります。
 </p>
 <h3 id="headline-6">
+ビルド
+</h3>
+<p>
+go へトランスコンパイルしてビルドするには次の step が必要です。
+</p>
+<ul>
+<li>
+<p>
+.lns から .go を生成する
+</p>
+</li>
+<li>
+<p>
+main.go を生成する
+</p>
+</li>
+<li>
+<p>
+go build する
+</p>
+</li>
+</ul>
+<p>
+各 step を説明します。
+</p>
+<h4 id="headline-7">
+.lns から .go を生成する
+</h4>
+<p>
+以下のコマンドで .go を生成します。
+</p>
+<pre class="example">
+$ lnsc hoge.lns save -langGo
+</pre>
+<p>
+メインモジュールの場合は、さらに –main オプション付加します。
+</p>
+<pre class="example">
+$ lnsc hoge.lns save -langGo --main hoge
+</pre>
+<p>
+ここで –main hoge の hoge は、 メインモジュールの import パスです。
+</p>
+<p>
+例えばメインモジュールが foo/bar/hoge.lns の場合、
+</p>
+<pre class="example">
+$ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
+</pre>
+<p>
+となります。
+</p>
+<h4 id="headline-8">
+main.go を生成する
+</h4>
+<p>
+go には、エントリ関数の main() が必要です。
+</p>
+<p>
+以下のコマンドで、この main() 関数を定義する main.go を生成します。
+</p>
+<pre class="example">
+$ lnsc hoge.lns mkmain main.go
+</pre>
+<p>
+ここで hoge.lns は、 lns のメインモジュールを指定します。
+main.go は出力先のパスを指定します。
+</p>
+<p>
+このコマンドで生成した main.go には、
+lns のランタイムを初期化するコードが含まれます。
+</p>
+<h4 id="headline-9">
+go build する
+</h4>
+<p>
+全ての lns ファイルの変換と main.go の生成ができたら、go build を実行します。
+</p>
+<pre class="example">
+$ go build
+</pre>
+<p>
+これにより、トランスコンパイルしたモジュールが go でビルドされます。
+</p>
+<h3 id="headline-10">
 go へトランスコンパイル後は Lua ライブラリのリンクが必要
 </h3>
 <blockquote>
