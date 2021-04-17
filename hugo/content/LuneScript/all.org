@@ -3626,8 +3626,6 @@ forsort val in { "b":200, "c":300, "a":100 } {
 }
 #+END_SRC
 
-**forsort は内部的に clone と sort を行なうため、 その分のオーバーヘッドがあります。*
-
 *** break
 
 break は、一番内側にある繰り返し制御文を抜けます。
@@ -9242,57 +9240,6 @@ Lua のコードを実行するための関数がロードされていて、
 : Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
 
 このように、fib_lns() と fib_lua() では全く処理が異なることが分かります。
-
-
-*** ビルド
-
-go へトランスコンパイルしてビルドするには次の step が必要です。
-
-- .lns から .go を生成する
-- main.go を生成する
-- go build する
-
-各 step を説明します。
-
-****  .lns から .go を生成する
-
-以下のコマンドで .go を生成します。
-    
-: $ lnsc hoge.lns save -langGo
-
-メインモジュールの場合は、さらに --main オプション付加します。
-
-: $ lnsc hoge.lns save -langGo --main hoge
-
-ここで --main hoge の hoge は、 メインモジュールの import パスです。
-
-例えばメインモジュールが foo/bar/hoge.lns の場合、
-
-: $ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
-
-となります。
-
-**** main.go を生成する
-
-go には、エントリ関数の main() が必要です。
-
-以下のコマンドで、この main() 関数を定義する main.go を生成します。
-    
-: $ lnsc hoge.lns mkmain main.go
-
-ここで hoge.lns は、 lns のメインモジュールを指定します。
-main.go は出力先のパスを指定します。
-
-このコマンドで生成した main.go には、
-lns のランタイムを初期化するコードが含まれます。
-
-**** go build する
-
-全ての lns ファイルの変換と main.go の生成ができたら、go build を実行します。
-    
-: $ go build
-
-これにより、トランスコンパイルしたモジュールが go でビルドされます。
 
 *** go へトランスコンパイル後は Lua ライブラリのリンクが必要
 

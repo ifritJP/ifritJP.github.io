@@ -66,3 +66,33 @@ avg-cpu:  %user   %nice %system %iowait  %steal   %idle
       tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn Device
      0.41         3.4k        24.8k       7.7G      56.3G mmcblk0
 #+END_SRC
+
+
+* パフォーマンス計測
+
+寿命を予測する方法として、
+定期的(月に一度程度)に SD card への書き込みパフォーマンスを記録することにした。
+
+
+パフォーマンスは dd コマンドによる 200MB 書き込みの時間とする。
+
+ただし、書き込み時間はかなりばらつく。
+特に初回の dd コマンドの書き込みはバッファリングが効くためか異様に早いので、
+初回の dd コマンドの計測は捨てて、2回目、3回目を記録する。
+
+- 2021/04/17
+
+#+BEGIN_SRC txt
+$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 42.9515 s, 4.9 MB/s
+$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 30.8832 s, 6.8 MB/s
+#+END_SRC
+
+この時点で既にめちゃくちゃ遅い。
+
+今後どれほど変っていくのか興味深い。
