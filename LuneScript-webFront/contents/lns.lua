@@ -31,6 +31,9 @@ local lnsStreamObj = {
 io = {
    stdout = lnsStreamObj,
    stderr = lnsStreamObj,
+   open = function()
+      return nil
+   end
 }
 
 -- 引数で与えられた lnsCode から Lua コードに変換する
@@ -67,6 +70,9 @@ local luaStreamObj = {
 newEnv[ "io" ] = {
    stdout = luaStreamObj,
    stderr = luaStreamObj,
+   open = function()
+      return nil
+   end
 }
 
 local totalStep = 0;

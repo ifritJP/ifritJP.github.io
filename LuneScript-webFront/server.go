@@ -17,7 +17,7 @@ func main() {
     var localAddr string
     for _, addr := range addrList {
         localAddr = addr.String()
-        if strings.Index( localAddr, "192.168." ) == 0 {
+        if strings.Index( localAddr, "172." ) == 0 {
             if index := strings.Index( localAddr, "/" ); index > 0 {
                 localAddr = localAddr[:index]
             }
