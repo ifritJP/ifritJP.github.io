@@ -39,7 +39,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス Lua は非常にコンパクトな言語でありながら、高い">
 
-<meta itemprop="wordCount" content="94829">
+<meta itemprop="wordCount" content="97349">
 
 
 
@@ -195,7 +195,7 @@ Lua5.1 については次を参照してください。
 </li>
 <li>
 <p>
-<a href="../.././crosscompile">../.././crosscompile</a>
+<a href=".././crosscompile">.././crosscompile</a>
 </p>
 </li>
 </ul>
@@ -209,6 +209,18 @@ LuneScript はセルフホスティングで開発している。
 <p>
 emacs でのコード補完に対応
 </p>
+</li>
+<li>
+<p>
+lnstags によるタグジャンプに対応
+</p>
+<ul>
+<li>
+<p>
+<a href=".././lnstags">.././lnstags</a>
+</p>
+</li>
+</ul>
 </li>
 <li>
 <p>
@@ -14258,6 +14270,468 @@ Go からアクセスできるように C パッケージ内に展開される�
 </div>
 <hr>
 <h2 id="headline-370">
+*lnstags によるタグジャンプ (ソースコードタグシステム) *
+</h2>
+<p>
+LuneScript は、タグジャンプ (ソースコードタグシステム)に対応している。
+</p>
+<h3 id="headline-371">
+タグジャンプ (ソースコードタグシステム) とは
+</h3>
+<p>
+タグジャンプは、ソースコードの以下の情報へのアクセスを提供する。
+</p>
+<ul>
+<li>
+<p>
+シンボル(クラス、関数、変数 etc..)の <strong>定義位置</strong>
+</p>
+</li>
+<li>
+<p>
+シンボル(クラス、関数、変数 etc..)の <strong>参照位置</strong>
+</p>
+<h4 id="headline-372">
+例
+</h4>
+</li>
+</ul>
+<p>
+以下に例を示す。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();</code></pre>
+</div>
+<p>
+たとえば、上記のような mini.lns ファイルがあった場合、
+Foo クラスの func メソッドの定義位置をリストするには、
+次のコマンドを実行する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {</code></pre>
+</div>
+<p>
+Bar クラスの func メソッドの参照位置をリストするには、
+次のコマンドを実行する。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">$ lnstags inq ref @mini.Bar.func
+@mini.Bar.func     12 mini.lns         bar.func();</code></pre>
+</div>
+<p>
+lnstags コマンドの使用方法についての詳細は後述する。
+</p>
+<h3 id="headline-373">
+lnstags の特徴
+</h3>
+<p>
+lnstags は一般的なタグジャンプの機能に加え、次の機能を提供する。
+</p>
+<ul>
+<li>
+<p>
+変数の値を設定している箇所のリスト
+</p>
+<ul>
+<li>
+<p>
+値をセットしているのか、参照しているのかを区別していて、
+<strong>値をセットしている箇所だけ</strong> をリストできる。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+継承関係の考慮
+</p>
+<ul>
+<li>
+<p>
+オーバーライドされているメソッドをコールする場合、
+ポリモーフィズムによって実際にコールされるメソッドが異なる。
+</p>
+</li>
+<li>
+<p>
+lnstags では、コールされる可能性のあるメソッドを全てリストする。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="headline-374">
+使い方
+</h3>
+<p>
+lnstags は、次の URL で公開している。
+</p>
+<p>
+&lt;<a href="https://github.com/ifritJP/lnstags">https://github.com/ifritJP/lnstags</a>&gt;
+</p>
+<h4 id="headline-375">
+ビルド方法
+</h4>
+<p>
+go でビルドする。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ git clone --depth 1 https://github.com/ifritJP/lnstags
+$ cd lnstags/src
+$ make build</code></pre></div>
+</div>
+<h4 id="headline-376">
+ソースコードの解析
+</h4>
+<p>
+ソースコードの解析は、
+解析対象のソースコードのプロジェクトディレクトリ上で実行する。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ cd proj  // lune.js を置いてあるディレクトリに移動する
+$ lnstags init
+$ lnstags build test/main.lns</code></pre></div>
+</div>
+<p>
+<strong>*lnstags build は、次のどちらかで実行する必要がある。</strong>
+</p>
+<ul>
+<li>
+<p>
+プロジェクトの main となる .lns ファイルを指定する
+</p>
+</li>
+</ul>
+<pre class="example">
+$ lnstags build main.lns
+</pre>
+<ul>
+<li>
+<p>
+<code class="verbatim">lnstags build @-</code> として指定し、stdin に .lns ファイルのパスを 1 行づつ指定する。
+</p>
+</li>
+</ul>
+<pre class="example">
+$ find . -iname &#39;*.lns&#39; | lnstags build @-
+</pre>
+<p>
+lnstags は、指定された lns ファイルから import されているモジュールを
+辿って全て解析する。
+</p>
+<p>
+これにより、多くの場合は main となる .lns ファイルを指定するだけで問題ない。
+</p>
+<p>
+後者を使うケースは、
+1 つの lns ファイルから全てのモジュールを辿れないケースで利用する。
+</p>
+<p>
+<strong>*なお現在の lnstags は、差分更新はサポートしていない。</strong>
+</p>
+<p>
+このため、 build に <strong>@-</strong> を使用する場合、全ての .lns ファイルを指定する必要がある。
+</p>
+<p>
+ソースコードの解析結果は、 <strong>lnstags.sqlite3 ファイル</strong> に登録する。
+</p>
+<h4 id="headline-377">
+DB の更新
+</h4>
+<p>
+<code class="verbatim">lctags build</code> による解析後にソースコードを変更すると、
+DB に登録している情報と実際のソースコードの情報に不整合が生じる。
+</p>
+<p>
+DB を更新するには、 <strong>次のいずれか</strong> を実行する。
+</p>
+<ul>
+<li>
+<p>
+<code class="verbatim">lctags build</code> を再度実行する。
+</p>
+</li>
+<li>
+<p>
+<code class="verbatim">lctags update</code> を実行する。
+</p>
+</li>
+</ul>
+<pre class="example">
+$ lctags update
+</pre>
+<h5 id="headline-378">
+lctags update
+</h5>
+<p>
+<code class="verbatim">lctags update</code> は、
+DB に登録されている lns のソースファルイリストを元に、
+情報を更新する。
+</p>
+<p>
+<code class="verbatim">lctags build</code> と異なり、解析するソースファイルを指定する必要がない。
+</p>
+<p>
+<strong>*解析対象の lns ファイルが増減した場合</strong> は、
+<code class="verbatim">lctags update</code> ではなく、
+<code class="verbatim">lctags build</code> を使用しなければならない。
+</p>
+<h4 id="headline-379">
+問い合わせ
+</h4>
+<p>
+<code class="verbatim">lnstags build</code> でソースコードを解析した後は、シンボルの情報を問い合わせる。
+</p>
+<p>
+問い合わせには、次のパターンがある。
+</p>
+<ul>
+<li>
+<p>
+inq
+</p>
+</li>
+<li>
+<p>
+inq-at
+</p>
+</li>
+<li>
+<p>
+suffix
+</p>
+<h5 id="headline-380">
+inq
+</h5>
+</li>
+</ul>
+<p>
+inq は、シンボル名を指定して問い合わせを行なう。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();</code></pre>
+</div>
+<p>
+たとえば、上記のような mini.lns ファイルがあった場合、
+Foo クラスの func メソッドのシンボル名は次になる。
+</p>
+<pre class="example">
+@mini.Foo.func
+</pre>
+<p>
+ここで、 @mini はモジュール名を示し、 mini は mini.lns を指す。
+例えば abc/def/ghi.lns の場合、モジュール名は <strong>@abc.@def.@ghi</strong> となる。
+<code class="verbatim">Foo.func</code> は、 Foo クラスの func メソッドを指す。
+</p>
+<p>
+そして、次のコマンドを実行することで、
+@mini.Foo.func の定義位置がリストされる。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {</code></pre>
+</div>
+<p>
+このコマンド <code class="verbatim">lnstags inq def</code> の <strong>def</strong> は、 <strong>定義場所</strong> の問い合わせを指定する。
+</p>
+<h5 id="headline-381">
+問い合わせモード
+</h5>
+<p>
+問い合わせの種類は次がある。
+</p>
+<table>
+<thead>
+<tr>
+<th>オプション</th>
+<th>動作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>def</td>
+<td>定義位置</td>
+</tr>
+<tr>
+<td>ref</td>
+<td>参照位置</td>
+</tr>
+<tr>
+<td>set</td>
+<td>設定位置</td>
+</tr>
+</tbody>
+</table>
+<h5 id="headline-382">
+inq-at
+</h5>
+<p>
+問い合わせしたいシンボルの完全限定名が判っている場合は inq コマンドが利用できるが、
+完全限定名を調べるのが困難だったり面倒だったりする。
+</p>
+<p>
+そこで、ソースの所定位置のシンボルについて問い合わせを行なうのが <strong>inq-at</strong> である。
+</p>
+<p>
+以下のソースがある時に、
+10 行目の 5 列目にある foo.func() の定義場所を問合せる場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();</code></pre>
+</div>
+<p>
+次のコマンドを実行する。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnstags inq-at def mini.lns 10 5
+@mini.Foo.func      2 mini.lns            pub fn func() {</code></pre></div>
+</div>
+<p>
+これにより、指定した場所にあるシンボルについての問い合わせが行なわれる。
+</p>
+<p>
+上記の場合、 mini.lns 10 5 にある <code class="verbatim">foo.func</code> の完全限定名が、
+@mini.Foo.func であることを認識し、
+それについての <strong>def</strong> 問い合わせを行なっている。
+</p>
+<p>
+なお、inq-at を利用する場合、
+<strong>*指定の lns ファイルがエラー無くビルドできなければならない。</strong>
+</p>
+<p>
+また、指定の lns ファイルの AST を解析するため、時間がかかる。
+</p>
+<h5 id="headline-383">
+suffix
+</h5>
+<p>
+inq-at は lns ファイルの位置を指定して完全限定名を取得するが、
+suffix はシンボル名の後方一致で完全限定名のリストを取得する。
+</p>
+<p>
+例えば func に後方一致する完全限定名のリストを表示するには以下を実行する。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnstags suffix func
+@mini.Foo.func
+@mini.Bar.func</code></pre></div>
+</div>
+<h3 id="headline-384">
+emacs から利用する場合
+</h3>
+<p>
+lisp/lnstags-conf.el をロードする。
+</p>
+<p>
+キーバインドは次の通り。
+</p>
+<table>
+<thead>
+<tr>
+<th>キー</th>
+<th>操作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M-t</td>
+<td>カーソル位置のシンボルの <strong>定義位置</strong> にジャンプ</td>
+</tr>
+<tr>
+<td>M-r</td>
+<td>カーソル位置のシンボルの <strong>参照位置</strong> にジャンプ</td>
+</tr>
+<tr>
+<td>M-s</td>
+<td>カーソル位置のシンボルの <strong>設定位置</strong> にジャンプ</td>
+</tr>
+<tr>
+<td>M-m</td>
+<td>タグジャンプの履歴</td>
+</tr>
+<tr>
+<td>C-t</td>
+<td>ジャンプ元に戻る</td>
+</tr>
+</tbody>
+</table>
+<p>
+M-t, M-r, M-s については、完全限定名を得るために suffix 問い合わせを実行し、
+シンボルに一致する完全限定名をリストし、
+選択された完全限定名についての inq 問い合わせを行なう。
+</p>
+<p>
+なお、M-t, M-r, M-s にプレフィックス C-u を付けることで、
+カーソル位置の inq-at 問い合わせを行なう。
+</p>
+<h3 id="headline-385">
+解析時間
+</h3>
+<p>
+lnstags は、 LuneScript トランスコンパイラの AST 解析部を利用して、
+解析対象ソースコード内のシンボル情報を DB に登録している。
+</p>
+<p>
+このため DB 登録に掛る時間は、
+Lns ファイルの <strong>トランスコンパイル時間とほぼ等価</strong> である。
+</p>
+<p>
+LuneScript のセルフホストコードを解析しても、 10 秒弱で終了する。
+</p>
+<p>
+ソースコードタグシステムの一番重い AST 解析を、
+LuneScript のモジュールで行うことで、
+lnstags 自体のコードは 2000 行強のシンプルな構成になっている。 (2021現在)
+</p>
+<p>
+なお、lnstags 自体も LuneScript で開発している。    
+</p>
+<p>
+前述している通り、
+lnstags は DB の差分をサポートしていない。
+これは、 LuneScript のプロジェクトでそこまで時間のかかる大規模のものは現状ないと
+判断しているためである。
+</p>
+<p>
+もしも、大規模プロジェクトで LuneScript を利用しているのであれば、
+参考までに連絡して欲しい。
+</p>
+<hr>
+<h2 id="headline-386">
 <strong>Lua のトランスコンパイラ LuneScript を開発した理由</strong>
 </h2>
 <p>
@@ -14277,7 +14751,7 @@ DSP のような処理をさせなければ、
 私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
 よく使う言語の１つである。
 </p>
-<h3 id="headline-371">
+<h3 id="headline-387">
 Lua のトランスコンパイラ LuneScript を開発した理由
 </h3>
 <p>
@@ -14354,7 +14828,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 <p>
 以降で、それぞれについて説明する。
 </p>
-<h4 id="headline-372">
+<h4 id="headline-388">
 楽して安全に書きたい
 </h4>
 <p>
@@ -14407,7 +14881,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 <p>
 これが、私が LuneScript を開発する一番の理由だ。
 </p>
-<h4 id="headline-373">
+<h4 id="headline-389">
 動的型付け言語特有の問題
 </h4>
 <p>
@@ -14425,7 +14899,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 動的型付け言語を利用した場合に、
 問題となり易いことを挙げている。
 </p>
-<h5 id="headline-374">
+<h5 id="headline-390">
 静的なエラーチェックが出来ない
 </h5>
 <p>
@@ -14485,7 +14959,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 まぁ、もっと違うパラダイムなのかもしれないが。
 </p>
-<h5 id="headline-375">
+<h5 id="headline-391">
 他人のコードの内容を把握し難い
 </h5>
 <p>
@@ -14529,7 +15003,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 なんども言うが私は楽をしたいのだ。
 </p>
-<h5 id="headline-376">
+<h5 id="headline-392">
 メンテナンスや機能追加、リファクタリングのリスクが大きい
 </h5>
 <p>
@@ -14591,7 +15065,7 @@ parse したそのままの文字列データを渡してしまう等、
 LuneScript 開発中、何度も設計変更を行ったが、
 もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。
 </p>
-<h5 id="headline-377">
+<h5 id="headline-393">
 コーディング時の補完がイケてない
 </h5>
 <p>
@@ -14620,7 +15094,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 <a href="../completion">../completion</a>
 </p>
-<h5 id="headline-378">
+<h5 id="headline-394">
 テーブル内のフィールドアクセス制御が出来ない
 </h5>
 <p>
@@ -14664,7 +15138,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 問題なのはそういった制御がなく、全てアクセス可能になってしまっていることである。
 </p>
-<h4 id="headline-379">
+<h4 id="headline-395">
 Luaの機能に不満がある
 </h4>
 <p>
@@ -14676,7 +15150,7 @@ Lua はコンパクトでパワフルな言語であるが、
 素の Lua ではサポートされていない機能をサポートすることも
 目的の一つに開発している。
 </p>
-<h5 id="headline-380">
+<h5 id="headline-396">
 nil安全でない
 </h5>
 <p>
@@ -14729,7 +15203,7 @@ nil を取り得ない 非 nilable を別の型として管理することで、
 多階層の nilable データに楽にアクセスするための nil 条件演算子をサポートすることで、
 nil エラーの対応を楽にかつ安全に対応できるようにしている。
 </p>
-<h5 id="headline-381">
+<h5 id="headline-397">
 マクロがない
 </h5>
 <p>
@@ -14767,7 +15241,7 @@ LuneScript では、実装が簡単で、かつ使用する側の学習に負担
 LuneScript のセルフホスティングでもマクロを使用しているが、
 やはりマクロはプログラム言語には無くてはならないものだと改めて感じている。
 </p>
-<h4 id="headline-382">
+<h4 id="headline-398">
 Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
 </h4>
 <p>
@@ -14781,7 +15255,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 他にも組込みを意識した言語はいくつかあるが、
 組込みという条件で見た場合、Lua を越える言語を私は知らない。
 </p>
-<h4 id="headline-383">
+<h4 id="headline-399">
 既に数多くのシステムで Lua を利用している
 </h4>
 <p>
@@ -14794,7 +15268,7 @@ Lua を組み込んでいるシステムは多く存在する。
 <p>
 ちょっと気にいらないからといって、変えられるものではない。
 </p>
-<h3 id="headline-384">
+<h3 id="headline-400">
 最後に
 </h3>
 <p>
@@ -14813,14 +15287,14 @@ Lua には LuneScript があることも検討材料にして欲しい。
 そして、Lua には LuneScript という選択肢もあることを覚えておいて欲しい。
 </p>
 <hr>
-<h2 id="headline-385">
+<h2 id="headline-401">
 <strong>トランスコンパイラ開発のすゝめ</strong>
 </h2>
 <p>
 LuneScript 入門のアドベントカレンダー最後の記事は、
 これまでとは趣向を変えてトランスコンパイラ開発そのものについて扱っていきます。
 </p>
-<h3 id="headline-386">
+<h3 id="headline-402">
 トランスコンパイラ開発をすゝめる理由
 </h3>
 <p>
@@ -14859,7 +15333,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 <p>
 以降では、上記の各項目を説明していきます。
 </p>
-<h4 id="headline-387">
+<h4 id="headline-403">
 現状に対する不満を建設的に解決できる
 </h4>
 <p>
@@ -14936,7 +15410,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 アイデアをソフトウェアで実現出来る能力を持っているからこそ
 「ソフトウェアエンジニア」ではないでしょうか？
 </p>
-<h5 id="headline-388">
+<h5 id="headline-404">
 「コンパイラ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -14998,7 +15472,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 <p>
 最終的にコンパイラを開発するのが、効率の良い方法と言えるでしょう。
 </p>
-<h5 id="headline-389">
+<h5 id="headline-405">
 「インタプリタ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -15027,7 +15501,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 今は実用的なインタプリタ型の言語(スクリプト言語)が世の中にいくつもあります。
 わざわざ自前で作る必要はないでしょう。
 </p>
-<h5 id="headline-390">
+<h5 id="headline-406">
 出力結果が分かり易い
 </h5>
 <p>
@@ -15086,7 +15560,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 一方トランスコンパイラは、
 ライセンスと変換後のコードを調べれば良いだけです。
 </p>
-<h4 id="headline-391">
+<h4 id="headline-407">
 トレンドの技術を確認できる
 </h4>
 <p>
@@ -15141,7 +15615,7 @@ C 言語しか知らないからいつも通りに C 言語で書くことは、
 このように、イマドキの言語の特徴の理解を深めるためにも
 トランスコンパイラの開発は経験として良いものだと言えます。
 </p>
-<h4 id="headline-392">
+<h4 id="headline-408">
 コーディングルールを矯正できる  
 </h4>
 <p>
@@ -15185,7 +15659,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 新しい言語を開発する際は、新しい機能を取り入れるだけでなく、
 普段のコーディングルールを見直し、言語レベルで対応できないか検討するべきだと思います。
 </p>
-<h3 id="headline-393">
+<h3 id="headline-409">
 最後に
 </h3>
 <p>
@@ -15212,7 +15686,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 是非新しいプログラミング言語の開発にチャレンジしてみてください。
 </p>
 <hr>
-<h2 id="headline-394">
+<h2 id="headline-410">
 <strong>イマドキな開発環境でもっと楽しよう</strong>
 </h2>
 <p>
@@ -15279,7 +15753,7 @@ Syntax エラーチェック機能
 <p>
 subfile を認識した検索
 </p>
-<h3 id="headline-395">
+<h3 id="headline-411">
 コード補完機能
 </h3>
 </li>
@@ -15345,7 +15819,7 @@ test のフィールドの補完が次のように行なえます。
 この当たり前の機能をしっかりとコンパイラ自体が提供しているというのは、
 意外に少なかったりします。
 </p>
-<h3 id="headline-396">
+<h3 id="headline-412">
 カーソル位置の型情報確認
 </h3>
 <p>
@@ -15374,7 +15848,7 @@ foreach val, key in { &#34;abc&#34;: 1, &#34;xyz&#34;: 10 } {
 確認したいシンボルにカーソルを移動し、 C-c I を実行することで、
 そのシンボルの型情報を確認できます。
 </p>
-<h3 id="headline-397">
+<h3 id="headline-413">
 Syntax エラーチェック機能
 </h3>
 <p>
@@ -15409,7 +15883,7 @@ let map = { &#34;a&#34;: 1, &#34;b&#34;:2 };</code></pre>
 <p>
 このような、ちょっと見過しがちなエラーもエディタ上で簡単に確認できます。
 </p>
-<h3 id="headline-398">
+<h3 id="headline-414">
 subfile を認識した検索
 </h3>
 <p>
@@ -15441,7 +15915,7 @@ owner.lns, sub1.lns, sub2.lns, sub3.lns の 4 つのファイルを
 sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検索。
 … この処理を自動で行ないます。
 </p>
-<h3 id="headline-399">
+<h3 id="headline-415">
 設定
 </h3>
 <p>
@@ -15498,7 +15972,7 @@ auto-complete
 LuneScript の flymake, auto-complete 対応は、メンテナンスしていません。
 flycheck, company-mode の使用を推奨します。
 </p>
-<h3 id="headline-400">
+<h3 id="headline-416">
 プロジェクト
 </h3>
 <p>
@@ -15519,7 +15993,7 @@ LuneScript は、モジュールパスをプロジェクトからの相対パス
 <div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{}</span>
 </code></pre></div>
 </div>
-<h4 id="headline-401">
+<h4 id="headline-417">
 モジュールのパス
 </h4>
 <p>
@@ -15530,7 +16004,7 @@ proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 にな�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">proj/lune.js
 proj/foo/bar/module1.lsn</code></pre></div>
 </div>
-<h3 id="headline-402">
+<h3 id="headline-418">
 最後に
 </h3>
 <p>
@@ -15552,7 +16026,7 @@ emacs が行なっているのはフロントエンド制御だけで、
 emacs 以外の環境に対応していただけると嬉しいです。
 </p>
 <hr>
-<h2 id="headline-403">
+<h2 id="headline-419">
 <strong>Web ブラウザ上で動作する LuneScript</strong>
 </h2>
 <p>
@@ -15607,7 +16081,7 @@ import() などのモジュールロードが出来ない
 LuneScript の全ての処理をブラウザ上で動作させているため、
 スマホなどでは初回実行に時間が掛ります。
 </p>
-<h3 id="headline-404">
+<h3 id="headline-420">
 技術解説
 </h3>
 <p>
@@ -15650,7 +16124,7 @@ LuneScript コンパイラのロードは、そこそこの時間がかかりま
 サーバ側に負荷は掛りません。
 サーバに必要な機能は、静的コンテンツのホスティングだけです。
 </p>
-<h4 id="headline-405">
+<h4 id="headline-421">
 LuneScript の fengari 対応
 </h4>
 <p>
@@ -15673,7 +16147,7 @@ pairs() を利用していましたが、 fengari Lua VM では ipairs() に切�
 現状、オプションを指定していない場合は pairs() を利用していますが、
 将来はデフォルト状態を逆にすることも検討しています。
 </p>
-<h3 id="headline-406">
+<h3 id="headline-422">
 リファレンスのサンプルコード実行
 </h3>
 <p>
@@ -15688,7 +16162,7 @@ ifritJP.github.io/LuneScript-webFront/contents/lunescript-front.js
 <p>
 <code class="verbatim">lnsFront.setup()</code>, <code class="verbatim">lnsFront.compile()</code> 関数を実行するだけです。
 </p>
-<h4 id="headline-407">
+<h4 id="headline-423">
 lnsFront.setup()
 </h4>
 <p>
@@ -15759,7 +16233,7 @@ lnsFront.compile() を実行すると、
 LuneScript のコードを入力する textarea が複数ある場合、
 lnsFront.setup() をそれぞれで実行します。
 </p>
-<h5 id="headline-408">
+<h5 id="headline-424">
 lnsFront.setup() の注意
 </h5>
 <p>
@@ -15771,7 +16245,7 @@ executeId で登録したボタンをクリックするか、
 lnsFront.compile() を実行することで、
 登録されている textarea 内の LuneScript のコードを実行します。
 </p>
-<h4 id="headline-409">
+<h4 id="headline-425">
 lnsFront.compile()
 </h4>
 <p>
@@ -15809,7 +16283,7 @@ maxTime を省略した場合、デフォルトの 2 秒がリミットになり
 なお 10 秒以上を指定した場合、無効値として扱い、デフォルト値がセットされます。
 </p>
 <hr>
-<h2 id="headline-410">
+<h2 id="headline-426">
 <strong>言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</strong>
 </h2>
 <p>
@@ -15869,7 +16343,7 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
 今後、独自言語を開発しようと考えている方のテスト設計検討に、
 少しでも役にたてれば幸いです。
 </p>
-<h4 id="headline-411">
+<h4 id="headline-427">
 コンパイラは関数
 </h4>
 <p>
@@ -15912,7 +16386,7 @@ Clang は LLVM-IR に変換し、 LLVM が各種コードに変換
 <p>
 日頃作成している関数の UNIT TEST と考え方は全く同じです。
 </p>
-<h4 id="headline-412">
+<h4 id="headline-428">
 コンパイラのテスト
 </h4>
 <p>
@@ -16087,7 +16561,7 @@ result A と result D が同一であることを確認
 セルフホスティングに必要な機能を優先的に実現し、
 出来るだけ早い段階でセルフホスティングに移行することをオススメします。
 </p>
-<h3 id="headline-413">
+<h3 id="headline-429">
 それでもバグは残る
 </h3>
 <p>
@@ -16127,7 +16601,7 @@ result A と result D が同一であることを確認
 再度同じ「穴」が開いた時に検出できるように対応することが
 テストでは重要だと考えます。
 </p>
-<h3 id="headline-414">
+<h3 id="headline-430">
 最後に
 </h3>
 <p>
@@ -16208,7 +16682,7 @@ result A と result D が同一であることを確認
 <p>
 <strong>*これは、検討中の情報です。 現在は利用できません。</strong>
 </p>
-<h3 id="headline-415">
+<h3 id="headline-431">
 Nilable 型
 </h3>
 <p>
@@ -16258,7 +16732,7 @@ unwrap 処理が必須となってしまい面倒です。
 <p>
 そこで、 Nilable 型を利用します。
 </p>
-<h4 id="headline-416">
+<h4 id="headline-432">
 Nilable 型とは
 </h4>
 <p>
@@ -16410,6 +16884,7 @@ Java で言うところの int に対する Integer クラスと思ってくだ�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>

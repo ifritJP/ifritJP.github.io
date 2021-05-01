@@ -42,6 +42,7 @@ SRCS += go.org
 SRCS += go_package.org
 SRCS += lua_runtime.org
 SRCS += go_study.org
+SRCS += lnstags.org
 SRCS += reason.org
 SRCS += recommend.org
 SRCS += completion.org

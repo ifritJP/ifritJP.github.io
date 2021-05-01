@@ -1,0 +1,307 @@
+#+TITLE: A. lnstags によるタグジャンプ (ソースコードタグシステム) 
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は、タグジャンプ (ソースコードタグシステム)に対応している。
+
+* タグジャンプ (ソースコードタグシステム) とは
+
+タグジャンプは、ソースコードの以下の情報へのアクセスを提供する。
+
+- シンボル(クラス、関数、変数 etc..)の *定義位置*
+- シンボル(クラス、関数、変数 etc..)の *参照位置*
+
+** 例
+
+以下に例を示す。
+   
+#+BEGIN_SRC lns
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();
+#+END_SRC
+
+たとえば、上記のような mini.lns ファイルがあった場合、
+Foo クラスの func メソッドの定義位置をリストするには、
+次のコマンドを実行する。
+
+#+BEGIN_SRC lns
+$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {
+#+END_SRC
+
+Bar クラスの func メソッドの参照位置をリストするには、
+次のコマンドを実行する。
+
+#+BEGIN_SRC lns
+$ lnstags inq ref @mini.Bar.func
+@mini.Bar.func     12 mini.lns         bar.func();
+#+END_SRC
+
+lnstags コマンドの使用方法についての詳細は後述する。
+
+* lnstags の特徴
+
+lnstags は一般的なタグジャンプの機能に加え、次の機能を提供する。
+
+- 変数の値を設定している箇所のリスト
+  - 値をセットしているのか、参照しているのかを区別していて、
+    *値をセットしている箇所だけ* をリストできる。
+- 継承関係の考慮
+  - オーバーライドされているメソッドをコールする場合、
+    ポリモーフィズムによって実際にコールされるメソッドが異なる。
+  - lnstags では、コールされる可能性のあるメソッドを全てリストする。
+
+* 使い方
+
+lnstags は、次の URL で公開している。
+  
+<https://github.com/ifritJP/lnstags>
+
+** ビルド方法
+
+go でビルドする。
+   
+#+BEGIN_SRC txt
+$ git clone --depth 1 https://github.com/ifritJP/lnstags
+$ cd lnstags/src
+$ make build
+#+END_SRC
+
+** ソースコードの解析
+
+ソースコードの解析は、
+解析対象のソースコードのプロジェクトディレクトリ上で実行する。
+
+#+BEGIN_SRC txt
+$ cd proj  // lune.js を置いてあるディレクトリに移動する
+$ lnstags init
+$ lnstags build test/main.lns
+#+END_SRC
+
+*lnstags build は、次のどちらかで実行する必要がある。*
+
+- プロジェクトの main となる .lns ファイルを指定する
+: $ lnstags build main.lns
+
+- =lnstags build @-= として指定し、stdin に .lns ファイルのパスを 1 行づつ指定する。
+
+: $ find . -iname '*.lns' | lnstags build @-
+
+
+lnstags は、指定された lns ファイルから import されているモジュールを
+辿って全て解析する。
+
+これにより、多くの場合は main となる .lns ファイルを指定するだけで問題ない。
+
+後者を使うケースは、
+1 つの lns ファイルから全てのモジュールを辿れないケースで利用する。
+
+
+*なお現在の lnstags は、差分更新はサポートしていない。*
+
+このため、 build に *@-* を使用する場合、全ての .lns ファイルを指定する必要がある。
+
+
+ソースコードの解析結果は、 *lnstags.sqlite3 ファイル* に登録する。
+
+** DB の更新
+
+=lctags build= による解析後にソースコードを変更すると、
+DB に登録している情報と実際のソースコードの情報に不整合が生じる。
+
+DB を更新するには、 *次のいずれか* を実行する。
+
+- =lctags build= を再度実行する。
+- =lctags update= を実行する。
+  
+: $ lctags update
+
+*** lctags update
+
+=lctags update= は、
+DB に登録されている lns のソースファルイリストを元に、
+情報を更新する。
+
+=lctags build= と異なり、解析するソースファイルを指定する必要がない。
+
+*解析対象の lns ファイルが増減した場合* は、
+=lctags update= ではなく、
+=lctags build= を使用しなければならない。
+
+
+** 問い合わせ
+
+=lnstags build= でソースコードを解析した後は、シンボルの情報を問い合わせる。
+
+問い合わせには、次のパターンがある。
+
+- inq
+- inq-at
+- suffix
+
+*** inq
+
+inq は、シンボル名を指定して問い合わせを行なう。
+
+#+BEGIN_SRC lns
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();
+#+END_SRC
+
+たとえば、上記のような mini.lns ファイルがあった場合、
+Foo クラスの func メソッドのシンボル名は次になる。
+
+: @mini.Foo.func
+
+ここで、 @mini はモジュール名を示し、 mini は mini.lns を指す。
+例えば abc/def/ghi.lns の場合、モジュール名は *@abc.@def.@ghi* となる。
+=Foo.func= は、 Foo クラスの func メソッドを指す。
+
+
+そして、次のコマンドを実行することで、
+@mini.Foo.func の定義位置がリストされる。
+
+#+BEGIN_SRC lns
+$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {
+#+END_SRC
+    
+このコマンド =lnstags inq def= の *def* は、 *定義場所* の問い合わせを指定する。
+
+*** 問い合わせモード
+    
+問い合わせの種類は次がある。
+
+| オプション | 動作     |
+|------------+----------|
+| def        | 定義位置 |
+| ref        | 参照位置 |
+| set        | 設定位置 |
+
+*** inq-at
+
+問い合わせしたいシンボルの完全限定名が判っている場合は inq コマンドが利用できるが、
+完全限定名を調べるのが困難だったり面倒だったりする。
+
+そこで、ソースの所定位置のシンボルについて問い合わせを行なうのが *inq-at* である。
+
+以下のソースがある時に、
+10 行目の 5 列目にある foo.func() の定義場所を問合せる場合、
+
+#+BEGIN_SRC lns
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();
+#+END_SRC
+
+次のコマンドを実行する。
+
+#+BEGIN_SRC txt
+$ lnstags inq-at def mini.lns 10 5
+@mini.Foo.func      2 mini.lns            pub fn func() {
+#+END_SRC
+
+これにより、指定した場所にあるシンボルについての問い合わせが行なわれる。
+
+上記の場合、 mini.lns 10 5 にある =foo.func= の完全限定名が、
+@mini.Foo.func であることを認識し、
+それについての *def* 問い合わせを行なっている。
+
+なお、inq-at を利用する場合、
+*指定の lns ファイルがエラー無くビルドできなければならない。*
+
+また、指定の lns ファイルの AST を解析するため、時間がかかる。
+
+
+*** suffix
+
+inq-at は lns ファイルの位置を指定して完全限定名を取得するが、
+suffix はシンボル名の後方一致で完全限定名のリストを取得する。
+
+例えば func に後方一致する完全限定名のリストを表示するには以下を実行する。
+
+#+BEGIN_SRC txt
+$ lnstags suffix func
+@mini.Foo.func
+@mini.Bar.func
+#+END_SRC
+
+* emacs から利用する場合
+
+lisp/lnstags-conf.el をロードする。
+
+キーバインドは次の通り。
+
+| キー | 操作                                           |
+|------+------------------------------------------------|
+| M-t  | カーソル位置のシンボルの *定義位置* にジャンプ |
+| M-r  | カーソル位置のシンボルの *参照位置* にジャンプ |
+| M-s  | カーソル位置のシンボルの *設定位置* にジャンプ |
+| M-m  | タグジャンプの履歴                             |
+| C-t  | ジャンプ元に戻る                               |
+
+
+M-t, M-r, M-s については、完全限定名を得るために suffix 問い合わせを実行し、
+シンボルに一致する完全限定名をリストし、
+選択された完全限定名についての inq 問い合わせを行なう。
+
+なお、M-t, M-r, M-s にプレフィックス C-u を付けることで、
+カーソル位置の inq-at 問い合わせを行なう。
+
+* 解析時間
+
+lnstags は、 LuneScript トランスコンパイラの AST 解析部を利用して、
+解析対象ソースコード内のシンボル情報を DB に登録している。
+
+このため DB 登録に掛る時間は、
+Lns ファイルの *トランスコンパイル時間とほぼ等価* である。
+
+LuneScript のセルフホストコードを解析しても、 10 秒弱で終了する。
+
+ソースコードタグシステムの一番重い AST 解析を、
+LuneScript のモジュールで行うことで、
+lnstags 自体のコードは 2000 行強のシンプルな構成になっている。 (2021現在)
+
+なお、lnstags 自体も LuneScript で開発している。    
+
+
+前述している通り、
+lnstags は DB の差分をサポートしていない。
+これは、 LuneScript のプロジェクトでそこまで時間のかかる大規模のものは現状ないと
+判断しているためである。
+
+もしも、大規模プロジェクトで LuneScript を利用しているのであれば、
+参考までに連絡して欲しい。
+
