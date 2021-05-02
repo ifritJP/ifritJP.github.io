@@ -8778,6 +8778,104 @@ pub fn __main( argList:List<str> ):int {
 #+END_SRC
 
 -----
+* *LuneScript を利用するプロジェクトの推奨ディレクトリ構成*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は lua と go へのトランスコンパイルをサポートします。
+
+一方で、 lua , go は、ディレクトリ管理方法が異なります。
+
+ここでは、どちらの言語のディレクトリ管理においても問題なく使えるようにするための
+推奨ディレクトリ構成について説明します。
+
+** 前提
+
+ここでは以下の github リポジトリで開発することを前提として説明します。
+
+: github.com/HOGE/PROJ
+
+- HOGE は、任意の github アカウント名。
+- PROJ は、任意のリポジトリ名。
+
+また、以下のモジュールを定義することを前提に説明します。
+
+: foo.bar.lib
+
+** 基本構成
+
+ディレクトリの基本構成を示します。
+  
+#+BEGIN_SRC txt
+PROJ/
+ +-- go.mod
+ +-- lune.js
+ +-- foo/
+   +-- bar/
+      +-- lib.lns
+#+END_SRC
+
+go.mod, lune.js, foo/ を、 PROJ ディレクトリ直下に配置します。
+
+*** lune.js
+
+lune.js は、以下の内容で作成します。
+
+: {}
+
+*** go.mod
+
+この時の go.mod の構成を示します。
+なお、 go.mod は go へのトランスコンパイルを行なわない場合は不要です。
+
+#+BEGIN_SRC txt
+module github.com/HOGE/PROJ
+
+go 1.16
+#+END_SRC
+
+*** メインとサブモジュール
+
+リポジトリは、   
+**メイン* のプログラムを管理するケースと、
+メインのプログラムから利用される *サブモジュール* を管理するケースがあります。
+
+**サブモジュール* として管理する場合、
+上記の基本構造の制限が若干緩和されます。
+
+具体的には、 go.mod, lune.js, foo を *PROJ 直下に無くても良くなります。*
+
+例えば以下のように src の下に配置することが出来ます。
+
+#+BEGIN_SRC txt
+PROJ/
+ +-- src/  <--- ※任意のディレクトリ以下に配置可能
+   +-- go.mod
+   +-- lune.js
+   +-- foo/
+     +-- bar/
+        +-- lib.lns
+#+END_SRC
+
+この場合、 go.mod は以下のように module のパスが異なります。
+
+#+BEGIN_SRC txt
+module github.com/HOGE/PROJ/src
+
+go 1.16
+#+END_SRC
+
+*** 環境変数 GOPATH
+
+go へトランスコンパイルする場合、
+上記 PROJ ディレクトリを次の場所に配置する必要があります。
+
+: ${GOPATH}/src/github.com/HOGE/PROJ
+
+GOPATH を設定していない場合は =${HOME}/go= が利用されます。
+-----
 * *2 非同期処理*
 # -*- coding:utf-8 -*-
 #+STARTUP: nofold
@@ -10438,13 +10536,28 @@ lnstags は、次の URL で公開している。
 
 *** ビルド方法
 
-go でビルドする。
+次の 2 つのビルド方法があります。
+   
+- go install を利用する
+- リポジトリを close して make する
+  
+通常は go install で問題ありません。  
+   
+**** go install 
+
+以下を実行すると、 $GOPATH/bin に lnstags がインストールされます。
+    
+: go install -tags gopherlua github.com/ifritJP/lnstags@latest
+
+**** go でビルドする。
    
 #+BEGIN_SRC txt
 $ git clone --depth 1 https://github.com/ifritJP/lnstags
 $ cd lnstags/src
 $ make build
 #+END_SRC
+
+上記で lnstags/src/lnstags が生成されます。
 
 *** ソースコードの解析
 

@@ -39,7 +39,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス Lua は非常にコンパクトな言語でありながら、高い">
 
-<meta itemprop="wordCount" content="97349">
+<meta itemprop="wordCount" content="98078">
 
 
 
@@ -11848,6 +11848,133 @@ pub fn __main( argList:List&lt;str&gt; ):int {
 </div>
 <hr>
 <h2 id="headline-308">
+<strong>LuneScript を利用するプロジェクトの推奨ディレクトリ構成</strong>
+</h2>
+<p>
+LuneScript は lua と go へのトランスコンパイルをサポートします。
+</p>
+<p>
+一方で、 lua , go は、ディレクトリ管理方法が異なります。
+</p>
+<p>
+ここでは、どちらの言語のディレクトリ管理においても問題なく使えるようにするための
+推奨ディレクトリ構成について説明します。
+</p>
+<h3 id="headline-309">
+前提
+</h3>
+<p>
+ここでは以下の github リポジトリで開発することを前提として説明します。
+</p>
+<pre class="example">
+github.com/HOGE/PROJ
+</pre>
+<ul>
+<li>
+<p>
+HOGE は、任意の github アカウント名。
+</p>
+</li>
+<li>
+<p>
+PROJ は、任意のリポジトリ名。
+</p>
+</li>
+</ul>
+<p>
+また、以下のモジュールを定義することを前提に説明します。
+</p>
+<pre class="example">
+foo.bar.lib
+</pre>
+<h3 id="headline-310">
+基本構成
+</h3>
+<p>
+ディレクトリの基本構成を示します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">PROJ/
+ +-- go.mod
+ +-- lune.js
+ +-- foo/
+   +-- bar/
+      +-- lib.lns</code></pre></div>
+</div>
+<p>
+go.mod, lune.js, foo/ を、 PROJ ディレクトリ直下に配置します。
+</p>
+<h4 id="headline-311">
+lune.js
+</h4>
+<p>
+lune.js は、以下の内容で作成します。
+</p>
+<pre class="example">
+{}
+</pre>
+<h4 id="headline-312">
+go.mod
+</h4>
+<p>
+この時の go.mod の構成を示します。
+なお、 go.mod は go へのトランスコンパイルを行なわない場合は不要です。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">module github.com/HOGE/PROJ
+
+go 1.16</code></pre></div>
+</div>
+<h4 id="headline-313">
+メインとサブモジュール
+</h4>
+<p>
+リポジトリは、   
+<strong>*メイン</strong> のプログラムを管理するケースと、
+メインのプログラムから利用される <strong>サブモジュール</strong> を管理するケースがあります。
+</p>
+<p>
+<strong>*サブモジュール</strong> として管理する場合、
+上記の基本構造の制限が若干緩和されます。
+</p>
+<p>
+具体的には、 go.mod, lune.js, foo を <strong>PROJ 直下に無くても良くなります。</strong>
+</p>
+<p>
+例えば以下のように src の下に配置することが出来ます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">PROJ/
+ +-- src/  &lt;--- ※任意のディレクトリ以下に配置可能
+   +-- go.mod
+   +-- lune.js
+   +-- foo/
+     +-- bar/
+        +-- lib.lns</code></pre></div>
+</div>
+<p>
+この場合、 go.mod は以下のように module のパスが異なります。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">module github.com/HOGE/PROJ/src
+
+go 1.16</code></pre></div>
+</div>
+<h4 id="headline-314">
+環境変数 GOPATH
+</h4>
+<p>
+go へトランスコンパイルする場合、
+上記 PROJ ディレクトリを次の場所に配置する必要があります。
+</p>
+<pre class="example">
+${GOPATH}/src/github.com/HOGE/PROJ
+</pre>
+<p>
+GOPATH を設定していない場合は <code class="verbatim">${HOME}/go</code> が利用されます。
+</p>
+<hr>
+<h2 id="headline-315">
 <strong>2 非同期処理</strong>
 </h2>
 <p>
@@ -11857,7 +11984,7 @@ LuneScript による非同期処理を対応しました。
 <p>
 ただし、これは非常に実験的な内容なので参考程度にしてください。
 </p>
-<h3 id="headline-309">
+<h3 id="headline-316">
 LuneScript のランタイム
 </h3>
 <p>
@@ -11923,7 +12050,7 @@ LuneScript を非同期処理に対応する場合、
 <p>
 以降では、今回導入した非同期処理の方法について説明します。
 </p>
-<h3 id="headline-310">
+<h3 id="headline-317">
 LnsThread クラスの導入と制限
 </h3>
 <p>
@@ -12078,7 +12205,7 @@ for _ = 1, 100000 {
 }
 print( async.$count, async2.$count );</code></pre>
 </div>
-<h4 id="headline-311">
+<h4 id="headline-318">
 非同期処理の制限
 </h4>
 <p>
@@ -12112,7 +12239,7 @@ LuneScript の parse 処理に利用していて、
 LuneScript の高速化にほんの少し貢献しています。
 </p>
 <hr>
-<h2 id="headline-312">
+<h2 id="headline-319">
 <strong>1 Go 言語へのトランスコンパイル</strong>
 </h2>
 <p>
@@ -12134,7 +12261,7 @@ LuneScript のセルフホスティングに必要な機能に限定したサポ
 LuneScript のほとんどの機能を使用しているので、
 普通に使う分には問題なく対応出来ています。
 </p>
-<h3 id="headline-313">
+<h3 id="headline-320">
 go 言語へのトランスコンパイル方法
 </h3>
 <p>
@@ -12143,7 +12270,7 @@ LuneScript のコマンドラインオプション save あるいは SAVE 時に
  <strong>-langGo</strong> を指定することで、
 .go 拡張子のファイルに go へのトランスコンパイル結果を出力します。
 </p>
-<h3 id="headline-314">
+<h3 id="headline-321">
 Lua との連携動作
 </h3>
 <p>
@@ -12156,7 +12283,7 @@ Lua との連携動作を行なう際に特別な型を使用する必要があ�
 <p>
 <a href="../lua">../lua</a>
 </p>
-<h3 id="headline-315">
+<h3 id="headline-322">
 Go 言語へのトランスコンパイル後の構成
 </h3>
 <p>
@@ -12222,7 +12349,7 @@ _profile( fib_lns( step ) );</code></pre>
 それをロードするのが loadLua() 関数で、ロードされた Lua の関数が fib_lua です。
 そして、後半の fib_lns() 関数は フィボナッチの計算を行なう LuneScript の関数です。
 </p>
-<h4 id="headline-316">
+<h4 id="headline-323">
 Lua へトランスコンパイルした場合
 </h4>
 <p>
@@ -12305,7 +12432,7 @@ fib_lns() と fib_lub() は等価のコードになっています。
 <p>
 よって、fib_lns() と fib_lua() が同程度時間がかかるのは当然と言えます。
 </p>
-<h4 id="headline-317">
+<h4 id="headline-324">
 go へトランスコンパイルした場合
 </h4>
 <p>
@@ -12405,7 +12532,7 @@ Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
 <p>
 このように、fib_lns() と fib_lua() では全く処理が異なることが分かります。
 </p>
-<h4 id="headline-318">
+<h4 id="headline-325">
 ビルド
 </h4>
 <p>
@@ -12431,7 +12558,7 @@ go build する
 <p>
 各 step を説明します。
 </p>
-<h5 id="headline-319">
+<h5 id="headline-326">
 .lns から .go を生成する
 </h5>
 <p>
@@ -12458,7 +12585,7 @@ $ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
 <p>
 となります。
 </p>
-<h5 id="headline-320">
+<h5 id="headline-327">
 main.go を生成する
 </h5>
 <p>
@@ -12478,7 +12605,7 @@ main.go は出力先のパスを指定します。
 このコマンドで生成した main.go には、
 lns のランタイムを初期化するコードが含まれます。
 </p>
-<h5 id="headline-321">
+<h5 id="headline-328">
 go build する
 </h5>
 <p>
@@ -12490,7 +12617,7 @@ $ go build
 <p>
 これにより、トランスコンパイルしたモジュールが go でビルドされます。
 </p>
-<h4 id="headline-322">
+<h4 id="headline-329">
 go へトランスコンパイル後は Lua ライブラリのリンクが必要
 </h4>
 <blockquote>
@@ -12531,13 +12658,13 @@ liblua5.3.so へのリンクが必要になります。
 ビルド時には lua-5.3.4 のインクルードファイルも必要になります。
 </p>
 <hr>
-<h2 id="headline-323">
+<h2 id="headline-330">
 <strong>1.2 Go 言語へのトランスコンパイル時のパッケージ</strong>
 </h2>
 <p>
 go のパッケージ管理されているモジュールを LuneScript から利用できます。
 </p>
-<h3 id="headline-324">
+<h3 id="headline-331">
 go のパッケージ管理概要
 </h3>
 <p>
@@ -12559,7 +12686,7 @@ github 上のパッケージを go で利用するには、次のように書き
 <p>
 これと同じ感覚で、 LuneScript は go のモジュールにアクセスできます。
 </p>
-<h3 id="headline-325">
+<h3 id="headline-332">
 import
 </h3>
 <p>
@@ -12617,7 +12744,7 @@ ${GOPATH}/pkg/mod/github.com/ifrit!j!p/lnshttpd@XXXXXXXXXXXXXXXXX/lnsservlet.lns
 go.mod に記載されているモジュールの TAG 情報から取得します。
 つまり、事前に go mod tidy を実施しておく必要があります。
 </p>
-<h3 id="headline-326">
+<h3 id="headline-333">
 module
 </h3>
 <p>
@@ -12673,7 +12800,7 @@ go のモジュールを利用していることを module 宣言に追加する
 </tr>
 </tbody>
 </table>
-<h4 id="headline-327">
+<h4 id="headline-334">
 利用可能な言語
 </h4>
 <p>
@@ -12701,7 +12828,7 @@ module で利用可能な言語の組み合わせには制限があります。
 </tr>
 </tbody>
 </table>
-<h4 id="headline-328">
+<h4 id="headline-335">
 型の互換性
 </h4>
 <p>
@@ -12744,7 +12871,7 @@ module 宣言で go モジュールを LuneScript から利用可能です。
 </tbody>
 </table>
 <hr>
-<h2 id="headline-329">
+<h2 id="headline-336">
 *1.3 Go へトランスコンパイルした際の Lua ランタイム*
 </h2>
 <p>
@@ -12795,7 +12922,7 @@ Lua ランタイムは環境依存の少ない構成であるが、
 そこで、 Native Lua ランタイムをリンクしなくても
 トランスコンパイル後のコードを実行できるよう対応している。
 </p>
-<h3 id="headline-330">
+<h3 id="headline-337">
 gopher-lua の利用
 </h3>
 <p>
@@ -12812,7 +12939,7 @@ go build -tags gopherlua
 このオプションを指定することで、
 Lua ランタイムが Native Lua から gopher-lua に切り替わる。
 </p>
-<h4 id="headline-331">
+<h4 id="headline-338">
 gopher-lua の注意点
 </h4>
 <p>
@@ -12849,7 +12976,7 @@ LuneScript と Lua の連携を使用していない場合は
 気にしなくても問題ない範囲ではあるが、
 Native Lua と gopher-lua とでは違いがあることは認識しておく必要がある。
 </p>
-<h3 id="headline-332">
+<h3 id="headline-339">
 他の Lua ランタイム
 </h3>
 <p>
@@ -12911,7 +13038,7 @@ Lua の互換性を確認するテストケースとして使えるのではな�
 イマイチ現実的ではないか。
 </p>
 <hr>
-<h2 id="headline-333">
+<h2 id="headline-340">
 <strong>Go 言語へのトランスコンパイル (検討段階)</strong>
 </h2>
 <p>
@@ -12929,7 +13056,7 @@ LuneScript から Go 言語へのトランスコンパイルを検討中。
 <p>
 ここでは、検討中の内容を記録する。
 </p>
-<h3 id="headline-334">
+<h3 id="headline-341">
 ねらい
 </h3>
 <p>
@@ -12979,7 +13106,7 @@ C 言語での GC 実装が思うように進まなかったので、
 </ul>
 </li>
 </ul>
-<h3 id="headline-335">
+<h3 id="headline-342">
 値
 </h3>
 <table>
@@ -13068,7 +13195,7 @@ C 言語での GC 実装が思うように進まなかったので、
 </tr>
 </tbody>
 </table>
-<h4 id="headline-336">
+<h4 id="headline-343">
 int/real の扱い
 </h4>
 <p>
@@ -13078,7 +13205,7 @@ LuneScript int/real は、 go の type alias を使用して次のように定�
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="kt">int</span>
 <span class="kd">type</span> <span class="nx">LnsReal</span> <span class="p">=</span> <span class="kt">float64</span></code></pre></div>
 </div>
-<h4 id="headline-337">
+<h4 id="headline-344">
 nilable の扱い
 </h4>
 <p>
@@ -13086,33 +13213,33 @@ LuneScript の nilable は、そのままでは元の値として扱えない。
 しかし、等しいかどうかのチェックは行なえる。
 これは go と LuneScript と同じ。
 </p>
-<h4 id="headline-338">
+<h4 id="headline-345">
 真偽値の扱い
 </h4>
 <p>
 LuneScript は nil と false が偽で、それ以外は真となる。
 go は true/false で判断が必要なので、 LuneScript 用の条件変換関数を用意する。
 </p>
-<h4 id="headline-339">
+<h4 id="headline-346">
 and/or の扱い
 </h4>
 <p>
 LuneScript の and/or は論理演算ではなく、式の評価を制御し、評価結果も bool ではない。
 go は評価結果が bool になる。
 </p>
-<h4 id="headline-340">
+<h4 id="headline-347">
 Generics の扱い
 </h4>
 <p>
 go は Generics がないので、 Generics の型は全て interface{} で扱う。
 </p>
-<h4 id="headline-341">
+<h4 id="headline-348">
 Set の扱い
 </h4>
 <p>
 go は Set がないので、 Map で代用する。   
 </p>
-<h3 id="headline-342">
+<h3 id="headline-349">
 多値返却
 </h3>
 <p>
@@ -13164,7 +13291,7 @@ hoge() が x, y を返す多値返却の関数としたとき、それぞれ次�
     <span class="k">return</span> <span class="nx">multi</span><span class="p">[</span><span class="mi">0</span><span class="p">].(</span><span class="kt">int</span><span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h3 id="headline-343">
+<h3 id="headline-350">
 クラスと継承
 </h3>
 <p>
@@ -13206,7 +13333,7 @@ class SubSub extend Sub {
    }
 }</code></pre>
 </div>
-<h4 id="headline-344">
+<h4 id="headline-351">
 Go による等価コード
 </h4>
 <p>
@@ -13351,10 +13478,10 @@ Go による等価コードを示す
     <span class="nf">testCast</span><span class="p">(</span> <span class="nf">NewParent</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h4 id="headline-345">
+<h4 id="headline-352">
 継承実現方法
 </h4>
-<h5 id="headline-346">
+<h5 id="headline-353">
 Parent クラス
 </h5>
 <p>
@@ -13369,7 +13496,7 @@ class Parent {
    }
 }</code></pre>
 </div>
-<h6 id="headline-347">
+<h6 id="headline-354">
 データ構造
 </h6>
 <p>
@@ -13419,7 +13546,7 @@ ParentDownCast は、ダウンキャスト用にクラスごとに定義する
 </p>
 </li>
 </ul>
-<h6 id="headline-348">
+<h6 id="headline-355">
 メソッド
 </h6>
 <p>
@@ -13430,7 +13557,7 @@ Parent クラスのメソッドを表現するため、次のレシーバ関数�
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val1</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h6 id="headline-349">
+<h6 id="headline-356">
 コンストラクタ
 </h6>
 <p>
@@ -13458,7 +13585,7 @@ FP の設定
 </p>
 </li>
 </ul>
-<h6 id="headline-350">
+<h6 id="headline-357">
 Parent クラスの使用方法
 </h6>
 <p>
@@ -13471,7 +13598,7 @@ Parent は次のように使用する。
 <p>
 メソッドをコールする場合、必ず FP インタフェースを介してコールする。
 </p>
-<h5 id="headline-351">
+<h5 id="headline-358">
 Sub クラス
 </h5>
 <p>
@@ -13489,7 +13616,7 @@ class Sub extend Parent {
    }
 }</code></pre>
 </div>
-<h6 id="headline-352">
+<h6 id="headline-359">
 データ構造
 </h6>
 <p>
@@ -13534,7 +13661,7 @@ Sub 構造体は、Parent 構造体のデータと、 Sub で定義している�
 </p>
 </li>
 </ul>
-<h6 id="headline-353">
+<h6 id="headline-360">
 メソッド
 </h6>
 <p>
@@ -13548,7 +13675,7 @@ Sub クラスのメソッドを表現するため、次のレシーバ関数を�
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h6 id="headline-354">
+<h6 id="headline-361">
 コンストラクタ
 </h6>
 <p>
@@ -13589,7 +13716,7 @@ FP の設定
 </ul>
 </li>
 </ul>
-<h5 id="headline-355">
+<h5 id="headline-362">
 SubSub クラス
 </h5>
 <p>
@@ -13607,7 +13734,7 @@ class SubSub extend Sub {
    }
 }</code></pre>
 </div>
-<h6 id="headline-356">
+<h6 id="headline-363">
 データ構造
 </h6>
 <p>
@@ -13656,7 +13783,7 @@ SubSub 構造体は、Sub 構造体のデータと、 SubSub で定義してい�
 </p>
 </li>
 </ul>
-<h6 id="headline-357">
+<h6 id="headline-364">
 メソッド
 </h6>
 <p>
@@ -13673,7 +13800,7 @@ SubSub クラスのメソッドを表現するため、次のレシーバ関数�
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h7 id="headline-358">
+<h7 id="headline-365">
 override していないメソッド定義
 </h7>
 <p>
@@ -13684,7 +13811,7 @@ SubSub クラスは、 sub2 メソッドを override していない。
 つまりは、SubSub の sub2 メソッドは Sub クラスのメソッドが使用されることになる。
 よって、 Sub.sub2 メソッドをコールしている。
 </p>
-<h6 id="headline-359">
+<h6 id="headline-366">
 コンストラクタ
 </h6>
 <p>
@@ -13726,7 +13853,7 @@ Parent, Sub の FP に &amp;subsub を設定することで、ポリモーフィ
 </ul>
 </li>
 </ul>
-<h5 id="headline-360">
+<h5 id="headline-367">
 IF インタフェース
 </h5>
 <div class="src src-lns">
@@ -13735,7 +13862,7 @@ interface IF {
   pub fn sub1():int;
 }</code></pre>
 </div>
-<h6 id="headline-361">
+<h6 id="headline-368">
 データ構造
 </h6>
 <p>
@@ -13746,7 +13873,7 @@ LuneScript の interface は、 Go のインタフェースをそのまま使用
   <span class="nx">pub</span> <span class="nx">fn</span> <span class="nf">sub1</span><span class="p">():</span><span class="kt">int</span><span class="p">;</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h5 id="headline-362">
+<h5 id="headline-369">
 メソッド呼び出し
 </h5>
 <p>
@@ -13758,7 +13885,7 @@ Parent クラスのメソッドを呼び出すには、次のように行なう�
   <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h6 id="headline-363">
+<h6 id="headline-370">
 parent.FP.sub1() と parent.sub1() の違い
 </h6>
 <p>
@@ -13797,7 +13924,7 @@ Parent クラスに定義しているメソッド呼び出し
 </ul>
 </li>
 </ul>
-<h6 id="headline-364">
+<h6 id="headline-371">
 オーバーヘッド
 </h6>
 <ul>
@@ -13826,7 +13953,7 @@ Parent クラスに定義しているメソッド呼び出し
 </ul>
 </li>
 </ul>
-<h5 id="headline-365">
+<h5 id="headline-372">
 up-cast / down-cast
 </h5>
 <ul>
@@ -13862,7 +13989,7 @@ down-cast は、 interface を型アサーションで実現する。
 </span><span class="c1"></span><span class="nx">parent</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span> <span class="c1">// アップキャスト
 </span><span class="c1"></span><span class="p">(</span><span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)).</span><span class="nf">ToSub</span><span class="p">()</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
 </div>
-<h4 id="headline-366">
+<h4 id="headline-373">
 Class のまとめ
 </h4>
 <ul>
@@ -14029,7 +14156,7 @@ down-cast は、 interface を型アサーションと、ダウンキャスト�
 </ul>
 </li>
 </ul>
-<h3 id="headline-367">
+<h3 id="headline-374">
 シンボル名
 </h3>
 <p>
@@ -14153,7 +14280,7 @@ LuneScript と go のシンボルの関係は次のようになる。
 なお、引数やローカル変数は LuneScript と go とでスコープに違いはないため、
 基本的にそのまま変換する。
 </p>
-<h3 id="headline-368">
+<h3 id="headline-375">
 Lua VM
 </h3>
 <p>
@@ -14216,7 +14343,7 @@ Gopherlua
 <p>
 上記から、 LuneScript のトランスコンパイラでは liblua を利用する。
 </p>
-<h4 id="headline-369">
+<h4 id="headline-376">
 cgo
 </h4>
 <p>
@@ -14269,13 +14396,13 @@ Go からアクセスできるように C パッケージ内に展開される�
 </span><span class="cp">	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))</span></code></pre></div>
 </div>
 <hr>
-<h2 id="headline-370">
+<h2 id="headline-377">
 *lnstags によるタグジャンプ (ソースコードタグシステム) *
 </h2>
 <p>
 LuneScript は、タグジャンプ (ソースコードタグシステム)に対応している。
 </p>
-<h3 id="headline-371">
+<h3 id="headline-378">
 タグジャンプ (ソースコードタグシステム) とは
 </h3>
 <p>
@@ -14291,7 +14418,7 @@ LuneScript は、タグジャンプ (ソースコードタグシステム)に対
 <p>
 シンボル(クラス、関数、変数 etc..)の <strong>参照位置</strong>
 </p>
-<h4 id="headline-372">
+<h4 id="headline-379">
 例
 </h4>
 </li>
@@ -14333,7 +14460,7 @@ Bar クラスの func メソッドの参照位置をリストするには、
 <p>
 lnstags コマンドの使用方法についての詳細は後述する。
 </p>
-<h3 id="headline-373">
+<h3 id="headline-380">
 lnstags の特徴
 </h3>
 <p>
@@ -14372,7 +14499,7 @@ lnstags では、コールされる可能性のあるメソッドを全てリス
 </ul>
 </li>
 </ul>
-<h3 id="headline-374">
+<h3 id="headline-381">
 使い方
 </h3>
 <p>
@@ -14381,18 +14508,48 @@ lnstags は、次の URL で公開している。
 <p>
 &lt;<a href="https://github.com/ifritJP/lnstags">https://github.com/ifritJP/lnstags</a>&gt;
 </p>
-<h4 id="headline-375">
+<h4 id="headline-382">
 ビルド方法
 </h4>
 <p>
-go でビルドする。
+次の 2 つのビルド方法があります。
 </p>
+<ul>
+<li>
+<p>
+go install を利用する
+</p>
+</li>
+<li>
+<p>
+リポジトリを close して make する
+</p>
+</li>
+</ul>
+<p>
+通常は go install で問題ありません。  
+</p>
+<h5 id="headline-383">
+go install 
+</h5>
+<p>
+以下を実行すると、 $GOPATH/bin に lnstags がインストールされます。
+</p>
+<pre class="example">
+go install -tags gopherlua github.com/ifritJP/lnstags@latest
+</pre>
+<h5 id="headline-384">
+go でビルドする。
+</h5>
 <div class="src src-txt">
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ git clone --depth 1 https://github.com/ifritJP/lnstags
 $ cd lnstags/src
 $ make build</code></pre></div>
 </div>
-<h4 id="headline-376">
+<p>
+上記で lnstags/src/lnstags が生成されます。
+</p>
+<h4 id="headline-385">
 ソースコードの解析
 </h4>
 <p>
@@ -14447,7 +14604,7 @@ lnstags は、指定された lns ファイルから import されているモ�
 <p>
 ソースコードの解析結果は、 <strong>lnstags.sqlite3 ファイル</strong> に登録する。
 </p>
-<h4 id="headline-377">
+<h4 id="headline-386">
 DB の更新
 </h4>
 <p>
@@ -14472,7 +14629,7 @@ DB を更新するには、 <strong>次のいずれか</strong> を実行する�
 <pre class="example">
 $ lctags update
 </pre>
-<h5 id="headline-378">
+<h5 id="headline-387">
 lctags update
 </h5>
 <p>
@@ -14488,7 +14645,7 @@ DB に登録されている lns のソースファルイリストを元に、
 <code class="verbatim">lctags update</code> ではなく、
 <code class="verbatim">lctags build</code> を使用しなければならない。
 </p>
-<h4 id="headline-379">
+<h4 id="headline-388">
 問い合わせ
 </h4>
 <p>
@@ -14512,7 +14669,7 @@ inq-at
 <p>
 suffix
 </p>
-<h5 id="headline-380">
+<h5 id="headline-389">
 inq
 </h5>
 </li>
@@ -14557,7 +14714,7 @@ Foo クラスの func メソッドのシンボル名は次になる。
 <p>
 このコマンド <code class="verbatim">lnstags inq def</code> の <strong>def</strong> は、 <strong>定義場所</strong> の問い合わせを指定する。
 </p>
-<h5 id="headline-381">
+<h5 id="headline-390">
 問い合わせモード
 </h5>
 <p>
@@ -14585,7 +14742,7 @@ Foo クラスの func メソッドのシンボル名は次になる。
 </tr>
 </tbody>
 </table>
-<h5 id="headline-382">
+<h5 id="headline-391">
 inq-at
 </h5>
 <p>
@@ -14635,7 +14792,7 @@ bar.func();</code></pre>
 <p>
 また、指定の lns ファイルの AST を解析するため、時間がかかる。
 </p>
-<h5 id="headline-383">
+<h5 id="headline-392">
 suffix
 </h5>
 <p>
@@ -14650,7 +14807,7 @@ suffix はシンボル名の後方一致で完全限定名のリストを取得�
 @mini.Foo.func
 @mini.Bar.func</code></pre></div>
 </div>
-<h3 id="headline-384">
+<h3 id="headline-393">
 emacs から利用する場合
 </h3>
 <p>
@@ -14698,7 +14855,7 @@ M-t, M-r, M-s については、完全限定名を得るために suffix 問い�
 なお、M-t, M-r, M-s にプレフィックス C-u を付けることで、
 カーソル位置の inq-at 問い合わせを行なう。
 </p>
-<h3 id="headline-385">
+<h3 id="headline-394">
 解析時間
 </h3>
 <p>
@@ -14731,7 +14888,7 @@ lnstags は DB の差分をサポートしていない。
 参考までに連絡して欲しい。
 </p>
 <hr>
-<h2 id="headline-386">
+<h2 id="headline-395">
 <strong>Lua のトランスコンパイラ LuneScript を開発した理由</strong>
 </h2>
 <p>
@@ -14751,7 +14908,7 @@ DSP のような処理をさせなければ、
 私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
 よく使う言語の１つである。
 </p>
-<h3 id="headline-387">
+<h3 id="headline-396">
 Lua のトランスコンパイラ LuneScript を開発した理由
 </h3>
 <p>
@@ -14828,7 +14985,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 <p>
 以降で、それぞれについて説明する。
 </p>
-<h4 id="headline-388">
+<h4 id="headline-397">
 楽して安全に書きたい
 </h4>
 <p>
@@ -14881,7 +15038,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 <p>
 これが、私が LuneScript を開発する一番の理由だ。
 </p>
-<h4 id="headline-389">
+<h4 id="headline-398">
 動的型付け言語特有の問題
 </h4>
 <p>
@@ -14899,7 +15056,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 動的型付け言語を利用した場合に、
 問題となり易いことを挙げている。
 </p>
-<h5 id="headline-390">
+<h5 id="headline-399">
 静的なエラーチェックが出来ない
 </h5>
 <p>
@@ -14959,7 +15116,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 まぁ、もっと違うパラダイムなのかもしれないが。
 </p>
-<h5 id="headline-391">
+<h5 id="headline-400">
 他人のコードの内容を把握し難い
 </h5>
 <p>
@@ -15003,7 +15160,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 なんども言うが私は楽をしたいのだ。
 </p>
-<h5 id="headline-392">
+<h5 id="headline-401">
 メンテナンスや機能追加、リファクタリングのリスクが大きい
 </h5>
 <p>
@@ -15065,7 +15222,7 @@ parse したそのままの文字列データを渡してしまう等、
 LuneScript 開発中、何度も設計変更を行ったが、
 もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。
 </p>
-<h5 id="headline-393">
+<h5 id="headline-402">
 コーディング時の補完がイケてない
 </h5>
 <p>
@@ -15094,7 +15251,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 <a href="../completion">../completion</a>
 </p>
-<h5 id="headline-394">
+<h5 id="headline-403">
 テーブル内のフィールドアクセス制御が出来ない
 </h5>
 <p>
@@ -15138,7 +15295,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 問題なのはそういった制御がなく、全てアクセス可能になってしまっていることである。
 </p>
-<h4 id="headline-395">
+<h4 id="headline-404">
 Luaの機能に不満がある
 </h4>
 <p>
@@ -15150,7 +15307,7 @@ Lua はコンパクトでパワフルな言語であるが、
 素の Lua ではサポートされていない機能をサポートすることも
 目的の一つに開発している。
 </p>
-<h5 id="headline-396">
+<h5 id="headline-405">
 nil安全でない
 </h5>
 <p>
@@ -15203,7 +15360,7 @@ nil を取り得ない 非 nilable を別の型として管理することで、
 多階層の nilable データに楽にアクセスするための nil 条件演算子をサポートすることで、
 nil エラーの対応を楽にかつ安全に対応できるようにしている。
 </p>
-<h5 id="headline-397">
+<h5 id="headline-406">
 マクロがない
 </h5>
 <p>
@@ -15241,7 +15398,7 @@ LuneScript では、実装が簡単で、かつ使用する側の学習に負担
 LuneScript のセルフホスティングでもマクロを使用しているが、
 やはりマクロはプログラム言語には無くてはならないものだと改めて感じている。
 </p>
-<h4 id="headline-398">
+<h4 id="headline-407">
 Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
 </h4>
 <p>
@@ -15255,7 +15412,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 他にも組込みを意識した言語はいくつかあるが、
 組込みという条件で見た場合、Lua を越える言語を私は知らない。
 </p>
-<h4 id="headline-399">
+<h4 id="headline-408">
 既に数多くのシステムで Lua を利用している
 </h4>
 <p>
@@ -15268,7 +15425,7 @@ Lua を組み込んでいるシステムは多く存在する。
 <p>
 ちょっと気にいらないからといって、変えられるものではない。
 </p>
-<h3 id="headline-400">
+<h3 id="headline-409">
 最後に
 </h3>
 <p>
@@ -15287,14 +15444,14 @@ Lua には LuneScript があることも検討材料にして欲しい。
 そして、Lua には LuneScript という選択肢もあることを覚えておいて欲しい。
 </p>
 <hr>
-<h2 id="headline-401">
+<h2 id="headline-410">
 <strong>トランスコンパイラ開発のすゝめ</strong>
 </h2>
 <p>
 LuneScript 入門のアドベントカレンダー最後の記事は、
 これまでとは趣向を変えてトランスコンパイラ開発そのものについて扱っていきます。
 </p>
-<h3 id="headline-402">
+<h3 id="headline-411">
 トランスコンパイラ開発をすゝめる理由
 </h3>
 <p>
@@ -15333,7 +15490,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 <p>
 以降では、上記の各項目を説明していきます。
 </p>
-<h4 id="headline-403">
+<h4 id="headline-412">
 現状に対する不満を建設的に解決できる
 </h4>
 <p>
@@ -15410,7 +15567,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 アイデアをソフトウェアで実現出来る能力を持っているからこそ
 「ソフトウェアエンジニア」ではないでしょうか？
 </p>
-<h5 id="headline-404">
+<h5 id="headline-413">
 「コンパイラ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -15472,7 +15629,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 <p>
 最終的にコンパイラを開発するのが、効率の良い方法と言えるでしょう。
 </p>
-<h5 id="headline-405">
+<h5 id="headline-414">
 「インタプリタ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -15501,7 +15658,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 今は実用的なインタプリタ型の言語(スクリプト言語)が世の中にいくつもあります。
 わざわざ自前で作る必要はないでしょう。
 </p>
-<h5 id="headline-406">
+<h5 id="headline-415">
 出力結果が分かり易い
 </h5>
 <p>
@@ -15560,7 +15717,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 一方トランスコンパイラは、
 ライセンスと変換後のコードを調べれば良いだけです。
 </p>
-<h4 id="headline-407">
+<h4 id="headline-416">
 トレンドの技術を確認できる
 </h4>
 <p>
@@ -15615,7 +15772,7 @@ C 言語しか知らないからいつも通りに C 言語で書くことは、
 このように、イマドキの言語の特徴の理解を深めるためにも
 トランスコンパイラの開発は経験として良いものだと言えます。
 </p>
-<h4 id="headline-408">
+<h4 id="headline-417">
 コーディングルールを矯正できる  
 </h4>
 <p>
@@ -15659,7 +15816,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 新しい言語を開発する際は、新しい機能を取り入れるだけでなく、
 普段のコーディングルールを見直し、言語レベルで対応できないか検討するべきだと思います。
 </p>
-<h3 id="headline-409">
+<h3 id="headline-418">
 最後に
 </h3>
 <p>
@@ -15686,7 +15843,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 是非新しいプログラミング言語の開発にチャレンジしてみてください。
 </p>
 <hr>
-<h2 id="headline-410">
+<h2 id="headline-419">
 <strong>イマドキな開発環境でもっと楽しよう</strong>
 </h2>
 <p>
@@ -15753,7 +15910,7 @@ Syntax エラーチェック機能
 <p>
 subfile を認識した検索
 </p>
-<h3 id="headline-411">
+<h3 id="headline-420">
 コード補完機能
 </h3>
 </li>
@@ -15819,7 +15976,7 @@ test のフィールドの補完が次のように行なえます。
 この当たり前の機能をしっかりとコンパイラ自体が提供しているというのは、
 意外に少なかったりします。
 </p>
-<h3 id="headline-412">
+<h3 id="headline-421">
 カーソル位置の型情報確認
 </h3>
 <p>
@@ -15848,7 +16005,7 @@ foreach val, key in { &#34;abc&#34;: 1, &#34;xyz&#34;: 10 } {
 確認したいシンボルにカーソルを移動し、 C-c I を実行することで、
 そのシンボルの型情報を確認できます。
 </p>
-<h3 id="headline-413">
+<h3 id="headline-422">
 Syntax エラーチェック機能
 </h3>
 <p>
@@ -15883,7 +16040,7 @@ let map = { &#34;a&#34;: 1, &#34;b&#34;:2 };</code></pre>
 <p>
 このような、ちょっと見過しがちなエラーもエディタ上で簡単に確認できます。
 </p>
-<h3 id="headline-414">
+<h3 id="headline-423">
 subfile を認識した検索
 </h3>
 <p>
@@ -15915,7 +16072,7 @@ owner.lns, sub1.lns, sub2.lns, sub3.lns の 4 つのファイルを
 sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検索。
 … この処理を自動で行ないます。
 </p>
-<h3 id="headline-415">
+<h3 id="headline-424">
 設定
 </h3>
 <p>
@@ -15972,7 +16129,7 @@ auto-complete
 LuneScript の flymake, auto-complete 対応は、メンテナンスしていません。
 flycheck, company-mode の使用を推奨します。
 </p>
-<h3 id="headline-416">
+<h3 id="headline-425">
 プロジェクト
 </h3>
 <p>
@@ -15993,7 +16150,7 @@ LuneScript は、モジュールパスをプロジェクトからの相対パス
 <div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{}</span>
 </code></pre></div>
 </div>
-<h4 id="headline-417">
+<h4 id="headline-426">
 モジュールのパス
 </h4>
 <p>
@@ -16004,7 +16161,7 @@ proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 にな�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">proj/lune.js
 proj/foo/bar/module1.lsn</code></pre></div>
 </div>
-<h3 id="headline-418">
+<h3 id="headline-427">
 最後に
 </h3>
 <p>
@@ -16026,7 +16183,7 @@ emacs が行なっているのはフロントエンド制御だけで、
 emacs 以外の環境に対応していただけると嬉しいです。
 </p>
 <hr>
-<h2 id="headline-419">
+<h2 id="headline-428">
 <strong>Web ブラウザ上で動作する LuneScript</strong>
 </h2>
 <p>
@@ -16081,7 +16238,7 @@ import() などのモジュールロードが出来ない
 LuneScript の全ての処理をブラウザ上で動作させているため、
 スマホなどでは初回実行に時間が掛ります。
 </p>
-<h3 id="headline-420">
+<h3 id="headline-429">
 技術解説
 </h3>
 <p>
@@ -16124,7 +16281,7 @@ LuneScript コンパイラのロードは、そこそこの時間がかかりま
 サーバ側に負荷は掛りません。
 サーバに必要な機能は、静的コンテンツのホスティングだけです。
 </p>
-<h4 id="headline-421">
+<h4 id="headline-430">
 LuneScript の fengari 対応
 </h4>
 <p>
@@ -16147,7 +16304,7 @@ pairs() を利用していましたが、 fengari Lua VM では ipairs() に切�
 現状、オプションを指定していない場合は pairs() を利用していますが、
 将来はデフォルト状態を逆にすることも検討しています。
 </p>
-<h3 id="headline-422">
+<h3 id="headline-431">
 リファレンスのサンプルコード実行
 </h3>
 <p>
@@ -16162,7 +16319,7 @@ ifritJP.github.io/LuneScript-webFront/contents/lunescript-front.js
 <p>
 <code class="verbatim">lnsFront.setup()</code>, <code class="verbatim">lnsFront.compile()</code> 関数を実行するだけです。
 </p>
-<h4 id="headline-423">
+<h4 id="headline-432">
 lnsFront.setup()
 </h4>
 <p>
@@ -16233,7 +16390,7 @@ lnsFront.compile() を実行すると、
 LuneScript のコードを入力する textarea が複数ある場合、
 lnsFront.setup() をそれぞれで実行します。
 </p>
-<h5 id="headline-424">
+<h5 id="headline-433">
 lnsFront.setup() の注意
 </h5>
 <p>
@@ -16245,7 +16402,7 @@ executeId で登録したボタンをクリックするか、
 lnsFront.compile() を実行することで、
 登録されている textarea 内の LuneScript のコードを実行します。
 </p>
-<h4 id="headline-425">
+<h4 id="headline-434">
 lnsFront.compile()
 </h4>
 <p>
@@ -16283,7 +16440,7 @@ maxTime を省略した場合、デフォルトの 2 秒がリミットになり
 なお 10 秒以上を指定した場合、無効値として扱い、デフォルト値がセットされます。
 </p>
 <hr>
-<h2 id="headline-426">
+<h2 id="headline-435">
 <strong>言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</strong>
 </h2>
 <p>
@@ -16343,7 +16500,7 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
 今後、独自言語を開発しようと考えている方のテスト設計検討に、
 少しでも役にたてれば幸いです。
 </p>
-<h4 id="headline-427">
+<h4 id="headline-436">
 コンパイラは関数
 </h4>
 <p>
@@ -16386,7 +16543,7 @@ Clang は LLVM-IR に変換し、 LLVM が各種コードに変換
 <p>
 日頃作成している関数の UNIT TEST と考え方は全く同じです。
 </p>
-<h4 id="headline-428">
+<h4 id="headline-437">
 コンパイラのテスト
 </h4>
 <p>
@@ -16561,7 +16718,7 @@ result A と result D が同一であることを確認
 セルフホスティングに必要な機能を優先的に実現し、
 出来るだけ早い段階でセルフホスティングに移行することをオススメします。
 </p>
-<h3 id="headline-429">
+<h3 id="headline-438">
 それでもバグは残る
 </h3>
 <p>
@@ -16601,7 +16758,7 @@ result A と result D が同一であることを確認
 再度同じ「穴」が開いた時に検出できるように対応することが
 テストでは重要だと考えます。
 </p>
-<h3 id="headline-430">
+<h3 id="headline-439">
 最後に
 </h3>
 <p>
@@ -16682,7 +16839,7 @@ result A と result D が同一であることを確認
 <p>
 <strong>*これは、検討中の情報です。 現在は利用できません。</strong>
 </p>
-<h3 id="headline-431">
+<h3 id="headline-440">
 Nilable 型
 </h3>
 <p>
@@ -16732,7 +16889,7 @@ unwrap 処理が必須となってしまい面倒です。
 <p>
 そこで、 Nilable 型を利用します。
 </p>
-<h4 id="headline-432">
+<h4 id="headline-441">
 Nilable 型とは
 </h4>
 <p>
@@ -16880,6 +17037,7 @@ Java で言うところの int に対する Integer クラスと思ってくだ�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>

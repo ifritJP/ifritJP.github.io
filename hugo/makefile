@@ -37,6 +37,7 @@ SRCS += cast.org
 SRCS += subfile.org
 SRCS += lazyLoading.org
 SRCS += shebang_main.org
+SRCS += dir.org
 SRCS += async.org
 SRCS += go.org
 SRCS += go_package.org
