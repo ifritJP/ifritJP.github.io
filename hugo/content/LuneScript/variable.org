@@ -404,11 +404,45 @@ immutable な型は、元の型 T に & を付けて &T として表記します
 
 #+BEGIN_SRC lns
 // @lnsFront: error
-let mut list:&List<List<int>> = [[100],[]];
+let list:&List<List<int>> = [[100],[]];
 list[1].insert( 1 ); // ok
 list.insert( [10] ); // error
 #+END_SRC
 
+
+*** 型推論と mutable
+
+前述の通り、 mut 宣言していない変数の型は immutable になります。
+
+ただし、これは型推論を利用した場合です。
+
+mut 宣言していない変数でも、型を明示している場合は、
+その型の mutable に依存します。
+
+例えば以下の場合、
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+let list1:List<int> = [1,2];
+let list2:&List<int> = [1,2];
+let mut list3 = [1,2];
+let list4 = [1,2];
+list1.insert( 3 );
+list2.insert( 3 ); // error
+list3.insert( 3 );
+list4.insert( 3 ); // error
+#+END_SRC
+
+list2 と list4 が immutable な &List<int> になるため、
+=list2.insert( 3 );= と =list4.insert( 3 );= がエラーになります。
+
+なお、以前この仕様は不具合があり、ver 1.2.0 で修正しています。
+以前は、型を明示した場合も mut 宣言しない場合は immutable な型になっていましたが、
+その挙動が変数、メンバ、引数で劣なっていたため、
+現状の仕様に修正しています。
+
+もしも ver 1.2.0 以前の仕様に戻したい場合、
+オプション --legacy-mutable-control を指定してください。
 
 
 ** 複数宣言

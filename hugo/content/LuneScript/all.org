@@ -2848,11 +2848,45 @@ immutable な型は、元の型 T に & を付けて &T として表記します
 
 #+BEGIN_SRC lns
 // @lnsFront: error
-let mut list:&List<List<int>> = [[100],[]];
+let list:&List<List<int>> = [[100],[]];
 list[1].insert( 1 ); // ok
 list.insert( [10] ); // error
 #+END_SRC
 
+
+**** 型推論と mutable
+
+前述の通り、 mut 宣言していない変数の型は immutable になります。
+
+ただし、これは型推論を利用した場合です。
+
+mut 宣言していない変数でも、型を明示している場合は、
+その型の mutable に依存します。
+
+例えば以下の場合、
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+let list1:List<int> = [1,2];
+let list2:&List<int> = [1,2];
+let mut list3 = [1,2];
+let list4 = [1,2];
+list1.insert( 3 );
+list2.insert( 3 ); // error
+list3.insert( 3 );
+list4.insert( 3 ); // error
+#+END_SRC
+
+list2 と list4 が immutable な &List<int> になるため、
+=list2.insert( 3 );= と =list4.insert( 3 );= がエラーになります。
+
+なお、以前この仕様は不具合があり、ver 1.2.0 で修正しています。
+以前は、型を明示した場合も mut 宣言しない場合は immutable な型になっていましたが、
+その挙動が変数、メンバ、引数で劣なっていたため、
+現状の仕様に修正しています。
+
+もしも ver 1.2.0 以前の仕様に戻したい場合、
+オプション --legacy-mutable-control を指定してください。
 
 
 *** 複数宣言
@@ -4175,6 +4209,7 @@ warning を error として扱います。
 ... を利用したサンプルを次に示します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( ... ) : int, ... {
    let argList = [ ... ];
    let mut total = 0;
@@ -4211,6 +4246,7 @@ func() 内で値にアクセスするには unwrap やキャストが必要に�
 型情報を保つには、次のように ~...<type>~ を使用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( ...<int> ) : int, ...<int> {
    let argList = [ ... ];
    let mut total = 0;
@@ -4228,6 +4264,7 @@ int の型情報を保持したまま可変長引数、戻り値を扱うこと�
 なお、次のサンプルの func1() と func2() は同義です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func1( ...<stem!> ) {
    print( ... );
 }
@@ -8566,6 +8603,7 @@ func_C, funcC_1 〜 funcC_3 はロードされません。
 例えば次のようなモジュールがあった場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 print( "hoge" );
 fn func() {
     print( "foo" );
@@ -8578,6 +8616,7 @@ fn func() {
 そして、このモジュールを import する次のモジュールがある場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import Hoge;
 
 print( "bar" );
@@ -8653,6 +8692,7 @@ global を使うケースは少ないと思いますが、注意してくださ�
 例えば以下のようにすることで、 Sub モジュールは遅延ロードされます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import.l Sub;
 #+END_SRC
 
@@ -8690,6 +8730,7 @@ bash では次のように指定します。
 LuneScript では、次のように指定します。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 #! /usr/bin/lnsc -shebang
 #+END_SRC
 
@@ -8700,6 +8741,7 @@ LuneScript では、次のように指定します。
 例えば次のようなファイル hello.lns があった場合、
 
 #+BEGIN_SRC lns 
+// @lnsFront: skip
 #! /usr/bin/lnsc -shebang
 print( "hello world" );
 #+END_SRC
@@ -8938,6 +8980,7 @@ LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承�
 LnsThread クラスは、次のようなクラスです。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 abstract class LnsThread {
    pro abstract fn loop() mut;
 }
@@ -8973,6 +9016,7 @@ __pipe<T> クラスは、 go の chan と等価と思ってください。
 
 __pipe<T> クラスは、次のようなクラスです。
 #+BEGIN_SRC lns
+// @lnsFront: skip
 class __pipe<T> {
   pub fn get() mut : T!;
   pub fn put( val:T! ) mut;
@@ -9003,6 +9047,7 @@ __AsyncItem インタフェースを implement したクラスには、
 上記をまとめると、非同期処理は次のように書きます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 _lune_control use_async;
 
 class Test extend (__AsyncItem,Mapping) {
@@ -9122,7 +9167,8 @@ LuneScript から Lua のコードを直接利用できるという特徴があ�
 例えば、次のようなコードを Go 言語へ変換した後でも動かせます。
 
 #+BEGIN_SRC lns
-let step = 40;
+// @lnsFront: ok
+let step = 30;
 
 // Lua のフィボナッチ関数
 let code = ```
@@ -9459,6 +9505,7 @@ go のパッケージ内にある .lns ファイルを LuneScript で import す
 次のように書きます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 import go/github:com.ifritJP.lnshttpd.lnsservlet;
 #+END_SRC
 
@@ -9499,6 +9546,7 @@ go モジュールを利用する場合、次の追加ルールがあります�
 以下は github.com.ifritJP.lnshttpd の servlet.go を利用する際の宣言例です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 module servlet require "go/github:com.ifritJP.lnshttpd.servlet" of "" {
    pub static fn Start( listenPort:int,
                         handlerList: &List<&lnsservlet.HandlerInfo>,
@@ -10044,7 +10092,7 @@ print( parent.FP.sub1() )
 Sub クラスについて説明する。
 
 #+BEGIN_SRC lns
-// @lnsFront: ok
+// @lnsFront: skip
 class Sub extend Parent {
    let val2:int;
    pub override fn sub1():int {
@@ -10124,7 +10172,7 @@ func newSub(val1,val2 int) *Sub {
 SubSub クラスについて説明する。
 
 #+BEGIN_SRC lns
-// @lnsFront: ok
+// @lnsFront: skip
 class SubSub extend Sub {
    let val3:int;
    pub override fn sub1():int {
@@ -10377,9 +10425,10 @@ LuneScript と go のシンボル名は、次の点で大きく異なる。
 つまり次の LuneScript のソースを go に変換する場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func() {
 }
-pub Class {
+pub class Class {
    let val1:int;
    pub let val2:int;
 }
@@ -10485,6 +10534,7 @@ LuneScript は、タグジャンプ (ソースコードタグシステム)に対
 以下に例を示す。
    
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Foo {
    pub fn func() {
    }
@@ -10503,7 +10553,7 @@ bar.func();
 Foo クラスの func メソッドの定義位置をリストするには、
 次のコマンドを実行する。
 
-#+BEGIN_SRC lns
+#+BEGIN_SRC txt
 $ lnstags inq def @mini.Foo.func
 @mini.Foo.func      2 mini.lns            pub fn func() {
 #+END_SRC
@@ -10511,7 +10561,7 @@ $ lnstags inq def @mini.Foo.func
 Bar クラスの func メソッドの参照位置をリストするには、
 次のコマンドを実行する。
 
-#+BEGIN_SRC lns
+#+BEGIN_SRC txt
 $ lnstags inq ref @mini.Bar.func
 @mini.Bar.func     12 mini.lns         bar.func();
 #+END_SRC
@@ -10638,6 +10688,7 @@ DB に登録されている lns のソースファルイリストを元に、
 inq は、シンボル名を指定して問い合わせを行なう。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Foo {
    pub fn func() {
    }
@@ -10665,7 +10716,7 @@ Foo クラスの func メソッドのシンボル名は次になる。
 そして、次のコマンドを実行することで、
 @mini.Foo.func の定義位置がリストされる。
 
-#+BEGIN_SRC lns
+#+BEGIN_SRC txt
 $ lnstags inq def @mini.Foo.func
 @mini.Foo.func      2 mini.lns            pub fn func() {
 #+END_SRC
@@ -10693,6 +10744,7 @@ $ lnstags inq def @mini.Foo.func
 10 行目の 5 列目にある foo.func() の定義場所を問合せる場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Foo {
    pub fn func() {
    }
@@ -12049,7 +12101,7 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
 この制限により、次の ~new Test( val )~ はエラーになります。
 
 #+BEGIN_SRC lns
-// @lnsFront: ok
+// @lnsFront: skip
 class Test<T> {
    let val:T;
 }
@@ -12065,7 +12117,7 @@ let test = new Test( val ); // error
 「T! を利用する」のケースでは、上記処理は次のように書けます。
 
 #+BEGIN_SRC lns
-// @lnsFront: ok
+// @lnsFront: skip
 class Test<T> {
    let val:T!; // <--- T! とする
 }

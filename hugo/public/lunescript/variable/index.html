@@ -39,7 +39,7 @@
 <meta itemprop="name" content="07. 変数 編">
 <meta itemprop="description" content="今回は LuneScript の変数について説明します。 変数 LuneScript は静的型付け言語であり、変数は型を持ちます。 変数は、次のように let で宣言します。 // @lnsFront: ok let val:int = 1; 上記の例">
 
-<meta itemprop="wordCount" content="4749">
+<meta itemprop="wordCount" content="5070">
 
 
 
@@ -515,11 +515,52 @@ immutable な型は、元の型 T に &amp; を付けて &amp;T として表記�
 </p>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: error
-let mut list:&amp;List&lt;List&lt;int&gt;&gt; = [[100],[]];
+let list:&amp;List&lt;List&lt;int&gt;&gt; = [[100],[]];
 list[1].insert( 1 ); // ok
 list.insert( [10] ); // error</code></pre>
 </div>
-<h3 id="headline-10">
+<h4 id="headline-10">
+型推論と mutable
+</h4>
+<p>
+前述の通り、 mut 宣言していない変数の型は immutable になります。
+</p>
+<p>
+ただし、これは型推論を利用した場合です。
+</p>
+<p>
+mut 宣言していない変数でも、型を明示している場合は、
+その型の mutable に依存します。
+</p>
+<p>
+例えば以下の場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let list1:List&lt;int&gt; = [1,2];
+let list2:&amp;List&lt;int&gt; = [1,2];
+let mut list3 = [1,2];
+let list4 = [1,2];
+list1.insert( 3 );
+list2.insert( 3 ); // error
+list3.insert( 3 );
+list4.insert( 3 ); // error</code></pre>
+</div>
+<p>
+list2 と list4 が immutable な &amp;List&lt;int&gt; になるため、
+<code class="verbatim">list2.insert( 3 );</code> と <code class="verbatim">list4.insert( 3 );</code> がエラーになります。
+</p>
+<p>
+なお、以前この仕様は不具合があり、ver 1.2.0 で修正しています。
+以前は、型を明示した場合も mut 宣言しない場合は immutable な型になっていましたが、
+その挙動が変数、メンバ、引数で劣なっていたため、
+現状の仕様に修正しています。
+</p>
+<p>
+もしも ver 1.2.0 以前の仕様に戻したい場合、
+オプション –legacy-mutable-control を指定してください。
+</p>
+<h3 id="headline-11">
 複数宣言
 </h3>
 <p>
@@ -606,7 +647,7 @@ fn func() {
 これは、 val1 に 1 をセット後に print( val1 ) で val1 を参照しているが、
 次に <code class="verbatim">val1 = 2</code> で val1 を更新後に val1 を参照していないためである。
 </p>
-<h4 id="headline-12">
+<h4 id="headline-13">
 クロージャのアクセスチェック
 </h4>
 <p>
@@ -659,7 +700,7 @@ fn func() {
 <p>
 クロージャのアクセスチェックについては実験的な機能である。
 </p>
-<h3 id="headline-13">
+<h3 id="headline-14">
 特殊シンボル
 </h3>
 <p>
@@ -691,7 +732,7 @@ fn func() {
 なお、 <code>__mod__</code>, <code>__func__</code> が展開する名前の書式は、
 <strong>将来変更する可能性</strong> があります。
 </p>
-<h2 id="headline-14">
+<h2 id="headline-15">
 型変換(キャスト)
 </h2>
 <p>
@@ -723,7 +764,7 @@ let val2:int = val1; // error</code></pre>
 <p>
 <a href="../cast">../cast</a>
 </p>
-<h2 id="headline-15">
+<h2 id="headline-16">
 参照
 </h2>
 <p>
@@ -828,7 +869,7 @@ wrapList の 3 番目に新しいリストオブジェクトを追加してい�
 インクリメントされた値が出力される。
 wrapList[3] は新しいリストオブジェクトになるため、インクリメントの影響はない。
 </p>
-<h2 id="headline-16">
+<h2 id="headline-17">
 まとめ
 </h2>
 <p>
@@ -922,6 +963,8 @@ Lua を静的片付けで扱う際に必要となる、最低限の機能を満�
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
   
 </li>
