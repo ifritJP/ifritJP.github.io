@@ -1,0 +1,78 @@
+#+TITLE: LuneScript の import と meta 
+#+DATE: 2021-05-04
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: lunescript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+LuneScript は、モジュールを利用する際に import 命令を使用する。
+
+この import 命令は、次の処理を行う。
+
+- 指定のモジュールの .lns ファイルを解析し、何を定義しているかを調べる
+- shebang などで起動した場合は、指定のモジュールをロードする
+
+今回は、前者の話をする。
+
+* meta 情報
+
+モジュールがどんなクラスや関数や変数を定義しているのかを示す情報を、
+LuneScript では meta 情報と呼ぶ。
+
+この meta 情報は、
+そのモジュール内で pub (あるいは pro) 宣言されている情報からなる。
+
+これには次の情報を含む。
+
+- 公開しているシンボル名
+- 公開しているシンボルの型情報
+- そのモジュールが参照している外部モジュール情報   
+   
+これらは、 .lns ファイルを解析することで取得できる。
+
+この解析には時間がかかるため、
+解析した情報を .meta ファイルとして記録しておき、
+.lns ファイルが更新されない場合は .lns ファイルを解析する代わりに、
+記録しておいた .meta をロードすることで解析時間を短縮している。
+
+
+.meta ファイルは lua の table 定義として記録してあり、
+lua で .meta ファイルをロードすることで型を構成するために必要な table が読み込まれ、
+その table 内の情報を元に LuneScript の型情報を生成する。
+
+一般には、 テキストフォーマットよりもバイナリフォーマットの方が高速に処理できる。
+
+LuneScript の .meta ファイルも、
+テキストフォーマットではなくバイナリフォーマットの方が高速に処理できる可能性がある。
+
+しかし、次の理由から .meta ファイルを lua の table 定義として記録している。
+
+- LuneScript は元々 Lua VM 上で動作するプログラムだったため、
+  VM 上でバイナリ操作する api を作成するよりも、
+  Lua VM のネイティブの load 命令を使用する方が高速に処理できる。
+- meta ファイルの syntax 変更する場合、
+  バイナリフォーマットよりもテキストフォーマットの方がやり易い。
+- 不具合があった時に、テキストフォーマットの方が追い易い。
+
+* 型情報
+
+コード上に宣言した型情報は、
+LuneScript トランスコンパイラ内では =Ast.TypeInfo= クラスで管理される。
+=Ast.TypeInfo= インスタンスは、 1 つの型ごとに 1 つ生成される。
+
+そして、個々の =Ast.TypeInfo= インスタンスは、
+=Ast.ProcessInfo= クラスで管理される。
+
+=Ast.TypeInfo= にか、型を識別する ID が付加される。
+この ID は、 =Ast.ProcessInfo= ごとにユニークな値が振られる。
+
+つまり、
+1 つの =Ast.ProcessInfo= 内の =Ast.TypeInfo= は、
+同じ ID を持つ =Ast.TypeInfo= は存在しないが、
+異なる =Ast.ProcessInfo= においては、
+同じ ID を持つ =Ast.TypeInfo= が存在する可能性がある。
+
+この =Ast.ProcessInfo= から meta 情報を生成する。
+そして import 時には、meta 情報から =Ast.ProcessInfo= を生成する。

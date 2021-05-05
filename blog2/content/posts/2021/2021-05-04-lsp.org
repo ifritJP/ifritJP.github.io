@@ -1,0 +1,188 @@
+#+TITLE: Language Server Protocol (LSP) メモ
+#+DATE: 2021-05-04
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: LSP
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+Language Server Protocol (LSP) の調査メモ。
+
+後でまとめる予定だが、まずは調べた情報を列挙していく。
+
+* LSP とは
+
+LSP は、プログラミング開発する上で役立つ様々なサポート機能を定義するプロトコル。
+
+従来は、エディタの開発者や、エディタの拡張機能開発者が
+プログラミング言語毎に様々なサポート機能の開発を行なっていた。
+
+これにより、同じプログラミング言語でも、エディタごとに異る実装が必要で、
+あるエディタでは使える機能が、別のエディタでは使えないなどの問題が発生していた。
+
+この問題を解決するためプログラミング言語のエディタサポートに必要な機能を抽象化し、
+プロトコルとして定義することで、
+ある言語のサポート機能を実装すれば、
+どのエディタでも同じサポート機能を利用できるように開発されているのが、
+LSP である。
+
+<https://microsoft.github.io/language-server-protocol/specifications/specification-current>
+
+* JSON-RPC
+
+LSP は、クライアント・サーバ型のプロトコルであり、
+JSON-RCP を利用して通信を行なう。
+
+JSON-RCP は、その名の通り JSON を利用するプロコトルである。
+
+JSON-RCP では、やり取りする JSON のサイズを Context-Length で通知する。
+
+#+BEGIN_SRC txt
+Content-Length: 123\r\n
+\r\n
+{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "hoge",
+    "params": {
+        ...
+    }
+}
+#+END_SRC
+
+JSON-RPC は、クライアントからのリクエストをサーバが受け、
+そのリクエストの処理結果をサーバが返すが、
+http のような同期型の通信ではなく非同期型の通信である。
+たとえば、クライアントはサーバからのレスポンスを待たずに複数の
+リクエストを通知できる。
+
+このため、 JSON-RPC の JSON には、
+リクエストを識別するための "id" が付加されていて、 
+リクエストの id と、それに対応するレスポンスには同じ id が付加される。
+
+リクエストが、どのような処理をサーバに依頼するのかを識別する情報として、
+"method" がある。そして、その method の追加情報として "params" を指定する。
+
+これらの内容は、 JSON-RCP を利用する実際のプロトコルで定義される。
+
+なお JSON-RCP は、クライアントからのリクエストとそれのレスポンスだけでなく、
+サーバからの通知 (notification)と、
+レスポンスを必要としないクライアントからの通知(notification)がある。
+
+これらレスポンスを必要しない通知(notification)には、id が付加されない。
+
+これら通信が、 1 つのセッション上で行なわれる。
+
+このセッションは TCP で行なっても、 stdio で行なっても構わない。
+
+* LSP の JSON-RPC
+
+ここでは LSP の JSON-RPC について示す。
+
+** LSP 初期化フロー
+  
+以下に LSP 初期化フローを示す。
+
+- =<-= はクライアントからのリクエスト
+- =->= はサーバからのレスポンス
+- ~<=~ はクライアントからの通知 (サーバからのレスポンスが不要)
+
+#+BEGIN_SRC txt
+<- initialize
+-> initialize
+<= initialized
+#+END_SRC
+
+- LSP の初期化は、クライアントからの initialized リクエストで始まる。
+- サーバは、initialized リクエストを受け初期化を行ない結果を返す。
+- クライアントはサーバからのレスポンスを受けて、
+  通信に必要な全ての準備が整ったことを示すため、 initialized を通知する。
+
+initialize method において、
+クライアント、サーバそれぞれの能力情報が付加される。
+
+クライアント、サーバそれぞれ、その能力に応じて処理を更新する。
+
+LSP の初期化は必ずこのフローで行ない、
+このフローが終了するまで他の通信は行なってはならない。
+
+** did
+
+LSP では、編集中のファイルを did という概念で管理する。
+
+プログラミングは基本的にソースコードをストレージに保存し、
+その保存したファイルを元にコンパイルなどを行なう。
+
+しかし、プログラミングのサポート機能はコーディング中に実行するのが一般的であり、
+コーディング中のコードが常にストレージに保存されているとは限らない。
+また、ストレージへの保存は時間がかかるため、
+サポート機能の実行のたびにストレージに保存するのは効率が悪い。
+
+そこで、クライアント内でコーディング中のコードを、
+ストレージに保存せずにサーバ側と同期管理する必要がある。
+
+それを管理するのが did である。
+
+クライアントは、ユーザがコードを編集すると、
+その編集内容をサーバに通知する。
+サーバは、その編集内容をサーバ内の did に反映する。
+これによって、クライアントで編集中のコードと、
+サーバの did 内のコードの整合性が保たれる。
+
+編集内容は、部分更新情報が送られるケースと、
+全体更新情報が送られるケースがある。
+
+部分更新情報は、開始・終了位置 (lineno,column) と、
+その領域を置き換える文字列情報が送られる。
+全体更新情報は、文字列情報だけが送れれ、 did 全体を新しくその文字列に置き換える。
+
+部分更新情報は、通信量が少なくすむため高速に処理できる。
+しかし、更新処理を間違えると、クライアントとサーバ間で不整合が発生するため、
+更新処理には注意が必要である。
+
+なお、サーバ側が部分更新をサポートするの能力情報を
+initialize のレスポンスとして返すことができる。
+
+クライアントはその能力情報を見て、
+サーバが部分更新をサポートしていない場合は、全体更新で通知を行なう。
+
+つまり、サーバ開発の序盤や、対象のコードサイズが十分小さいケースでは、
+部分更新を非サポートとして能力を返すことで、サーバ側の機能をシンプルに出来る。
+
+** message
+
+サーバから通知される message には次の 2 つがある。
+
+- logMessage
+- showMessage  
+
+logMessage は積極的にはユーザに表示されないメッセージで、
+showMessage はユーザに表示されるメッセージ。
+
+** 主な method
+
+後で調べる。
+   
+- "initialize"
+- "initialized"
+- "exit"
+- "shutdown"
+- "client/registerCapability"
+- "textDocument/completion"
+- "textDocument/didChange"
+- "textDocument/didClose"
+- "textDocument/didOpen"
+- "textDocument/didSave"
+- "textDocument/documentHighlight"
+- "textDocument/documentSymbol"
+- "textDocument/hover"
+- "textDocument/publishDiagnostics"
+- "textDocument/signatureHelp"
+- "textDocument/willSave"
+- "window/logMessage"
+- "window/showMessage"
+- "workspace/configuration"
+- "workspace/didChangeConfiguration"
+- "workspace/didChangeWatchedFiles"
+- "workspace/didChangeWatchedFiles-0"
