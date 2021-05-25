@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        LuneScript のトランスコンパイル時間を 785 パーセント改善した件 - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="前回から引き続き LuneScript のトランスコンパイル時間短縮を行なっています。 今回の時間短縮は以下の通りです。 lua go lua/go 改善前(6e5661a9) 25.69 sec 5.84 sec 440% 改" />
+    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <title>LuneScript のトランスコンパイル時間を 785 パーセント改善した件 - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <meta property="og:title" content="LuneScript のトランスコンパイル時間を 785 パーセント改善した件" />
+<meta property="og:description" content="前回から引き続き LuneScript のトランスコンパイル時間短縮を行なっています。 今回の時間短縮は以下の通りです。 lua go lua/go 改善前(6e5661a9) 25.69 sec 5.84 sec 440% 改" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-25-lunescript-improved-build-time/" />
+<meta property="article:published_time" content="2021-05-25T00:00:00+00:00" />
+<meta property="article:modified_time" content="2021-05-25T00:00:00+00:00" />
+<meta itemprop="name" content="LuneScript のトランスコンパイル時間を 785 パーセント改善した件">
+<meta itemprop="description" content="前回から引き続き LuneScript のトランスコンパイル時間短縮を行なっています。 今回の時間短縮は以下の通りです。 lua go lua/go 改善前(6e5661a9) 25.69 sec 5.84 sec 440% 改">
+<meta itemprop="datePublished" content="2021-05-25T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2021-05-25T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1717">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LuneScript のトランスコンパイル時間を 785 パーセント改善した件"/>
+<meta name="twitter:description" content="前回から引き続き LuneScript のトランスコンパイル時間短縮を行なっています。 今回の時間短縮は以下の通りです。 lua go lua/go 改善前(6e5661a9) 25.69 sec 5.84 sec 440% 改"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-25-lunescript-improved-build-time/" class="title">LuneScript のトランスコンパイル時間を 785 パーセント改善した件</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-25 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-25</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-16-lunescript-thread-mutable-control/" class="title">LuneScript のスレッドにおける mutable 制御</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-16 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-16</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-15-go-func-performance/" class="title">Go の関数パフォーマンス</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-15 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-15</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lsp/" class="title">Language Server Protocol (LSP) メモ</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-04</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lunescript-meta/" class="title">LuneScript の import と meta</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-04</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2021/2021-05-25-lunescript-improved-build-time/"
+    >LuneScript のトランスコンパイル時間を 785 パーセント改善した件</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-25-lunescript-improved-build-time/" class="article-date">
+  <time datetime="2021-05-25 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-25</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2021/2021-05-25-lunescript-improved-build-time/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1717</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">4 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+前回から引き続き LuneScript のトランスコンパイル時間短縮を行なっています。
+</p>
+<p>
+今回の時間短縮は以下の通りです。
+</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>lua</th>
+<th>go</th>
+<th>lua/go</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>改善前(6e5661a9)</td>
+<td>25.69 sec</td>
+<td>5.84 sec</td>
+<td>440%</td>
+</tr>
+<tr>
+<td>改善後(364095ef)</td>
+<td>17.42 sec</td>
+<td>2.22 sec</td>
+<td>785%</td>
+</tr>
+<tr>
+<td>改善率(改善前/改善後)</td>
+<td>147%</td>
+<td>263%</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>
+この表は、セルフホスティングしているソースのトランスコンパイル時間の計測結果を
+示しています。
+lua VM で動作させた lnsc と、go でビルドした lnsc で計測しています。
+</p>
+<p>
+改善前の 6e5661a9 は、5/6 のバージョンです。
+改善後の 364095ef は、5/25 のバージョンです。
+</p>
+<p>
+この表の通り、 改善後の Lua と go のトランスコンパイル時間を比べると 
+<strong>(/ 17.42 2.22) 7.846846846846847 ≒ 785%</strong>  改善しています。
+</p>
+<p>
+また、改善前と改善後の go の時間を比べると、 263% 改善しています。
+</p>
+<p>
+今回は以下の高速化を行ないました。
+</p>
+<ul>
+<li>
+<p>
+meta 情報処理の高速化
+</p>
+</li>
+<li>
+<p>
+ast から lua, go へ変換する処理の並列化
+</p>
+</li>
+</ul>
+<p>
+以降では、今回の高速化方法ついて説明します。
+</p>
+<h2 id="headline-1">
+meta 情報処理の高速化
+</h2>
+<p>
+LuneScript は、モジュールをインポートする際、
+そのモジュールが何のクラスや関数を公開いているか？を解析します。
+この「何のクラスや関数を公開しているか」の情報が meta 情報です。
+</p>
+<p>
+この meta 情報を解析するには時間がかかるため、
+解析した meta 情報は .meta ファイルとして保存します。
+そして、 .meta ファイルがある場合は、そのファイルから meta 情報を取得します。
+</p>
+<p>
+個々の .lns ファイルを一つずつトランスコンパイルする際は、
+この .meta から取得するのが高速化として重要です。
+</p>
+<p>
+一方で、複数の .lns ファイルを一括してトランスコンパイルする際は、
+この方法は多くの無駄な処理が含まれます。
+</p>
+<h3 id="headline-2">
+meta 情報の処理
+</h3>
+<p>
+.meta ファイルを生成し、
+生成したファイルを読み込んで meta 情報を構築するには、
+以下の処理が必要です。
+</p>
+<ul>
+<li>
+<p>
+.lns ファイルを解析し AST を得る。
+</p>
+</li>
+<li>
+<p>
+AST に含まれる .eta 情報から .meta ファイルを出力する。
+</p>
+</li>
+<li>
+<p>
+.meta ファイルを読み込み meta 情報を構築する。
+</p>
+</li>
+</ul>
+<p>
+ちなみに、この .meta ファイルを読み込み meta 情報を構築する処理を、
+ここでは import 処理と言います。
+</p>
+<h3 id="headline-3">
+2 つのファイルを処理するケース
+</h3>
+<p>
+例えば、 2 つのファイル(a.lns, b.lns: b.lns から a.lns を import している)を
+一括でトランスコンパイルする場合は以下になります。
+</p>
+<ul>
+<li>
+<p>
+a.lns ファイルを解析し AST_a を得る。
+</p>
+</li>
+<li>
+<p>
+AST_a に含まれる meta_a 情報から a.meta ファイルを出力する。
+</p>
+</li>
+<li>
+<p>
+b.lns ファイルを解析し AST_b を得る。
+</p>
+<ul>
+<li>
+<p>
+この解析途中に <strong>a.meta を読み込み、 meta_a 情報を構築する。</strong>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+AST_b に含まれる meta_b 情報から b.meta ファイルを出力する。
+</p>
+</li>
+</ul>
+<p>
+ここで、
+「この解析途中に a.meta を読み込み、 meta_a 情報を構築する。」 は無駄です。
+</p>
+<p>
+なぜならば、「meta_a 情報」は AST_a に含まれており、
+AST_a はメモリ上に残っているため、
+「a.meta を読み込み、 meta_a 情報を構築する」ことなく、
+メモリ上の AST_a から meta_a を取得できるからです。
+</p>
+<h3 id="headline-4">
+import 処理の変更
+</h3>
+<p>
+以下のように import 処理を変更します。
+</p>
+<ul>
+<li>
+<p>
+a.lns ファイルを解析し AST_a を得る。
+</p>
+</li>
+<li>
+<p>
+AST_a に含まれる meta_a 情報から a.meta ファイルを出力する。
+</p>
+</li>
+<li>
+<p>
+b.lns ファイルを解析し AST_b を得る。
+</p>
+<ul>
+<li>
+<p>
+この解析途中に <strong>AST_a に含まれる meta_a 情報を取得する。</strong>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+AST_b に含まれる meta_b 情報から b.meta ファイルを出力する。
+</p>
+</li>
+</ul>
+<p>
+<strong>a.meta を読み込み、 meta_a 情報を構築する。</strong> 処理と、
+<strong>AST_a に含まれる meta_a 情報を取得する。</strong> 処理を比較すれば、
+圧倒的に後者の方が高速に処理できます。
+</p>
+<p>
+<em>やっていることは非常に単純ですが、これを実現するのは結構大変でした。。</em>
+</p>
+<h2 id="headline-5">
+ast から lua, go へ変換する処理の並列化
+</h2>
+<p>
+トランスコンパイルは、以下の処理行ないます。
+</p>
+<ul>
+<li>
+<p>
+.lns ファイルを解析して AST を取得する
+</p>
+</li>
+<li>
+<p>
+AST から .lua, .go を生成する  
+</p>
+</li>
+</ul>
+<p>
+これを .lns ファイル分実行します。
+</p>
+<p>
+例えば a.lns, b.lns, c.lns の 3 つのファイルがあった場合、
+次の通り処理します。
+</p>
+<ul>
+<li>
+<p>
+a.lns ファイルを解析して AST_a を取得する
+</p>
+</li>
+<li>
+<p>
+AST_a から .lua, .go を生成する  
+</p>
+</li>
+<li>
+<p>
+b.lns ファイルを解析して AST_b を取得する
+</p>
+</li>
+<li>
+<p>
+AST_b から .lua, .go を生成する  
+</p>
+</li>
+<li>
+<p>
+c.lns ファイルを解析して AST_c を取得する
+</p>
+</li>
+<li>
+<p>
+AST_c から .lua, .go を生成する  
+</p>
+</li>
+</ul>
+<p>
+ここで、
+<strong>「AST_a から .lua, .go を生成する」</strong> 、
+<strong>「AST_b から .lua, .go を生成する」</strong> 、
+<strong>「AST_c から .lua, .go を生成する」</strong> の処理は、
+基本的には独立して処理できます。
+</p>
+<p>
+つまり、これら処理は並列して実行可能です。
+</p>
+<p>
+そこで go rutine を利用して、並列化しています。
+</p>
+<p>
+しかり、 直感的に <strong>並列化可能</strong> と言っても、
+実際に安全に並列化ができるかどうかは別の話です。
+</p>
+<p>
+シングルスレッドでは問題にならないことも、
+マルチスレッドにすると問題になることが良くあります。
+</p>
+<p>
+今回の <strong>並列化処理</strong> を実現するにあたり、
+マルチスレッド化を安全に論理的に実現する方法を、
+LuneScript に追加しました。
+</p>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-16-lunescript-thread-mutable-control/" title="LuneScript のスレッドにおける mutable 制御"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2021
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

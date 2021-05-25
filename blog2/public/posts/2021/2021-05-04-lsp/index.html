@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        Language Server Protocol (LSP) メモ - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="Language Server Protocol (LSP) の調査メモ。 後でまとめる予定だが、まずは調べた情報を列挙していく。 LSP とは LSP は、プログラミング開発する上で役立つ様々なサポート機能を定" />
+    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <title>Language Server Protocol (LSP) メモ - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <meta property="og:title" content="Language Server Protocol (LSP) メモ" />
+<meta property="og:description" content="Language Server Protocol (LSP) の調査メモ。 後でまとめる予定だが、まずは調べた情報を列挙していく。 LSP とは LSP は、プログラミング開発する上で役立つ様々なサポート機能を定" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lsp/" />
+<meta property="article:published_time" content="2021-05-04T00:00:00+00:00" />
+<meta property="article:modified_time" content="2021-05-04T00:00:00+00:00" />
+<meta itemprop="name" content="Language Server Protocol (LSP) メモ">
+<meta itemprop="description" content="Language Server Protocol (LSP) の調査メモ。 後でまとめる予定だが、まずは調べた情報を列挙していく。 LSP とは LSP は、プログラミング開発する上で役立つ様々なサポート機能を定">
+<meta itemprop="datePublished" content="2021-05-04T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2021-05-04T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="2067">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Language Server Protocol (LSP) メモ"/>
+<meta name="twitter:description" content="Language Server Protocol (LSP) の調査メモ。 後でまとめる予定だが、まずは調べた情報を列挙していく。 LSP とは LSP は、プログラミング開発する上で役立つ様々なサポート機能を定"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-25-lunescript-improved-build-time/" class="title">LuneScript のトランスコンパイル時間を 785 パーセント改善した件</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-25 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-25</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-16-lunescript-thread-mutable-control/" class="title">LuneScript のスレッドにおける mutable 制御</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-16 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-16</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-15-go-func-performance/" class="title">Go の関数パフォーマンス</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-15 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-15</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lsp/" class="title">Language Server Protocol (LSP) メモ</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-04</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lunescript-meta/" class="title">LuneScript の import と meta</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-04</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2021/2021-05-04-lsp/"
+    >Language Server Protocol (LSP) メモ</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lsp/" class="article-date">
+  <time datetime="2021-05-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-04</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2021/2021-05-04-lsp/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2067</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">5 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+Language Server Protocol (LSP) の調査メモ。
+</p>
+<p>
+後でまとめる予定だが、まずは調べた情報を列挙していく。
+</p>
+<h2 id="headline-1">
+LSP とは
+</h2>
+<p>
+LSP は、プログラミング開発する上で役立つ様々なサポート機能を定義するプロトコル。
+</p>
+<p>
+従来は、エディタの開発者や、エディタの拡張機能開発者が
+プログラミング言語毎に様々なサポート機能の開発を行なっていた。
+</p>
+<p>
+これにより、同じプログラミング言語でも、エディタごとに異る実装が必要で、
+あるエディタでは使える機能が、別のエディタでは使えないなどの問題が発生していた。
+</p>
+<p>
+この問題を解決するためプログラミング言語のエディタサポートに必要な機能を抽象化し、
+プロトコルとして定義することで、
+ある言語のサポート機能を実装すれば、
+どのエディタでも同じサポート機能を利用できるように開発されているのが、
+LSP である。
+</p>
+<p>
+&lt;<a href="https://microsoft.github.io/language-server-protocol/specifications/specification-current">https://microsoft.github.io/language-server-protocol/specifications/specification-current</a>&gt;
+</p>
+<h2 id="headline-2">
+JSON-RPC
+</h2>
+<p>
+LSP は、クライアント・サーバ型のプロトコルであり、
+JSON-RCP を利用して通信を行なう。
+</p>
+<p>
+JSON-RCP は、その名の通り JSON を利用するプロコトルである。
+</p>
+<p>
+JSON-RCP では、やり取りする JSON のサイズを Context-Length で通知する。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">Content-Length: 123\r\n
+\r\n
+{
+    &#34;jsonrpc&#34;: &#34;2.0&#34;,
+    &#34;id&#34;: 1,
+    &#34;method&#34;: &#34;hoge&#34;,
+    &#34;params&#34;: {
+        ...
+    }
+}</code></pre></div>
+</div>
+<p>
+JSON-RPC は、クライアントからのリクエストをサーバが受け、
+そのリクエストの処理結果をサーバが返すが、
+http のような同期型の通信ではなく非同期型の通信である。
+たとえば、クライアントはサーバからのレスポンスを待たずに複数の
+リクエストを通知できる。
+</p>
+<p>
+このため、 JSON-RPC の JSON には、
+リクエストを識別するための &#34;id&#34; が付加されていて、 
+リクエストの id と、それに対応するレスポンスには同じ id が付加される。
+</p>
+<p>
+リクエストが、どのような処理をサーバに依頼するのかを識別する情報として、
+&#34;method&#34; がある。そして、その method の追加情報として &#34;params&#34; を指定する。
+</p>
+<p>
+これらの内容は、 JSON-RCP を利用する実際のプロトコルで定義される。
+</p>
+<p>
+なお JSON-RCP は、クライアントからのリクエストとそれのレスポンスだけでなく、
+サーバからの通知 (notification)と、
+レスポンスを必要としないクライアントからの通知(notification)がある。
+</p>
+<p>
+これらレスポンスを必要しない通知(notification)には、id が付加されない。
+</p>
+<p>
+これら通信が、 1 つのセッション上で行なわれる。
+</p>
+<p>
+このセッションは TCP で行なっても、 stdio で行なっても構わない。
+</p>
+<h2 id="headline-3">
+LSP の JSON-RPC
+</h2>
+<p>
+ここでは LSP の JSON-RPC について示す。
+</p>
+<h3 id="headline-4">
+LSP 初期化フロー
+</h3>
+<p>
+以下に LSP 初期化フローを示す。
+</p>
+<ul>
+<li>
+<p>
+<code class="verbatim">&lt;-</code> はクライアントからのリクエスト
+</p>
+</li>
+<li>
+<p>
+<code class="verbatim">-&gt;</code> はサーバからのレスポンス
+</p>
+</li>
+<li>
+<p>
+<code>&lt;=</code> はクライアントからの通知 (サーバからのレスポンスが不要)
+</p>
+</li>
+</ul>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">&lt;- initialize
+-&gt; initialize
+&lt;= initialized</code></pre></div>
+</div>
+<ul>
+<li>
+<p>
+LSP の初期化は、クライアントからの initialized リクエストで始まる。
+</p>
+</li>
+<li>
+<p>
+サーバは、initialized リクエストを受け初期化を行ない結果を返す。
+</p>
+</li>
+<li>
+<p>
+クライアントはサーバからのレスポンスを受けて、
+通信に必要な全ての準備が整ったことを示すため、 initialized を通知する。
+</p>
+</li>
+</ul>
+<p>
+initialize method において、
+クライアント、サーバそれぞれの能力情報が付加される。
+</p>
+<p>
+クライアント、サーバそれぞれ、その能力に応じて処理を更新する。
+</p>
+<p>
+LSP の初期化は必ずこのフローで行ない、
+このフローが終了するまで他の通信は行なってはならない。
+</p>
+<h3 id="headline-5">
+did
+</h3>
+<p>
+LSP では、編集中のファイルを did という概念で管理する。
+</p>
+<p>
+プログラミングは基本的にソースコードをストレージに保存し、
+その保存したファイルを元にコンパイルなどを行なう。
+</p>
+<p>
+しかし、プログラミングのサポート機能はコーディング中に実行するのが一般的であり、
+コーディング中のコードが常にストレージに保存されているとは限らない。
+また、ストレージへの保存は時間がかかるため、
+サポート機能の実行のたびにストレージに保存するのは効率が悪い。
+</p>
+<p>
+そこで、クライアント内でコーディング中のコードを、
+ストレージに保存せずにサーバ側と同期管理する必要がある。
+</p>
+<p>
+それを管理するのが did である。
+</p>
+<p>
+クライアントは、ユーザがコードを編集すると、
+その編集内容をサーバに通知する。
+サーバは、その編集内容をサーバ内の did に反映する。
+これによって、クライアントで編集中のコードと、
+サーバの did 内のコードの整合性が保たれる。
+</p>
+<p>
+編集内容は、部分更新情報が送られるケースと、
+全体更新情報が送られるケースがある。
+</p>
+<p>
+部分更新情報は、開始・終了位置 (lineno,column) と、
+その領域を置き換える文字列情報が送られる。
+全体更新情報は、文字列情報だけが送れれ、 did 全体を新しくその文字列に置き換える。
+</p>
+<p>
+部分更新情報は、通信量が少なくすむため高速に処理できる。
+しかし、更新処理を間違えると、クライアントとサーバ間で不整合が発生するため、
+更新処理には注意が必要である。
+</p>
+<p>
+なお、サーバ側が部分更新をサポートするの能力情報を
+initialize のレスポンスとして返すことができる。
+</p>
+<p>
+クライアントはその能力情報を見て、
+サーバが部分更新をサポートしていない場合は、全体更新で通知を行なう。
+</p>
+<p>
+つまり、サーバ開発の序盤や、対象のコードサイズが十分小さいケースでは、
+部分更新を非サポートとして能力を返すことで、サーバ側の機能をシンプルに出来る。
+</p>
+<h3 id="headline-6">
+message
+</h3>
+<p>
+サーバから通知される message には次の 2 つがある。
+</p>
+<ul>
+<li>
+<p>
+logMessage
+</p>
+</li>
+<li>
+<p>
+showMessage  
+</p>
+</li>
+</ul>
+<p>
+logMessage は積極的にはユーザに表示されないメッセージで、
+showMessage はユーザに表示されるメッセージ。
+</p>
+<h3 id="headline-7">
+主な method
+</h3>
+<p>
+後で調べる。
+</p>
+<ul>
+<li>
+<p>
+&#34;initialize&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;initialized&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;exit&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;shutdown&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;client/registerCapability&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/completion&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/didChange&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/didClose&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/didOpen&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/didSave&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/documentHighlight&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/documentSymbol&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/hover&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/publishDiagnostics&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/signatureHelp&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;textDocument/willSave&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;window/logMessage&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;window/showMessage&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;workspace/configuration&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;workspace/didChangeConfiguration&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;workspace/didChangeWatchedFiles&#34;
+</p>
+</li>
+<li>
+<p>
+&#34;workspace/didChangeWatchedFiles-0&#34;
+</p>
+</li>
+</ul>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lunescript-meta/" title="LuneScript の import と meta"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            <li class="next">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-15-go-func-performance/"
+                    title="Go の関数パフォーマンス"><span>&nbsp;&nbsp;</span><i
+                        class="icon icon-angle-right" aria-hidden="true"></i></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2021
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

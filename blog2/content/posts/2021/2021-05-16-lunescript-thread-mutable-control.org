@@ -1,5 +1,5 @@
 #+TITLE: LuneScript のスレッドにおける mutable 制御
-#+DATE: 2021-05-04
+#+DATE: 2021-05-16
 # -*- coding:utf-8 -*-
 #+LAYOUT: post
 #+TAGS: lunescript
@@ -105,6 +105,8 @@ go へのトランスコンパイル時は非同期処理をサポートする�
 
 ** 非同期処理インタフェースの実装
 
+*ここの情報は検討中*
+   
 非同期処理は、クラスのメソッドを非同期で処理することで実現する。
 このクラスは、__Runner インタフェースを実装する必要がある。
 
@@ -128,16 +130,16 @@ sub クラスも同様に制限される。
 
 上記制限を満すかどうかを確認するため、以下の制御を追加する。
 
-- async 宣言を追加する。
-  - async 宣言された関数、メソッドは以下の制限に従う。
+- __async 宣言を追加する。
+  - __async 宣言された関数、メソッドは以下の制限に従う。
     - mutable 型を格納する大域変数、あるいはクロージャの変数にアクセスしない。
     - allmut 型のシンボルの参照がない
-    - noasync な関数をコールしてはならない。
+    - __noasync な関数をコールしてはならない。
 
 - _lune_control に default_async_func を追加する。
   - default_async_func が宣言されたモジュールの関数は、
-    デフォルトで async 宣言が付加される。
-  - async でない関数は、 noasync 宣言する必要がある。
+    デフォルトで __async 宣言が付加される。
+  - __async でない関数は、 __noasync 宣言する必要がある。
   - メソッドは対象外
 
 - _lune_control に control_default_async_all を追加する。
@@ -145,16 +147,17 @@ sub クラスも同様に制限される。
     全ての関数、メソッドにおいて、async 宣言がデフォルトで付加される。
   
 
-- noasync 宣言を追加する。
-  - async 宣言とは逆の働きをする。
+- __noasync 宣言を追加する。
+  - __async 宣言とは逆の働きをする。
   - default_async_func が宣言されていないモジュールの関数は、
-    デフォルトで noasync が付加される。
+    デフォルトで __noasync が付加される。
 
     
-- async インタフェースを追加する
-  - async インタフェースを実装したクラスのメソッドは、
-    default_async_func の関数と同じ制約を受ける。
-  - async インタフェースを実装していないクラスのメソッドは、
-    全て noasync 宣言されているものとして扱う。
+- _lune_control に default_async_this_class を追加する
+  - クラスの body 先頭に default_async_this_class を宣言することで、
+    そのクラス内は control_default_async_all と同じ効果が得られる。
 
-- 
+- _lune_control に default_noasync_this_class を追加する
+  - クラスの body 先頭に default_async_this_class を宣言することで、
+    そのクラス内は control_default_async_all とは逆に、
+    デフォルトが __noasync 宣言になる。
