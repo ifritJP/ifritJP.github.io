@@ -40,7 +40,7 @@
 <meta itemprop="description" content="raspberry pi でローカルサーバを立ち上げているが、 この sdcard 寿命が気になったので調べてみた。 sdcard はでなく、 hdd や ssd で運用する方法もあるが、 sdcard で運用できる方がラ">
 <meta itemprop="datePublished" content="2021-02-17T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2021-02-17T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="948">
+<meta itemprop="wordCount" content="1081">
 
 
 
@@ -302,8 +302,8 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2021/2021-02-17-rasp-sdcard/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">948</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">2 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1081</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">3 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
@@ -391,7 +391,7 @@ avg-cpu:  %user   %nice %system %iowait  %steal   %idle
 <p>
 ただし、書き込み時間はかなりばらつく。
 特に初回の dd コマンドの書き込みはバッファリングが効くためか異様に早いので、
-初回の dd コマンドの計測は捨てて、2回目、3回目を記録する。
+3回目、4回目を記録する。
 </p>
 <ul>
 <li>
@@ -415,6 +415,37 @@ $ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
 </p>
 <p>
 今後どれほど変っていくのか興味深い。
+</p>
+<ul>
+<li>
+<p>
+2021/05/30
+</p>
+</li>
+</ul>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 28.4992 s, 7.4 MB/s
+4$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 60.2642 s, 3.5 MB/s</code></pre></div>
+</div>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ iostat -h
+      tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn Device
+     0.41         3.1k        36.6k      15.9G     187.0G mmcblk0
+$ sudo dumpe2fs -h /dev/mmcblk0p2 | grep &#34;Lifetime writes&#34;
+Lifetime writes:          261 GB</code></pre></div>
+</div>
+<p>
+予想よりもだいぶ多い書き込みが発生している。
+</p>
+<p>
+次回も書き込み速度がさらに下るようなら、
+実験を停止して新しい SD カードに移行した方が良いかもしれない。
 </p>
 
     </div>

@@ -78,7 +78,7 @@ avg-cpu:  %user   %nice %system %iowait  %steal   %idle
 
 ただし、書き込み時間はかなりばらつく。
 特に初回の dd コマンドの書き込みはバッファリングが効くためか異様に早いので、
-初回の dd コマンドの計測は捨てて、2回目、3回目を記録する。
+3回目、4回目を記録する。
 
 - 2021/04/17
 
@@ -96,3 +96,31 @@ $ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
 この時点で既にめちゃくちゃ遅い。
 
 今後どれほど変っていくのか興味深い。
+
+
+- 2021/05/30
+  
+#+BEGIN_SRC txt
+$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 28.4992 s, 7.4 MB/s
+4$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 60.2642 s, 3.5 MB/s
+#+END_SRC
+
+
+#+BEGIN_SRC txt
+$ iostat -h
+      tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn Device
+     0.41         3.1k        36.6k      15.9G     187.0G mmcblk0
+$ sudo dumpe2fs -h /dev/mmcblk0p2 | grep "Lifetime writes"
+Lifetime writes:          261 GB
+#+END_SRC
+
+予想よりもだいぶ多い書き込みが発生している。
+
+次回も書き込み速度がさらに下るようなら、
+実験を停止して新しい SD カードに移行した方が良いかもしれない。
