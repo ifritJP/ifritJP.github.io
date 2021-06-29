@@ -10,188 +10,41 @@ LuneScript による非同期処理を対応しました。
 
 ただし、これは非常に実験的な内容なので参考程度にしてください。
 
-* LuneScript のランタイム
+* __Runner インタフェース
 
-LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
-差を埋めるためのランタイムがあります。
+LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
 
-例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
-
-- lua との連携動作
-- and or 演算子の挙動
-
-これら処理は、ランタイム内で宣言しているデータにアクセスしています。
-
-LuneScript を非同期処理に対応する場合、
-ランタイム内のデータアクセスを排他対応する必要があります。
-
-一方で、 mutex などによる排他制御は、
-シングルスレッド時にもパフォーマンスに影響してしまいます。
-
-今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
-排他制御は最低限にし、
-必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
-
-具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
-スレッド毎に複製し、スレッド毎に切り替えて利用します。
-
-ここで一つ問題があります。
-
-それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
-
-スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
-現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
-アクセス先を切り替える、という処理を行なえます。
-
-しかし、スレッド ID の取得が出来ないため、それが出来ません。
-
-これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
-という方法が必要になります。
-
-さすがにこれはやりたくないので、別の方法を考えました。
-
-以降では、今回導入した非同期処理の方法について説明します。
-
-* LnsThread クラスの導入と制限
-
-LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
-
-LnsThread クラスは、次のようなクラスです。
+__Runner インタフェースは、以下の型です。
 
 #+BEGIN_SRC lns
-// @lnsFront: skip
-abstract class LnsThread {
-   pro abstract fn loop() mut;
+pub interface __Runner {
+   pub fn run() __async mut;
 }
 #+END_SRC
 
-LnsThread のサブクラスでは、 loop() メソッドを override し、
-その中で非同期処理を行ないます。
+このインタフェースを実装すると、
+新しい組込み関数の __run(), __join を利用できます。
 
-LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
+例えば、以下のような処理を実行すると、
+=print("hoge:", self.val );= が非同期で処理されます。
 
-: _lune_control run_async_pipe;
-
-go routine loop() メソッドが実行されます。
-
-なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
-
-: _lune_control use_async;
-
-これは、 非同期処理を行なうことを宣言するコマンドです。
-
-このコマンドが実行されているモジュー内では、
-次の演算が制限がかかり、
-LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
-
-- and/or 演算
-- nil 条件演算
-- 一部のビルトイン関数、メソッドアクセス
-
-また、非同期処理とのデータを送受信するための手段として、
-__pipe<T> クラスを追加しています。
-
-__pipe<T> クラスは、 go の chan と等価と思ってください。
-
-__pipe<T> クラスは、次のようなクラスです。
 #+BEGIN_SRC lns
-// @lnsFront: skip
-class __pipe<T> {
-  pub fn get() mut : T!;
-  pub fn put( val:T! ) mut;
+class Hoge extend (__Runner) {
+   let val:int;
+   pub fn run() __async mut {
+      print("hoge:", self.val );
+   }
+}
+
+let list:List<Hoge> = [];
+for index = 0, 10 {
+   let mut hoge = new Hoge(index);
+   hoge.run();
+   list.insert( hoge );
+}
+foreach hoge in list {
+   __join( hoge );
 }
 #+END_SRC
 
-ここで、__pipe<T>  の T には __AsyncItem インタフェースを implement したクラスを
-指定する必要があります。
-
-put() した val が、 get() で取得できるようになります。
-put(val:T!) に nil を与えると、その __pipe の通信は終了し、
-その後 nil 意外を put() しても、 get() は nil を返すようになります。
-
-
-__AsyncItem インタフェースを implement クラスは、
-同時に Mapping インタフェースも implement が必要です。
-
-__AsyncItem インタフェースを implement したクラスには、
-次のメソッドが追加されます。
-
-: pub static fn _createPipe( num:int ) : __pipe<T>!;
-
-ここで 引数 num は、 chan の cap と同じです。
-
-なお、 Lua にトランスコンパイルした場合、
-この =_createPipe()= 関数は必ず nil を返します。
-
-上記をまとめると、非同期処理は次のように書きます。
-
-#+BEGIN_SRC lns
-// @lnsFront: skip
-_lune_control use_async;
-
-class Test extend (__AsyncItem,Mapping) {
-   let val:str {pub};
-}
-
-class Async extend LnsThread {
-   let mut count:int {pub};
-   let mut pipe:__pipe<Test>!;
-   
-   pub fn __init( pipe:__pipe<Test>! ) {
-      super();
-      self.pipe = pipe;
-      self.count = 0;
-   }
-   
-   pro override fn loop() mut {
-      print( "hoge:" );
-      while true {
-         if! let mut pipe = self.pipe {
-            let! val = pipe.get() {  // pipe からデータを取得
-               print( "hoge:" );
-               break;
-            };
-            val.$val.find( "%d" (self.count) ## );
-            self.count = self.count + 1;
-         }
-      }
-   }
-   pub fn start() {
-      _lune_control run_async_pipe;  // loop() 起動
-   }
-   pub fn put( test:Test ) mut {
-      if! let mut pipe = self.pipe { // pipe にデータをセット
-         pipe.put( test );
-      }
-   }
-}
-
-let mut async = new Async( Test._createPipe( 10 ) );
-async.start();
-let mut async2 = new Async( Test._createPipe( 10 ) );
-async2.start();
-
-for _ = 1, 100000 {
-   async.put( new Test( "abcdefg" ) );
-   async2.put( new Test( "abcdefg" ) );
-}
-print( async.$count, async2.$count );
-#+END_SRC
-
-** 非同期処理の制限
-
-次の処理を行なった場合の動作は未定義です。
-
-- Loop() 内から、別モジュールのデータ、メソッドにアクセスする
-- 別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
-- LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
-
-以上のように、非常に限定的で使い勝手の悪い仕様になっています。
-この仕様は間違いなく将来変更になるので、
-冒頭で書いたようにあくまで参考程度にしてください。
-
-ちなみに、これだけ制限の多い非同期処理ですが、
-LuneScript の parse 処理に利用していて、
-LuneScript の高速化にほんの少し貢献しています。
-
-
+上記は意味のない処理ですが、
