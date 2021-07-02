@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        LuneScript のトランスコンパイル高速化 (スタック割り当て) - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り" />
+    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <title>LuneScript のトランスコンパイル高速化 (スタック割り当て) - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <meta property="og:title" content="LuneScript のトランスコンパイル高速化 (スタック割り当て)" />
+<meta property="og:description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-07-02-lunescript-value-assigned-stack/" />
+<meta property="article:published_time" content="2021-07-02T00:00:00+00:00" />
+<meta property="article:modified_time" content="2021-07-02T00:00:00+00:00" />
+<meta itemprop="name" content="LuneScript のトランスコンパイル高速化 (スタック割り当て)">
+<meta itemprop="description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り">
+<meta itemprop="datePublished" content="2021-07-02T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2021-07-02T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1175">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LuneScript のトランスコンパイル高速化 (スタック割り当て)"/>
+<meta name="twitter:description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-07-02-lunescript-value-assigned-stack/" class="title">LuneScript のトランスコンパイル高速化 (スタック割り当て)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-07-02 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-07-02</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/" class="title">LuneScript のトランスコンパイル高速化 (トランスコンパイル時間を 2273 パーセント改善)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-06-28 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-06-28</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-06-04-lunescript-selfhost-para/" class="title">LuneScript のセルフホストのマルチスレッド化 (トランスコンパイル時間を 1412 パーセント改善)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-06-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-06-04</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-26-lunescript-plan/" class="title">LuneScript のこれからの予定</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-26 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-26</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-25-lunescript-improved-build-time/" class="title">LuneScript のトランスコンパイル時間を 1157 パーセント改善した件</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-05-25 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-25</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2021/2021-07-02-lunescript-value-assigned-stack/"
+    >LuneScript のトランスコンパイル高速化 (スタック割り当て)</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-07-02-lunescript-value-assigned-stack/" class="article-date">
+  <time datetime="2021-07-02 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-07-02</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2021/2021-07-02-lunescript-value-assigned-stack/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1175</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">3 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+今回の記事は、
+先日検討した LuneScript のクラスのオブジェクトを
+スタックに割り当てて高速化できるかどうか？の検討結果です。
+</p>
+<h2 id="headline-1">
+結果
+</h2>
+<p>
+今回の検討結果は以下の通りです。
+</p>
+<p>
+<strong>「スタック割り当て自体は有効ですが、</strong>
+<strong>スタック割り当てから escape されないように設計しないと効果を得られません。」</strong>
+</p>
+<p>
+なんだか当たり前な検討結果ですが、そうなんだから仕方がない。
+</p>
+<p>
+では、なぜそのような結果になったかを説明していきます。
+</p>
+<h2 id="headline-2">
+検討内容
+</h2>
+<p>
+LuneScript でオブジェクトをスタック割り当てするには、
+そのオブジェクトのクラスは次の条件を全て満す必要があります。
+</p>
+<ul>
+<li>
+<p>
+全てのメンバが immutable
+</p>
+</li>
+<li>
+<p>
+Super クラスがない
+</p>
+</li>
+<li>
+<p>
+Sub クラスがない  
+</p>
+</li>
+</ul>
+<p>
+この条件にマッチし、なおかつ生成数の多いクラスは以下になりました。
+</p>
+<ul>
+<li>
+<p>
+Positon
+</p>
+<ul>
+<li>
+<p>
+トークンの位置情報
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Token
+</p>
+<ul>
+<li>
+<p>
+Parse したトークン情報
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+go の pprof 機能の解析によると、
+この 2 つの合計は、生成している全オブジェクト数の 5% ほどになります。
+</p>
+<p>
+このクラスをスタック割り当てに変更してみたところ以下の結果になりました。
+</p>
+<ul>
+<li>
+<p>
+Positon をスタック割り当てに変更
+</p>
+<ul>
+<li>
+<p>
+トランスコンパイル時間が 1% 程度 <strong>改善</strong>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Token をスタック割り当てに変更
+</p>
+<ul>
+<li>
+<p>
+トランスコンパイル時間が 10% 程度 <strong>悪化</strong>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+この通り、クラスによって結果が異なりました。
+</p>
+<p>
+先日の記事で書いたように、オブジェクトをスタック割り当てする場合、
+そのオブジェクトを最後までスタック割り当てで扱わないと逆に効率が悪くなります。
+</p>
+<p>
+では、何故スタック割り当てで扱わないケースがあるのかと言うと、
+LuneScript には nilable があるからです。
+</p>
+<p>
+nilable を表現するために、 go の interface{} を利用しています。
+そして、スタック割り当てのオブジェクトを interface{} に変換すると、 escape されます。
+</p>
+<p>
+このようなケースを改善するには、異常値の表現に nilable は使わずに、
+特別な値を定義する必要があります。
+あるいは Rust の Option 型のような型を用意する必要があります。
+</p>
+<p>
+また、 List や Map などの collection 型は interface{} として値を保持します。
+そして stem 型も interface{} として保持します。
+つまり、collection 型, stem 型で管理することが前提の場合、
+スタック割り当て化は逆効果です。
+</p>
+<p>
+ただ、collection 型を使えないのは流石にハードルが高いので、
+スタック割り当てのまま collection 型を使えるように改善したいと考えています。
+</p>
+<p>
+ということで結論は以下になります。
+</p>
+<p>
+<strong>スタック割り当て自体は有効ですが、</strong>
+<strong>スタック割り当てから escape されないように設計しないと効果を得られません。</strong>
+</p>
+<h2 id="headline-3">
+今後の予定
+</h2>
+<p>
+今の段階(6827a64)で、
+セルフホストのトランスコンパイルの内部処理時間は 0.9 秒弱まで短縮できていますが、
+time コマンドの計測結果では 1.1 秒前半です。
+</p>
+<p>
+この原因の一つに、
+collection 型で interface{} を利用していることが挙げられるので改善したいところです。
+しかし、これを改善するには go 側の slice, map の generics 対応が必要になります。
+</p>
+<p>
+よって、go 側の slice, map の generics 対応を持ってから、
+collection 型の改善が出来るように対応を検討します。
+</p>
+<p>
+それまでは、
+大きな改善は見込めなさそうなので LuneScript の高速化対応を一旦中断します。
+</p>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/" title="LuneScript のトランスコンパイル高速化 (トランスコンパイル時間を 2273 パーセント改善)"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2021
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

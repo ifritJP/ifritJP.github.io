@@ -39,7 +39,7 @@
 <meta itemprop="name" content="@.2 非同期処理">
 <meta itemprop="description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく">
 
-<meta itemprop="wordCount" content="1832">
+<meta itemprop="wordCount" content="255">
 
 
 
@@ -67,266 +67,49 @@ LuneScript による非同期処理を対応しました。
 ただし、これは非常に実験的な内容なので参考程度にしてください。
 </p>
 <h2 id="headline-1">
-LuneScript のランタイム
+__Runner インタフェース
 </h2>
 <p>
-LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
-差を埋めるためのランタイムがあります。
+LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
 </p>
 <p>
-例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
-</p>
-<ul>
-<li>
-<p>
-lua との連携動作
-</p>
-</li>
-<li>
-<p>
-and or 演算子の挙動
-</p>
-</li>
-</ul>
-<p>
-これら処理は、ランタイム内で宣言しているデータにアクセスしています。
-</p>
-<p>
-LuneScript を非同期処理に対応する場合、
-ランタイム内のデータアクセスを排他対応する必要があります。
-</p>
-<p>
-一方で、 mutex などによる排他制御は、
-シングルスレッド時にもパフォーマンスに影響してしまいます。
-</p>
-<p>
-今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
-排他制御は最低限にし、
-必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
-</p>
-<p>
-具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
-スレッド毎に複製し、スレッド毎に切り替えて利用します。
-</p>
-<p>
-ここで一つ問題があります。
-</p>
-<p>
-それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
-</p>
-<p>
-スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
-現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
-アクセス先を切り替える、という処理を行なえます。
-</p>
-<p>
-しかし、スレッド ID の取得が出来ないため、それが出来ません。
-</p>
-<p>
-これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
-という方法が必要になります。
-</p>
-<p>
-さすがにこれはやりたくないので、別の方法を考えました。
-</p>
-<p>
-以降では、今回導入した非同期処理の方法について説明します。
-</p>
-<h2 id="headline-2">
-LnsThread クラスの導入と制限
-</h2>
-<p>
-LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
-</p>
-<p>
-LnsThread クラスは、次のようなクラスです。
+__Runner インタフェースは、以下の型です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-abstract class LnsThread {
-   pro abstract fn loop() mut;
+<pre><code class="language-lns" data-lang="lns">pub interface __Runner {
+   pub fn run() __async mut;
 }</code></pre>
 </div>
 <p>
-LnsThread のサブクラスでは、 loop() メソッドを override し、
-その中で非同期処理を行ないます。
+このインタフェースを実装すると、
+新しい組込み関数の __run(), __join を利用できます。
 </p>
 <p>
-LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
-</p>
-<pre class="example">
-_lune_control run_async_pipe;
-</pre>
-<p>
-go routine loop() メソッドが実行されます。
-</p>
-<p>
-なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
-</p>
-<pre class="example">
-_lune_control use_async;
-</pre>
-<p>
-これは、 非同期処理を行なうことを宣言するコマンドです。
-</p>
-<p>
-このコマンドが実行されているモジュー内では、
-次の演算が制限がかかり、
-LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
-</p>
-<ul>
-<li>
-<p>
-and/or 演算
-</p>
-</li>
-<li>
-<p>
-nil 条件演算
-</p>
-</li>
-<li>
-<p>
-一部のビルトイン関数、メソッドアクセス
-</p>
-</li>
-</ul>
-<p>
-また、非同期処理とのデータを送受信するための手段として、
-__pipe&lt;T&gt; クラスを追加しています。
-</p>
-<p>
-__pipe&lt;T&gt; クラスは、 go の chan と等価と思ってください。
-</p>
-<p>
-__pipe&lt;T&gt; クラスは、次のようなクラスです。
+例えば、以下のような処理を実行すると、
+<code class="verbatim">print(&#34;hoge:&#34;, self.val );</code> が非同期で処理されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-class __pipe&lt;T&gt; {
-  pub fn get() mut : T!;
-  pub fn put( val:T! ) mut;
+<pre><code class="language-lns" data-lang="lns">class Hoge extend (__Runner) {
+   let val:int;
+   pub fn run() __async mut {
+      print(&#34;hoge:&#34;, self.val );
+   }
+}
+
+let list:List&lt;Hoge&gt; = [];
+for index = 0, 10 {
+   let mut hoge = new Hoge(index);
+   hoge.run();
+   list.insert( hoge );
+}
+foreach hoge in list {
+   __join( hoge );
 }</code></pre>
 </div>
-<p>
-ここで、__pipe&lt;T&gt;  の T には __AsyncItem インタフェースを implement したクラスを
-指定する必要があります。
-</p>
-<p>
-put() した val が、 get() で取得できるようになります。
-put(val:T!) に nil を与えると、その __pipe の通信は終了し、
-その後 nil 意外を put() しても、 get() は nil を返すようになります。
-</p>
-<p>
-__AsyncItem インタフェースを implement クラスは、
-同時に Mapping インタフェースも implement が必要です。
-</p>
-<p>
-__AsyncItem インタフェースを implement したクラスには、
-次のメソッドが追加されます。
-</p>
-<pre class="example">
-pub static fn _createPipe( num:int ) : __pipe&lt;T&gt;!;
-</pre>
-<p>
-ここで 引数 num は、 chan の cap と同じです。
-</p>
-<p>
-なお、 Lua にトランスコンパイルした場合、
-この <code class="verbatim">_createPipe()</code> 関数は必ず nil を返します。
-</p>
-<p>
-上記をまとめると、非同期処理は次のように書きます。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-_lune_control use_async;
-
-class Test extend (__AsyncItem,Mapping) {
-   let val:str {pub};
-}
-
-class Async extend LnsThread {
-   let mut count:int {pub};
-   let mut pipe:__pipe&lt;Test&gt;!;
-   
-   pub fn __init( pipe:__pipe&lt;Test&gt;! ) {
-      super();
-      self.pipe = pipe;
-      self.count = 0;
-   }
-   
-   pro override fn loop() mut {
-      print( &#34;hoge:&#34; );
-      while true {
-         if! let mut pipe = self.pipe {
-            let! val = pipe.get() {  // pipe からデータを取得
-               print( &#34;hoge:&#34; );
-               break;
-            };
-            val.$val.find( &#34;%d&#34; (self.count) ## );
-            self.count = self.count + 1;
-         }
-      }
-   }
-   pub fn start() {
-      _lune_control run_async_pipe;  // loop() 起動
-   }
-   pub fn put( test:Test ) mut {
-      if! let mut pipe = self.pipe { // pipe にデータをセット
-         pipe.put( test );
-      }
-   }
-}
-
-let mut async = new Async( Test._createPipe( 10 ) );
-async.start();
-let mut async2 = new Async( Test._createPipe( 10 ) );
-async2.start();
-
-for _ = 1, 100000 {
-   async.put( new Test( &#34;abcdefg&#34; ) );
-   async2.put( new Test( &#34;abcdefg&#34; ) );
-}
-print( async.$count, async2.$count );</code></pre>
-</div>
-<h3 id="headline-3">
-非同期処理の制限
-</h3>
-<p>
-次の処理を行なった場合の動作は未定義です。
-</p>
-<ul>
-<li>
-<p>
-Loop() 内から、別モジュールのデータ、メソッドにアクセスする
-</p>
-</li>
-<li>
-<p>
-別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
-</p>
-</li>
-<li>
-<p>
-LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
-</p>
-</li>
-</ul>
-<p>
-以上のように、非常に限定的で使い勝手の悪い仕様になっています。
-この仕様は間違いなく将来変更になるので、
-冒頭で書いたようにあくまで参考程度にしてください。
-</p>
-<p>
-ちなみに、これだけ制限の多い非同期処理ですが、
-LuneScript の parse 処理に利用していて、
-LuneScript の高速化にほんの少し貢献しています。
-</p>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/lua_runtime/" title="@.1.3 Go へトランスコンパイルした際の Lua ランタイム"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.1.3 Go へトランスコンパイルした際の Lua ランタイム</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/lnstags/" title="A. lnstags によるタグジャンプ (ソースコードタグシステム)">Next - A. lnstags によるタグジャンプ (ソースコードタグシステム) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/async_old/" title="@.2.1 非同期処理O(過去情報)">Next - @.2.1 非同期処理O(過去情報) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -469,6 +252,7 @@ LuneScript の高速化にほんの少し貢献しています。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
 <li class="active"><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

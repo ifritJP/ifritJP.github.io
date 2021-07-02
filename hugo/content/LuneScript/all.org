@@ -8151,6 +8151,14 @@ print( hoge.$val1, hoge.$val2 );
 
 マクロの macro-statement 内からは、特殊変数 =__var= を利用できます。
 
+特殊変数 __var に以下の制約があります。
+
+- *公開マクロは __var を利用できない*
+- __var にアクセスするマクロは、
+  そのマクロを定義した名前空間と同じ名前空間から使用しなければならない。
+- 異なる名前空間から __var にアクセスした場合、その __var の内容は不定。
+
+
 この変数の型は、次の Map です。
 
 : let mut var:Map<str,stem>
@@ -8936,6 +8944,58 @@ LuneScript から go 言語へのトランスコンパイル対応したのを�
 LuneScript による非同期処理を対応しました。
 
 ただし、これは非常に実験的な内容なので参考程度にしてください。
+
+** __Runner インタフェース
+
+LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
+
+__Runner インタフェースは、以下の型です。
+
+#+BEGIN_SRC lns
+pub interface __Runner {
+   pub fn run() __async mut;
+}
+#+END_SRC
+
+このインタフェースを実装すると、
+新しい組込み関数の __run(), __join を利用できます。
+
+例えば、以下のような処理を実行すると、
+=print("hoge:", self.val );= が非同期で処理されます。
+
+#+BEGIN_SRC lns
+class Hoge extend (__Runner) {
+   let val:int;
+   pub fn run() __async mut {
+      print("hoge:", self.val );
+   }
+}
+
+let list:List<Hoge> = [];
+for index = 0, 10 {
+   let mut hoge = new Hoge(index);
+   hoge.run();
+   list.insert( hoge );
+}
+foreach hoge in list {
+   __join( hoge );
+}
+#+END_SRC
+
+
+-----
+* *2.1 非同期処理O(過去情報)*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript から go 言語へのトランスコンパイル対応したのを機に、
+LuneScript による非同期処理を対応しました。
+
+ただし、これは非常に実験的な内容なので参考程度にしてください。
+
+**1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。*
 
 ** LuneScript のランタイム
 

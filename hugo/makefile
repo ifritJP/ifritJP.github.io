@@ -39,6 +39,7 @@ SRCS += lazyLoading.org
 SRCS += shebang_main.org
 SRCS += dir.org
 SRCS += async.org
+SRCS += async_old.org
 SRCS += go.org
 SRCS += go_package.org
 SRCS += lua_runtime.org
