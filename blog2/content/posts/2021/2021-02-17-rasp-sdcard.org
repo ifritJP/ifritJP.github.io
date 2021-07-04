@@ -80,7 +80,7 @@ avg-cpu:  %user   %nice %system %iowait  %steal   %idle
 特に初回の dd コマンドの書き込みはバッファリングが効くためか異様に早いので、
 3回目、4回目を記録する。
 
-- 2021/04/17
+** 2021/04/17
 
 #+BEGIN_SRC txt
 $ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
@@ -98,7 +98,7 @@ $ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
 今後どれほど変っていくのか興味深い。
 
 
-- 2021/05/30
+** 2021/05/30
   
 #+BEGIN_SRC txt
 $ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
@@ -124,3 +124,33 @@ Lifetime writes:          261 GB
 
 次回も書き込み速度がさらに下るようなら、
 実験を停止して新しい SD カードに移行した方が良いかもしれない。
+
+** 2021/07/04
+
+#+BEGIN_SRC txt
+$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 47.6562 s, 4.4 MB/s
+$ sudo dd if=/dev/zero of=/tmp/dump bs=1M count=200
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 38.4939 s, 5.4 MB/s
+#+END_SRC
+
+#+BEGIN_SRC txt
+$ iostat -h
+Linux 5.10.4-v8+ (raspberrypi4) 	04/07/21 	_aarch64_	(4 CPU)
+
+avg-cpu:  %user   %nice %system %iowait  %steal   %idle
+           2.9%    3.6%    1.5%    0.2%    0.0%   91.7%
+
+      tps    kB_read/s    kB_wrtn/s    kB_read    kB_wrtn Device
+     0.16         2.5k         2.5k       6.9G       6.7G mmcblk0
+     0.24         0.1k        32.6k     147.1M      88.2G sdb
+
+$ sudo dumpe2fs -h /dev/mmcblk0p2 | grep "Lifetime writes"
+Lifetime writes:          454 GB
+#+END_SRC
+
+
