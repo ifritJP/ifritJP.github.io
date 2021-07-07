@@ -12,24 +12,24 @@
 
 LuneScript で扱える値の型と、トランスコンパイラ後の Lua の値との対応表を示します。
 
-| LuneScript | Lua          | 用途                             | LuneScript での定義方法 |
-|------------+--------------+----------------------------------+-------------------------|
-| nil, null  | nil          | nil                              | nil                     |
-| int        | 数値         | 整数                             | 0 1 2 3 ?A 0x10 -100    |
-| real       | 数値         | 実数                             | 0.0 1.0 0.001           |
-| str        | 文字列       | 文字列, バイナリデータ           | "abc" 'def'  ```hij```  |
-| bool       | 真偽値       | 真偽値                           | true false              |
-| List       | テーブル     | リスト                           | [1, 2, 3 ]              |
-| Array      | テーブル     | 配列(固定長)                     | [@ 1, 2, 3 ]            |
-| Map        | テーブル     | マップ                           | { "A":1, "BC": 100 }    |
-| Set        | テーブル     | セット                           | (@ 1, 2, 3)             |
-| class      | テーブル     | クラス                           | class Test {}           |
-| interface  | テーブル     | インタフェース                   | interface Test {}       |
-| fn         | function     | 関数                             | fn func() {}            |
-| enum       | 数値、文字列 | enum                             | enum Test { }           |
-| alge       | テーブル     | 代数データ                       | alge Test { }           |
-| Luaval     | Lua の値     | Lua の値そのものを               |                         |
-| stem       | 値           | nil 以外の全ての値を保持可能な型 |                         |
+| LuneScript | Lua          | go           | 用途                             | LuneScript での定義方法 |
+|------------+--------------+--------------+----------------------------------+-------------------------|
+| nil, null  | nil          | nil          | nil                              | nil                     |
+| int        | 数値         | LnsInt       | 整数                             | 0 1 2 3 ?A 0x10 -100    |
+| real       | 数値         | LnsReal      | 実数                             | 0.0 1.0 0.001           |
+| str        | 文字列       | string       | 文字列, バイナリデータ           | "abc" 'def'  ```hij```  |
+| bool       | 真偽値       | bool         | 真偽値                           | true false              |
+| List       | テーブル     | LnsList      | リスト                           | [1, 2, 3 ]              |
+| +Array+    | +テーブル+   |              | +配列(固定長)+                   | +[@ 1, 2, 3 ]+          |
+| Map        | テーブル     | LnsMap       | マップ                           | { "A":1, "BC": 100 }    |
+| Set        | テーブル     | LnsSet       | セット                           | (@ 1, 2, 3)             |
+| class      | テーブル     | struct       | クラス                           | class Test {}           |
+| interface  | テーブル     | interface    | インタフェース                   | interface Test {}       |
+| fn         | function     | func         | 関数                             | fn func() {}            |
+| enum       | 数値、文字列 | const        | enum                             | enum Test { }           |
+| alge       | テーブル     | struct       | 代数データ                       | alge Test { }           |
+| Luaval     | Lua の値     | Lns_luaValue | Lua の値そのものを               |                         |
+| stem       | 値           | LnsAny       | nil 以外の全ての値を保持可能な型 |                         |
 
 *2019/3* Set 追加。
 *2020/10* Luaval 追加
@@ -115,6 +115,8 @@ parse エラーします。
 ただし、 int と int の演算結果が int の範囲外になった場合、
 実行時の内部的な値としては real になりますが、LuneScript 上の型は int のままです。
 演算結果を int に丸めるには、 ~@@int~ でキャストする必要があります。
+
+go にトランスコンパイルした場合、 内部的にも int のままです。
 
 *** ビット演算
 
@@ -236,6 +238,10 @@ print( list[1] ); // 1
 リストの先頭の index は 1 です。
 リストの範囲外をアクセスした場合の動作は *未定義* です。
 
+/当初の LuneScript は、 lua のトランスコンパイラとして開発を始めたため、/
+/lua との互換性を重視し index を 1 からにしましたが、/
+/今となってはこれは失敗だったと思っています。。/
+
 
 リストの長さを取得するのは ~#~ です。
 例えば ~#list~ は、 リスト型の変数 list の長さを取得します。
@@ -332,6 +338,9 @@ print( map[ 1 ], map[ 1.0 ] );
 
 これは Lua 仕様由来の制限です。
 
+なお、 go にトランスコンパイルした場合、
+int と real は区別されます。
+
 - キーに int, real, str 以外を使用した場合の、キーの同値判定
 
 次の例において、 list1, list2 はどちらも int の 1 を要素に持つリストです。
@@ -353,6 +362,34 @@ print( map[ list1 ], map[ list2 ] );  // aaa nil
 
 int, real, str 以外を map のキーに使用した場合、
 そのキーが等しいかどうかは、同じオブジェクトである必要があります。
+
+- nilable
+
+前述の通り、Map の要素へのアクセスは次の通り行ないます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let map = {
+   "val1": 1,
+   "val2": 2,
+   "val3": 3
+};
+print( map.val1, map.val2, map.val3 ); // 1 2 3
+#+END_SRC
+
+ここで、map.val1 は nilable になり、
+そのままでは本来のデータである int の 1 としては扱えません。
+
+つまり、次のように =map.val1 + 1= を実行することはできません。
+
+: print( map.val1 +1 )
+
+これは、 map の要素にアクセスすると、その結果は nilable になるからです。
+
+nilable については、以下を参照してください。
+
+[[../nilable]]
+
 
 ** Set
 

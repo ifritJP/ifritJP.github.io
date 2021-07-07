@@ -14,16 +14,17 @@ LuneScript の動作確認用に、Web ブラウザ上で動作する LuneScript
 
 [[../onweb]]
 
-このサイトには、 Run ボタンをもつサンプルソースがあります。
+また、以降のサンプルソースには Run ボタンを持つケースがあります。
 そのボタンを押すことで、そのサンプルソースを実行できます。
 そして、そのソースを修正して実行することもできます。
 
-初回は Run ボタンを押してからサンプルを実行するまでに 10 秒程度時間がかかります
+Run ボタンを押してからサンプルを実行するまでに、
+初回は数秒から 10 秒程度時間がかかります
 (時間はネットワーク環境、端末スペックに依存します)。
 これは、ブラウザ上に Lua VM と、LuneScript コンパイラをロードするためです。
 
 一旦ロードした後に再度実行する場合、
-このロード処理が行なわれないため高速に処理できます。
+このロード処理が行なわれないため瞬時に実行できます。
 
 
 * LuneScript の導入方法
@@ -35,44 +36,35 @@ LuneScript は、次の 2 つの提供方法を用意しています。
 
 ** go バージョン
 
-LuneScript は、次の URL で最新バージョンのシングルバイナリを公開しています。
-
-[[https://drive.google.com/drive/folders/1S5NgeM6qIOIUC0rkBHqnWZcuhmsTqB2w][google drive]]
-
-*google drive 上のビルドは更新していないため古いです。*
-
-
-- 上記 URL から、目的の環境に合せたファイルをダウンロードします。
-- ダウンロードしたファイルに対して次を実行します。
-
-: $ chmod +x lnsc
-: $ install lnsc /usr/local/bin
-
-※ 上記 lnsc は、 lnsc_alpine などに適宜読み替えてください。
-
-go バージョンは、
-Lua のインストールなしに .lns ファイルの実行まで行なえます。
-
-*** ソースからビルドする
-
-git のソースからビルドするための Dockerfile を用意しています。
+git に登録しているソースから LuneScript を
+ビルドするための Dockerfile を用意しています。
 
 https://github.com/ifritJP/LuneScript/tree/master/src/test/docker/compose
 
-- alpine/build/Dockerfile
 - linux/build/Dockerfile
+- alpine/build/Dockerfile
 
-次のように実行すると、 /usr/bin/lnsc を持つイメージが生成されるので、
-イメージ内の lnsc ファイルを別途ホストにコピーするなどしてください。
+次を実行すると、LuneScript/src に Linux 用の lnsc が生成されます。
 
-: $ sudo docker build -t alpine_lns test/docker/compose/linux/build
+: $ git clone --depth 1 https://github.com/ifritJP/LuneScript
+: $ cd LuneScript/src
+: $ sudo docker build -t linux_lns test/docker/compose/linux/build
+: $ sudo docker run --rm -v $PWD:/local linux_lns cp /usr/bin/lnsc /local/lnsc
+
+lnsc に PATH を通してください。
+
+なお、 proxy 環境下では docker build 時に以下のように proxy を指定してください。
+
+: $ sudo docker build -t linux_lns test/docker/compose/linux/build --build-arg PROXY=http://proxy.hoge/
+
+go 版の LuneScript 導入は以上です。
 
 ** Lua バージョン
   
 LuneScript は Lua のトランスコンパイラです。
 また、LuneScript 自体も Lua のスクリプトとして動作します。
 
-よって、 LuneScript には Lua の実行環境が必要です。
+よって、 Lua 版の LuneScript には Lua の実行環境が必要です。
 
 なお、 LuneScript が対応している Lua のバージョンは 5.1, 5.2, 5.3, 5.4 です。
 
@@ -204,7 +196,7 @@ LuneScript は、emacs で開発するための emacs lisp を提供していま
   (setq lns-lua-command "/usr/local/bin/lua")  ;;; lua のパス
   (require 'lns-conf)
   (require 'lns-flymake)
-  (require 'lns-auto-complete)
+  (require 'lns-company-mode)
   (require 'lns-helm)
 #+END_SRC
 
@@ -212,24 +204,25 @@ LuneScript は、emacs で開発するための emacs lisp を提供していま
 
 - .lns ファイルのインデント、色付け
 - flymake による構文チェック
-- auto-complete による補完
+- company-mode による補完
 
 構文チェックは flymake と flycheck をサポートしています。
 flycheck を利用したい場合 lns-flymake ではなく、 lns-flycheck を require してください。
 
-auto-complete, flycheck, flymake は、別途 M-x package-install してください。
+helm, company-mode, flycheck, flymake は、別途 M-x package-install してください。
 
 
 * プロジェクトファイル
 
 LuneScript は、モジュール管理にディレクトリ階層を利用します。
-よって、トランスコンパイルを行なう際のカレントディレクトリは重要になります。
+よって、 LuneScript でトランスコンパイルを行なう際の
+カレントディレクトリは重要になります。
 
 トランスコンパイルを行なう際のカレントディレクトリに、
 次の名前のファイルを置くことで、
 プロジェクトファイルとして扱います。
 
-: Lune.js
+: lune.js
 
 特にエディタで LuneScript のソースを編集する場合、
 その LuneScript ソースのプロジェクトディレクトリが何処なのか認識するために、
