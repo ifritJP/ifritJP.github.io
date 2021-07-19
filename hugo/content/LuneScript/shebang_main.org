@@ -10,8 +10,9 @@ LuneScript は shebang に対応しています。
 * shebang 対応
 
 shebang とは、シェルスクリプト等で良く見られるスクリプトファイルの最初の行に、
-使用するインタプリタをコメントに指定する機能です。
-bash では次のように指定します。
+使用するインタプリタをコメントに指定することで、
+そのスクリプトファイルを実行すると指定しているインタプリタが実行される機能です。
+例えば bash では次のように指定します。
 
 #+BEGIN_SRC sh
 #! /bin/bash
@@ -19,8 +20,7 @@ bash では次のように指定します。
 
 LuneScript では、次のように指定します。
 
-#+BEGIN_SRC lns
-// @lnsFront: skip
+#+BEGIN_SRC sh
 #! /usr/bin/lnsc -shebang
 #+END_SRC
 
@@ -30,13 +30,12 @@ LuneScript では、次のように指定します。
 
 例えば次のようなファイル hello.lns があった場合、
 
-#+BEGIN_SRC lns 
-// @lnsFront: skip
+#+BEGIN_SRC sh
 #! /usr/bin/lnsc -shebang
 print( "hello world" );
 #+END_SRC
 
-この hello.lns を直接起動できます。
+この hello.lns を直接実行できます。
 
 #+BEGIN_SRC txt
 $ hello.lns
@@ -46,10 +45,10 @@ hello world
 
 
 
-この時、次の制限があります。
++この時、次の制限があります。+
 
-- go 版 lnsc では、 import している .lns ファイルに対応する .lua を
-  事前に生成しておく必要がある。
+- +go 版 lnsc では、 import している .lns ファイルに対応する .lua を+
+  +事前に生成しておく必要がある。+
 
 * コマンドライン引数
 
@@ -62,11 +61,11 @@ shebang で起動された場合や、 go へトランスコンパイルした�
 
 #+BEGIN_SRC lns
 // @lnsFront: skip   
-pub fn __main( argList:List<str> ):int
+pub fn __main( argList:&List<str> ):int
 #+END_SRC
 
 __main 関数の型は、
-引数 argList 名以外、必ず上記の型での宣言が必要です。
+引数名 argList 以外、必ず上記の型での宣言が必要です。
 
 ** __main の実行順
 
@@ -78,13 +77,13 @@ __main 関数の型は、
 // @lnsFront: skip   
 print( "hello world" );
 
-pub fn __main( argList:List<str> ):int {
+pub fn __main( argList:&List<str> ):int {
    print( "hoge" );
    return 0;
 }
 #+END_SRC
 
-出力結果は以下になります。 hello
+出力結果は以下になります。
 
 #+BEGIN_SRC txt
 $ ./mini.lns 
@@ -94,14 +93,14 @@ hoge
 
 ** __main の引数
 
-=__main= の引数は =List<str>= です。
+=__main= の引数は =&List<str>= です。
 
-このリストには、先頭にスクリプトのパス、次以降にコマンドライン引数が格納されます。
+このリストには、先頭にスクリプトのパス、以降にコマンドライン引数が格納されます。
 
 #+BEGIN_SRC lns
 #! /usr/bin/lnsc -shebang
 // @lnsFront: skip   
-pub fn __main( argList:List<str> ):int {
+pub fn __main( argList:&List<str> ):int {
    foreach arg in argList {
       print( arg );
    }

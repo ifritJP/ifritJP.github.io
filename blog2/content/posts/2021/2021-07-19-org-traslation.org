@@ -1,0 +1,96 @@
+#+TITLE: org-mode ドキュメントの翻訳ツール検討
+#+DATE: 2021-07-19
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: lunescript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+私は org-mode を使って LuneScript のリファレンスを作成しています。
+
+日本語のリファレンスを書くのも大変ですが、
+それを英訳しようとすると気が遠くなります。
+
+そこで機械翻訳を使う予定ですが、 .org ファイルをそのまま機械翻訳で処理すると、
+コードブロックや org-mode の区切り記号まで変換され、
+意図した結果を得られません。
+
+そこで今回は、org-mode の機械翻訳をスムーズに行なえるツールを検討します。
+
+
+* 構成
+
+今回検討する org-mode 翻訳ツールは、以下の構成とします。
+
+- 入力
+  - .org ファイル
+- 出力
+  - 翻訳後の .org ファイル
+- 処理
+  - .org ファイルの parse
+    - <https://github.com/niklasfasching/go-org>
+  - 機械翻訳
+    -  GCP の Cloud Translation API
+    - <https://cloud.google.com/translate/docs/basic/translating-text?hl=ja>
+  - 全体制御
+    - LuneScript で自作
+
+** go-org
+
+.org ファイルの parse には go-org を利用します。
+
+go-org は、go で実装された .org ドキュメントの parser で、
+hugo はこれを利用して .org ファイルを read しています。
+
+LuneScript のリファレンスは、 hugo で構築しているので、
+hugo で利用されているものと同じ parser を使えば、
+問題なく parse 出来ると考えて選択しました。
+
+** GCP Cloud Translation API
+
+翻訳には、GCP の Cloud Translation API を利用します。
+
+幾つか機械翻訳サービスがありますが、自分がアカウントを持っていて、
+無料で使えるのが GCP なのでこれを選択しています。
+
+GCP の Cloud Translation API も一定量を越えれば有料になりますが、
+今回使う程度であれば越えることはないでしょう。
+
+ちなみに、1ヶ月間のリクエスト文字数が 500,000 文字までが無料となります。
+
+<https://cloud.google.com/translate/pricing?hl=ja>
+
+ここで言う *文字数* とは、以下によると
+
+<https://cloud.google.com/translate/pricing?hl=ja#charged-characters>
+
+バイト数ではなく、
+日本語なら日本語の 1 つのキャラクタを 1 文字として扱うようです。
+例えば多くの日本語は utf-8 で 1 文字 3 バイトですが、
+1 文字が何バイトであっても 1 としてカウントされます。
+
+=<p>こんにちは</p>= を翻訳対象として API に渡した場合、12 文字として扱われます。
+これは、 HTML の =<p></p>= の 7 文字と =こんにちは= の 5 文字の合計です。
+
+ちなみに、 LuneScript のリファレンスの .org ファイルは約 380KB です。
+仮に全て utf-8 の日本語として考えると、約 126,000 文字となります。
+
+実際には、 .org には翻訳対象外のサンプルコードが含まれ、
+それを除外したデータを機械翻訳 API で処理させるため、
+Cloud Translation API で翻訳する文字数は約 126,000 文字よりも
+少なくなることが考えられます。
+
+よって、 500,000 文字の無料枠を越えずに
+.org 全体に翻訳をかけるテストを数回実行できる計算になります。
+
+* 開発ステップ
+
+ツールの開発ステップとしては、以下を考えています。
+
+- go-org を使って .org ファイルを parse する。
+- parse した要素から翻訳する/しないを判別する。
+- 翻訳する要素をまとめて翻訳 API で翻訳する。
+- 翻訳した要素と、翻訳していない要素から .org を生成する
+
+もちろん、 go-org, 翻訳 API の使い熟しが前段階にあります。

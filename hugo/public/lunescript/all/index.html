@@ -39,7 +39,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス *TypeScriptからLuaに変換する TypeScriptToLua">
 
-<meta itemprop="wordCount" content="99714">
+<meta itemprop="wordCount" content="105582">
 
 
 
@@ -10187,40 +10187,31 @@ Map&lt;str,int&gt; 型のデータ map を Lua の関数の引数に指定して
 今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。
 </p>
 <p>
-LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、
-LuneScript 専用のビルドツールは提供していません。
-よって、ここでは一般的なビルド方法について説明します。
+<del>+LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、</del>
+<del>LuneScript 専用のビルドツールは提供していません。</del>
+<del>よって、ここでは一般的なビルド方法について説明します。</del>
+</p>
+<p>
+LuneScript をトランスコンパイルするには、以下の方法があります。
+</p>
+<ul>
+<li>
+<p>
+個別ビルド
+</p>
+</li>
+<li>
+<p>
+バッチビルド
+</p>
+</li>
+</ul>
+<p>
+バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。
 </p>
 <h3 id="headline-266">
-ビルド
+個別ビルド
 </h3>
-<p>
-LuneScript は Lua のトランスコンパイラですが、
-LuneScript のコードそのままでも実行可能です。
-</p>
-<p>
-例えば、次のようなソースは
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-print( &#34;hello&#34; );</code></pre>
-</div>
-<p>
-次のコマンドで実行できます。
-</p>
-<div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnsc hello.lns exe</code></pre></div>
-</div>
-<p>
-しかし、これでは LuneScript から Lua へのトランスコンパイル処理が走るため、
-ある程度の規模のプロジェクトになると効率が悪くなります。
-</p>
-<p>
-そこで、モジュール毎に Lua へトランスコンパイルするビルド管理が必要になります。
-</p>
-<h4 id="headline-267">
-トランスコンパイル
-</h4>
 <p>
 Lua へトランスコンパイルするには、次のコマンドを実行します。
 </p>
@@ -10238,22 +10229,39 @@ Lua へトランスコンパイルするには、次のコマンドを実行し�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua hello.lua</code></pre></div>
 </div>
 <p>
-モジュールごとにトランスコンパイルしておくだけでも
-lnsc コマンドで直接実行するよりは効率良くなりますが、
-まだ改善できます。
+これを、全ての .lns ファイルに対して行なうことで、
+全ての .lns ファイルをトランスコンパイルできます。
 </p>
 <p>
-それは LuneScript の import です。
+ただし、 .lns ファイルが多い場合、これだと効率が悪いです。
+</p>
+<h3 id="headline-267">
+バッチビルド
+</h3>
+<p>
+バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。
 </p>
 <p>
-LuneScript の import は、指定のモジュールを読み込みます。
-このとき、LuneScript は指定モジュールを解析します。
-この解析には時間がかかります。
+複数の .lns ファイルを指定するには、 lnsc のオプションに @- を指定し、
+stdin に .lns ファイルパスを渡します。
+stdin に渡す .lns ファイルパスは、1 行につき 1 ファイル出力します。
 </p>
 <p>
-LuneScript は、この解析時間を短縮する手段を提供しています。
+例えば、 proj ディレクトリ以降の全 .lns ファイルを渡す場合、以下になります。
 </p>
-<h4 id="headline-268">
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ find proj -name &#39;*.lns&#39; | lnsc @- save</code></pre></div>
+</div>
+<p>
+現時点で、これが最も高速に処理できる方法です。
+</p>
+<h3 id="headline-268">
+参考情報
+</h3>
+<p>
+<strong>*以降は参考情報です。</strong>  
+</p>
+<h4 id="headline-269">
 メタ情報ファイル
 </h4>
 <p>
@@ -10323,7 +10331,7 @@ LuneScript はモジュールを import する際、
 </p>
 </li>
 </ul>
-<h4 id="headline-269">
+<h4 id="headline-270">
 依存関係
 </h4>
 <p>
@@ -10366,7 +10374,7 @@ depends/mod1.d に mod1.lns の依存関係情報を出力します。
 この依存関係情報を Makefile に取り込むことで、
 手動で依存関係を定義することなく、簡単に make によるビルド制御が可能になります。
 </p>
-<h5 id="headline-270">
+<h5 id="headline-271">
 サンプル
 </h5>
 <p>
@@ -10534,7 +10542,7 @@ pub fn func(): str {
 このような makefile を作成することで、
 import の依存関係に応じたビルドが可能になります。
 </p>
-<h3 id="headline-271">
+<h3 id="headline-272">
 まとめ
 </h3>
 <p>
@@ -10542,13 +10550,13 @@ make コマンドを使うことで、
 LuneScript プロジェクトのビルド制御を簡単に実現できます。
 </p>
 <hr>
-<h2 id="headline-272">
+<h2 id="headline-273">
 <strong>マクロ 編</strong>
 </h2>
 <p>
 今回は LuneScript のマクロについて説明します。
 </p>
-<h3 id="headline-273">
+<h3 id="headline-274">
 マクロ
 </h3>
 <p>
@@ -10574,7 +10582,7 @@ LuneScript は、マクロを対応します。
 LuneScript のマクロは Lisp ほど高機能ではありません。
 しかし、 C 言語のマクロほど限定的でもありません。
 </p>
-<h4 id="headline-274">
+<h4 id="headline-275">
 簡単なマクロの例
 </h4>
 <p>
@@ -10621,7 +10629,7 @@ _Hello(); // hello world</code></pre>
 <p>
 以降では、意味のあるマクロを定義する方法を説明します。
 </p>
-<h4 id="headline-275">
+<h4 id="headline-276">
 マクロの例
 </h4>
 <p>
@@ -10696,7 +10704,7 @@ fn func10():int {
 <p>
 このマクロについて、以降で説明します。
 </p>
-<h4 id="headline-276">
+<h4 id="headline-277">
 マクロの書き方
 </h4>
 <p>
@@ -10715,7 +10723,59 @@ macro name( arg ) {
 キーワード macro で開始し、 次にマクロ名 name 、引数 arg と続きます。
 マクロ名 name は、 _ で始まる必要があります。
 逆にマクロ以外のシンボル名は、 _ 以外で始まる必要があります。
-引数の数に制限はありません。
+</p>
+<p>
+マクロの引数は、以下の型をサポートします。
+</p>
+<ul>
+<li>
+<p>
+int
+</p>
+</li>
+<li>
+<p>
+real
+</p>
+</li>
+<li>
+<p>
+str
+</p>
+</li>
+<li>
+<p>
+bool  
+</p>
+</li>
+<li>
+<p>
+stat
+</p>
+</li>
+<li>
+<p>
+上記の List, Map, Set
+</p>
+</li>
+<li>
+<p>
+sym
+</p>
+</li>
+<li>
+<p>
+__exp
+</p>
+</li>
+<li>
+<p>
+__block
+</p>
+</li>
+</ul>
+<p>
+sym, stat, __exp, __block については後述します。  
 </p>
 <p>
 次に macro-statement ブロックと、 expand-statement が続きます。
@@ -10725,7 +10785,69 @@ macro name( arg ) {
 expand-statement を先に理解した方が分かり易いので、
 macro-statement ブロックの説明の前に、expand-statement を説明します。
 </p>
-<h5 id="headline-277">
+<h5 id="headline-278">
+引数
+</h5>
+<p>
+マクロ専用の引数の型として、以下を利用できます。
+</p>
+<ul>
+<li>
+<p>
+sym
+</p>
+</li>
+<li>
+<p>
+stat  
+</p>
+</li>
+<li>
+<p>
+__exp
+</p>
+</li>
+<li>
+<p>
+__block
+</p>
+<h6 id="headline-279">
+sym
+</h6>
+</li>
+</ul>
+<p>
+sym は、シンボルを格納できる型です。
+</p>
+<p>
+シンボルは、関数、変数、メンバ、クラス、全てのシンボルとして利用できます。
+</p>
+<h6 id="headline-280">
+stat
+</h6>
+<p>
+stat は、文を格納できる型です。
+</p>
+<h6 id="headline-281">
+__exp
+</h6>
+<p>
+__exp は、全ての式を格納できる型です。
+</p>
+<p>
+例えば <code class="verbatim">1 + 1</code> や、 <code class="verbatim">func()</code> など、どのような式でも指定できます。
+ただし、マクロをコールする時点でエラーなく評価可能な式である必要があります。
+</p>
+<h6 id="headline-282">
+__block
+</h6>
+<p>
+__block は、ブロック文 <code class="verbatim">{}</code> を格納できる型です。
+</p>
+<p>
+__exp 同様、マクロをコールする時点でエラーなく評価可能なブロックである必要があります。
+</p>
+<h5 id="headline-283">
 expand-statement
 </h5>
 <p>
@@ -10800,7 +10922,7 @@ expand-statement には、次の制限を満せば、いかなるコードも書
 <p>
 また、expand-statement には複数の文を書くことも出来ます。
 </p>
-<h5 id="headline-278">
+<h5 id="headline-284">
 macro-statement
 </h5>
 <p>
@@ -10944,10 +11066,6 @@ defstat を expand-statement で展開しています。
 構文エラーとなります。
 </p>
 <p>
-<code>`{}</code> は、その他の値と同じようにリストやマップに格納できます。
-なお、 <code>`{}</code> の型は stat となります。stat はマクロ内でのみ有効です。
-</p>
-<p>
 次に <code>`{}</code> のリストの例を示します。
 </p>
 <div class="src src-lns">
@@ -10985,7 +11103,7 @@ macro name( arg ) {
    expand-statement
 }</code></pre>
 </div>
-<h5 id="headline-279">
+<h5 id="headline-285">
 macro-statement で利用できる関数
 </h5>
 <p>
@@ -11002,17 +11120,13 @@ fn _lnsLoad( name:str, code:str ): stem;
 この関数は、code で指定した LuneScript のコードをロードし、
 そのモジュールを返します。
 </p>
-<h5 id="headline-280">
+<h5 id="headline-286">
 マクロ展開
 </h5>
 <p>
-マクロを展開する方法は、関数コールとほとんど同じです。
-ただし、マクロの引数にはリテラルな値しか与えられません。
+マクロを展開する方法は、関数コールと同じです。
 </p>
-<p>
-マクロ展開はビルド時に行なうものであり、実行時には行ないません。
-</p>
-<h4 id="headline-281">
+<h4 id="headline-287">
 公開マクロ
 </h4>
 <p>
@@ -11027,7 +11141,7 @@ pub macro _Hello() {
    print( &#34;hello world&#34; );
 }</code></pre>
 </div>
-<h4 id="headline-282">
+<h4 id="headline-288">
 少し実用的なマクロの例
 </h4>
 <p>
@@ -11155,7 +11269,7 @@ name と memStatList を使ってクラスを宣言する。
 メンバは int と str 型のデータとして扱います。
 リストなどはサポートしていません。
 </p>
-<h4 id="headline-283">
+<h4 id="headline-289">
 マクロ間共通 Map
 </h4>
 <p>
@@ -11197,10 +11311,10 @@ __var にアクセスするマクロは、
 </li>
 </ul>
 <p>
-この変数の型は、次の Map です。
+この変数の型は、次の通りです。
 </p>
 <pre class="example">
-let mut var:Map&lt;str,stem&gt;
+let mut __var:Map&lt;str,stem&gt;
 </pre>
 <p>
 この変数は、各モジュールのコンパイル開始時に生成され、
@@ -11237,7 +11351,7 @@ let mut var:Map&lt;str,stem&gt;
 この例では、_test0() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> に int データを保持し、
 _test1() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> の格納されている値によって処理を変更しています。
 </p>
-<h3 id="headline-284">
+<h3 id="headline-290">
 まとめ
 </h3>
 <p>
@@ -11252,7 +11366,7 @@ LuneScript は、関数と同じ感覚でマクロを定義することが出来
 ビルド方法について説明します。
 </p>
 <hr>
-<h2 id="headline-285">
+<h2 id="headline-291">
 <strong>キャスト 編</strong>
 </h2>
 <p>
@@ -11273,7 +11387,7 @@ LuneScript は、 3 つのタイプのキャストを提供します。
 <p>
 <code>@@=</code>
 </p>
-<h3 id="headline-286">
+<h3 id="headline-292">
 <code>@@</code>  
 </h3>
 </li>
@@ -11337,7 +11451,7 @@ let val2 = 1@@str;  // error</code></pre>
 <p>
 クラス型へのキャストは <code>@@@</code> か <code>@@=</code> を使用してください。
 </p>
-<h3 id="headline-287">
+<h3 id="headline-293">
 <code>@@@</code>
 </h3>
 <p>
@@ -11373,7 +11487,7 @@ str 型でなければ nil を返します。
 <p>
 <code class="verbatim">@@@</code> は、 キャスト元が nilable でもキャスト可能です。
 </p>
-<h4 id="headline-288">
+<h4 id="headline-294">
 <code>@@@</code> の制限 1
 </h4>
 <p>
@@ -11411,7 +11525,7 @@ fn func( val:stem ) {
 func( 1.0 );
 func( 2.5 );</code></pre>
 </div>
-<h4 id="headline-289">
+<h4 id="headline-295">
 <code>@@@</code> の制限 2
 </h4>
 <p>
@@ -11423,7 +11537,7 @@ enum などは利用できません。
 <p>
 また、 class でも generics は利用できません。
 </p>
-<h3 id="headline-290">
+<h3 id="headline-296">
 <code>@@=</code>
 </h3>
 <p>
@@ -11436,11 +11550,11 @@ enum などは利用できません。
 <p>
 <code>@@=</code> は、型チェックに時間がかかるような場合に限り使用するべきです。
 </p>
-<h3 id="headline-291">
+<h3 id="headline-297">
 まとめ
 </h3>
 <p>
-int、 real 間の変換以外は、出来るだけキャストは避けるべきです。
+int、 real 間の変換以外は、 <strong>出来るだけキャストは避けるべきです。</strong>
 generics や、 alge などを利用することで
 型を保ったまま汎用処理を作成できます。
 </p>
@@ -11449,7 +11563,7 @@ generics や、 alge などを利用することで
 <code>@@</code> や <code>@@=</code> の利用は必要最低限になるように設計してください。
 </p>
 <hr>
-<h2 id="headline-292">
+<h2 id="headline-298">
 <strong>subfile 編</strong>
 </h2>
 <p>
@@ -11474,7 +11588,7 @@ generics や、 alge などを利用することで
 LuneScript は、原則 1 モジュール = 1 ファイルであるが、
 サブファイル化した場合は、1 モジュール = 複数ファイルとなる。
 </p>
-<h3 id="headline-293">
+<h3 id="headline-299">
 サブファイル構成
 </h3>
 <p>
@@ -11488,7 +11602,7 @@ LuneScript は、原則 1 モジュール = 1 ファイルであるが、
   +- ...
   +- subN</code></pre></div>
 </div>
-<h3 id="headline-294">
+<h3 id="headline-300">
 使用方法
 </h3>
 <p>
@@ -11519,7 +11633,7 @@ subfile owner foo.bar.main;</code></pre>
 指定したモジュール(上記の例では foo.bar.sub)を分割されたサブファイルとして扱い、
 sub.lns は main.lns のモジュールの一部として処理する。
 </p>
-<h4 id="headline-295">
+<h4 id="headline-301">
 制限
 </h4>
 <p>
@@ -11572,6 +11686,13 @@ LuneScript ではファイルの最終位置にサブファイルを展開する
 <p>
 例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
 </p>
+<ul>
+<li>
+<p>
+main.lns
+</p>
+</li>
+</ul>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
 //------ main.lns -------
@@ -11580,6 +11701,13 @@ subfile use sub2;
 
 pub let val = 1;</code></pre>
 </div>
+<ul>
+<li>
+<p>
+sub1.lns
+</p>
+</li>
+</ul>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
 //------ sub1.lns -------
@@ -11587,6 +11715,13 @@ subfile owner main;
 
 pub let val1 = 1;</code></pre>
 </div>
+<ul>
+<li>
+<p>
+sub2.lns
+</p>
+</li>
+</ul>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
 //------ sub2.lns -------
@@ -11605,7 +11740,7 @@ pub let val1 = 1;
 pub let val2 = 1;</code></pre>
 </div>
 <hr>
-<h2 id="headline-296">
+<h2 id="headline-302">
 <strong>遅延ロード 編</strong>
 </h2>
 <p>
@@ -11685,7 +11820,7 @@ func_C, funcC_1 〜 funcC_3 が無駄になります。
 <p>
 このロード処理の無駄を無くすのが遅延ロードです。
 </p>
-<h3 id="headline-297">
+<h3 id="headline-303">
 遅延ロード
 </h3>
 <p>
@@ -11702,7 +11837,7 @@ func_C, funcC_1 〜 funcC_3 はロードされません。
 これにより、ロード処理の時間、
 ロードしたデータを格納しておくメモリ領域を無駄にしません。
 </p>
-<h4 id="headline-298">
+<h4 id="headline-304">
 遅延ロードの実現方法
 </h4>
 <p>
@@ -11724,7 +11859,7 @@ func_C, funcC_1 〜 funcC_3 はロードされません。
 <p>
 遅延ロードを利用する場合、このようなケースの考慮が必要です。
 </p>
-<h4 id="headline-299">
+<h4 id="headline-305">
 遅延ロードの影響
 </h4>
 <p>
@@ -11736,7 +11871,7 @@ func_C, funcC_1 〜 funcC_3 はロードされません。
 <p>
 それよりも影響が考えられるのが、実行順序の違いです。
 </p>
-<h5 id="headline-300">
+<h5 id="headline-306">
 ロード方式の違いによる実行順序の影響
 </h5>
 <p>
@@ -11833,7 +11968,7 @@ import したタイミングでサブモジュール Hoge がロードされ、
 <p>
 通常ロードと遅延ロードには、このような違いが起る。
 </p>
-<h5 id="headline-301">
+<h5 id="headline-307">
 ロード方式の違いによる global の影響
 </h5>
 <p>
@@ -11849,7 +11984,7 @@ global はモジュールをロードしたタイミングで登録されます�
 <p>
 global を使うケースは少ないと思いますが、注意してください。
 </p>
-<h3 id="headline-302">
+<h3 id="headline-308">
 使用方法
 </h3>
 <p>
@@ -11935,19 +12070,20 @@ import, module は遅延ロードになります。
 <code class="verbatim">--default-lazy</code> を指定している時も通常ロードになります。
 </p>
 <hr>
-<h2 id="headline-303">
+<h2 id="headline-309">
 <strong>shebang とコマンドライン引数</strong>
 </h2>
 <p>
 LuneScript は shebang に対応しています。
 </p>
-<h3 id="headline-304">
+<h3 id="headline-310">
 shebang 対応
 </h3>
 <p>
 shebang とは、シェルスクリプト等で良く見られるスクリプトファイルの最初の行に、
-使用するインタプリタをコメントに指定する機能です。
-bash では次のように指定します。
+使用するインタプリタをコメントに指定することで、
+そのスクリプトファイルを実行すると指定しているインタプリタが実行される機能です。
+例えば bash では次のように指定します。
 </p>
 <div class="src src-sh">
 <div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh"><span class="c1">#! /bin/bash</span></code></pre></div>
@@ -11955,9 +12091,8 @@ bash では次のように指定します。
 <p>
 LuneScript では、次のように指定します。
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-#! /usr/bin/lnsc -shebang</code></pre>
+<div class="src src-sh">
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh"><span class="c1">#! /usr/bin/lnsc -shebang</span></code></pre></div>
 </div>
 <p>
 ここで、 <code class="verbatim">/usr/bin/lnsc</code> は環境に合せた指定が必要です。
@@ -11968,30 +12103,29 @@ LuneScript では、次のように指定します。
 <p>
 例えば次のようなファイル hello.lns があった場合、
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-#! /usr/bin/lnsc -shebang
-print( &#34;hello world&#34; );</code></pre>
+<div class="src src-sh">
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh"><span class="cp">#! /usr/bin/lnsc -shebang
+</span><span class="cp"></span>print<span class="o">(</span> <span class="s2">&#34;hello world&#34;</span> <span class="o">)</span><span class="p">;</span></code></pre></div>
 </div>
 <p>
-この hello.lns を直接起動できます。
+この hello.lns を直接実行できます。
 </p>
 <div class="src src-txt">
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ hello.lns
 hello world</code></pre></div>
 </div>
 <p>
-この時、次の制限があります。
+<del>この時、次の制限があります。</del>
 </p>
 <ul>
 <li>
 <p>
-go 版 lnsc では、 import している .lns ファイルに対応する .lua を
-事前に生成しておく必要がある。
+<del>go 版 lnsc では、 import している .lns ファイルに対応する .lua を</del>
+<del>事前に生成しておく必要がある。</del>
 </p>
 </li>
 </ul>
-<h3 id="headline-305">
+<h3 id="headline-311">
 コマンドライン引数
 </h3>
 <p>
@@ -12005,13 +12139,13 @@ shebang で起動された場合や、 go へトランスコンパイルした�
 </p>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">// @lnsFront: skip   
-pub fn __main( argList:List&lt;str&gt; ):int</code></pre>
+pub fn __main( argList:&amp;List&lt;str&gt; ):int</code></pre>
 </div>
 <p>
 __main 関数の型は、
-引数 argList 名以外、必ず上記の型での宣言が必要です。
+引数名 argList 以外、必ず上記の型での宣言が必要です。
 </p>
-<h4 id="headline-306">
+<h4 id="headline-312">
 __main の実行順
 </h4>
 <p>
@@ -12023,32 +12157,32 @@ __main の実行順
 // @lnsFront: skip   
 print( &#34;hello world&#34; );
 
-pub fn __main( argList:List&lt;str&gt; ):int {
+pub fn __main( argList:&amp;List&lt;str&gt; ):int {
    print( &#34;hoge&#34; );
    return 0;
 }</code></pre>
 </div>
 <p>
-出力結果は以下になります。 hello
+出力結果は以下になります。
 </p>
 <div class="src src-txt">
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ ./mini.lns 
 hello world
 hoge</code></pre></div>
 </div>
-<h4 id="headline-307">
+<h4 id="headline-313">
 __main の引数
 </h4>
 <p>
-<code class="verbatim">__main</code> の引数は <code class="verbatim">List&lt;str&gt;</code> です。
+<code class="verbatim">__main</code> の引数は <code class="verbatim">&amp;List&lt;str&gt;</code> です。
 </p>
 <p>
-このリストには、先頭にスクリプトのパス、次以降にコマンドライン引数が格納されます。
+このリストには、先頭にスクリプトのパス、以降にコマンドライン引数が格納されます。
 </p>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">#! /usr/bin/lnsc -shebang
 // @lnsFront: skip   
-pub fn __main( argList:List&lt;str&gt; ):int {
+pub fn __main( argList:&amp;List&lt;str&gt; ):int {
    foreach arg in argList {
       print( arg );
    }
@@ -12056,7 +12190,7 @@ pub fn __main( argList:List&lt;str&gt; ):int {
 }</code></pre>
 </div>
 <hr>
-<h2 id="headline-308">
+<h2 id="headline-314">
 <strong>LuneScript を利用するプロジェクトの推奨ディレクトリ構成</strong>
 </h2>
 <p>
@@ -12069,7 +12203,7 @@ LuneScript は lua と go へのトランスコンパイルをサポートしま
 ここでは、どちらの言語のディレクトリ管理においても問題なく使えるようにするための
 推奨ディレクトリ構成について説明します。
 </p>
-<h3 id="headline-309">
+<h3 id="headline-315">
 前提
 </h3>
 <p>
@@ -12096,7 +12230,7 @@ PROJ は、任意のリポジトリ名。
 <pre class="example">
 foo.bar.lib
 </pre>
-<h3 id="headline-310">
+<h3 id="headline-316">
 基本構成
 </h3>
 <p>
@@ -12113,7 +12247,7 @@ foo.bar.lib
 <p>
 go.mod, lune.js, foo/ を、 PROJ ディレクトリ直下に配置します。
 </p>
-<h4 id="headline-311">
+<h4 id="headline-317">
 lune.js
 </h4>
 <p>
@@ -12122,7 +12256,7 @@ lune.js は、以下の内容で作成します。
 <pre class="example">
 {}
 </pre>
-<h4 id="headline-312">
+<h4 id="headline-318">
 go.mod
 </h4>
 <p>
@@ -12134,7 +12268,7 @@ go.mod
 
 go 1.16</code></pre></div>
 </div>
-<h4 id="headline-313">
+<h4 id="headline-319">
 メインとサブモジュール
 </h4>
 <p>
@@ -12181,7 +12315,7 @@ go.sum の github への <strong>登録が不要</strong> になります。
 
 go 1.16</code></pre></div>
 </div>
-<h4 id="headline-314">
+<h4 id="headline-320">
 環境変数 GOPATH
 </h4>
 <p>
@@ -12195,328 +12329,6 @@ ${GOPATH}/src/github.com/HOGE/PROJ
 GOPATH を設定していない場合は <code class="verbatim">${HOME}/go</code> が利用されます。
 </p>
 <hr>
-<h2 id="headline-315">
-<strong>2 非同期処理</strong>
-</h2>
-<p>
-LuneScript から go 言語へのトランスコンパイル対応したのを機に、
-LuneScript による非同期処理を対応しました。
-</p>
-<p>
-ただし、これは非常に実験的な内容なので参考程度にしてください。
-</p>
-<h3 id="headline-316">
-__Runner インタフェース
-</h3>
-<p>
-LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
-</p>
-<p>
-__Runner インタフェースは、以下の型です。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub interface __Runner {
-   pub fn run() __async mut;
-}</code></pre>
-</div>
-<p>
-このインタフェースを実装すると、
-新しい組込み関数の __run(), __join を利用できます。
-</p>
-<p>
-例えば、以下のような処理を実行すると、
-<code class="verbatim">print(&#34;hoge:&#34;, self.val );</code> が非同期で処理されます。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge extend (__Runner) {
-   let val:int;
-   pub fn run() __async mut {
-      print(&#34;hoge:&#34;, self.val );
-   }
-}
-
-let list:List&lt;Hoge&gt; = [];
-for index = 0, 10 {
-   let mut hoge = new Hoge(index);
-   hoge.run();
-   list.insert( hoge );
-}
-foreach hoge in list {
-   __join( hoge );
-}</code></pre>
-</div>
-<hr>
-<h2 id="headline-317">
-<strong>2.1 非同期処理O(過去情報)</strong>
-</h2>
-<p>
-LuneScript から go 言語へのトランスコンパイル対応したのを機に、
-LuneScript による非同期処理を対応しました。
-</p>
-<p>
-ただし、これは非常に実験的な内容なので参考程度にしてください。
-</p>
-<p>
-<strong>*1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。</strong>
-</p>
-<h3 id="headline-318">
-LuneScript のランタイム
-</h3>
-<p>
-LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
-差を埋めるためのランタイムがあります。
-</p>
-<p>
-例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
-</p>
-<ul>
-<li>
-<p>
-lua との連携動作
-</p>
-</li>
-<li>
-<p>
-and or 演算子の挙動
-</p>
-</li>
-</ul>
-<p>
-これら処理は、ランタイム内で宣言しているデータにアクセスしています。
-</p>
-<p>
-LuneScript を非同期処理に対応する場合、
-ランタイム内のデータアクセスを排他対応する必要があります。
-</p>
-<p>
-一方で、 mutex などによる排他制御は、
-シングルスレッド時にもパフォーマンスに影響してしまいます。
-</p>
-<p>
-今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
-排他制御は最低限にし、
-必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
-</p>
-<p>
-具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
-スレッド毎に複製し、スレッド毎に切り替えて利用します。
-</p>
-<p>
-ここで一つ問題があります。
-</p>
-<p>
-それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
-</p>
-<p>
-スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
-現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
-アクセス先を切り替える、という処理を行なえます。
-</p>
-<p>
-しかし、スレッド ID の取得が出来ないため、それが出来ません。
-</p>
-<p>
-これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
-という方法が必要になります。
-</p>
-<p>
-さすがにこれはやりたくないので、別の方法を考えました。
-</p>
-<p>
-以降では、今回導入した非同期処理の方法について説明します。
-</p>
-<h3 id="headline-319">
-LnsThread クラスの導入と制限
-</h3>
-<p>
-LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
-</p>
-<p>
-LnsThread クラスは、次のようなクラスです。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-abstract class LnsThread {
-   pro abstract fn loop() mut;
-}</code></pre>
-</div>
-<p>
-LnsThread のサブクラスでは、 loop() メソッドを override し、
-その中で非同期処理を行ないます。
-</p>
-<p>
-LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
-</p>
-<pre class="example">
-_lune_control run_async_pipe;
-</pre>
-<p>
-go routine loop() メソッドが実行されます。
-</p>
-<p>
-なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
-</p>
-<pre class="example">
-_lune_control use_async;
-</pre>
-<p>
-これは、 非同期処理を行なうことを宣言するコマンドです。
-</p>
-<p>
-このコマンドが実行されているモジュー内では、
-次の演算が制限がかかり、
-LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
-</p>
-<ul>
-<li>
-<p>
-and/or 演算
-</p>
-</li>
-<li>
-<p>
-nil 条件演算
-</p>
-</li>
-<li>
-<p>
-一部のビルトイン関数、メソッドアクセス
-</p>
-</li>
-</ul>
-<p>
-また、非同期処理とのデータを送受信するための手段として、
-__pipe&lt;T&gt; クラスを追加しています。
-</p>
-<p>
-__pipe&lt;T&gt; クラスは、 go の chan と等価と思ってください。
-</p>
-<p>
-__pipe&lt;T&gt; クラスは、次のようなクラスです。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-class __pipe&lt;T&gt; {
-  pub fn get() mut : T!;
-  pub fn put( val:T! ) mut;
-}</code></pre>
-</div>
-<p>
-ここで、__pipe&lt;T&gt;  の T には __AsyncItem インタフェースを implement したクラスを
-指定する必要があります。
-</p>
-<p>
-put() した val が、 get() で取得できるようになります。
-put(val:T!) に nil を与えると、その __pipe の通信は終了し、
-その後 nil 意外を put() しても、 get() は nil を返すようになります。
-</p>
-<p>
-__AsyncItem インタフェースを implement クラスは、
-同時に Mapping インタフェースも implement が必要です。
-</p>
-<p>
-__AsyncItem インタフェースを implement したクラスには、
-次のメソッドが追加されます。
-</p>
-<pre class="example">
-pub static fn _createPipe( num:int ) : __pipe&lt;T&gt;!;
-</pre>
-<p>
-ここで 引数 num は、 chan の cap と同じです。
-</p>
-<p>
-なお、 Lua にトランスコンパイルした場合、
-この <code class="verbatim">_createPipe()</code> 関数は必ず nil を返します。
-</p>
-<p>
-上記をまとめると、非同期処理は次のように書きます。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-_lune_control use_async;
-
-class Test extend (__AsyncItem,Mapping) {
-   let val:str {pub};
-}
-
-class Async extend LnsThread {
-   let mut count:int {pub};
-   let mut pipe:__pipe&lt;Test&gt;!;
-   
-   pub fn __init( pipe:__pipe&lt;Test&gt;! ) {
-      super();
-      self.pipe = pipe;
-      self.count = 0;
-   }
-   
-   pro override fn loop() mut {
-      print( &#34;hoge:&#34; );
-      while true {
-         if! let mut pipe = self.pipe {
-            let! val = pipe.get() {  // pipe からデータを取得
-               print( &#34;hoge:&#34; );
-               break;
-            };
-            val.$val.find( &#34;%d&#34; (self.count) ## );
-            self.count = self.count + 1;
-         }
-      }
-   }
-   pub fn start() {
-      _lune_control run_async_pipe;  // loop() 起動
-   }
-   pub fn put( test:Test ) mut {
-      if! let mut pipe = self.pipe { // pipe にデータをセット
-         pipe.put( test );
-      }
-   }
-}
-
-let mut async = new Async( Test._createPipe( 10 ) );
-async.start();
-let mut async2 = new Async( Test._createPipe( 10 ) );
-async2.start();
-
-for _ = 1, 100000 {
-   async.put( new Test( &#34;abcdefg&#34; ) );
-   async2.put( new Test( &#34;abcdefg&#34; ) );
-}
-print( async.$count, async2.$count );</code></pre>
-</div>
-<h4 id="headline-320">
-非同期処理の制限
-</h4>
-<p>
-次の処理を行なった場合の動作は未定義です。
-</p>
-<ul>
-<li>
-<p>
-Loop() 内から、別モジュールのデータ、メソッドにアクセスする
-</p>
-</li>
-<li>
-<p>
-別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
-</p>
-</li>
-<li>
-<p>
-LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
-</p>
-</li>
-</ul>
-<p>
-以上のように、非常に限定的で使い勝手の悪い仕様になっています。
-この仕様は間違いなく将来変更になるので、
-冒頭で書いたようにあくまで参考程度にしてください。
-</p>
-<p>
-ちなみに、これだけ制限の多い非同期処理ですが、
-LuneScript の parse 処理に利用していて、
-LuneScript の高速化にほんの少し貢献しています。
-</p>
-<hr>
 <h2 id="headline-321">
 <strong>1 Go 言語へのトランスコンパイル</strong>
 </h2>
@@ -12526,8 +12338,12 @@ Go へのトランスコンパイルが可能です。
 </p>
 <p>
 この機能により、
-LuneScript のセルフホスティングコードを go にトランスコンパイルし、
-go でビルドすることで、 LuneScript の高速化を実現しています。
+LuneScript のセルフホスティングコードを go 言語のコードにトランスコンパイルし、
+それを go でビルドすることで、 LuneScript の高速化(約 16倍)を実現しています。
+</p>
+<p>
+高速化については次を参照してください。
+<a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/">https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/</a>
 </p>
 <p>
 ただし、
@@ -12590,8 +12406,11 @@ return fib
 // Lua コードのロード
 form fibFunc( num:int ):int;
 fn loadLua( txt:str ) : Luaval&lt;fibFunc&gt; {
-   let loaded = unwrap _load( txt ## );
-   let fib = unwrap loaded(##);
+   let fib;
+   __luago {
+      let loaded = unwrap _load( txt ## );
+      fib = unwrap loaded(##);
+   }
    return fib@@fibFunc;
 }
 
@@ -12607,8 +12426,9 @@ macro _profile( exec:__exp ) {
 
 // Lua のコードをロードして実行
 let fib_lua = loadLua( code );
-_profile( fib_lua( step ) );
-
+__luago {
+   _profile( fib_lua( step ) );
+}
 
 // LuneScript のフィボナッチ関数
 fn fib_lns( num:int ) : int {
@@ -12820,7 +12640,12 @@ go へトランスコンパイルしてビルドするには次の step が必�
 <ul>
 <li>
 <p>
-.lns から .go を生成する
+go.mod を生成する
+</p>
+</li>
+<li>
+<p>
+LuneScript ランタイムを go.mod に登録する  
 </p>
 </li>
 <li>
@@ -12830,14 +12655,72 @@ main.go を生成する
 </li>
 <li>
 <p>
+.lns から .go を生成する
+</p>
+</li>
+<li>
+<p>
+go.mod を更新する
+</p>
+</li>
+<li>
+<p>
 go build する
 </p>
 </li>
 </ul>
 <p>
+.lns を更新した場合は、
+「 .lns から .go を生成する」以降の処理を繰り返し実行します。
+</p>
+<p>
 各 step を説明します。
 </p>
 <h5 id="headline-328">
+go.mod を生成する
+</h5>
+<p>
+lune.js があるディレクトリで、以下のコマンドを実行します。
+</p>
+<pre class="example">
+$ go mod init test # &lt;--- test は環境に合せて指定してください
+</pre>
+<h5 id="headline-329">
+LuneScript ランタイムを go.mod に登録する
+</h5>
+<p>
+以下のコマンドで、LuneScript のランタイムを go.mod に登録します。
+</p>
+<pre class="example">
+$ go get github.com/ifritJP/LuneScript/src@latest
+</pre>
+<p>
+以降の作業で go mod tidy を実行しますが、必ず go get を先に実行してください。
+</p>
+<h5 id="headline-330">
+main.go を生成する
+</h5>
+<p>
+go には、エントリ関数の main() が必要です。
+</p>
+<p>
+以下のコマンドで、go の main() 関数を定義する main.go を生成します。
+</p>
+<pre class="example">
+$ lnsc hoge.lns mkmain main.go
+</pre>
+<p>
+ここで hoge.lns は、 lns で __main を定義しているメインモジュールを指定します。
+main.go は出力先のパスを指定します。
+</p>
+<p>
+go にトランスコンパイルする場合、 __main 関数を定義するモジュールが必須です。
+</p>
+<p>
+このコマンドで生成した main.go には、
+lns のランタイムを初期化するコードが含まれます。
+</p>
+<h5 id="headline-331">
 .lns から .go を生成する
 </h5>
 <p>
@@ -12847,7 +12730,7 @@ go build する
 $ lnsc hoge.lns save -langGo
 </pre>
 <p>
-メインモジュールの場合は、さらに –main オプション付加します。
+__main 関数を含むメインモジュールの場合は、さらに –main オプション付加します。
 </p>
 <pre class="example">
 $ lnsc hoge.lns save -langGo --main hoge
@@ -12864,27 +12747,19 @@ $ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
 <p>
 となります。
 </p>
-<h5 id="headline-329">
-main.go を生成する
+<p>
+LuneScript を go にトランスコンパイルする場合、__main 関数が必要です。
+</p>
+<h5 id="headline-332">
+go.mod を更新する
 </h5>
 <p>
-go には、エントリ関数の main() が必要です。
-</p>
-<p>
-以下のコマンドで、この main() 関数を定義する main.go を生成します。
+以下のコマンドで go.mod を更新します。    
 </p>
 <pre class="example">
-$ lnsc hoge.lns mkmain main.go
+$ go mod tidy
 </pre>
-<p>
-ここで hoge.lns は、 lns のメインモジュールを指定します。
-main.go は出力先のパスを指定します。
-</p>
-<p>
-このコマンドで生成した main.go には、
-lns のランタイムを初期化するコードが含まれます。
-</p>
-<h5 id="headline-330">
+<h5 id="headline-333">
 go build する
 </h5>
 <p>
@@ -12894,9 +12769,15 @@ go build する
 $ go build
 </pre>
 <p>
+<strong>*上記がエラーする場合は、以下を試してください。</strong>
+</p>
+<pre class="example">
+$ go build -tags gopherlua
+</pre>
+<p>
 これにより、トランスコンパイルしたモジュールが go でビルドされます。
 </p>
-<h4 id="headline-331">
+<h4 id="headline-334">
 go へトランスコンパイル後は Lua ライブラリのリンクが必要
 </h4>
 <blockquote>
@@ -12937,13 +12818,13 @@ liblua5.3.so へのリンクが必要になります。
 ビルド時には lua-5.3.4 のインクルードファイルも必要になります。
 </p>
 <hr>
-<h2 id="headline-332">
+<h2 id="headline-335">
 <strong>1.2 Go 言語へのトランスコンパイル時のパッケージ</strong>
 </h2>
 <p>
-go のパッケージ管理されているモジュールを LuneScript から利用できます。
+go でパッケージ管理されているモジュールを LuneScript から利用できます。
 </p>
-<h3 id="headline-333">
+<h3 id="headline-336">
 go のパッケージ管理概要
 </h3>
 <p>
@@ -12965,7 +12846,7 @@ github 上のパッケージを go で利用するには、次のように書き
 <p>
 これと同じ感覚で、 LuneScript は go のモジュールにアクセスできます。
 </p>
-<h3 id="headline-334">
+<h3 id="headline-337">
 import
 </h3>
 <p>
@@ -13024,7 +12905,7 @@ ${GOPATH}/pkg/mod/github.com/ifrit!j!p/lnshttpd@XXXXXXXXXXXXXXXXX/lnsservlet.lns
 go.mod に記載されているモジュールの TAG 情報から取得します。
 つまり、事前に go mod tidy を実施しておく必要があります。
 </p>
-<h3 id="headline-335">
+<h3 id="headline-338">
 module
 </h3>
 <p>
@@ -13081,7 +12962,7 @@ module servlet require &#34;go/github:com.ifritJP.lnshttpd.servlet&#34; of &#34;
 </tr>
 </tbody>
 </table>
-<h4 id="headline-336">
+<h4 id="headline-339">
 利用可能な言語
 </h4>
 <p>
@@ -13109,7 +12990,7 @@ module で利用可能な言語の組み合わせには制限があります。
 </tr>
 </tbody>
 </table>
-<h4 id="headline-337">
+<h4 id="headline-340">
 型の互換性
 </h4>
 <p>
@@ -13152,7 +13033,7 @@ module 宣言で go モジュールを LuneScript から利用可能です。
 </tbody>
 </table>
 <hr>
-<h2 id="headline-338">
+<h2 id="headline-341">
 *1.3 Go へトランスコンパイルした際の Lua ランタイム*
 </h2>
 <p>
@@ -13203,7 +13084,7 @@ Lua ランタイムは環境依存の少ない構成であるが、
 そこで、 Native Lua ランタイムをリンクしなくても
 トランスコンパイル後のコードを実行できるよう対応している。
 </p>
-<h3 id="headline-339">
+<h3 id="headline-342">
 gopher-lua の利用
 </h3>
 <p>
@@ -13220,7 +13101,7 @@ go build -tags gopherlua
 このオプションを指定することで、
 Lua ランタイムが Native Lua から gopher-lua に切り替わる。
 </p>
-<h4 id="headline-340">
+<h4 id="headline-343">
 gopher-lua の注意点
 </h4>
 <p>
@@ -13257,7 +13138,7 @@ LuneScript と Lua の連携を使用していない場合は
 気にしなくても問題ない範囲ではあるが、
 Native Lua と gopher-lua とでは違いがあることは認識しておく必要がある。
 </p>
-<h3 id="headline-341">
+<h3 id="headline-344">
 他の Lua ランタイム
 </h3>
 <p>
@@ -13319,7 +13200,1207 @@ Lua の互換性を確認するテストケースとして使えるのではな�
 イマイチ現実的ではないか。
 </p>
 <hr>
-<h2 id="headline-342">
+<h2 id="headline-345">
+<strong>2 安全な非同期処理</strong>
+</h2>
+<p>
+LuneScript から go 言語へのトランスコンパイル対応したのを機に、
+LuneScript による非同期処理を対応しました。
+</p>
+<p>
+静的にデータ競合を排除する簡易機能を持ちます。
+</p>
+<h3 id="headline-346">
+__Runner インタフェース
+</h3>
+<p>
+LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
+</p>
+<p>
+__Runner インタフェースは、以下の型です。 <strong>__async については後述します。</strong>
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub interface __Runner {
+   pub fn run() __async mut;
+}</code></pre>
+</div>
+<p>
+このインタフェースを実装すると、
+新しい組込み関数の __run(), __join() を利用できます。
+</p>
+<p>
+例えば、以下のような処理を実行すると、
+<code class="verbatim">print(&#34;hoge:&#34;, self.val );</code> が非同期で処理されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Hoge extend (__Runner) {
+   let val:int;
+   pub fn run() __async mut {
+      print(&#34;hoge:&#34;, self.val );
+   }
+}
+
+let list:List&lt;Hoge&gt; = [];
+for index = 0, 10 {
+   let mut hoge = new Hoge(index);
+   __run( hoge, __lns.runMode.Sync, &#34;&#34; );
+   list.insert( hoge );
+}
+foreach hoge in list {
+   __join( hoge );
+}</code></pre>
+</div>
+<h4 id="headline-347">
+__run() 関数
+</h4>
+<p>
+__run() 関数は、 __Runner クラスの非同期実行を開始するための関数です。
+</p>
+<p>
+非同期実行が開始されると、
+__Runner クラスの run() メソッドが別スレッドで実行されます。
+</p>
+<p>
+__run() 関数の型は以下の通りです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool</code></pre>
+</div>
+<ul>
+<li>
+<p>
+第 1 引数の runner には、 実行する __Runner オブジェクトを指定します。
+</p>
+</li>
+<li>
+<p>
+第 2 引数の mode には、 以下を指定します。
+</p>
+<ul>
+<li>
+<p>
+__lns.runMode.Sync
+</p>
+<ul>
+<li>
+<p>
+実行中の __Runner 数が一定数越えた場合、
+新しくスレッドは起動せずにここで実行する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__lns.runMode.Queue
+</p>
+<ul>
+<li>
+<p>
+実行中の __Runner 数が一定数越えた場合、 Runner queue に入れ、
+実行中の __Runner が停止した時に実行する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__lns.runMode.Skip
+</p>
+<ul>
+<li>
+<p>
+実行中の __Runner 数が一定数越えた場合、 Runner を実行しない。
+</p>
+</li>
+<li>
+<p>
+実行しなかった場合、 false を返す。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+第 3 引数の name には、この非同期処理の名前を指定する。
+</p>
+</li>
+</ul>
+<p>
+lua にトランスコンパイルした場合、以下の動作になります。
+</p>
+<ul>
+<li>
+<p>
+mode が __lns.runMode.Sync あるいは __lns.runMode.Queue の場合、
+新しくスレッドは起動せずに、ここで実行する。
+</p>
+</li>
+<li>
+<p>
+mode が __lns.runMode.Skip の場合、実行せずに false を返す。
+</p>
+</li>
+</ul>
+<h4 id="headline-348">
+__join() 関数
+</h4>
+<p>
+__join() 関数は、 __Runner の非同期処理の終了を待つ関数です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn __join( runner:__Runner )</code></pre>
+</div>
+<p>
+lua にトランスコンパイルした場合、非同期処理はないため何もしません。
+</p>
+<h4 id="headline-349">
+コンストラクタの引数の制限
+</h4>
+<p>
+__Runner を extend するクラスのコンストラクタの引数は、
+以下の型に制限されます。
+</p>
+<ul>
+<li>
+<p>
+int, real, str, bool, enum 
+</p>
+</li>
+<li>
+<p>
+immutable な型
+</p>
+</li>
+</ul>
+<p>
+つまり、以下のケースはエラーになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:Test, list:List&lt;int&gt; ) __async { // error
+   }
+   pub fn run() __async mut {
+   }
+}</code></pre>
+</div>
+<p>
+このエラーは、 引数の test と list が mutable な型であるためです。
+</p>
+<p>
+以下のように immutable としての宣言が必要です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:&amp;Test, list:&amp;List&lt;int&gt; ) __async { // ok
+   }
+   pub fn run() __async mut {
+   }
+}</code></pre>
+</div>
+<h3 id="headline-350">
+__async, __noasyc 属性
+</h3>
+<p>
+__Runner インタフェースの run() メソッドの定義を見ると、
+__async が追加されているのが分かります。
+</p>
+<p>
+これは、その関数を非同期に実行可能であることを宣言しています。
+</p>
+<p>
+LuneScript は、スレッドが一つだけで動作する従来の同期処理と、
+新しくスレッドを起動して実行する非同期処理に分けて管理します。
+</p>
+<p>
+ある関数を非同期で実行するには、
+その関数が非同期で実行可能であることを宣言する必要があります。
+</p>
+<p>
+それが <strong>__async</strong> です。
+</p>
+<p>
+一方で、従来の同期処理は <strong>__noasyc</strong> です。
+</p>
+<p>
+<em>普通は async の対になるのは sync だと思いますが、</em>
+<em>以下の理由からあえて noasync にしています。</em>
+</p>
+<ul>
+<li>
+<p>
+async と sync だと区別しづらい
+</p>
+</li>
+<li>
+<p>
+主体が非同期処理(async)であり、 同期処理は例外だから noasync
+</p>
+</li>
+</ul>
+<p>
+__async, __noasync どちらも宣言していない場合はデフォルトで __noasyc ですが、
+デフォルトを __async として扱える方法を用意しています。
+</p>
+<h3 id="headline-351">
+__async 宣言された関数の制限
+</h3>
+<p>
+<strong>*__async 宣言された関数には、以下の制限があります。</strong>
+</p>
+<ul>
+<li>
+<p>
+__async 宣言された関数内から __noasync 宣言された関数にアクセスできない。
+</p>
+</li>
+<li>
+<p>
+__async 宣言された関数内から、スコープ外の mutable な変数にアクセスできない。
+</p>
+</li>
+</ul>
+<p>
+<strong>*一方で __noasync 宣言された関数には、このような制限はありません。</strong>
+</p>
+<p>
+これは、安全に非同期処理を実行するためのガードです。
+</p>
+<p>
+非同期処理は、 <strong>排他制御</strong> を考慮する必要があります。
+必要な箇所で <strong>排他制御</strong> を行なわないと、バグになります。
+</p>
+<p>
+<a href="https://ja.wikipedia.org/wiki/%E7%AB%B6%E5%90%88%E7%8A%B6%E6%85%8B#%E6%83%85%E5%A0%B1%E5%87%A6%E7%90%86">排他制御の必要性については、ここを参考に。</a>
+</p>
+<p>
+しかし、どこに <strong>排他制御</strong> が必要か、
+を全てのケースにおいて人手で網羅することは非常に困難です。
+</p>
+<p>
+そこで、 LuneScript では文法上にメタ情報を宣言し、
+その不整合をコンパイラがチェックすることによって、
+ヒューマンエラーによる <strong>排他制御</strong> の抜け漏れを軽減する方法を採用しています。
+</p>
+<p>
+このアプローチを採用する代表的な言語に Rust があります。
+</p>
+<p>
+Rust は厳格なメタ情報の定義によって、高度な <strong>排他制御</strong> を実現しています。
+</p>
+<p>
+LuneScript では、 Rust ほど高度な <strong>排他制御</strong> を実現していない変わりに、
+比較的に手軽で扱い易いメタ情報定義を採用しています。
+</p>
+<p>
+なお、後述する <strong>__asyncLock</strong> を利用することで、
+<strong>*__async から __noasync をアクセスすることが可能</strong> になります。
+</p>
+<h4 id="headline-352">
+__async 宣言された関数内から __noasync 宣言された関数は実行できない。
+</h4>
+<p>
+これは、以下のケースがエラーになることを指します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      self.func1(); // error
+   }
+}</code></pre>
+</div>
+<p>
+上記 func1 は __noasync で、 func2 は __async です。
+このとき、 __async の func2 から __noasync の func1 はアクセスできません。
+</p>
+<h4 id="headline-353">
+__async 宣言された関数内から、スコープ外の mutable な変数にアクセスできない。
+</h4>
+<p>
+これは、以下のケースがエラーになることを指します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+let list2 = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list { // error
+         print( val );
+      }
+      foreach val in list2 { // ok
+         print( val );
+      }
+   }
+}</code></pre>
+</div>
+<p>
+上記 func は __async で、 list は最上位スコープの mutable な変数です。
+</p>
+<p>
+このとき、 __async の func から mutable の list にはアクセスできません。
+</p>
+<p>
+一方で、 list2 は immutable です。 immutable な変数には func からアクセス可能です。
+</p>
+<p>
+また __noasync のメソッドからは、 mutable なメンバにアクセス可能です。
+</p>
+<h3 id="headline-354">
+__async:__noasyc == N:1
+</h3>
+<p>
+LuneScript では、 非同期(<code class="verbatim">__async</code>)で動作するスレッドが複数(N)あり、
+<code class="verbatim">__noasync</code> で動作するスレッドは 1 つになるように設計しています。
+</p>
+<p>
+<code class="verbatim">__noasync</code> で動作するスレッドが複数あると、もはやそれは非同期なので、
+<code class="verbatim">__noasync</code> のスレッドが一つなのは当然ですね。
+</p>
+<h3 id="headline-355">
+__async の制限を一時的に解除する方法。 (__asyncLock)
+</h3>
+<p>
+前述の通り、 __async 宣言された関数には制限があります。
+</p>
+<p>
+理想は、全てにおいてこの制限を満すことですが、
+現実問題それでは対応できないケースもあります。
+</p>
+<p>
+そこで、 __async 宣言された関数の制限を一時的に解除する方法を用意しています。
+</p>
+<p>
+それが <strong>__asyncLock</strong> です。
+</p>
+<p>
+例えば、以下のように __asyncLock を利用します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1(); // ok
+      }
+   }
+}</code></pre>
+</div>
+<p>
+func2 は __async なので、__noasync である func2 に本来はアクセスできませんが、
+__asyncLock ブロック内では __async の制限が解除されます。
+</p>
+<h4 id="headline-356">
+__asyncLock と __noasync の関係
+</h4>
+<p>
+__asyncLock は、 __async 宣言された関数を一時的に __noasync として動作させます。
+</p>
+<p>
+そして前述している通り、
+__noasync として動作するスレッドは 1 つでなければなりません。
+</p>
+<p>
+そこで__asyncLock は、
+__noasync スレッドが実行中は、実行停止まで待ち、
+__noasync スレッドの実行停止後に _asyncLock のブロックを実行します。
+</p>
+<p>
+他の __asyncLock のブロック実行中も __noasync スレッド実行中と同様に扱います。
+</p>
+<h5 id="headline-357">
+関数を跨いだ __asyncLock のネスト
+</h5>
+<p>
+次のケースでは、 func3 -&gt; func2 -&gt; func1 とコールしています。
+</p>
+<p>
+この時に、 func3, func2 で __asyncLock していますが、
+func2 実行時には既の __noasync として実行しているため、
+func2 の __asyncLock はブロックせずに実行されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1();
+      }
+   }
+   fn func3() __async {
+      __asyncLock {
+         self.func2();
+      }
+   }
+}</code></pre>
+</div>
+<p>
+このように、関数を跨いだ __asyncLock はネストできます。
+</p>
+<p>
+一方で同一関数内の __asyncLock はネストできません。エラーします。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         __asyncLock { // error
+            self.func1();
+         }
+      }
+   }
+}</code></pre>
+</div>
+<h4 id="headline-358">
+__asyncLock のオーバーヘッド
+</h4>
+<p>
+前述の通り、 __asyncLock は排他制御を行ないます。
+</p>
+<p>
+排他制御はオーバーヘッドがかかるので、__asyncLock の利用は最小限にすべきです。
+</p>
+<p>
+例えば次のように for ループ内で __asyncLock を使うと、
+ループ分のオーバーヘッドが余計に加算されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      for _ = 1, 10000000 {
+         __asyncLock {
+            self.func1();
+         }
+      }
+   }
+}</code></pre>
+</div>
+<p>
+この場合は、 __asyncLock を for ループの外に出すのが良いです。
+しかし、for ループの外に出すと、
+排他される範囲が広くなりすぎるケースもあります。
+</p>
+<p>
+どの範囲を __asyncLock するかは慎重に判断する必要があります。
+</p>
+<h4 id="headline-359">
+__asyncLock の制限 
+</h4>
+<p>
+__asyncLock には以下の制限があります。
+</p>
+<ul>
+<li>
+<p>
+__asyncLock 内から return, break できない。
+</p>
+</li>
+</ul>
+<p>
+つまり、以下のような処理は出来ません。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      __asyncLock {
+         if self.func1() {
+            return 1; // error
+         }
+      }
+      return 0;
+   }
+}</code></pre>
+</div>
+<p>
+このような処理を行なう場合は、以下のよう書きます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      let mut val = 0;
+      __asyncLock {
+         if self.func1() {
+            val = 1;
+         }
+      }
+      return val;
+   }
+}</code></pre>
+</div>
+<h3 id="headline-360">
+デフォルトを __async にする
+</h3>
+<p>
+何も宣言していない関数は __noasync です。
+</p>
+<p>
+これを、 デフォルト __async にする方法を用意しています。
+</p>
+<pre class="example">
+_lune_control default_async_all
+</pre>
+<p>
+上記が .lns ファイルの先頭に宣言されている場合、
+その .lns ファイル内では デフォルト __async になります。
+</p>
+<h3 id="headline-361">
+ソフトウェアデザイン
+</h3>
+<p>
+これまでの特徴をまとめると以下になります。
+</p>
+<ul>
+<li>
+<p>
+__async スレッドが複数(N)で __noasync スレッドは 1 つの N:1 になる。
+</p>
+</li>
+<li>
+<p>
+他に __noasync スレッド実行中、 __asyncLock はブロックする。
+</p>
+</li>
+</ul>
+<p>
+これらから、 LuneScript において非同期処理を行なうには以下が必要になります。
+</p>
+<p>
+<strong>*「基本は __Runner で __async 処理し、 __noasync の処理は必要最低限に留める」</strong>
+</p>
+<p>
+例えば、
+__main() で起動直後に __Runner を起動し、その __Runner の終了を __join で待つ。
+というデザインをするのが基本となります。
+</p>
+<h3 id="headline-362">
+安全に非同期制御を行なうためのメカニズム
+</h3>
+<p>
+LuneScript では、以下によって排他制御の抜け漏れを防止しています。
+</p>
+<ul>
+<li>
+<p>
+__async 宣言された関数の制限
+</p>
+</li>
+<li>
+<p>
+__Runner を extend したクラスのコンストラクタの制限
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list {
+         print( val );
+      }
+   }
+}</code></pre>
+</div>
+<p>
+例えば、上記の func() から list へのアクセスは本来コンパイルエラーになりますが、
+これをエラーとしない場合、
+func() メソッドを実行している間に、
+別のスレッドで list の値を更新した場合、
+list に対して参照と変更が同時に発生し、不定な動作になります。
+</p>
+<p>
+これをガードするために、 __async 宣言した関数には制限が付きます。
+</p>
+<p>
+また、次のようなコードを実行した場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Hoge extend (__Runner) {
+   let list:List&lt;int&gt;;
+   pub fn __init( list:List&lt;int&gt; ) __async {
+      self.list = list;
+
+      __run( self, __lns.runMode.Queue, &#34;test&#34; );
+   }
+   pub fn run() __async mut {
+      self.list.insert(1);
+   }
+}
+
+let mut workList = [1];
+let hoge1 = new Hoge( workList );
+let hoge2 = new Hoge( workList );</code></pre>
+</div>
+<p>
+本来 Hoge のコンストラクタの list の型が
+mutable であるためコンパイルエラーになりますが、
+これをエラーとしない場合、同じ workList に対して、
+複数の Hoge の非同期処理によって insert() が同時に発生し、
+不定な動作になります。
+</p>
+<p>
+これをガードするために、
+__Runner を extend したコンストラクタには制限が付きます。
+</p>
+<h4 id="headline-363">
+不完全な制限
+</h4>
+<p>
+前述している通り LuneScript の排他制御は、不完全です。
+</p>
+<p>
+既に気付いている方もいると思いますが、
+現状の制限を守っていても不定な動作を起すことが簡単に出来ます。
+</p>
+<p>
+例えば、以下のコードの
+func() からアクセスする list2 は &amp;List&lt;int&gt; なので immutable であり、
+__async 関数の制限を満します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+let list2 = list;
+class Test {
+   fn func() __async {
+      foreach val in list2 {
+         print( val );
+      }
+   }
+}</code></pre>
+</div>
+<p>
+しかし、func を非同期で実行中に別のスレッドから list を更新されると、
+funcでアクセスしてる list2 は list と同じインスタンスであるため、
+不定な動作になります。
+</p>
+<p>
+コンストラクタの制限についても同じようなことを起せます。
+</p>
+<p>
+このように、不完全な制限になってしまっていますが、
+これは、プログラミング開発の手軽さと、
+静的チェックの厳格さとのトレードオフな部分であり、
+LuneScript ではバランスを取って現状はこの仕様になっています。
+</p>
+<p>
+プログラミング開発の手軽さを保ちつつ、
+静的チェックの厳格さを向上できる方法は今後も模索していきます。
+</p>
+<hr>
+<h2 id="headline-364">
+<strong>2.1 非同期処理O(過去情報)</strong>
+</h2>
+<p>
+LuneScript から go 言語へのトランスコンパイル対応したのを機に、
+LuneScript による非同期処理を対応しました。
+</p>
+<p>
+ただし、これは非常に実験的な内容なので参考程度にしてください。
+</p>
+<p>
+<strong>*1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。</strong>
+</p>
+<h3 id="headline-365">
+LuneScript のランタイム
+</h3>
+<p>
+LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
+差を埋めるためのランタイムがあります。
+</p>
+<p>
+例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
+</p>
+<ul>
+<li>
+<p>
+lua との連携動作
+</p>
+</li>
+<li>
+<p>
+and or 演算子の挙動
+</p>
+</li>
+</ul>
+<p>
+これら処理は、ランタイム内で宣言しているデータにアクセスしています。
+</p>
+<p>
+LuneScript を非同期処理に対応する場合、
+ランタイム内のデータアクセスを排他対応する必要があります。
+</p>
+<p>
+一方で、 mutex などによる排他制御は、
+シングルスレッド時にもパフォーマンスに影響してしまいます。
+</p>
+<p>
+今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
+排他制御は最低限にし、
+必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
+</p>
+<p>
+具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
+スレッド毎に複製し、スレッド毎に切り替えて利用します。
+</p>
+<p>
+ここで一つ問題があります。
+</p>
+<p>
+それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
+</p>
+<p>
+スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
+現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
+アクセス先を切り替える、という処理を行なえます。
+</p>
+<p>
+しかし、スレッド ID の取得が出来ないため、それが出来ません。
+</p>
+<p>
+これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
+という方法が必要になります。
+</p>
+<p>
+さすがにこれはやりたくないので、別の方法を考えました。
+</p>
+<p>
+以降では、今回導入した非同期処理の方法について説明します。
+</p>
+<h3 id="headline-366">
+LnsThread クラスの導入と制限
+</h3>
+<p>
+LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
+</p>
+<p>
+LnsThread クラスは、次のようなクラスです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+abstract class LnsThread {
+   pro abstract fn loop() mut;
+}</code></pre>
+</div>
+<p>
+LnsThread のサブクラスでは、 loop() メソッドを override し、
+その中で非同期処理を行ないます。
+</p>
+<p>
+LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
+</p>
+<pre class="example">
+_lune_control run_async_pipe;
+</pre>
+<p>
+go routine loop() メソッドが実行されます。
+</p>
+<p>
+なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
+</p>
+<pre class="example">
+_lune_control use_async;
+</pre>
+<p>
+これは、 非同期処理を行なうことを宣言するコマンドです。
+</p>
+<p>
+このコマンドが実行されているモジュー内では、
+次の演算が制限がかかり、
+LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
+</p>
+<ul>
+<li>
+<p>
+and/or 演算
+</p>
+</li>
+<li>
+<p>
+nil 条件演算
+</p>
+</li>
+<li>
+<p>
+一部のビルトイン関数、メソッドアクセス
+</p>
+</li>
+</ul>
+<p>
+また、非同期処理とのデータを送受信するための手段として、
+__pipe&lt;T&gt; クラスを追加しています。
+</p>
+<p>
+__pipe&lt;T&gt; クラスは、 go の chan と等価と思ってください。
+</p>
+<p>
+__pipe&lt;T&gt; クラスは、次のようなクラスです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+class __pipe&lt;T&gt; {
+  pub fn get() mut : T!;
+  pub fn put( val:T! ) mut;
+}</code></pre>
+</div>
+<p>
+ここで、__pipe&lt;T&gt;  の T には __AsyncItem インタフェースを implement したクラスを
+指定する必要があります。
+</p>
+<p>
+put() した val が、 get() で取得できるようになります。
+put(val:T!) に nil を与えると、その __pipe の通信は終了し、
+その後 nil 意外を put() しても、 get() は nil を返すようになります。
+</p>
+<p>
+__AsyncItem インタフェースを implement クラスは、
+同時に Mapping インタフェースも implement が必要です。
+</p>
+<p>
+__AsyncItem インタフェースを implement したクラスには、
+次のメソッドが追加されます。
+</p>
+<pre class="example">
+pub static fn _createPipe( num:int ) : __pipe&lt;T&gt;!;
+</pre>
+<p>
+ここで 引数 num は、 chan の cap と同じです。
+</p>
+<p>
+なお、 Lua にトランスコンパイルした場合、
+この <code class="verbatim">_createPipe()</code> 関数は必ず nil を返します。
+</p>
+<p>
+上記をまとめると、非同期処理は次のように書きます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+_lune_control use_async;
+
+class Test extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+class Async extend LnsThread {
+   let mut count:int {pub};
+   let mut pipe:__pipe&lt;Test&gt;!;
+   
+   pub fn __init( pipe:__pipe&lt;Test&gt;! ) {
+      super();
+      self.pipe = pipe;
+      self.count = 0;
+   }
+   
+   pro override fn loop() mut {
+      print( &#34;hoge:&#34; );
+      while true {
+         if! let mut pipe = self.pipe {
+            let! val = pipe.get() {  // pipe からデータを取得
+               print( &#34;hoge:&#34; );
+               break;
+            };
+            val.$val.find( &#34;%d&#34; (self.count) ## );
+            self.count = self.count + 1;
+         }
+      }
+   }
+   pub fn start() {
+      _lune_control run_async_pipe;  // loop() 起動
+   }
+   pub fn put( test:Test ) mut {
+      if! let mut pipe = self.pipe { // pipe にデータをセット
+         pipe.put( test );
+      }
+   }
+}
+
+let mut async = new Async( Test._createPipe( 10 ) );
+async.start();
+let mut async2 = new Async( Test._createPipe( 10 ) );
+async2.start();
+
+for _ = 1, 100000 {
+   async.put( new Test( &#34;abcdefg&#34; ) );
+   async2.put( new Test( &#34;abcdefg&#34; ) );
+}
+print( async.$count, async2.$count );</code></pre>
+</div>
+<h4 id="headline-367">
+非同期処理の制限
+</h4>
+<p>
+次の処理を行なった場合の動作は未定義です。
+</p>
+<ul>
+<li>
+<p>
+Loop() 内から、別モジュールのデータ、メソッドにアクセスする
+</p>
+</li>
+<li>
+<p>
+別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
+</p>
+</li>
+<li>
+<p>
+LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
+</p>
+</li>
+</ul>
+<p>
+以上のように、非常に限定的で使い勝手の悪い仕様になっています。
+この仕様は間違いなく将来変更になるので、
+冒頭で書いたようにあくまで参考程度にしてください。
+</p>
+<p>
+ちなみに、これだけ制限の多い非同期処理ですが、
+LuneScript の parse 処理に利用していて、
+LuneScript の高速化にほんの少し貢献しています。
+</p>
+<hr>
+<h2 id="headline-368">
+<strong>Lua と連携 編</strong>
+</h2>
+<p>
+LuneScript は Lua のコードを実行できます。
+</p>
+<p>
+この特徴は、 go 言語にトランスコンパイラした後も維持されますが、
+幾つかの点で注意が必要です。
+</p>
+<p>
+特に非同期処理と lua コード実行の組み合わせには要注意です。
+</p>
+<h3 id="headline-369">
+Luaval
+</h3>
+<p>
+既にリンク先で説明している通り、 lua で実行した結果は <strong>Luaval 型</strong> で管理します。
+</p>
+<p>
+<a href="../lua">../lua</a>
+</p>
+<p>
+この Luaval 型のデータには、以下の制限がありあます。
+</p>
+<p>
+<strong>*ある Luaval 型のデータ dataA を取得する際に実行した Lua VM と、</strong>
+<strong>*その dataA にアクセスする際に実行する Lua VM とは、</strong>
+<strong>*同じ Lua VM でなければなりません。</strong>
+</p>
+<p>
+この制限を満さない場合の動作は <strong>不定</strong> です。
+</p>
+<p>
+非同期処理で Luaval を扱わない場合は、
+利用される Lua VM は一つに限られるので、
+どの Lua VM が利用されるを意識する必要はありません。
+</p>
+<p>
+なお、 <strong>「Luaval 型のデータへのアクセス」</strong> とは、
+変数間の代入は含まれません。
+つまり、次の <code>work = val</code> は <strong>「Luaval 型のデータへのアクセス」</strong> にはならないので、
+Lua VM を意識する必要はありません。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn func( val:&amp;Luaval&lt;&amp;List&lt;int&gt;&gt; ) {
+   let work = val;
+}</code></pre>
+</div>
+<h3 id="headline-370">
+Lua VM の種類
+</h3>
+<p>
+Lua VM には次の 2 つの種類があります。
+</p>
+<ul>
+<li>
+<p>
+__noasync で実行する Lua VM
+</p>
+</li>
+<li>
+<p>
+__async で実行する Lua VM
+</p>
+<ul>
+<li>
+<p>
+__async 用 Lua VM は、非同期スレッドごとに存在します
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+lua を実行する際、どの Lua VM にアクセスするか制御が必要です。
+</p>
+<p>
+この制御を行なうのが <strong>lua アクセスブロック</strong> です。
+</p>
+<h3 id="headline-371">
+lua アクセスブロック
+</h3>
+<p>
+<strong>*lua アクセスブロック</strong> には、以下の種類があります。
+また、アクセスする関数が __async なのか __noasync なのかによって、
+利用する <strong>lua アクセスブロック</strong> が異なります。
+</p>
+<ul>
+<li>
+<p>
+__luago
+</p>
+<ul>
+<li>
+<p>
+__noasync の関数から lua にアクセスする際に利用する
+</p>
+</li>
+<li>
+<p>
+これは __noasync 用 Lua VM で lua にアクセスする。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__luaLock
+</p>
+<ul>
+<li>
+<p>
+__async の関数から lua にアクセスする際に利用する
+</p>
+</li>
+<li>
+<p>
+これは __asyncLock と __luago の組み合わせと等価です。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__luaDepend
+</p>
+<ul>
+<li>
+<p>
+__async の関数から lua にアクセスする際に利用する
+</p>
+</li>
+<li>
+<p>
+これは <strong>現在実行中のスレッドに紐付けられた Lua VM 用 lua でアクセスする。</strong>
+</p>
+</li>
+<li>
+<p>
+つまり、現在実行中のスレッドが __noasync であれば、__noasync 用 Lua VM でアクセスし、
+現在実行中のスレッドが __async であれば、__async 用 Lua VM でアクセスする。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+<strong>*__luaDepend は、使用される Lua VM が実行時に決定されるため細心の注意が必要です。</strong>
+</p>
+<h4 id="headline-372">
+サンプル
+</h4>
+<p>
+以下は、 lua コードを実行するサンプルです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+__luago {
+   let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+   let loaded, err = _load( code, nil );
+   when! loaded {
+      if! let obj = loaded( ## ) {
+         forsort val, key in obj@@Map&lt;str,int&gt; {
+            print( key, val + 100 ); 
+         }
+      }
+   } else {
+      print( err );
+   }
+}</code></pre>
+</div>
+<p>
+変数 code に代入した lua のコード <code class="verbatim">return { val1 = 10, val2 = 20 }</code> を実行し、
+その結果得られた Map を foreach で列挙して出力しています。
+</p>
+<p>
+この先頭で、 __luago を宣言しています。
+</p>
+<h4 id="headline-373">
+lua アクセスブロックの使い分け
+</h4>
+<p>
+前述している通り、非同期処理から Lua にアクセスするには、
+lua アクセスブロックの __luaLock と __luaDepend を使い分ける必要があります。
+</p>
+<p>
+しかし、よほど Lua の重い処理を非同期で実行しない限り、
+__luaDepend を使うべきではありません。
+</p>
+<p>
+__luaDepend を使わずに、 __luago と __luaLock に限定することで、
+Lua VM 内のロード処理を最低限にし、使用メモリを抑えられ、
+結果的に非同期で実行するよりも効率よく処理できることがあります。
+</p>
+<p>
+また__luaDepend を使う場合、使用される lua VM に注意する必要があり、
+それを間違えると <strong>実行時に不定な結果</strong> になります。
+</p>
+<p>
+__luaDepend を利用するには、
+非同期に処理を行なうメリットと、デメリットを良く考える必要があります。
+</p>
+<h5 id="headline-374">
+__luaDepend を使った方が良いケース
+</h5>
+<p>
+string.gmatch() は lua にアクセスするため lua アクセスブロックが必要です。
+</p>
+<p>
+この時、 string.gmatch() が扱う Luaval データは apply ブロック内に閉じるため、
+__luaDepend を使った方が効率良く安全に処理できます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">   let mut list:List&lt;str&gt; = [];
+   __luaDepend {
+      apply token of string.gmatch( txt, pattern ) {
+         list.insert( token );
+      }
+   }</code></pre>
+</div>
+<hr>
+<h2 id="headline-375">
 <strong>Go 言語へのトランスコンパイル (検討段階)</strong>
 </h2>
 <p>
@@ -13337,7 +14418,7 @@ LuneScript から Go 言語へのトランスコンパイルを検討中。
 <p>
 ここでは、検討中の内容を記録する。
 </p>
-<h3 id="headline-343">
+<h3 id="headline-376">
 ねらい
 </h3>
 <p>
@@ -13387,7 +14468,7 @@ C 言語での GC 実装が思うように進まなかったので、
 </ul>
 </li>
 </ul>
-<h3 id="headline-344">
+<h3 id="headline-377">
 値
 </h3>
 <table>
@@ -13476,7 +14557,7 @@ C 言語での GC 実装が思うように進まなかったので、
 </tr>
 </tbody>
 </table>
-<h4 id="headline-345">
+<h4 id="headline-378">
 int/real の扱い
 </h4>
 <p>
@@ -13486,7 +14567,7 @@ LuneScript int/real は、 go の type alias を使用して次のように定�
 <div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">type</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="kt">int</span>
 <span class="kd">type</span> <span class="nx">LnsReal</span> <span class="p">=</span> <span class="kt">float64</span></code></pre></div>
 </div>
-<h4 id="headline-346">
+<h4 id="headline-379">
 nilable の扱い
 </h4>
 <p>
@@ -13494,33 +14575,33 @@ LuneScript の nilable は、そのままでは元の値として扱えない。
 しかし、等しいかどうかのチェックは行なえる。
 これは go と LuneScript と同じ。
 </p>
-<h4 id="headline-347">
+<h4 id="headline-380">
 真偽値の扱い
 </h4>
 <p>
 LuneScript は nil と false が偽で、それ以外は真となる。
 go は true/false で判断が必要なので、 LuneScript 用の条件変換関数を用意する。
 </p>
-<h4 id="headline-348">
+<h4 id="headline-381">
 and/or の扱い
 </h4>
 <p>
 LuneScript の and/or は論理演算ではなく、式の評価を制御し、評価結果も bool ではない。
 go は評価結果が bool になる。
 </p>
-<h4 id="headline-349">
+<h4 id="headline-382">
 Generics の扱い
 </h4>
 <p>
 go は Generics がないので、 Generics の型は全て interface{} で扱う。
 </p>
-<h4 id="headline-350">
+<h4 id="headline-383">
 Set の扱い
 </h4>
 <p>
 go は Set がないので、 Map で代用する。   
 </p>
-<h3 id="headline-351">
+<h3 id="headline-384">
 多値返却
 </h3>
 <p>
@@ -13572,7 +14653,7 @@ hoge() が x, y を返す多値返却の関数としたとき、それぞれ次�
     <span class="k">return</span> <span class="nx">multi</span><span class="p">[</span><span class="mi">0</span><span class="p">].(</span><span class="kt">int</span><span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h3 id="headline-352">
+<h3 id="headline-385">
 クラスと継承
 </h3>
 <p>
@@ -13614,7 +14695,7 @@ class SubSub extend Sub {
    }
 }</code></pre>
 </div>
-<h4 id="headline-353">
+<h4 id="headline-386">
 Go による等価コード
 </h4>
 <p>
@@ -13759,10 +14840,10 @@ Go による等価コードを示す
     <span class="nf">testCast</span><span class="p">(</span> <span class="nf">NewParent</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h4 id="headline-354">
+<h4 id="headline-387">
 継承実現方法
 </h4>
-<h5 id="headline-355">
+<h5 id="headline-388">
 Parent クラス
 </h5>
 <p>
@@ -13777,7 +14858,7 @@ class Parent {
    }
 }</code></pre>
 </div>
-<h6 id="headline-356">
+<h6 id="headline-389">
 データ構造
 </h6>
 <p>
@@ -13827,7 +14908,7 @@ ParentDownCast は、ダウンキャスト用にクラスごとに定義する
 </p>
 </li>
 </ul>
-<h6 id="headline-357">
+<h6 id="headline-390">
 メソッド
 </h6>
 <p>
@@ -13838,7 +14919,7 @@ Parent クラスのメソッドを表現するため、次のレシーバ関数�
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val1</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h6 id="headline-358">
+<h6 id="headline-391">
 コンストラクタ
 </h6>
 <p>
@@ -13866,7 +14947,7 @@ FP の設定
 </p>
 </li>
 </ul>
-<h6 id="headline-359">
+<h6 id="headline-392">
 Parent クラスの使用方法
 </h6>
 <p>
@@ -13879,7 +14960,7 @@ Parent は次のように使用する。
 <p>
 メソッドをコールする場合、必ず FP インタフェースを介してコールする。
 </p>
-<h5 id="headline-360">
+<h5 id="headline-393">
 Sub クラス
 </h5>
 <p>
@@ -13897,7 +14978,7 @@ class Sub extend Parent {
    }
 }</code></pre>
 </div>
-<h6 id="headline-361">
+<h6 id="headline-394">
 データ構造
 </h6>
 <p>
@@ -13942,7 +15023,7 @@ Sub 構造体は、Parent 構造体のデータと、 Sub で定義している�
 </p>
 </li>
 </ul>
-<h6 id="headline-362">
+<h6 id="headline-395">
 メソッド
 </h6>
 <p>
@@ -13956,7 +15037,7 @@ Sub クラスのメソッドを表現するため、次のレシーバ関数を�
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val2</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h6 id="headline-363">
+<h6 id="headline-396">
 コンストラクタ
 </h6>
 <p>
@@ -13997,7 +15078,7 @@ FP の設定
 </ul>
 </li>
 </ul>
-<h5 id="headline-364">
+<h5 id="headline-397">
 SubSub クラス
 </h5>
 <p>
@@ -14015,7 +15096,7 @@ class SubSub extend Sub {
    }
 }</code></pre>
 </div>
-<h6 id="headline-365">
+<h6 id="headline-398">
 データ構造
 </h6>
 <p>
@@ -14064,7 +15145,7 @@ SubSub 構造体は、Sub 構造体のデータと、 SubSub で定義してい�
 </p>
 </li>
 </ul>
-<h6 id="headline-366">
+<h6 id="headline-399">
 メソッド
 </h6>
 <p>
@@ -14081,7 +15162,7 @@ SubSub クラスのメソッドを表現するため、次のレシーバ関数�
     <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h7 id="headline-367">
+<h7 id="headline-400">
 override していないメソッド定義
 </h7>
 <p>
@@ -14092,7 +15173,7 @@ SubSub クラスは、 sub2 メソッドを override していない。
 つまりは、SubSub の sub2 メソッドは Sub クラスのメソッドが使用されることになる。
 よって、 Sub.sub2 メソッドをコールしている。
 </p>
-<h6 id="headline-368">
+<h6 id="headline-401">
 コンストラクタ
 </h6>
 <p>
@@ -14134,7 +15215,7 @@ Parent, Sub の FP に &amp;subsub を設定することで、ポリモーフィ
 </ul>
 </li>
 </ul>
-<h5 id="headline-369">
+<h5 id="headline-402">
 IF インタフェース
 </h5>
 <div class="src src-lns">
@@ -14143,7 +15224,7 @@ interface IF {
   pub fn sub1():int;
 }</code></pre>
 </div>
-<h6 id="headline-370">
+<h6 id="headline-403">
 データ構造
 </h6>
 <p>
@@ -14154,7 +15235,7 @@ LuneScript の interface は、 Go のインタフェースをそのまま使用
   <span class="nx">pub</span> <span class="nx">fn</span> <span class="nf">sub1</span><span class="p">():</span><span class="kt">int</span><span class="p">;</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h5 id="headline-371">
+<h5 id="headline-404">
 メソッド呼び出し
 </h5>
 <p>
@@ -14166,7 +15247,7 @@ Parent クラスのメソッドを呼び出すには、次のように行なう�
   <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
 <span class="p">}</span></code></pre></div>
 </div>
-<h6 id="headline-372">
+<h6 id="headline-405">
 parent.FP.sub1() と parent.sub1() の違い
 </h6>
 <p>
@@ -14205,7 +15286,7 @@ Parent クラスに定義しているメソッド呼び出し
 </ul>
 </li>
 </ul>
-<h6 id="headline-373">
+<h6 id="headline-406">
 オーバーヘッド
 </h6>
 <ul>
@@ -14234,7 +15315,7 @@ Parent クラスに定義しているメソッド呼び出し
 </ul>
 </li>
 </ul>
-<h5 id="headline-374">
+<h5 id="headline-407">
 up-cast / down-cast
 </h5>
 <ul>
@@ -14270,7 +15351,7 @@ down-cast は、 interface を型アサーションで実現する。
 </span><span class="c1"></span><span class="nx">parent</span> <span class="o">:=</span> <span class="o">&amp;</span><span class="nx">obj</span><span class="p">.</span><span class="nx">Parent</span> <span class="c1">// アップキャスト
 </span><span class="c1"></span><span class="p">(</span><span class="nx">parent</span><span class="p">.</span><span class="nx">FP</span><span class="p">.(</span><span class="nx">SubDownCast</span><span class="p">)).</span><span class="nf">ToSub</span><span class="p">()</span> <span class="o">//</span> <span class="nx">obj</span> <span class="nx">を</span> <span class="nx">Sub</span> <span class="nx">にダウンキャストする</span></code></pre></div>
 </div>
-<h4 id="headline-375">
+<h4 id="headline-408">
 Class のまとめ
 </h4>
 <ul>
@@ -14437,7 +15518,7 @@ down-cast は、 interface を型アサーションと、ダウンキャスト�
 </ul>
 </li>
 </ul>
-<h3 id="headline-376">
+<h3 id="headline-409">
 シンボル名
 </h3>
 <p>
@@ -14562,7 +15643,7 @@ LuneScript と go のシンボルの関係は次のようになる。
 なお、引数やローカル変数は LuneScript と go とでスコープに違いはないため、
 基本的にそのまま変換する。
 </p>
-<h3 id="headline-377">
+<h3 id="headline-410">
 Lua VM
 </h3>
 <p>
@@ -14625,7 +15706,7 @@ Gopherlua
 <p>
 上記から、 LuneScript のトランスコンパイラでは liblua を利用する。
 </p>
-<h4 id="headline-378">
+<h4 id="headline-411">
 cgo
 </h4>
 <p>
@@ -14678,13 +15759,13 @@ Go からアクセスできるように C パッケージ内に展開される�
 </span><span class="cp">	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))</span></code></pre></div>
 </div>
 <hr>
-<h2 id="headline-379">
+<h2 id="headline-412">
 *lnstags によるタグジャンプ (ソースコードタグシステム) *
 </h2>
 <p>
 LuneScript は、タグジャンプ (ソースコードタグシステム)に対応している。
 </p>
-<h3 id="headline-380">
+<h3 id="headline-413">
 タグジャンプ (ソースコードタグシステム) とは
 </h3>
 <p>
@@ -14700,7 +15781,7 @@ LuneScript は、タグジャンプ (ソースコードタグシステム)に対
 <p>
 シンボル(クラス、関数、変数 etc..)の <strong>参照位置</strong>
 </p>
-<h4 id="headline-381">
+<h4 id="headline-414">
 例
 </h4>
 </li>
@@ -14743,7 +15824,7 @@ Bar クラスの func メソッドの参照位置をリストするには、
 <p>
 lnstags コマンドの使用方法についての詳細は後述する。
 </p>
-<h3 id="headline-382">
+<h3 id="headline-415">
 lnstags の特徴
 </h3>
 <p>
@@ -14782,7 +15863,7 @@ lnstags では、コールされる可能性のあるメソッドを全てリス
 </ul>
 </li>
 </ul>
-<h3 id="headline-383">
+<h3 id="headline-416">
 使い方
 </h3>
 <p>
@@ -14791,7 +15872,7 @@ lnstags は、次の URL で公開している。
 <p>
 &lt;<a href="https://github.com/ifritJP/lnstags">https://github.com/ifritJP/lnstags</a>&gt;
 </p>
-<h4 id="headline-384">
+<h4 id="headline-417">
 ビルド方法
 </h4>
 <p>
@@ -14812,7 +15893,7 @@ go install を利用する
 <p>
 通常は go install で問題ありません。  
 </p>
-<h5 id="headline-385">
+<h5 id="headline-418">
 go install 
 </h5>
 <p>
@@ -14821,7 +15902,7 @@ go install
 <pre class="example">
 go install -tags gopherlua github.com/ifritJP/lnstags@latest
 </pre>
-<h5 id="headline-386">
+<h5 id="headline-419">
 go でビルドする。
 </h5>
 <div class="src src-txt">
@@ -14832,7 +15913,7 @@ $ make build ONLY_GO=y</code></pre></div>
 <p>
 上記で lnstags/lnstags が生成されます。
 </p>
-<h4 id="headline-387">
+<h4 id="headline-420">
 ソースコードの解析
 </h4>
 <p>
@@ -14887,7 +15968,7 @@ lnstags は、指定された lns ファイルから import されているモ�
 <p>
 ソースコードの解析結果は、 <strong>lnstags.sqlite3 ファイル</strong> に登録する。
 </p>
-<h4 id="headline-388">
+<h4 id="headline-421">
 DB の更新
 </h4>
 <p>
@@ -14912,7 +15993,7 @@ DB を更新するには、 <strong>次のいずれか</strong> を実行する�
 <pre class="example">
 $ lctags update
 </pre>
-<h5 id="headline-389">
+<h5 id="headline-422">
 lctags update
 </h5>
 <p>
@@ -14928,7 +16009,7 @@ DB に登録されている lns のソースファルイリストを元に、
 <code class="verbatim">lctags update</code> ではなく、
 <code class="verbatim">lctags build</code> を使用しなければならない。
 </p>
-<h4 id="headline-390">
+<h4 id="headline-423">
 問い合わせ
 </h4>
 <p>
@@ -14952,7 +16033,7 @@ inq-at
 <p>
 suffix
 </p>
-<h5 id="headline-391">
+<h5 id="headline-424">
 inq
 </h5>
 </li>
@@ -14998,7 +16079,7 @@ Foo クラスの func メソッドのシンボル名は次になる。
 <p>
 このコマンド <code class="verbatim">lnstags inq def</code> の <strong>def</strong> は、 <strong>定義場所</strong> の問い合わせを指定する。
 </p>
-<h5 id="headline-392">
+<h5 id="headline-425">
 問い合わせモード
 </h5>
 <p>
@@ -15026,7 +16107,7 @@ Foo クラスの func メソッドのシンボル名は次になる。
 </tr>
 </tbody>
 </table>
-<h5 id="headline-393">
+<h5 id="headline-426">
 inq-at
 </h5>
 <p>
@@ -15077,7 +16158,7 @@ bar.func();</code></pre>
 <p>
 また、指定の lns ファイルの AST を解析するため、時間がかかる。
 </p>
-<h5 id="headline-394">
+<h5 id="headline-427">
 suffix
 </h5>
 <p>
@@ -15092,7 +16173,7 @@ suffix はシンボル名の後方一致で完全限定名のリストを取得�
 @mini.Foo.func
 @mini.Bar.func</code></pre></div>
 </div>
-<h3 id="headline-395">
+<h3 id="headline-428">
 emacs から利用する場合
 </h3>
 <p>
@@ -15140,7 +16221,7 @@ M-t, M-r, M-s については、完全限定名を得るために suffix 問い�
 なお、M-t, M-r, M-s にプレフィックス C-u を付けることで、
 カーソル位置の inq-at 問い合わせを行なう。
 </p>
-<h3 id="headline-396">
+<h3 id="headline-429">
 解析時間
 </h3>
 <p>
@@ -15173,7 +16254,7 @@ lnstags は DB の差分をサポートしていない。
 参考までに連絡して欲しい。
 </p>
 <hr>
-<h2 id="headline-397">
+<h2 id="headline-430">
 <strong>Lua のトランスコンパイラ LuneScript を開発した理由</strong>
 </h2>
 <p>
@@ -15193,7 +16274,7 @@ DSP のような処理をさせなければ、
 私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
 よく使う言語の１つである。
 </p>
-<h3 id="headline-398">
+<h3 id="headline-431">
 Lua のトランスコンパイラ LuneScript を開発した理由
 </h3>
 <p>
@@ -15270,7 +16351,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 <p>
 以降で、それぞれについて説明する。
 </p>
-<h4 id="headline-399">
+<h4 id="headline-432">
 楽して安全に書きたい
 </h4>
 <p>
@@ -15323,7 +16404,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 <p>
 これが、私が LuneScript を開発する一番の理由だ。
 </p>
-<h4 id="headline-400">
+<h4 id="headline-433">
 動的型付け言語特有の問題
 </h4>
 <p>
@@ -15341,7 +16422,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 動的型付け言語を利用した場合に、
 問題となり易いことを挙げている。
 </p>
-<h5 id="headline-401">
+<h5 id="headline-434">
 静的なエラーチェックが出来ない
 </h5>
 <p>
@@ -15401,7 +16482,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 まぁ、もっと違うパラダイムなのかもしれないが。
 </p>
-<h5 id="headline-402">
+<h5 id="headline-435">
 他人のコードの内容を把握し難い
 </h5>
 <p>
@@ -15445,7 +16526,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 なんども言うが私は楽をしたいのだ。
 </p>
-<h5 id="headline-403">
+<h5 id="headline-436">
 メンテナンスや機能追加、リファクタリングのリスクが大きい
 </h5>
 <p>
@@ -15507,7 +16588,7 @@ parse したそのままの文字列データを渡してしまう等、
 LuneScript 開発中、何度も設計変更を行ったが、
 もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。
 </p>
-<h5 id="headline-404">
+<h5 id="headline-437">
 コーディング時の補完がイケてない
 </h5>
 <p>
@@ -15536,7 +16617,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 <a href="../completion">../completion</a>
 </p>
-<h5 id="headline-405">
+<h5 id="headline-438">
 テーブル内のフィールドアクセス制御が出来ない
 </h5>
 <p>
@@ -15580,7 +16661,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 問題なのはそういった制御がなく、全てアクセス可能になってしまっていることである。
 </p>
-<h4 id="headline-406">
+<h4 id="headline-439">
 Luaの機能に不満がある
 </h4>
 <p>
@@ -15592,7 +16673,7 @@ Lua はコンパクトでパワフルな言語であるが、
 素の Lua ではサポートされていない機能をサポートすることも
 目的の一つに開発している。
 </p>
-<h5 id="headline-407">
+<h5 id="headline-440">
 nil安全でない
 </h5>
 <p>
@@ -15645,7 +16726,7 @@ nil を取り得ない 非 nilable を別の型として管理することで、
 多階層の nilable データに楽にアクセスするための nil 条件演算子をサポートすることで、
 nil エラーの対応を楽にかつ安全に対応できるようにしている。
 </p>
-<h5 id="headline-408">
+<h5 id="headline-441">
 マクロがない
 </h5>
 <p>
@@ -15683,7 +16764,7 @@ LuneScript では、実装が簡単で、かつ使用する側の学習に負担
 LuneScript のセルフホスティングでもマクロを使用しているが、
 やはりマクロはプログラム言語には無くてはならないものだと改めて感じている。
 </p>
-<h4 id="headline-409">
+<h4 id="headline-442">
 Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
 </h4>
 <p>
@@ -15697,7 +16778,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 他にも組込みを意識した言語はいくつかあるが、
 組込みという条件で見た場合、Lua を越える言語を私は知らない。
 </p>
-<h4 id="headline-410">
+<h4 id="headline-443">
 既に数多くのシステムで Lua を利用している
 </h4>
 <p>
@@ -15710,7 +16791,7 @@ Lua を組み込んでいるシステムは多く存在する。
 <p>
 ちょっと気にいらないからといって、変えられるものではない。
 </p>
-<h3 id="headline-411">
+<h3 id="headline-444">
 最後に
 </h3>
 <p>
@@ -15729,14 +16810,14 @@ Lua には LuneScript があることも検討材料にして欲しい。
 そして、Lua には LuneScript という選択肢もあることを覚えておいて欲しい。
 </p>
 <hr>
-<h2 id="headline-412">
+<h2 id="headline-445">
 <strong>トランスコンパイラ開発のすゝめ</strong>
 </h2>
 <p>
 LuneScript 入門のアドベントカレンダー最後の記事は、
 これまでとは趣向を変えてトランスコンパイラ開発そのものについて扱っていきます。
 </p>
-<h3 id="headline-413">
+<h3 id="headline-446">
 トランスコンパイラ開発をすゝめる理由
 </h3>
 <p>
@@ -15775,7 +16856,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 <p>
 以降では、上記の各項目を説明していきます。
 </p>
-<h4 id="headline-414">
+<h4 id="headline-447">
 現状に対する不満を建設的に解決できる
 </h4>
 <p>
@@ -15852,7 +16933,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 アイデアをソフトウェアで実現出来る能力を持っているからこそ
 「ソフトウェアエンジニア」ではないでしょうか？
 </p>
-<h5 id="headline-415">
+<h5 id="headline-448">
 「コンパイラ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -15914,7 +16995,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 <p>
 最終的にコンパイラを開発するのが、効率の良い方法と言えるでしょう。
 </p>
-<h5 id="headline-416">
+<h5 id="headline-449">
 「インタプリタ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -15943,7 +17024,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 今は実用的なインタプリタ型の言語(スクリプト言語)が世の中にいくつもあります。
 わざわざ自前で作る必要はないでしょう。
 </p>
-<h5 id="headline-417">
+<h5 id="headline-450">
 出力結果が分かり易い
 </h5>
 <p>
@@ -16002,7 +17083,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 一方トランスコンパイラは、
 ライセンスと変換後のコードを調べれば良いだけです。
 </p>
-<h4 id="headline-418">
+<h4 id="headline-451">
 トレンドの技術を確認できる
 </h4>
 <p>
@@ -16057,7 +17138,7 @@ C 言語しか知らないからいつも通りに C 言語で書くことは、
 このように、イマドキの言語の特徴の理解を深めるためにも
 トランスコンパイラの開発は経験として良いものだと言えます。
 </p>
-<h4 id="headline-419">
+<h4 id="headline-452">
 コーディングルールを矯正できる  
 </h4>
 <p>
@@ -16101,7 +17182,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 新しい言語を開発する際は、新しい機能を取り入れるだけでなく、
 普段のコーディングルールを見直し、言語レベルで対応できないか検討するべきだと思います。
 </p>
-<h3 id="headline-420">
+<h3 id="headline-453">
 最後に
 </h3>
 <p>
@@ -16128,7 +17209,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 是非新しいプログラミング言語の開発にチャレンジしてみてください。
 </p>
 <hr>
-<h2 id="headline-421">
+<h2 id="headline-454">
 <strong>イマドキな開発環境でもっと楽しよう</strong>
 </h2>
 <p>
@@ -16195,7 +17276,7 @@ Syntax エラーチェック機能
 <p>
 subfile を認識した検索
 </p>
-<h3 id="headline-422">
+<h3 id="headline-455">
 コード補完機能
 </h3>
 </li>
@@ -16261,7 +17342,7 @@ test のフィールドの補完が次のように行なえます。
 この当たり前の機能をしっかりとコンパイラ自体が提供しているというのは、
 意外に少なかったりします。
 </p>
-<h3 id="headline-423">
+<h3 id="headline-456">
 カーソル位置の型情報確認
 </h3>
 <p>
@@ -16290,7 +17371,7 @@ foreach val, key in { &#34;abc&#34;: 1, &#34;xyz&#34;: 10 } {
 確認したいシンボルにカーソルを移動し、 C-c I を実行することで、
 そのシンボルの型情報を確認できます。
 </p>
-<h3 id="headline-424">
+<h3 id="headline-457">
 Syntax エラーチェック機能
 </h3>
 <p>
@@ -16325,7 +17406,7 @@ let map = { &#34;a&#34;: 1, &#34;b&#34;:2 };</code></pre>
 <p>
 このような、ちょっと見過しがちなエラーもエディタ上で簡単に確認できます。
 </p>
-<h3 id="headline-425">
+<h3 id="headline-458">
 subfile を認識した検索
 </h3>
 <p>
@@ -16357,7 +17438,7 @@ owner.lns, sub1.lns, sub2.lns, sub3.lns の 4 つのファイルを
 sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検索。
 … この処理を自動で行ないます。
 </p>
-<h3 id="headline-426">
+<h3 id="headline-459">
 設定
 </h3>
 <p>
@@ -16414,7 +17495,7 @@ auto-complete
 LuneScript の flymake, auto-complete 対応は、メンテナンスしていません。
 flycheck, company-mode の使用を推奨します。
 </p>
-<h3 id="headline-427">
+<h3 id="headline-460">
 プロジェクト
 </h3>
 <p>
@@ -16435,7 +17516,7 @@ LuneScript は、モジュールパスをプロジェクトからの相対パス
 <div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{}</span>
 </code></pre></div>
 </div>
-<h4 id="headline-428">
+<h4 id="headline-461">
 モジュールのパス
 </h4>
 <p>
@@ -16446,7 +17527,7 @@ proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 にな�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">proj/lune.js
 proj/foo/bar/module1.lsn</code></pre></div>
 </div>
-<h3 id="headline-429">
+<h3 id="headline-462">
 最後に
 </h3>
 <p>
@@ -16468,7 +17549,7 @@ emacs が行なっているのはフロントエンド制御だけで、
 emacs 以外の環境に対応していただけると嬉しいです。
 </p>
 <hr>
-<h2 id="headline-430">
+<h2 id="headline-463">
 <strong>Web ブラウザ上で動作する LuneScript</strong>
 </h2>
 <p>
@@ -16523,7 +17604,7 @@ import() などのモジュールロードが出来ない
 LuneScript の全ての処理をブラウザ上で動作させているため、
 スマホなどでは初回実行に時間が掛ります。
 </p>
-<h3 id="headline-431">
+<h3 id="headline-464">
 技術解説
 </h3>
 <p>
@@ -16566,7 +17647,7 @@ LuneScript コンパイラのロードは、そこそこの時間がかかりま
 サーバ側に負荷は掛りません。
 サーバに必要な機能は、静的コンテンツのホスティングだけです。
 </p>
-<h4 id="headline-432">
+<h4 id="headline-465">
 LuneScript の fengari 対応
 </h4>
 <p>
@@ -16589,7 +17670,7 @@ pairs() を利用していましたが、 fengari Lua VM では ipairs() に切�
 現状、オプションを指定していない場合は pairs() を利用していますが、
 将来はデフォルト状態を逆にすることも検討しています。
 </p>
-<h3 id="headline-433">
+<h3 id="headline-466">
 リファレンスのサンプルコード実行
 </h3>
 <p>
@@ -16604,7 +17685,7 @@ ifritJP.github.io/LuneScript-webFront/contents/lunescript-front.js
 <p>
 <code class="verbatim">lnsFront.setup()</code>, <code class="verbatim">lnsFront.compile()</code> 関数を実行するだけです。
 </p>
-<h4 id="headline-434">
+<h4 id="headline-467">
 lnsFront.setup()
 </h4>
 <p>
@@ -16675,7 +17756,7 @@ lnsFront.compile() を実行すると、
 LuneScript のコードを入力する textarea が複数ある場合、
 lnsFront.setup() をそれぞれで実行します。
 </p>
-<h5 id="headline-435">
+<h5 id="headline-468">
 lnsFront.setup() の注意
 </h5>
 <p>
@@ -16687,7 +17768,7 @@ executeId で登録したボタンをクリックするか、
 lnsFront.compile() を実行することで、
 登録されている textarea 内の LuneScript のコードを実行します。
 </p>
-<h4 id="headline-436">
+<h4 id="headline-469">
 lnsFront.compile()
 </h4>
 <p>
@@ -16725,7 +17806,7 @@ maxTime を省略した場合、デフォルトの 2 秒がリミットになり
 なお 10 秒以上を指定した場合、無効値として扱い、デフォルト値がセットされます。
 </p>
 <hr>
-<h2 id="headline-437">
+<h2 id="headline-470">
 <strong>言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</strong>
 </h2>
 <p>
@@ -16785,7 +17866,7 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
 今後、独自言語を開発しようと考えている方のテスト設計検討に、
 少しでも役にたてれば幸いです。
 </p>
-<h4 id="headline-438">
+<h4 id="headline-471">
 コンパイラは関数
 </h4>
 <p>
@@ -16828,7 +17909,7 @@ Clang は LLVM-IR に変換し、 LLVM が各種コードに変換
 <p>
 日頃作成している関数の UNIT TEST と考え方は全く同じです。
 </p>
-<h4 id="headline-439">
+<h4 id="headline-472">
 コンパイラのテスト
 </h4>
 <p>
@@ -17003,7 +18084,7 @@ result A と result D が同一であることを確認
 セルフホスティングに必要な機能を優先的に実現し、
 出来るだけ早い段階でセルフホスティングに移行することをオススメします。
 </p>
-<h3 id="headline-440">
+<h3 id="headline-473">
 それでもバグは残る
 </h3>
 <p>
@@ -17043,7 +18124,7 @@ result A と result D が同一であることを確認
 再度同じ「穴」が開いた時に検出できるように対応することが
 テストでは重要だと考えます。
 </p>
-<h3 id="headline-441">
+<h3 id="headline-474">
 最後に
 </h3>
 <p>
@@ -17124,7 +18205,7 @@ result A と result D が同一であることを確認
 <p>
 <strong>*これは、検討中の情報です。 現在は利用できません。</strong>
 </p>
-<h3 id="headline-442">
+<h3 id="headline-475">
 Nilable 型
 </h3>
 <p>
@@ -17174,7 +18255,7 @@ unwrap 処理が必須となってしまい面倒です。
 <p>
 そこで、 Nilable 型を利用します。
 </p>
-<h4 id="headline-443">
+<h4 id="headline-476">
 Nilable 型とは
 </h4>
 <p>
@@ -17326,8 +18407,9 @@ Java で言うところの int に対する Integer クラスと思ってくだ�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

@@ -17,7 +17,7 @@
                 built_in: '_G _ENV super self _exp' +
                     ' __func__ __line__ __mod__ type __var',
                 const_val: "true false nil",
-                meta: '_lune_control'
+                meta: '_lune_control __luago __async __noasync __asyncLock __unsafe'
             };            
             
             const OPE = {

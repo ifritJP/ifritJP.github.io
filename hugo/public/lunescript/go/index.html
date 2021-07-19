@@ -29,17 +29,17 @@
 :root {}
 </style>
 <meta property="og:title" content="@.1 Go 言語へのトランスコンパイル" />
-<meta property="og:description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go にトラ" />
+<meta property="og:description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go 言語の" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/go/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="@.1 Go 言語へのトランスコンパイル"/>
-<meta name="twitter:description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go にトラ"/>
+<meta name="twitter:description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go 言語の"/>
 <meta itemprop="name" content="@.1 Go 言語へのトランスコンパイル">
-<meta itemprop="description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go にトラ">
+<meta itemprop="description" content="LuneScript はトランスコンパイル先の言語として Lua だけでなく、 Go へのトランスコンパイルが可能です。 この機能により、 LuneScript のセルフホスティングコードを go 言語の">
 
-<meta itemprop="wordCount" content="2736">
+<meta itemprop="wordCount" content="3115">
 
 
 
@@ -65,8 +65,12 @@ Go へのトランスコンパイルが可能です。
 </p>
 <p>
 この機能により、
-LuneScript のセルフホスティングコードを go にトランスコンパイルし、
-go でビルドすることで、 LuneScript の高速化を実現しています。
+LuneScript のセルフホスティングコードを go 言語のコードにトランスコンパイルし、
+それを go でビルドすることで、 LuneScript の高速化(約 16倍)を実現しています。
+</p>
+<p>
+高速化については次を参照してください。
+<a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/">https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/</a>
 </p>
 <p>
 ただし、
@@ -129,8 +133,11 @@ return fib
 // Lua コードのロード
 form fibFunc( num:int ):int;
 fn loadLua( txt:str ) : Luaval&lt;fibFunc&gt; {
-   let loaded = unwrap _load( txt ## );
-   let fib = unwrap loaded(##);
+   let fib;
+   __luago {
+      let loaded = unwrap _load( txt ## );
+      fib = unwrap loaded(##);
+   }
    return fib@@fibFunc;
 }
 
@@ -146,8 +153,9 @@ macro _profile( exec:__exp ) {
 
 // Lua のコードをロードして実行
 let fib_lua = loadLua( code );
-_profile( fib_lua( step ) );
-
+__luago {
+   _profile( fib_lua( step ) );
+}
 
 // LuneScript のフィボナッチ関数
 fn fib_lns( num:int ) : int {
@@ -359,7 +367,12 @@ go へトランスコンパイルしてビルドするには次の step が必�
 <ul>
 <li>
 <p>
-.lns から .go を生成する
+go.mod を生成する
+</p>
+</li>
+<li>
+<p>
+LuneScript ランタイムを go.mod に登録する  
 </p>
 </li>
 <li>
@@ -369,14 +382,72 @@ main.go を生成する
 </li>
 <li>
 <p>
+.lns から .go を生成する
+</p>
+</li>
+<li>
+<p>
+go.mod を更新する
+</p>
+</li>
+<li>
+<p>
 go build する
 </p>
 </li>
 </ul>
 <p>
+.lns を更新した場合は、
+「 .lns から .go を生成する」以降の処理を繰り返し実行します。
+</p>
+<p>
 各 step を説明します。
 </p>
 <h4 id="headline-7">
+go.mod を生成する
+</h4>
+<p>
+lune.js があるディレクトリで、以下のコマンドを実行します。
+</p>
+<pre class="example">
+$ go mod init test # &lt;--- test は環境に合せて指定してください
+</pre>
+<h4 id="headline-8">
+LuneScript ランタイムを go.mod に登録する
+</h4>
+<p>
+以下のコマンドで、LuneScript のランタイムを go.mod に登録します。
+</p>
+<pre class="example">
+$ go get github.com/ifritJP/LuneScript/src@latest
+</pre>
+<p>
+以降の作業で go mod tidy を実行しますが、必ず go get を先に実行してください。
+</p>
+<h4 id="headline-9">
+main.go を生成する
+</h4>
+<p>
+go には、エントリ関数の main() が必要です。
+</p>
+<p>
+以下のコマンドで、go の main() 関数を定義する main.go を生成します。
+</p>
+<pre class="example">
+$ lnsc hoge.lns mkmain main.go
+</pre>
+<p>
+ここで hoge.lns は、 lns で __main を定義しているメインモジュールを指定します。
+main.go は出力先のパスを指定します。
+</p>
+<p>
+go にトランスコンパイルする場合、 __main 関数を定義するモジュールが必須です。
+</p>
+<p>
+このコマンドで生成した main.go には、
+lns のランタイムを初期化するコードが含まれます。
+</p>
+<h4 id="headline-10">
 .lns から .go を生成する
 </h4>
 <p>
@@ -386,7 +457,7 @@ go build する
 $ lnsc hoge.lns save -langGo
 </pre>
 <p>
-メインモジュールの場合は、さらに –main オプション付加します。
+__main 関数を含むメインモジュールの場合は、さらに –main オプション付加します。
 </p>
 <pre class="example">
 $ lnsc hoge.lns save -langGo --main hoge
@@ -403,27 +474,19 @@ $ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
 <p>
 となります。
 </p>
-<h4 id="headline-8">
-main.go を生成する
+<p>
+LuneScript を go にトランスコンパイルする場合、__main 関数が必要です。
+</p>
+<h4 id="headline-11">
+go.mod を更新する
 </h4>
 <p>
-go には、エントリ関数の main() が必要です。
-</p>
-<p>
-以下のコマンドで、この main() 関数を定義する main.go を生成します。
+以下のコマンドで go.mod を更新します。    
 </p>
 <pre class="example">
-$ lnsc hoge.lns mkmain main.go
+$ go mod tidy
 </pre>
-<p>
-ここで hoge.lns は、 lns のメインモジュールを指定します。
-main.go は出力先のパスを指定します。
-</p>
-<p>
-このコマンドで生成した main.go には、
-lns のランタイムを初期化するコードが含まれます。
-</p>
-<h4 id="headline-9">
+<h4 id="headline-12">
 go build する
 </h4>
 <p>
@@ -433,9 +496,15 @@ go build する
 $ go build
 </pre>
 <p>
+<strong>上記がエラーする場合は、以下を試してください。</strong>
+</p>
+<pre class="example">
+$ go build -tags gopherlua
+</pre>
+<p>
 これにより、トランスコンパイルしたモジュールが go でビルドされます。
 </p>
-<h3 id="headline-10">
+<h3 id="headline-13">
 go へトランスコンパイル後は Lua ライブラリのリンクが必要
 </h3>
 <blockquote>
@@ -620,8 +689,9 @@ liblua5.3.so へのリンクが必要になります。
 <li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

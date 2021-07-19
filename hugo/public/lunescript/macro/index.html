@@ -39,7 +39,7 @@
 <meta itemprop="name" content="24. マクロ 編">
 <meta itemprop="description" content="今回は LuneScript のマクロについて説明します。 マクロ LuneScript は、マクロを対応します。 もしかしたら、 最近は マクロ というよりも メタプログラミング と言った方が 意味">
 
-<meta itemprop="wordCount" content="4275">
+<meta itemprop="wordCount" content="4432">
 
 
 
@@ -229,7 +229,59 @@ macro name( arg ) {
 キーワード macro で開始し、 次にマクロ名 name 、引数 arg と続きます。
 マクロ名 name は、 _ で始まる必要があります。
 逆にマクロ以外のシンボル名は、 _ 以外で始まる必要があります。
-引数の数に制限はありません。
+</p>
+<p>
+マクロの引数は、以下の型をサポートします。
+</p>
+<ul>
+<li>
+<p>
+int
+</p>
+</li>
+<li>
+<p>
+real
+</p>
+</li>
+<li>
+<p>
+str
+</p>
+</li>
+<li>
+<p>
+bool  
+</p>
+</li>
+<li>
+<p>
+stat
+</p>
+</li>
+<li>
+<p>
+上記の List, Map, Set
+</p>
+</li>
+<li>
+<p>
+sym
+</p>
+</li>
+<li>
+<p>
+__exp
+</p>
+</li>
+<li>
+<p>
+__block
+</p>
+</li>
+</ul>
+<p>
+sym, stat, __exp, __block については後述します。  
 </p>
 <p>
 次に macro-statement ブロックと、 expand-statement が続きます。
@@ -240,6 +292,68 @@ expand-statement を先に理解した方が分かり易いので、
 macro-statement ブロックの説明の前に、expand-statement を説明します。
 </p>
 <h4 id="headline-5">
+引数
+</h4>
+<p>
+マクロ専用の引数の型として、以下を利用できます。
+</p>
+<ul>
+<li>
+<p>
+sym
+</p>
+</li>
+<li>
+<p>
+stat  
+</p>
+</li>
+<li>
+<p>
+__exp
+</p>
+</li>
+<li>
+<p>
+__block
+</p>
+<h5 id="headline-6">
+sym
+</h5>
+</li>
+</ul>
+<p>
+sym は、シンボルを格納できる型です。
+</p>
+<p>
+シンボルは、関数、変数、メンバ、クラス、全てのシンボルとして利用できます。
+</p>
+<h5 id="headline-7">
+stat
+</h5>
+<p>
+stat は、文を格納できる型です。
+</p>
+<h5 id="headline-8">
+__exp
+</h5>
+<p>
+__exp は、全ての式を格納できる型です。
+</p>
+<p>
+例えば <code class="verbatim">1 + 1</code> や、 <code class="verbatim">func()</code> など、どのような式でも指定できます。
+ただし、マクロをコールする時点でエラーなく評価可能な式である必要があります。
+</p>
+<h5 id="headline-9">
+__block
+</h5>
+<p>
+__block は、ブロック文 <code class="verbatim">{}</code> を格納できる型です。
+</p>
+<p>
+__exp 同様、マクロをコールする時点でエラーなく評価可能なブロックである必要があります。
+</p>
+<h4 id="headline-10">
 expand-statement
 </h4>
 <p>
@@ -314,7 +428,7 @@ expand-statement には、次の制限を満せば、いかなるコードも書
 <p>
 また、expand-statement には複数の文を書くことも出来ます。
 </p>
-<h4 id="headline-6">
+<h4 id="headline-11">
 macro-statement
 </h4>
 <p>
@@ -458,10 +572,6 @@ defstat を expand-statement で展開しています。
 構文エラーとなります。
 </p>
 <p>
-<code>`{}</code> は、その他の値と同じようにリストやマップに格納できます。
-なお、 <code>`{}</code> の型は stat となります。stat はマクロ内でのみ有効です。
-</p>
-<p>
 次に <code>`{}</code> のリストの例を示します。
 </p>
 <div class="src src-lns">
@@ -499,7 +609,7 @@ macro name( arg ) {
    expand-statement
 }</code></pre>
 </div>
-<h4 id="headline-7">
+<h4 id="headline-12">
 macro-statement で利用できる関数
 </h4>
 <p>
@@ -516,17 +626,13 @@ fn _lnsLoad( name:str, code:str ): stem;
 この関数は、code で指定した LuneScript のコードをロードし、
 そのモジュールを返します。
 </p>
-<h4 id="headline-8">
+<h4 id="headline-13">
 マクロ展開
 </h4>
 <p>
-マクロを展開する方法は、関数コールとほとんど同じです。
-ただし、マクロの引数にはリテラルな値しか与えられません。
+マクロを展開する方法は、関数コールと同じです。
 </p>
-<p>
-マクロ展開はビルド時に行なうものであり、実行時には行ないません。
-</p>
-<h3 id="headline-9">
+<h3 id="headline-14">
 公開マクロ
 </h3>
 <p>
@@ -541,7 +647,7 @@ pub macro _Hello() {
    print( &#34;hello world&#34; );
 }</code></pre>
 </div>
-<h3 id="headline-10">
+<h3 id="headline-15">
 少し実用的なマクロの例
 </h3>
 <p>
@@ -669,7 +775,7 @@ name と memStatList を使ってクラスを宣言する。
 メンバは int と str 型のデータとして扱います。
 リストなどはサポートしていません。
 </p>
-<h3 id="headline-11">
+<h3 id="headline-16">
 マクロ間共通 Map
 </h3>
 <p>
@@ -711,10 +817,10 @@ __var にアクセスするマクロは、
 </li>
 </ul>
 <p>
-この変数の型は、次の Map です。
+この変数の型は、次の通りです。
 </p>
 <pre class="example">
-let mut var:Map&lt;str,stem&gt;
+let mut __var:Map&lt;str,stem&gt;
 </pre>
 <p>
 この変数は、各モジュールのコンパイル開始時に生成され、
@@ -751,7 +857,7 @@ let mut var:Map&lt;str,stem&gt;
 この例では、_test0() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> に int データを保持し、
 _test1() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> の格納されている値によって処理を変更しています。
 </p>
-<h2 id="headline-12">
+<h2 id="headline-17">
 まとめ
 </h2>
 <p>
@@ -910,8 +1016,9 @@ LuneScript は、関数と同じ感覚でマクロを定義することが出来
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

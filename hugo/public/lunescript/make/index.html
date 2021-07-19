@@ -29,17 +29,17 @@
 :root {}
 </style>
 <meta property="og:title" content="23. ビルド 編" />
-<meta property="og:description" content="今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、 LuneScript 専用" />
+<meta property="og:description" content="今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 &#43;LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、 LuneScript 専用" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/make/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="23. ビルド 編"/>
-<meta name="twitter:description" content="今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、 LuneScript 専用"/>
+<meta name="twitter:description" content="今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 &#43;LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、 LuneScript 専用"/>
 <meta itemprop="name" content="23. ビルド 編">
-<meta itemprop="description" content="今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、 LuneScript 専用">
+<meta itemprop="description" content="今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。 &#43;LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、 LuneScript 専用">
 
-<meta itemprop="wordCount" content="1893">
+<meta itemprop="wordCount" content="1895">
 
 
 
@@ -63,40 +63,31 @@
 今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。
 </p>
 <p>
-LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、
-LuneScript 専用のビルドツールは提供していません。
-よって、ここでは一般的なビルド方法について説明します。
+<del>+LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、</del>
+<del>LuneScript 専用のビルドツールは提供していません。</del>
+<del>よって、ここでは一般的なビルド方法について説明します。</del>
+</p>
+<p>
+LuneScript をトランスコンパイルするには、以下の方法があります。
+</p>
+<ul>
+<li>
+<p>
+個別ビルド
+</p>
+</li>
+<li>
+<p>
+バッチビルド
+</p>
+</li>
+</ul>
+<p>
+バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。
 </p>
 <h2 id="headline-1">
-ビルド
+個別ビルド
 </h2>
-<p>
-LuneScript は Lua のトランスコンパイラですが、
-LuneScript のコードそのままでも実行可能です。
-</p>
-<p>
-例えば、次のようなソースは
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-print( &#34;hello&#34; );</code></pre>
-</div>
-<p>
-次のコマンドで実行できます。
-</p>
-<div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnsc hello.lns exe</code></pre></div>
-</div>
-<p>
-しかし、これでは LuneScript から Lua へのトランスコンパイル処理が走るため、
-ある程度の規模のプロジェクトになると効率が悪くなります。
-</p>
-<p>
-そこで、モジュール毎に Lua へトランスコンパイルするビルド管理が必要になります。
-</p>
-<h3 id="headline-2">
-トランスコンパイル
-</h3>
 <p>
 Lua へトランスコンパイルするには、次のコマンドを実行します。
 </p>
@@ -114,22 +105,39 @@ Lua へトランスコンパイルするには、次のコマンドを実行し�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua hello.lua</code></pre></div>
 </div>
 <p>
-モジュールごとにトランスコンパイルしておくだけでも
-lnsc コマンドで直接実行するよりは効率良くなりますが、
-まだ改善できます。
+これを、全ての .lns ファイルに対して行なうことで、
+全ての .lns ファイルをトランスコンパイルできます。
 </p>
 <p>
-それは LuneScript の import です。
+ただし、 .lns ファイルが多い場合、これだと効率が悪いです。
+</p>
+<h2 id="headline-2">
+バッチビルド
+</h2>
+<p>
+バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。
 </p>
 <p>
-LuneScript の import は、指定のモジュールを読み込みます。
-このとき、LuneScript は指定モジュールを解析します。
-この解析には時間がかかります。
+複数の .lns ファイルを指定するには、 lnsc のオプションに @- を指定し、
+stdin に .lns ファイルパスを渡します。
+stdin に渡す .lns ファイルパスは、1 行につき 1 ファイル出力します。
 </p>
 <p>
-LuneScript は、この解析時間を短縮する手段を提供しています。
+例えば、 proj ディレクトリ以降の全 .lns ファイルを渡す場合、以下になります。
 </p>
-<h3 id="headline-3">
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ find proj -name &#39;*.lns&#39; | lnsc @- save</code></pre></div>
+</div>
+<p>
+現時点で、これが最も高速に処理できる方法です。
+</p>
+<h2 id="headline-3">
+参考情報
+</h2>
+<p>
+<strong>以降は参考情報です。</strong>  
+</p>
+<h3 id="headline-4">
 メタ情報ファイル
 </h3>
 <p>
@@ -199,7 +207,7 @@ LuneScript はモジュールを import する際、
 </p>
 </li>
 </ul>
-<h3 id="headline-4">
+<h3 id="headline-5">
 依存関係
 </h3>
 <p>
@@ -242,7 +250,7 @@ depends/mod1.d に mod1.lns の依存関係情報を出力します。
 この依存関係情報を Makefile に取り込むことで、
 手動で依存関係を定義することなく、簡単に make によるビルド制御が可能になります。
 </p>
-<h4 id="headline-5">
+<h4 id="headline-6">
 サンプル
 </h4>
 <p>
@@ -410,7 +418,7 @@ pub fn func(): str {
 このような makefile を作成することで、
 import の依存関係に応じたビルドが可能になります。
 </p>
-<h2 id="headline-6">
+<h2 id="headline-7">
 まとめ
 </h2>
 <p>
@@ -562,8 +570,9 @@ LuneScript プロジェクトのビルド制御を簡単に実現できます。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

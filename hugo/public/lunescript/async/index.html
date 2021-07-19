@@ -3,7 +3,7 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>@.2 非同期処理 - 公開技術情報</title>
+<title>@.2 安全な非同期処理 - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.68.3" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/async/">
@@ -28,18 +28,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="@.2 非同期処理" />
-<meta property="og:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく" />
+<meta property="og:title" content="@.2 安全な非同期処理" />
+<meta property="og:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 静的にデータ競合を排除する簡易機能を持ちます。 __Runner インタ" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/async/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="@.2 非同期処理"/>
-<meta name="twitter:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく"/>
-<meta itemprop="name" content="@.2 非同期処理">
-<meta itemprop="description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく">
+<meta name="twitter:title" content="@.2 安全な非同期処理"/>
+<meta name="twitter:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 静的にデータ競合を排除する簡易機能を持ちます。 __Runner インタ"/>
+<meta itemprop="name" content="@.2 安全な非同期処理">
+<meta itemprop="description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 静的にデータ競合を排除する簡易機能を持ちます。 __Runner インタ">
 
-<meta itemprop="wordCount" content="255">
+<meta itemprop="wordCount" content="4174">
 
 
 
@@ -57,14 +57,14 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>@.2 非同期処理</h1>
+<main><h1>@.2 安全な非同期処理</h1>
 
 <p>
 LuneScript から go 言語へのトランスコンパイル対応したのを機に、
 LuneScript による非同期処理を対応しました。
 </p>
 <p>
-ただし、これは非常に実験的な内容なので参考程度にしてください。
+静的にデータ競合を排除する簡易機能を持ちます。
 </p>
 <h2 id="headline-1">
 __Runner インタフェース
@@ -73,7 +73,7 @@ __Runner インタフェース
 LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
 </p>
 <p>
-__Runner インタフェースは、以下の型です。
+__Runner インタフェースは、以下の型です。 <strong>__async については後述します。</strong>
 </p>
 <div class="src src-lns">
 <pre><code class="language-lns" data-lang="lns">pub interface __Runner {
@@ -82,7 +82,7 @@ __Runner インタフェースは、以下の型です。
 </div>
 <p>
 このインタフェースを実装すると、
-新しい組込み関数の __run(), __join を利用できます。
+新しい組込み関数の __run(), __join() を利用できます。
 </p>
 <p>
 例えば、以下のような処理を実行すると、
@@ -99,13 +99,667 @@ __Runner インタフェースは、以下の型です。
 let list:List&lt;Hoge&gt; = [];
 for index = 0, 10 {
    let mut hoge = new Hoge(index);
-   hoge.run();
+   __run( hoge, __lns.runMode.Sync, &#34;&#34; );
    list.insert( hoge );
 }
 foreach hoge in list {
    __join( hoge );
 }</code></pre>
 </div>
+<h3 id="headline-2">
+__run() 関数
+</h3>
+<p>
+__run() 関数は、 __Runner クラスの非同期実行を開始するための関数です。
+</p>
+<p>
+非同期実行が開始されると、
+__Runner クラスの run() メソッドが別スレッドで実行されます。
+</p>
+<p>
+__run() 関数の型は以下の通りです。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool</code></pre>
+</div>
+<ul>
+<li>
+<p>
+第 1 引数の runner には、 実行する __Runner オブジェクトを指定します。
+</p>
+</li>
+<li>
+<p>
+第 2 引数の mode には、 以下を指定します。
+</p>
+<ul>
+<li>
+<p>
+__lns.runMode.Sync
+</p>
+<ul>
+<li>
+<p>
+実行中の __Runner 数が一定数越えた場合、
+新しくスレッドは起動せずにここで実行する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__lns.runMode.Queue
+</p>
+<ul>
+<li>
+<p>
+実行中の __Runner 数が一定数越えた場合、 Runner queue に入れ、
+実行中の __Runner が停止した時に実行する。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__lns.runMode.Skip
+</p>
+<ul>
+<li>
+<p>
+実行中の __Runner 数が一定数越えた場合、 Runner を実行しない。
+</p>
+</li>
+<li>
+<p>
+実行しなかった場合、 false を返す。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+第 3 引数の name には、この非同期処理の名前を指定する。
+</p>
+</li>
+</ul>
+<p>
+lua にトランスコンパイルした場合、以下の動作になります。
+</p>
+<ul>
+<li>
+<p>
+mode が __lns.runMode.Sync あるいは __lns.runMode.Queue の場合、
+新しくスレッドは起動せずに、ここで実行する。
+</p>
+</li>
+<li>
+<p>
+mode が __lns.runMode.Skip の場合、実行せずに false を返す。
+</p>
+</li>
+</ul>
+<h3 id="headline-3">
+__join() 関数
+</h3>
+<p>
+__join() 関数は、 __Runner の非同期処理の終了を待つ関数です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn __join( runner:__Runner )</code></pre>
+</div>
+<p>
+lua にトランスコンパイルした場合、非同期処理はないため何もしません。
+</p>
+<h3 id="headline-4">
+コンストラクタの引数の制限
+</h3>
+<p>
+__Runner を extend するクラスのコンストラクタの引数は、
+以下の型に制限されます。
+</p>
+<ul>
+<li>
+<p>
+int, real, str, bool, enum 
+</p>
+</li>
+<li>
+<p>
+immutable な型
+</p>
+</li>
+</ul>
+<p>
+つまり、以下のケースはエラーになります。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:Test, list:List&lt;int&gt; ) __async { // error
+   }
+   pub fn run() __async mut {
+   }
+}</code></pre>
+</div>
+<p>
+このエラーは、 引数の test と list が mutable な型であるためです。
+</p>
+<p>
+以下のように immutable としての宣言が必要です。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:&amp;Test, list:&amp;List&lt;int&gt; ) __async { // ok
+   }
+   pub fn run() __async mut {
+   }
+}</code></pre>
+</div>
+<h2 id="headline-5">
+__async, __noasyc 属性
+</h2>
+<p>
+__Runner インタフェースの run() メソッドの定義を見ると、
+__async が追加されているのが分かります。
+</p>
+<p>
+これは、その関数を非同期に実行可能であることを宣言しています。
+</p>
+<p>
+LuneScript は、スレッドが一つだけで動作する従来の同期処理と、
+新しくスレッドを起動して実行する非同期処理に分けて管理します。
+</p>
+<p>
+ある関数を非同期で実行するには、
+その関数が非同期で実行可能であることを宣言する必要があります。
+</p>
+<p>
+それが <strong>__async</strong> です。
+</p>
+<p>
+一方で、従来の同期処理は <strong>__noasyc</strong> です。
+</p>
+<p>
+<em>普通は async の対になるのは sync だと思いますが、</em>
+<em>以下の理由からあえて noasync にしています。</em>
+</p>
+<ul>
+<li>
+<p>
+async と sync だと区別しづらい
+</p>
+</li>
+<li>
+<p>
+主体が非同期処理(async)であり、 同期処理は例外だから noasync
+</p>
+</li>
+</ul>
+<p>
+__async, __noasync どちらも宣言していない場合はデフォルトで __noasyc ですが、
+デフォルトを __async として扱える方法を用意しています。
+</p>
+<h2 id="headline-6">
+__async 宣言された関数の制限
+</h2>
+<p>
+<strong>__async 宣言された関数には、以下の制限があります。</strong>
+</p>
+<ul>
+<li>
+<p>
+__async 宣言された関数内から __noasync 宣言された関数にアクセスできない。
+</p>
+</li>
+<li>
+<p>
+__async 宣言された関数内から、スコープ外の mutable な変数にアクセスできない。
+</p>
+</li>
+</ul>
+<p>
+<strong>一方で __noasync 宣言された関数には、このような制限はありません。</strong>
+</p>
+<p>
+これは、安全に非同期処理を実行するためのガードです。
+</p>
+<p>
+非同期処理は、 <strong>排他制御</strong> を考慮する必要があります。
+必要な箇所で <strong>排他制御</strong> を行なわないと、バグになります。
+</p>
+<p>
+<a href="https://ja.wikipedia.org/wiki/%E7%AB%B6%E5%90%88%E7%8A%B6%E6%85%8B#%E6%83%85%E5%A0%B1%E5%87%A6%E7%90%86">排他制御の必要性については、ここを参考に。</a>
+</p>
+<p>
+しかし、どこに <strong>排他制御</strong> が必要か、
+を全てのケースにおいて人手で網羅することは非常に困難です。
+</p>
+<p>
+そこで、 LuneScript では文法上にメタ情報を宣言し、
+その不整合をコンパイラがチェックすることによって、
+ヒューマンエラーによる <strong>排他制御</strong> の抜け漏れを軽減する方法を採用しています。
+</p>
+<p>
+このアプローチを採用する代表的な言語に Rust があります。
+</p>
+<p>
+Rust は厳格なメタ情報の定義によって、高度な <strong>排他制御</strong> を実現しています。
+</p>
+<p>
+LuneScript では、 Rust ほど高度な <strong>排他制御</strong> を実現していない変わりに、
+比較的に手軽で扱い易いメタ情報定義を採用しています。
+</p>
+<p>
+なお、後述する <strong>__asyncLock</strong> を利用することで、
+<strong>__async から __noasync をアクセスすることが可能</strong> になります。
+</p>
+<h3 id="headline-7">
+__async 宣言された関数内から __noasync 宣言された関数は実行できない。
+</h3>
+<p>
+これは、以下のケースがエラーになることを指します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      self.func1(); // error
+   }
+}</code></pre>
+</div>
+<p>
+上記 func1 は __noasync で、 func2 は __async です。
+このとき、 __async の func2 から __noasync の func1 はアクセスできません。
+</p>
+<h3 id="headline-8">
+__async 宣言された関数内から、スコープ外の mutable な変数にアクセスできない。
+</h3>
+<p>
+これは、以下のケースがエラーになることを指します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+let list2 = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list { // error
+         print( val );
+      }
+      foreach val in list2 { // ok
+         print( val );
+      }
+   }
+}</code></pre>
+</div>
+<p>
+上記 func は __async で、 list は最上位スコープの mutable な変数です。
+</p>
+<p>
+このとき、 __async の func から mutable の list にはアクセスできません。
+</p>
+<p>
+一方で、 list2 は immutable です。 immutable な変数には func からアクセス可能です。
+</p>
+<p>
+また __noasync のメソッドからは、 mutable なメンバにアクセス可能です。
+</p>
+<h2 id="headline-9">
+__async:__noasyc == N:1
+</h2>
+<p>
+LuneScript では、 非同期(<code class="verbatim">__async</code>)で動作するスレッドが複数(N)あり、
+<code class="verbatim">__noasync</code> で動作するスレッドは 1 つになるように設計しています。
+</p>
+<p>
+<code class="verbatim">__noasync</code> で動作するスレッドが複数あると、もはやそれは非同期なので、
+<code class="verbatim">__noasync</code> のスレッドが一つなのは当然ですね。
+</p>
+<h2 id="headline-10">
+__async の制限を一時的に解除する方法。 (__asyncLock)
+</h2>
+<p>
+前述の通り、 __async 宣言された関数には制限があります。
+</p>
+<p>
+理想は、全てにおいてこの制限を満すことですが、
+現実問題それでは対応できないケースもあります。
+</p>
+<p>
+そこで、 __async 宣言された関数の制限を一時的に解除する方法を用意しています。
+</p>
+<p>
+それが <strong>__asyncLock</strong> です。
+</p>
+<p>
+例えば、以下のように __asyncLock を利用します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1(); // ok
+      }
+   }
+}</code></pre>
+</div>
+<p>
+func2 は __async なので、__noasync である func2 に本来はアクセスできませんが、
+__asyncLock ブロック内では __async の制限が解除されます。
+</p>
+<h3 id="headline-11">
+__asyncLock と __noasync の関係
+</h3>
+<p>
+__asyncLock は、 __async 宣言された関数を一時的に __noasync として動作させます。
+</p>
+<p>
+そして前述している通り、
+__noasync として動作するスレッドは 1 つでなければなりません。
+</p>
+<p>
+そこで__asyncLock は、
+__noasync スレッドが実行中は、実行停止まで待ち、
+__noasync スレッドの実行停止後に _asyncLock のブロックを実行します。
+</p>
+<p>
+他の __asyncLock のブロック実行中も __noasync スレッド実行中と同様に扱います。
+</p>
+<h4 id="headline-12">
+関数を跨いだ __asyncLock のネスト
+</h4>
+<p>
+次のケースでは、 func3 -&gt; func2 -&gt; func1 とコールしています。
+</p>
+<p>
+この時に、 func3, func2 で __asyncLock していますが、
+func2 実行時には既の __noasync として実行しているため、
+func2 の __asyncLock はブロックせずに実行されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1();
+      }
+   }
+   fn func3() __async {
+      __asyncLock {
+         self.func2();
+      }
+   }
+}</code></pre>
+</div>
+<p>
+このように、関数を跨いだ __asyncLock はネストできます。
+</p>
+<p>
+一方で同一関数内の __asyncLock はネストできません。エラーします。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         __asyncLock { // error
+            self.func1();
+         }
+      }
+   }
+}</code></pre>
+</div>
+<h3 id="headline-13">
+__asyncLock のオーバーヘッド
+</h3>
+<p>
+前述の通り、 __asyncLock は排他制御を行ないます。
+</p>
+<p>
+排他制御はオーバーヘッドがかかるので、__asyncLock の利用は最小限にすべきです。
+</p>
+<p>
+例えば次のように for ループ内で __asyncLock を使うと、
+ループ分のオーバーヘッドが余計に加算されます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      for _ = 1, 10000000 {
+         __asyncLock {
+            self.func1();
+         }
+      }
+   }
+}</code></pre>
+</div>
+<p>
+この場合は、 __asyncLock を for ループの外に出すのが良いです。
+しかし、for ループの外に出すと、
+排他される範囲が広くなりすぎるケースもあります。
+</p>
+<p>
+どの範囲を __asyncLock するかは慎重に判断する必要があります。
+</p>
+<h3 id="headline-14">
+__asyncLock の制限 
+</h3>
+<p>
+__asyncLock には以下の制限があります。
+</p>
+<ul>
+<li>
+<p>
+__asyncLock 内から return, break できない。
+</p>
+</li>
+</ul>
+<p>
+つまり、以下のような処理は出来ません。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      __asyncLock {
+         if self.func1() {
+            return 1; // error
+         }
+      }
+      return 0;
+   }
+}</code></pre>
+</div>
+<p>
+このような処理を行なう場合は、以下のよう書きます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      let mut val = 0;
+      __asyncLock {
+         if self.func1() {
+            val = 1;
+         }
+      }
+      return val;
+   }
+}</code></pre>
+</div>
+<h2 id="headline-15">
+デフォルトを __async にする
+</h2>
+<p>
+何も宣言していない関数は __noasync です。
+</p>
+<p>
+これを、 デフォルト __async にする方法を用意しています。
+</p>
+<pre class="example">
+_lune_control default_async_all
+</pre>
+<p>
+上記が .lns ファイルの先頭に宣言されている場合、
+その .lns ファイル内では デフォルト __async になります。
+</p>
+<h2 id="headline-16">
+ソフトウェアデザイン
+</h2>
+<p>
+これまでの特徴をまとめると以下になります。
+</p>
+<ul>
+<li>
+<p>
+__async スレッドが複数(N)で __noasync スレッドは 1 つの N:1 になる。
+</p>
+</li>
+<li>
+<p>
+他に __noasync スレッド実行中、 __asyncLock はブロックする。
+</p>
+</li>
+</ul>
+<p>
+これらから、 LuneScript において非同期処理を行なうには以下が必要になります。
+</p>
+<p>
+<strong>「基本は __Runner で __async 処理し、 __noasync の処理は必要最低限に留める」</strong>
+</p>
+<p>
+例えば、
+__main() で起動直後に __Runner を起動し、その __Runner の終了を __join で待つ。
+というデザインをするのが基本となります。
+</p>
+<h2 id="headline-17">
+安全に非同期制御を行なうためのメカニズム
+</h2>
+<p>
+LuneScript では、以下によって排他制御の抜け漏れを防止しています。
+</p>
+<ul>
+<li>
+<p>
+__async 宣言された関数の制限
+</p>
+</li>
+<li>
+<p>
+__Runner を extend したクラスのコンストラクタの制限
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list {
+         print( val );
+      }
+   }
+}</code></pre>
+</div>
+<p>
+例えば、上記の func() から list へのアクセスは本来コンパイルエラーになりますが、
+これをエラーとしない場合、
+func() メソッドを実行している間に、
+別のスレッドで list の値を更新した場合、
+list に対して参照と変更が同時に発生し、不定な動作になります。
+</p>
+<p>
+これをガードするために、 __async 宣言した関数には制限が付きます。
+</p>
+<p>
+また、次のようなコードを実行した場合、
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">class Hoge extend (__Runner) {
+   let list:List&lt;int&gt;;
+   pub fn __init( list:List&lt;int&gt; ) __async {
+      self.list = list;
+
+      __run( self, __lns.runMode.Queue, &#34;test&#34; );
+   }
+   pub fn run() __async mut {
+      self.list.insert(1);
+   }
+}
+
+let mut workList = [1];
+let hoge1 = new Hoge( workList );
+let hoge2 = new Hoge( workList );</code></pre>
+</div>
+<p>
+本来 Hoge のコンストラクタの list の型が
+mutable であるためコンパイルエラーになりますが、
+これをエラーとしない場合、同じ workList に対して、
+複数の Hoge の非同期処理によって insert() が同時に発生し、
+不定な動作になります。
+</p>
+<p>
+これをガードするために、
+__Runner を extend したコンストラクタには制限が付きます。
+</p>
+<h3 id="headline-18">
+不完全な制限
+</h3>
+<p>
+前述している通り LuneScript の排他制御は、不完全です。
+</p>
+<p>
+既に気付いている方もいると思いますが、
+現状の制限を守っていても不定な動作を起すことが簡単に出来ます。
+</p>
+<p>
+例えば、以下のコードの
+func() からアクセスする list2 は &amp;List&lt;int&gt; なので immutable であり、
+__async 関数の制限を満します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+let list2 = list;
+class Test {
+   fn func() __async {
+      foreach val in list2 {
+         print( val );
+      }
+   }
+}</code></pre>
+</div>
+<p>
+しかし、func を非同期で実行中に別のスレッドから list を更新されると、
+funcでアクセスしてる list2 は list と同じインスタンスであるため、
+不定な動作になります。
+</p>
+<p>
+コンストラクタの制限についても同じようなことを起せます。
+</p>
+<p>
+このように、不完全な制限になってしまっていますが、
+これは、プログラミング開発の手軽さと、
+静的チェックの厳格さとのトレードオフな部分であり、
+LuneScript ではバランスを取って現状はこの仕様になっています。
+</p>
+<p>
+プログラミング開発の手軽さを保ちつつ、
+静的チェックの厳格さを向上できる方法は今後も模索していきます。
+</p>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/lua_runtime/" title="@.1.3 Go へトランスコンパイルした際の Lua ランタイム"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.1.3 Go へトランスコンパイルした際の Lua ランタイム</a>
@@ -251,8 +905,9 @@ foreach hoge in list {
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 非同期処理</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

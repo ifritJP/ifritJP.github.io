@@ -9,8 +9,11 @@ LuneScript はトランスコンパイル先の言語として Lua だけでな�
 Go へのトランスコンパイルが可能です。
 
 この機能により、
-LuneScript のセルフホスティングコードを go にトランスコンパイルし、
-go でビルドすることで、 LuneScript の高速化を実現しています。
+LuneScript のセルフホスティングコードを go 言語のコードにトランスコンパイルし、
+それを go でビルドすることで、 LuneScript の高速化(約 16倍)を実現しています。
+
+高速化については次を参照してください。
+https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/
 
 
 ただし、
@@ -64,8 +67,11 @@ return fib
 // Lua コードのロード
 form fibFunc( num:int ):int;
 fn loadLua( txt:str ) : Luaval<fibFunc> {
-   let loaded = unwrap _load( txt ## );
-   let fib = unwrap loaded(##);
+   let fib;
+   __luago {
+      let loaded = unwrap _load( txt ## );
+      fib = unwrap loaded(##);
+   }
    return fib@@fibFunc;
 }
 
@@ -81,8 +87,9 @@ macro _profile( exec:__exp ) {
 
 // Lua のコードをロードして実行
 let fib_lua = loadLua( code );
-_profile( fib_lua( step ) );
-
+__luago {
+   _profile( fib_lua( step ) );
+}
 
 // LuneScript のフィボナッチ関数
 fn fib_lns( num:int ) : int {
@@ -278,11 +285,49 @@ Lua のコードを実行するための関数がロードされていて、
 
 go へトランスコンパイルしてビルドするには次の step が必要です。
 
-- .lns から .go を生成する
+- go.mod を生成する
+- LuneScript ランタイムを go.mod に登録する  
 - main.go を生成する
+- .lns から .go を生成する
+- go.mod を更新する
 - go build する
 
+.lns を更新した場合は、
+「 .lns から .go を生成する」以降の処理を繰り返し実行します。
+
 各 step を説明します。
+
+*** go.mod を生成する
+
+lune.js があるディレクトリで、以下のコマンドを実行します。
+
+: $ go mod init test # <--- test は環境に合せて指定してください
+
+*** LuneScript ランタイムを go.mod に登録する
+
+以下のコマンドで、LuneScript のランタイムを go.mod に登録します。
+    
+: $ go get github.com/ifritJP/LuneScript/src@latest
+
+以降の作業で go mod tidy を実行しますが、必ず go get を先に実行してください。
+
+*** main.go を生成する
+
+go には、エントリ関数の main() が必要です。
+
+以下のコマンドで、go の main() 関数を定義する main.go を生成します。
+    
+: $ lnsc hoge.lns mkmain main.go
+
+ここで hoge.lns は、 lns で __main を定義しているメインモジュールを指定します。
+main.go は出力先のパスを指定します。
+
+go にトランスコンパイルする場合、 __main 関数を定義するモジュールが必須です。
+
+
+このコマンドで生成した main.go には、
+lns のランタイムを初期化するコードが含まれます。
+
 
 ***  .lns から .go を生成する
 
@@ -290,7 +335,7 @@ go へトランスコンパイルしてビルドするには次の step が必�
     
 : $ lnsc hoge.lns save -langGo
 
-メインモジュールの場合は、さらに --main オプション付加します。
+__main 関数を含むメインモジュールの場合は、さらに --main オプション付加します。
 
 : $ lnsc hoge.lns save -langGo --main hoge
 
@@ -302,25 +347,23 @@ go へトランスコンパイルしてビルドするには次の step が必�
 
 となります。
 
-*** main.go を生成する
+LuneScript を go にトランスコンパイルする場合、__main 関数が必要です。
 
-go には、エントリ関数の main() が必要です。
+*** go.mod を更新する
 
-以下のコマンドで、この main() 関数を定義する main.go を生成します。
-    
-: $ lnsc hoge.lns mkmain main.go
+以下のコマンドで go.mod を更新します。    
 
-ここで hoge.lns は、 lns のメインモジュールを指定します。
-main.go は出力先のパスを指定します。
-
-このコマンドで生成した main.go には、
-lns のランタイムを初期化するコードが含まれます。
+: $ go mod tidy
 
 *** go build する
 
 全ての lns ファイルの変換と main.go の生成ができたら、go build を実行します。
     
 : $ go build
+
+*上記がエラーする場合は、以下を試してください。*
+
+: $ go build -tags gopherlua
 
 これにより、トランスコンパイルしたモジュールが go でビルドされます。
 

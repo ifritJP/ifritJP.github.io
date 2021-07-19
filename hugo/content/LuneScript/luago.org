@@ -1,0 +1,144 @@
+#+TITLE: @3. Lua と連携 編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は Lua のコードを実行できます。
+
+この特徴は、 go 言語にトランスコンパイラした後も維持されますが、
+幾つかの点で注意が必要です。
+
+特に非同期処理と lua コード実行の組み合わせには要注意です。
+
+* Luaval
+
+既にリンク先で説明している通り、 lua で実行した結果は *Luaval 型* で管理します。
+  
+[[../lua]]
+
+この Luaval 型のデータには、以下の制限がありあます。
+
+*ある Luaval 型のデータ dataA を取得する際に実行した Lua VM と、*
+*その dataA にアクセスする際に実行する Lua VM とは、*
+*同じ Lua VM でなければなりません。*
+
+この制限を満さない場合の動作は *不定* です。
+
+
+
+非同期処理で Luaval を扱わない場合は、
+利用される Lua VM は一つに限られるので、
+どの Lua VM が利用されるを意識する必要はありません。
+
+なお、 *「Luaval 型のデータへのアクセス」* とは、
+変数間の代入は含まれません。
+つまり、次の ~work = val~ は *「Luaval 型のデータへのアクセス」* にはならないので、
+Lua VM を意識する必要はありません。
+
+#+BEGIN_SRC lns
+fn func( val:&Luaval<&List<int>> ) {
+   let work = val;
+}
+#+END_SRC
+
+
+* Lua VM の種類
+
+Lua VM には次の 2 つの種類があります。
+
+- __noasync で実行する Lua VM
+- __async で実行する Lua VM
+  - __async 用 Lua VM は、非同期スレッドごとに存在します
+  
+
+lua を実行する際、どの Lua VM にアクセスするか制御が必要です。
+
+この制御を行なうのが *lua アクセスブロック* です。
+
+* lua アクセスブロック
+
+*lua アクセスブロック* には、以下の種類があります。
+また、アクセスする関数が __async なのか __noasync なのかによって、
+利用する *lua アクセスブロック* が異なります。
+
+- __luago
+  - __noasync の関数から lua にアクセスする際に利用する
+  - これは __noasync 用 Lua VM で lua にアクセスする。
+- __luaLock
+  - __async の関数から lua にアクセスする際に利用する
+  - これは __asyncLock と __luago の組み合わせと等価です。
+- __luaDepend
+  - __async の関数から lua にアクセスする際に利用する
+  - これは *現在実行中のスレッドに紐付けられた Lua VM 用 lua でアクセスする。*
+  - つまり、現在実行中のスレッドが __noasync であれば、__noasync 用 Lua VM でアクセスし、
+    現在実行中のスレッドが __async であれば、__async 用 Lua VM でアクセスする。
+
+
+*__luaDepend は、使用される Lua VM が実行時に決定されるため細心の注意が必要です。*
+
+
+** サンプル
+
+以下は、 lua コードを実行するサンプルです。
+  
+#+BEGIN_SRC lns
+// @lnsFront: ok
+__luago {
+   let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+   let loaded, err = _load( code, nil );
+   when! loaded {
+      if! let obj = loaded( ## ) {
+         forsort val, key in obj@@Map<str,int> {
+            print( key, val + 100 ); 
+         }
+      }
+   } else {
+      print( err );
+   }
+}
+#+END_SRC
+
+変数 code に代入した lua のコード =return { val1 = 10, val2 = 20 }= を実行し、
+その結果得られた Map を foreach で列挙して出力しています。
+
+この先頭で、 __luago を宣言しています。
+
+** lua アクセスブロックの使い分け
+
+前述している通り、非同期処理から Lua にアクセスするには、
+lua アクセスブロックの __luaLock と __luaDepend を使い分ける必要があります。
+
+しかし、よほど Lua の重い処理を非同期で実行しない限り、
+__luaDepend を使うべきではありません。
+
+
+__luaDepend を使わずに、 __luago と __luaLock に限定することで、
+Lua VM 内のロード処理を最低限にし、使用メモリを抑えられ、
+結果的に非同期で実行するよりも効率よく処理できることがあります。
+
+また__luaDepend を使う場合、使用される lua VM に注意する必要があり、
+それを間違えると *実行時に不定な結果* になります。
+
+__luaDepend を利用するには、
+非同期に処理を行なうメリットと、デメリットを良く考える必要があります。
+
+
+*** __luaDepend を使った方が良いケース
+
+string.gmatch() は lua にアクセスするため lua アクセスブロックが必要です。
+
+この時、 string.gmatch() が扱う Luaval データは apply ブロック内に閉じるため、
+__luaDepend を使った方が効率良く安全に処理できます。
+
+#+BEGIN_SRC lns
+   let mut list:List<str> = [];
+   __luaDepend {
+      apply token of string.gmatch( txt, pattern ) {
+         list.insert( token );
+      }
+   }
+#+END_SRC

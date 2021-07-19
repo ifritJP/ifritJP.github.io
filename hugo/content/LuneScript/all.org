@@ -7474,35 +7474,18 @@ Map<str,int> 型のデータ map を Lua の関数の引数に指定して実行
 
 今回は LuneScript を使用したプロジェクトを、ビルドする方法について説明します。
 
-LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、
-LuneScript 専用のビルドツールは提供していません。
-よって、ここでは一般的なビルド方法について説明します。
+++LuneScript は、コマンドラインから利用するトランスコンパイラを提供しますが、+
++LuneScript 専用のビルドツールは提供していません。+
++よって、ここでは一般的なビルド方法について説明します。+
 
-** ビルド
+LuneScript をトランスコンパイルするには、以下の方法があります。
 
-LuneScript は Lua のトランスコンパイラですが、
-LuneScript のコードそのままでも実行可能です。
+- 個別ビルド
+- バッチビルド
 
-例えば、次のようなソースは
+バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。
 
-#+NAME: hoge.lns
-#+BEGIN_SRC lns
-// @lnsFront: ok
-print( "hello" );
-#+END_SRC
-
-次のコマンドで実行できます。
-
-#+BEGIN_SRC txt
-$ lnsc hello.lns exe
-#+END_SRC
-
-しかし、これでは LuneScript から Lua へのトランスコンパイル処理が走るため、
-ある程度の規模のプロジェクトになると効率が悪くなります。
-
-そこで、モジュール毎に Lua へトランスコンパイルするビルド管理が必要になります。
-
-*** トランスコンパイル
+** 個別ビルド
 
 Lua へトランスコンパイルするには、次のコマンドを実行します。
    
@@ -7519,17 +7502,31 @@ $ lnsc hello.lns save
 $ lua hello.lua
 #+END_SRC
 
-モジュールごとにトランスコンパイルしておくだけでも
-lnsc コマンドで直接実行するよりは効率良くなりますが、
-まだ改善できます。
+これを、全ての .lns ファイルに対して行なうことで、
+全ての .lns ファイルをトランスコンパイルできます。
 
-それは LuneScript の import です。
+ただし、 .lns ファイルが多い場合、これだと効率が悪いです。
 
-LuneScript の import は、指定のモジュールを読み込みます。
-このとき、LuneScript は指定モジュールを解析します。
-この解析には時間がかかります。
+** バッチビルド
 
-LuneScript は、この解析時間を短縮する手段を提供しています。
+バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。
+
+複数の .lns ファイルを指定するには、 lnsc のオプションに @- を指定し、
+stdin に .lns ファイルパスを渡します。
+stdin に渡す .lns ファイルパスは、1 行につき 1 ファイル出力します。
+
+例えば、 proj ディレクトリ以降の全 .lns ファイルを渡す場合、以下になります。
+
+#+BEGIN_SRC txt
+$ find proj -name '*.lns' | lnsc @- save
+#+END_SRC
+
+現時点で、これが最も高速に処理できる方法です。
+
+
+** 参考情報
+
+**以降は参考情報です。*  
 
 *** メタ情報ファイル
 
@@ -7865,13 +7862,59 @@ macro name( arg ) {
 キーワード macro で開始し、 次にマクロ名 name 、引数 arg と続きます。
 マクロ名 name は、 _ で始まる必要があります。
 逆にマクロ以外のシンボル名は、 _ 以外で始まる必要があります。
-引数の数に制限はありません。
 
+マクロの引数は、以下の型をサポートします。
+
+- int
+- real
+- str
+- bool  
+- stat
+- 上記の List, Map, Set
+- sym
+- __exp
+- __block
+
+sym, stat, __exp, __block については後述します。  
+  
 次に macro-statement ブロックと、 expand-statement が続きます。
 
 マクロの定義方法を理解するには、
 expand-statement を先に理解した方が分かり易いので、
 macro-statement ブロックの説明の前に、expand-statement を説明します。
+
+**** 引数
+
+マクロ専用の引数の型として、以下を利用できます。
+
+- sym
+- stat  
+- __exp
+- __block
+
+***** sym
+
+sym は、シンボルを格納できる型です。
+
+シンボルは、関数、変数、メンバ、クラス、全てのシンボルとして利用できます。
+
+***** stat
+
+stat は、文を格納できる型です。
+
+***** __exp
+
+__exp は、全ての式を格納できる型です。
+
+例えば =1 + 1= や、 =func()= など、どのような式でも指定できます。
+ただし、マクロをコールする時点でエラーなく評価可能な式である必要があります。
+
+***** __block
+
+__block は、ブロック文 ={}= を格納できる型です。
+
+__exp 同様、マクロをコールする時点でエラーなく評価可能なブロックである必要があります。
+
 
 **** expand-statement
 
@@ -8034,9 +8077,6 @@ defstat を expand-statement で展開しています。
 構文エラーとなります。
 
 
-~`{}~ は、その他の値と同じようにリストやマップに格納できます。
-なお、 ~`{}~ の型は stat となります。stat はマクロ内でのみ有効です。
-
 次に ~`{}~ のリストの例を示します。
 
 #+BEGIN_SRC lns
@@ -8087,10 +8127,7 @@ macro-statement では、次の関数が利用できます。
 
 **** マクロ展開
 
-マクロを展開する方法は、関数コールとほとんど同じです。
-ただし、マクロの引数にはリテラルな値しか与えられません。
-
-マクロ展開はビルド時に行なうものであり、実行時には行ないません。
+マクロを展開する方法は、関数コールと同じです。
 
 *** 公開マクロ
 
@@ -8227,9 +8264,9 @@ print( hoge.$val1, hoge.$val2 );
 - 異なる名前空間から __var にアクセスした場合、その __var の内容は不定。
 
 
-この変数の型は、次の Map です。
+この変数の型は、次の通りです。
 
-: let mut var:Map<str,stem>
+: let mut __var:Map<str,stem>
 
 この変数は、各モジュールのコンパイル開始時に生成され、
 全てのマクロから同じ変数にアクセスします。
@@ -8430,7 +8467,7 @@ enum などは利用できません。
 
 ** まとめ
 
-int、 real 間の変換以外は、出来るだけキャストは避けるべきです。
+int、 real 間の変換以外は、 *出来るだけキャストは避けるべきです。*
 generics や、 alge などを利用することで
 型を保ったまま汎用処理を作成できます。
 
@@ -8529,6 +8566,8 @@ subfile use を複数宣言した場合、宣言した順でサブファイル�
 
 例えば、次の main.lns, sub1.lns, sub2.lns があった場合、
 
+- main.lns
+  
 #+BEGIN_SRC lns
 // @lnsFront: skip
 //------ main.lns -------
@@ -8538,6 +8577,8 @@ subfile use sub2;
 pub let val = 1;
 #+END_SRC
 
+- sub1.lns
+
 #+BEGIN_SRC lns
 // @lnsFront: skip
 //------ sub1.lns -------
@@ -8546,6 +8587,8 @@ subfile owner main;
 pub let val1 = 1;
 #+END_SRC
 
+- sub2.lns
+  
 #+BEGIN_SRC lns
 // @lnsFront: skip
 //------ sub2.lns -------
@@ -8802,8 +8845,9 @@ LuneScript は shebang に対応しています。
 ** shebang 対応
 
 shebang とは、シェルスクリプト等で良く見られるスクリプトファイルの最初の行に、
-使用するインタプリタをコメントに指定する機能です。
-bash では次のように指定します。
+使用するインタプリタをコメントに指定することで、
+そのスクリプトファイルを実行すると指定しているインタプリタが実行される機能です。
+例えば bash では次のように指定します。
 
 #+BEGIN_SRC sh
 #! /bin/bash
@@ -8811,8 +8855,7 @@ bash では次のように指定します。
 
 LuneScript では、次のように指定します。
 
-#+BEGIN_SRC lns
-// @lnsFront: skip
+#+BEGIN_SRC sh
 #! /usr/bin/lnsc -shebang
 #+END_SRC
 
@@ -8822,13 +8865,12 @@ LuneScript では、次のように指定します。
 
 例えば次のようなファイル hello.lns があった場合、
 
-#+BEGIN_SRC lns 
-// @lnsFront: skip
+#+BEGIN_SRC sh
 #! /usr/bin/lnsc -shebang
 print( "hello world" );
 #+END_SRC
 
-この hello.lns を直接起動できます。
+この hello.lns を直接実行できます。
 
 #+BEGIN_SRC txt
 $ hello.lns
@@ -8838,10 +8880,10 @@ hello world
 
 
 
-この時、次の制限があります。
++この時、次の制限があります。+
 
-- go 版 lnsc では、 import している .lns ファイルに対応する .lua を
-  事前に生成しておく必要がある。
+- +go 版 lnsc では、 import している .lns ファイルに対応する .lua を+
+  +事前に生成しておく必要がある。+
 
 ** コマンドライン引数
 
@@ -8854,11 +8896,11 @@ shebang で起動された場合や、 go へトランスコンパイルした�
 
 #+BEGIN_SRC lns
 // @lnsFront: skip   
-pub fn __main( argList:List<str> ):int
+pub fn __main( argList:&List<str> ):int
 #+END_SRC
 
 __main 関数の型は、
-引数 argList 名以外、必ず上記の型での宣言が必要です。
+引数名 argList 以外、必ず上記の型での宣言が必要です。
 
 *** __main の実行順
 
@@ -8870,13 +8912,13 @@ __main 関数の型は、
 // @lnsFront: skip   
 print( "hello world" );
 
-pub fn __main( argList:List<str> ):int {
+pub fn __main( argList:&List<str> ):int {
    print( "hoge" );
    return 0;
 }
 #+END_SRC
 
-出力結果は以下になります。 hello
+出力結果は以下になります。
 
 #+BEGIN_SRC txt
 $ ./mini.lns 
@@ -8886,14 +8928,14 @@ hoge
 
 *** __main の引数
 
-=__main= の引数は =List<str>= です。
+=__main= の引数は =&List<str>= です。
 
-このリストには、先頭にスクリプトのパス、次以降にコマンドライン引数が格納されます。
+このリストには、先頭にスクリプトのパス、以降にコマンドライン引数が格納されます。
 
 #+BEGIN_SRC lns
 #! /usr/bin/lnsc -shebang
 // @lnsFront: skip   
-pub fn __main( argList:List<str> ):int {
+pub fn __main( argList:&List<str> ):int {
    foreach arg in argList {
       print( arg );
    }
@@ -9002,255 +9044,6 @@ go へトランスコンパイルする場合、
 
 GOPATH を設定していない場合は =${HOME}/go= が利用されます。
 -----
-* *2 非同期処理*
-# -*- coding:utf-8 -*-
-#+STARTUP: nofold
-#+OPTIONS: ^:{}
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
-
-LuneScript から go 言語へのトランスコンパイル対応したのを機に、
-LuneScript による非同期処理を対応しました。
-
-ただし、これは非常に実験的な内容なので参考程度にしてください。
-
-** __Runner インタフェース
-
-LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
-
-__Runner インタフェースは、以下の型です。
-
-#+BEGIN_SRC lns
-pub interface __Runner {
-   pub fn run() __async mut;
-}
-#+END_SRC
-
-このインタフェースを実装すると、
-新しい組込み関数の __run(), __join を利用できます。
-
-例えば、以下のような処理を実行すると、
-=print("hoge:", self.val );= が非同期で処理されます。
-
-#+BEGIN_SRC lns
-class Hoge extend (__Runner) {
-   let val:int;
-   pub fn run() __async mut {
-      print("hoge:", self.val );
-   }
-}
-
-let list:List<Hoge> = [];
-for index = 0, 10 {
-   let mut hoge = new Hoge(index);
-   hoge.run();
-   list.insert( hoge );
-}
-foreach hoge in list {
-   __join( hoge );
-}
-#+END_SRC
-
-
------
-* *2.1 非同期処理O(過去情報)*
-# -*- coding:utf-8 -*-
-#+STARTUP: nofold
-#+OPTIONS: ^:{}
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
-
-LuneScript から go 言語へのトランスコンパイル対応したのを機に、
-LuneScript による非同期処理を対応しました。
-
-ただし、これは非常に実験的な内容なので参考程度にしてください。
-
-**1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。*
-
-** LuneScript のランタイム
-
-LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
-差を埋めるためのランタイムがあります。
-
-例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
-
-- lua との連携動作
-- and or 演算子の挙動
-
-これら処理は、ランタイム内で宣言しているデータにアクセスしています。
-
-LuneScript を非同期処理に対応する場合、
-ランタイム内のデータアクセスを排他対応する必要があります。
-
-一方で、 mutex などによる排他制御は、
-シングルスレッド時にもパフォーマンスに影響してしまいます。
-
-今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
-排他制御は最低限にし、
-必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
-
-具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
-スレッド毎に複製し、スレッド毎に切り替えて利用します。
-
-ここで一つ問題があります。
-
-それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
-
-スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
-現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
-アクセス先を切り替える、という処理を行なえます。
-
-しかし、スレッド ID の取得が出来ないため、それが出来ません。
-
-これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
-という方法が必要になります。
-
-さすがにこれはやりたくないので、別の方法を考えました。
-
-以降では、今回導入した非同期処理の方法について説明します。
-
-** LnsThread クラスの導入と制限
-
-LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
-
-LnsThread クラスは、次のようなクラスです。
-
-#+BEGIN_SRC lns
-// @lnsFront: skip
-abstract class LnsThread {
-   pro abstract fn loop() mut;
-}
-#+END_SRC
-
-LnsThread のサブクラスでは、 loop() メソッドを override し、
-その中で非同期処理を行ないます。
-
-LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
-
-: _lune_control run_async_pipe;
-
-go routine loop() メソッドが実行されます。
-
-なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
-
-: _lune_control use_async;
-
-これは、 非同期処理を行なうことを宣言するコマンドです。
-
-このコマンドが実行されているモジュー内では、
-次の演算が制限がかかり、
-LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
-
-- and/or 演算
-- nil 条件演算
-- 一部のビルトイン関数、メソッドアクセス
-
-また、非同期処理とのデータを送受信するための手段として、
-__pipe<T> クラスを追加しています。
-
-__pipe<T> クラスは、 go の chan と等価と思ってください。
-
-__pipe<T> クラスは、次のようなクラスです。
-#+BEGIN_SRC lns
-// @lnsFront: skip
-class __pipe<T> {
-  pub fn get() mut : T!;
-  pub fn put( val:T! ) mut;
-}
-#+END_SRC
-
-ここで、__pipe<T>  の T には __AsyncItem インタフェースを implement したクラスを
-指定する必要があります。
-
-put() した val が、 get() で取得できるようになります。
-put(val:T!) に nil を与えると、その __pipe の通信は終了し、
-その後 nil 意外を put() しても、 get() は nil を返すようになります。
-
-
-__AsyncItem インタフェースを implement クラスは、
-同時に Mapping インタフェースも implement が必要です。
-
-__AsyncItem インタフェースを implement したクラスには、
-次のメソッドが追加されます。
-
-: pub static fn _createPipe( num:int ) : __pipe<T>!;
-
-ここで 引数 num は、 chan の cap と同じです。
-
-なお、 Lua にトランスコンパイルした場合、
-この =_createPipe()= 関数は必ず nil を返します。
-
-上記をまとめると、非同期処理は次のように書きます。
-
-#+BEGIN_SRC lns
-// @lnsFront: skip
-_lune_control use_async;
-
-class Test extend (__AsyncItem,Mapping) {
-   let val:str {pub};
-}
-
-class Async extend LnsThread {
-   let mut count:int {pub};
-   let mut pipe:__pipe<Test>!;
-   
-   pub fn __init( pipe:__pipe<Test>! ) {
-      super();
-      self.pipe = pipe;
-      self.count = 0;
-   }
-   
-   pro override fn loop() mut {
-      print( "hoge:" );
-      while true {
-         if! let mut pipe = self.pipe {
-            let! val = pipe.get() {  // pipe からデータを取得
-               print( "hoge:" );
-               break;
-            };
-            val.$val.find( "%d" (self.count) ## );
-            self.count = self.count + 1;
-         }
-      }
-   }
-   pub fn start() {
-      _lune_control run_async_pipe;  // loop() 起動
-   }
-   pub fn put( test:Test ) mut {
-      if! let mut pipe = self.pipe { // pipe にデータをセット
-         pipe.put( test );
-      }
-   }
-}
-
-let mut async = new Async( Test._createPipe( 10 ) );
-async.start();
-let mut async2 = new Async( Test._createPipe( 10 ) );
-async2.start();
-
-for _ = 1, 100000 {
-   async.put( new Test( "abcdefg" ) );
-   async2.put( new Test( "abcdefg" ) );
-}
-print( async.$count, async2.$count );
-#+END_SRC
-
-*** 非同期処理の制限
-
-次の処理を行なった場合の動作は未定義です。
-
-- Loop() 内から、別モジュールのデータ、メソッドにアクセスする
-- 別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
-- LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
-
-以上のように、非常に限定的で使い勝手の悪い仕様になっています。
-この仕様は間違いなく将来変更になるので、
-冒頭で書いたようにあくまで参考程度にしてください。
-
-ちなみに、これだけ制限の多い非同期処理ですが、
-LuneScript の parse 処理に利用していて、
-LuneScript の高速化にほんの少し貢献しています。
-
-
------
 * *1 Go 言語へのトランスコンパイル*
 # -*- coding:utf-8 -*-
 #+STARTUP: nofold
@@ -9261,8 +9054,11 @@ LuneScript はトランスコンパイル先の言語として Lua だけでな�
 Go へのトランスコンパイルが可能です。
 
 この機能により、
-LuneScript のセルフホスティングコードを go にトランスコンパイルし、
-go でビルドすることで、 LuneScript の高速化を実現しています。
+LuneScript のセルフホスティングコードを go 言語のコードにトランスコンパイルし、
+それを go でビルドすることで、 LuneScript の高速化(約 16倍)を実現しています。
+
+高速化については次を参照してください。
+https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/
 
 
 ただし、
@@ -9316,8 +9112,11 @@ return fib
 // Lua コードのロード
 form fibFunc( num:int ):int;
 fn loadLua( txt:str ) : Luaval<fibFunc> {
-   let loaded = unwrap _load( txt ## );
-   let fib = unwrap loaded(##);
+   let fib;
+   __luago {
+      let loaded = unwrap _load( txt ## );
+      fib = unwrap loaded(##);
+   }
    return fib@@fibFunc;
 }
 
@@ -9333,8 +9132,9 @@ macro _profile( exec:__exp ) {
 
 // Lua のコードをロードして実行
 let fib_lua = loadLua( code );
-_profile( fib_lua( step ) );
-
+__luago {
+   _profile( fib_lua( step ) );
+}
 
 // LuneScript のフィボナッチ関数
 fn fib_lns( num:int ) : int {
@@ -9530,11 +9330,49 @@ Lua のコードを実行するための関数がロードされていて、
 
 go へトランスコンパイルしてビルドするには次の step が必要です。
 
-- .lns から .go を生成する
+- go.mod を生成する
+- LuneScript ランタイムを go.mod に登録する  
 - main.go を生成する
+- .lns から .go を生成する
+- go.mod を更新する
 - go build する
 
+.lns を更新した場合は、
+「 .lns から .go を生成する」以降の処理を繰り返し実行します。
+
 各 step を説明します。
+
+**** go.mod を生成する
+
+lune.js があるディレクトリで、以下のコマンドを実行します。
+
+: $ go mod init test # <--- test は環境に合せて指定してください
+
+**** LuneScript ランタイムを go.mod に登録する
+
+以下のコマンドで、LuneScript のランタイムを go.mod に登録します。
+    
+: $ go get github.com/ifritJP/LuneScript/src@latest
+
+以降の作業で go mod tidy を実行しますが、必ず go get を先に実行してください。
+
+**** main.go を生成する
+
+go には、エントリ関数の main() が必要です。
+
+以下のコマンドで、go の main() 関数を定義する main.go を生成します。
+    
+: $ lnsc hoge.lns mkmain main.go
+
+ここで hoge.lns は、 lns で __main を定義しているメインモジュールを指定します。
+main.go は出力先のパスを指定します。
+
+go にトランスコンパイルする場合、 __main 関数を定義するモジュールが必須です。
+
+
+このコマンドで生成した main.go には、
+lns のランタイムを初期化するコードが含まれます。
+
 
 ****  .lns から .go を生成する
 
@@ -9542,7 +9380,7 @@ go へトランスコンパイルしてビルドするには次の step が必�
     
 : $ lnsc hoge.lns save -langGo
 
-メインモジュールの場合は、さらに --main オプション付加します。
+__main 関数を含むメインモジュールの場合は、さらに --main オプション付加します。
 
 : $ lnsc hoge.lns save -langGo --main hoge
 
@@ -9554,25 +9392,23 @@ go へトランスコンパイルしてビルドするには次の step が必�
 
 となります。
 
-**** main.go を生成する
+LuneScript を go にトランスコンパイルする場合、__main 関数が必要です。
 
-go には、エントリ関数の main() が必要です。
+**** go.mod を更新する
 
-以下のコマンドで、この main() 関数を定義する main.go を生成します。
-    
-: $ lnsc hoge.lns mkmain main.go
+以下のコマンドで go.mod を更新します。    
 
-ここで hoge.lns は、 lns のメインモジュールを指定します。
-main.go は出力先のパスを指定します。
-
-このコマンドで生成した main.go には、
-lns のランタイムを初期化するコードが含まれます。
+: $ go mod tidy
 
 **** go build する
 
 全ての lns ファイルの変換と main.go の生成ができたら、go build を実行します。
     
 : $ go build
+
+**上記がエラーする場合は、以下を試してください。*
+
+: $ go build -tags gopherlua
 
 これにより、トランスコンパイルしたモジュールが go でビルドされます。
 
@@ -9614,7 +9450,7 @@ liblua5.3.so へのリンクが必要になります。
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-go のパッケージ管理されているモジュールを LuneScript から利用できます。
+go でパッケージ管理されているモジュールを LuneScript から利用できます。
 
 ** go のパッケージ管理概要
 
@@ -9831,6 +9667,876 @@ Lua の互換性を確認するテストケースとして使えるのではな�
 何が原因で動かないのかが簡単には分からないので、
 テストケースとして使い勝手が良いとは言えないことを考えると、
 イマイチ現実的ではないか。
+-----
+* *2 安全な非同期処理*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript から go 言語へのトランスコンパイル対応したのを機に、
+LuneScript による非同期処理を対応しました。
+
+静的にデータ競合を排除する簡易機能を持ちます。
+
+** __Runner インタフェース
+
+LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。
+
+__Runner インタフェースは、以下の型です。 *__async については後述します。*
+
+#+BEGIN_SRC lns
+pub interface __Runner {
+   pub fn run() __async mut;
+}
+#+END_SRC
+
+このインタフェースを実装すると、
+新しい組込み関数の __run(), __join() を利用できます。
+
+例えば、以下のような処理を実行すると、
+=print("hoge:", self.val );= が非同期で処理されます。
+
+#+BEGIN_SRC lns
+class Hoge extend (__Runner) {
+   let val:int;
+   pub fn run() __async mut {
+      print("hoge:", self.val );
+   }
+}
+
+let list:List<Hoge> = [];
+for index = 0, 10 {
+   let mut hoge = new Hoge(index);
+   __run( hoge, __lns.runMode.Sync, "" );
+   list.insert( hoge );
+}
+foreach hoge in list {
+   __join( hoge );
+}
+#+END_SRC
+
+*** __run() 関数
+
+__run() 関数は、 __Runner クラスの非同期実行を開始するための関数です。
+
+非同期実行が開始されると、
+__Runner クラスの run() メソッドが別スレッドで実行されます。
+
+
+__run() 関数の型は以下の通りです。
+
+#+BEGIN_SRC lns
+pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool
+#+END_SRC
+
+- 第 1 引数の runner には、 実行する __Runner オブジェクトを指定します。
+- 第 2 引数の mode には、 以下を指定します。
+  - __lns.runMode.Sync
+    - 実行中の __Runner 数が一定数越えた場合、
+      新しくスレッドは起動せずにここで実行する。
+  - __lns.runMode.Queue
+    - 実行中の __Runner 数が一定数越えた場合、 Runner queue に入れ、
+      実行中の __Runner が停止した時に実行する。
+  - __lns.runMode.Skip
+    - 実行中の __Runner 数が一定数越えた場合、 Runner を実行しない。
+    - 実行しなかった場合、 false を返す。
+- 第 3 引数の name には、この非同期処理の名前を指定する。
+
+lua にトランスコンパイルした場合、以下の動作になります。
+
+- mode が __lns.runMode.Sync あるいは __lns.runMode.Queue の場合、
+  新しくスレッドは起動せずに、ここで実行する。
+- mode が __lns.runMode.Skip の場合、実行せずに false を返す。
+
+*** __join() 関数
+
+__join() 関数は、 __Runner の非同期処理の終了を待つ関数です。
+
+#+BEGIN_SRC lns
+pub fn __join( runner:__Runner ) 
+#+END_SRC
+
+lua にトランスコンパイルした場合、非同期処理はないため何もしません。
+
+
+*** コンストラクタの引数の制限
+
+__Runner を extend するクラスのコンストラクタの引数は、
+以下の型に制限されます。
+
+- int, real, str, bool, enum 
+- immutable な型
+
+つまり、以下のケースはエラーになります。
+
+#+BEGIN_SRC lns
+class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:Test, list:List<int> ) __async { // error
+   }
+   pub fn run() __async mut {
+   }
+}
+#+END_SRC
+
+このエラーは、 引数の test と list が mutable な型であるためです。
+
+
+以下のように immutable としての宣言が必要です。
+   
+#+BEGIN_SRC lns
+class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:&Test, list:&List<int> ) __async { // ok
+   }
+   pub fn run() __async mut {
+   }
+}
+#+END_SRC
+
+
+** __async, __noasyc 属性
+
+__Runner インタフェースの run() メソッドの定義を見ると、
+__async が追加されているのが分かります。
+
+これは、その関数を非同期に実行可能であることを宣言しています。
+
+LuneScript は、スレッドが一つだけで動作する従来の同期処理と、
+新しくスレッドを起動して実行する非同期処理に分けて管理します。
+
+ある関数を非同期で実行するには、
+その関数が非同期で実行可能であることを宣言する必要があります。
+
+それが *__async* です。
+
+一方で、従来の同期処理は *__noasyc* です。
+
+/普通は async の対になるのは sync だと思いますが、/
+/以下の理由からあえて noasync にしています。/
+
+- async と sync だと区別しづらい
+- 主体が非同期処理(async)であり、 同期処理は例外だから noasync
+
+__async, __noasync どちらも宣言していない場合はデフォルトで __noasyc ですが、
+デフォルトを __async として扱える方法を用意しています。
+
+** __async 宣言された関数の制限
+
+**__async 宣言された関数には、以下の制限があります。*
+
+- __async 宣言された関数内から __noasync 宣言された関数にアクセスできない。
+- __async 宣言された関数内から、スコープ外の mutable な変数にアクセスできない。
+
+**一方で __noasync 宣言された関数には、このような制限はありません。*
+
+これは、安全に非同期処理を実行するためのガードです。
+
+非同期処理は、 *排他制御* を考慮する必要があります。
+必要な箇所で *排他制御* を行なわないと、バグになります。
+
+[[https://ja.wikipedia.org/wiki/%E7%AB%B6%E5%90%88%E7%8A%B6%E6%85%8B#%E6%83%85%E5%A0%B1%E5%87%A6%E7%90%86][排他制御の必要性については、ここを参考に。]]
+
+しかし、どこに *排他制御* が必要か、
+を全てのケースにおいて人手で網羅することは非常に困難です。
+
+そこで、 LuneScript では文法上にメタ情報を宣言し、
+その不整合をコンパイラがチェックすることによって、
+ヒューマンエラーによる *排他制御* の抜け漏れを軽減する方法を採用しています。
+
+このアプローチを採用する代表的な言語に Rust があります。
+
+Rust は厳格なメタ情報の定義によって、高度な *排他制御* を実現しています。
+
+LuneScript では、 Rust ほど高度な *排他制御* を実現していない変わりに、
+比較的に手軽で扱い易いメタ情報定義を採用しています。
+
+
+なお、後述する *__asyncLock* を利用することで、
+**__async から __noasync をアクセスすることが可能* になります。
+
+
+
+*** __async 宣言された関数内から __noasync 宣言された関数は実行できない。
+
+これは、以下のケースがエラーになることを指します。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      self.func1(); // error
+   }
+}
+#+END_SRC
+
+上記 func1 は __noasync で、 func2 は __async です。
+このとき、 __async の func2 から __noasync の func1 はアクセスできません。
+
+
+*** __async 宣言された関数内から、スコープ外の mutable な変数にアクセスできない。
+
+これは、以下のケースがエラーになることを指します。
+
+#+BEGIN_SRC lns
+let mut list = [ 1, 2 ];
+let list2 = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list { // error
+         print( val );
+      }
+      foreach val in list2 { // ok
+         print( val );
+      }
+   }
+}
+#+END_SRC
+
+上記 func は __async で、 list は最上位スコープの mutable な変数です。
+
+このとき、 __async の func から mutable の list にはアクセスできません。
+
+一方で、 list2 は immutable です。 immutable な変数には func からアクセス可能です。
+
+また __noasync のメソッドからは、 mutable なメンバにアクセス可能です。
+
+
+** __async:__noasyc == N:1
+
+LuneScript では、 非同期(=__async=)で動作するスレッドが複数(N)あり、
+=__noasync= で動作するスレッドは 1 つになるように設計しています。
+
+=__noasync= で動作するスレッドが複数あると、もはやそれは非同期なので、
+=__noasync= のスレッドが一つなのは当然ですね。
+
+
+** __async の制限を一時的に解除する方法。 (__asyncLock)
+
+前述の通り、 __async 宣言された関数には制限があります。
+
+理想は、全てにおいてこの制限を満すことですが、
+現実問題それでは対応できないケースもあります。
+
+そこで、 __async 宣言された関数の制限を一時的に解除する方法を用意しています。
+
+それが *__asyncLock* です。
+
+例えば、以下のように __asyncLock を利用します。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1(); // ok
+      }
+   }
+}
+#+END_SRC
+
+func2 は __async なので、__noasync である func2 に本来はアクセスできませんが、
+__asyncLock ブロック内では __async の制限が解除されます。
+
+*** __asyncLock と __noasync の関係
+
+__asyncLock は、 __async 宣言された関数を一時的に __noasync として動作させます。
+
+そして前述している通り、
+__noasync として動作するスレッドは 1 つでなければなりません。
+
+そこで__asyncLock は、
+__noasync スレッドが実行中は、実行停止まで待ち、
+__noasync スレッドの実行停止後に _asyncLock のブロックを実行します。
+
+他の __asyncLock のブロック実行中も __noasync スレッド実行中と同様に扱います。
+
+**** 関数を跨いだ __asyncLock のネスト
+
+次のケースでは、 func3 -> func2 -> func1 とコールしています。
+
+この時に、 func3, func2 で __asyncLock していますが、
+func2 実行時には既の __noasync として実行しているため、
+func2 の __asyncLock はブロックせずに実行されます。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1();
+      }
+   }
+   fn func3() __async {
+      __asyncLock {
+         self.func2();
+      }
+   }
+}
+#+END_SRC
+
+このように、関数を跨いだ __asyncLock はネストできます。
+
+一方で同一関数内の __asyncLock はネストできません。エラーします。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         __asyncLock { // error
+            self.func1();
+         }
+      }
+   }
+}
+#+END_SRC
+
+
+
+*** __asyncLock のオーバーヘッド
+
+前述の通り、 __asyncLock は排他制御を行ないます。
+
+排他制御はオーバーヘッドがかかるので、__asyncLock の利用は最小限にすべきです。
+
+例えば次のように for ループ内で __asyncLock を使うと、
+ループ分のオーバーヘッドが余計に加算されます。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      for _ = 1, 10000000 {
+         __asyncLock {
+            self.func1();
+         }
+      }
+   }
+}
+#+END_SRC
+
+この場合は、 __asyncLock を for ループの外に出すのが良いです。
+しかし、for ループの外に出すと、
+排他される範囲が広くなりすぎるケースもあります。
+
+どの範囲を __asyncLock するかは慎重に判断する必要があります。
+   
+
+*** __asyncLock の制限 
+
+__asyncLock には以下の制限があります。
+
+- __asyncLock 内から return, break できない。
+
+つまり、以下のような処理は出来ません。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      __asyncLock {
+         if self.func1() {
+            return 1; // error
+         }
+      }
+      return 0;
+   }
+}
+#+END_SRC
+
+このような処理を行なう場合は、以下のよう書きます。
+
+#+BEGIN_SRC lns
+class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      let mut val = 0;
+      __asyncLock {
+         if self.func1() {
+            val = 1;
+         }
+      }
+      return val;
+   }
+}
+#+END_SRC
+
+** デフォルトを __async にする
+
+何も宣言していない関数は __noasync です。
+
+これを、 デフォルト __async にする方法を用意しています。
+
+: _lune_control default_async_all
+
+上記が .lns ファイルの先頭に宣言されている場合、
+その .lns ファイル内では デフォルト __async になります。
+
+** ソフトウェアデザイン
+
+これまでの特徴をまとめると以下になります。
+
+- __async スレッドが複数(N)で __noasync スレッドは 1 つの N:1 になる。
+- 他に __noasync スレッド実行中、 __asyncLock はブロックする。
+
+これらから、 LuneScript において非同期処理を行なうには以下が必要になります。
+
+
+**「基本は __Runner で __async 処理し、 __noasync の処理は必要最低限に留める」*
+
+例えば、
+__main() で起動直後に __Runner を起動し、その __Runner の終了を __join で待つ。
+というデザインをするのが基本となります。
+
+** 安全に非同期制御を行なうためのメカニズム
+
+LuneScript では、以下によって排他制御の抜け漏れを防止しています。
+
+- __async 宣言された関数の制限
+- __Runner を extend したクラスのコンストラクタの制限
+
+#+BEGIN_SRC lns
+let mut list = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list {
+         print( val );
+      }
+   }
+}
+#+END_SRC
+
+例えば、上記の func() から list へのアクセスは本来コンパイルエラーになりますが、
+これをエラーとしない場合、
+func() メソッドを実行している間に、
+別のスレッドで list の値を更新した場合、
+list に対して参照と変更が同時に発生し、不定な動作になります。
+
+これをガードするために、 __async 宣言した関数には制限が付きます。
+
+また、次のようなコードを実行した場合、
+
+#+BEGIN_SRC lns
+class Hoge extend (__Runner) {
+   let list:List<int>;
+   pub fn __init( list:List<int> ) __async {
+      self.list = list;
+
+      __run( self, __lns.runMode.Queue, "test" );
+   }
+   pub fn run() __async mut {
+      self.list.insert(1);
+   }
+}
+
+let mut workList = [1];
+let hoge1 = new Hoge( workList );
+let hoge2 = new Hoge( workList );
+#+END_SRC
+
+本来 Hoge のコンストラクタの list の型が
+mutable であるためコンパイルエラーになりますが、
+これをエラーとしない場合、同じ workList に対して、
+複数の Hoge の非同期処理によって insert() が同時に発生し、
+不定な動作になります。
+
+これをガードするために、
+__Runner を extend したコンストラクタには制限が付きます。
+
+
+*** 不完全な制限
+
+前述している通り LuneScript の排他制御は、不完全です。
+
+既に気付いている方もいると思いますが、
+現状の制限を守っていても不定な動作を起すことが簡単に出来ます。
+
+例えば、以下のコードの
+func() からアクセスする list2 は &List<int> なので immutable であり、
+__async 関数の制限を満します。
+
+#+BEGIN_SRC lns
+let mut list = [ 1, 2 ];
+let list2 = list;
+class Test {
+   fn func() __async {
+      foreach val in list2 {
+         print( val );
+      }
+   }
+}
+#+END_SRC
+
+しかし、func を非同期で実行中に別のスレッドから list を更新されると、
+funcでアクセスしてる list2 は list と同じインスタンスであるため、
+不定な動作になります。
+
+コンストラクタの制限についても同じようなことを起せます。
+
+このように、不完全な制限になってしまっていますが、
+これは、プログラミング開発の手軽さと、
+静的チェックの厳格さとのトレードオフな部分であり、
+LuneScript ではバランスを取って現状はこの仕様になっています。
+
+プログラミング開発の手軽さを保ちつつ、
+静的チェックの厳格さを向上できる方法は今後も模索していきます。
+
+-----
+* *2.1 非同期処理O(過去情報)*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript から go 言語へのトランスコンパイル対応したのを機に、
+LuneScript による非同期処理を対応しました。
+
+ただし、これは非常に実験的な内容なので参考程度にしてください。
+
+**1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。*
+
+** LuneScript のランタイム
+
+LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
+差を埋めるためのランタイムがあります。
+
+例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。
+
+- lua との連携動作
+- and or 演算子の挙動
+
+これら処理は、ランタイム内で宣言しているデータにアクセスしています。
+
+LuneScript を非同期処理に対応する場合、
+ランタイム内のデータアクセスを排他対応する必要があります。
+
+一方で、 mutex などによる排他制御は、
+シングルスレッド時にもパフォーマンスに影響してしまいます。
+
+今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
+排他制御は最低限にし、
+必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。
+
+具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
+スレッド毎に複製し、スレッド毎に切り替えて利用します。
+
+ここで一つ問題があります。
+
+それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。
+
+スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
+現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
+アクセス先を切り替える、という処理を行なえます。
+
+しかし、スレッド ID の取得が出来ないため、それが出来ません。
+
+これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
+という方法が必要になります。
+
+さすがにこれはやりたくないので、別の方法を考えました。
+
+以降では、今回導入した非同期処理の方法について説明します。
+
+** LnsThread クラスの導入と制限
+
+LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。
+
+LnsThread クラスは、次のようなクラスです。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip
+abstract class LnsThread {
+   pro abstract fn loop() mut;
+}
+#+END_SRC
+
+LnsThread のサブクラスでは、 loop() メソッドを override し、
+その中で非同期処理を行ないます。
+
+LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、
+
+: _lune_control run_async_pipe;
+
+go routine loop() メソッドが実行されます。
+
+なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。
+
+: _lune_control use_async;
+
+これは、 非同期処理を行なうことを宣言するコマンドです。
+
+このコマンドが実行されているモジュー内では、
+次の演算が制限がかかり、
+LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。
+
+- and/or 演算
+- nil 条件演算
+- 一部のビルトイン関数、メソッドアクセス
+
+また、非同期処理とのデータを送受信するための手段として、
+__pipe<T> クラスを追加しています。
+
+__pipe<T> クラスは、 go の chan と等価と思ってください。
+
+__pipe<T> クラスは、次のようなクラスです。
+#+BEGIN_SRC lns
+// @lnsFront: skip
+class __pipe<T> {
+  pub fn get() mut : T!;
+  pub fn put( val:T! ) mut;
+}
+#+END_SRC
+
+ここで、__pipe<T>  の T には __AsyncItem インタフェースを implement したクラスを
+指定する必要があります。
+
+put() した val が、 get() で取得できるようになります。
+put(val:T!) に nil を与えると、その __pipe の通信は終了し、
+その後 nil 意外を put() しても、 get() は nil を返すようになります。
+
+
+__AsyncItem インタフェースを implement クラスは、
+同時に Mapping インタフェースも implement が必要です。
+
+__AsyncItem インタフェースを implement したクラスには、
+次のメソッドが追加されます。
+
+: pub static fn _createPipe( num:int ) : __pipe<T>!;
+
+ここで 引数 num は、 chan の cap と同じです。
+
+なお、 Lua にトランスコンパイルした場合、
+この =_createPipe()= 関数は必ず nil を返します。
+
+上記をまとめると、非同期処理は次のように書きます。
+
+#+BEGIN_SRC lns
+// @lnsFront: skip
+_lune_control use_async;
+
+class Test extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+class Async extend LnsThread {
+   let mut count:int {pub};
+   let mut pipe:__pipe<Test>!;
+   
+   pub fn __init( pipe:__pipe<Test>! ) {
+      super();
+      self.pipe = pipe;
+      self.count = 0;
+   }
+   
+   pro override fn loop() mut {
+      print( "hoge:" );
+      while true {
+         if! let mut pipe = self.pipe {
+            let! val = pipe.get() {  // pipe からデータを取得
+               print( "hoge:" );
+               break;
+            };
+            val.$val.find( "%d" (self.count) ## );
+            self.count = self.count + 1;
+         }
+      }
+   }
+   pub fn start() {
+      _lune_control run_async_pipe;  // loop() 起動
+   }
+   pub fn put( test:Test ) mut {
+      if! let mut pipe = self.pipe { // pipe にデータをセット
+         pipe.put( test );
+      }
+   }
+}
+
+let mut async = new Async( Test._createPipe( 10 ) );
+async.start();
+let mut async2 = new Async( Test._createPipe( 10 ) );
+async2.start();
+
+for _ = 1, 100000 {
+   async.put( new Test( "abcdefg" ) );
+   async2.put( new Test( "abcdefg" ) );
+}
+print( async.$count, async2.$count );
+#+END_SRC
+
+*** 非同期処理の制限
+
+次の処理を行なった場合の動作は未定義です。
+
+- Loop() 内から、別モジュールのデータ、メソッドにアクセスする
+- 別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする
+- LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  
+
+以上のように、非常に限定的で使い勝手の悪い仕様になっています。
+この仕様は間違いなく将来変更になるので、
+冒頭で書いたようにあくまで参考程度にしてください。
+
+ちなみに、これだけ制限の多い非同期処理ですが、
+LuneScript の parse 処理に利用していて、
+LuneScript の高速化にほんの少し貢献しています。
+
+
+-----
+* *Lua と連携 編*
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript は Lua のコードを実行できます。
+
+この特徴は、 go 言語にトランスコンパイラした後も維持されますが、
+幾つかの点で注意が必要です。
+
+特に非同期処理と lua コード実行の組み合わせには要注意です。
+
+** Luaval
+
+既にリンク先で説明している通り、 lua で実行した結果は *Luaval 型* で管理します。
+  
+[[../lua]]
+
+この Luaval 型のデータには、以下の制限がありあます。
+
+**ある Luaval 型のデータ dataA を取得する際に実行した Lua VM と、*
+**その dataA にアクセスする際に実行する Lua VM とは、*
+**同じ Lua VM でなければなりません。*
+
+この制限を満さない場合の動作は *不定* です。
+
+
+
+非同期処理で Luaval を扱わない場合は、
+利用される Lua VM は一つに限られるので、
+どの Lua VM が利用されるを意識する必要はありません。
+
+なお、 *「Luaval 型のデータへのアクセス」* とは、
+変数間の代入は含まれません。
+つまり、次の ~work = val~ は *「Luaval 型のデータへのアクセス」* にはならないので、
+Lua VM を意識する必要はありません。
+
+#+BEGIN_SRC lns
+fn func( val:&Luaval<&List<int>> ) {
+   let work = val;
+}
+#+END_SRC
+
+
+** Lua VM の種類
+
+Lua VM には次の 2 つの種類があります。
+
+- __noasync で実行する Lua VM
+- __async で実行する Lua VM
+  - __async 用 Lua VM は、非同期スレッドごとに存在します
+  
+
+lua を実行する際、どの Lua VM にアクセスするか制御が必要です。
+
+この制御を行なうのが *lua アクセスブロック* です。
+
+** lua アクセスブロック
+
+**lua アクセスブロック* には、以下の種類があります。
+また、アクセスする関数が __async なのか __noasync なのかによって、
+利用する *lua アクセスブロック* が異なります。
+
+- __luago
+  - __noasync の関数から lua にアクセスする際に利用する
+  - これは __noasync 用 Lua VM で lua にアクセスする。
+- __luaLock
+  - __async の関数から lua にアクセスする際に利用する
+  - これは __asyncLock と __luago の組み合わせと等価です。
+- __luaDepend
+  - __async の関数から lua にアクセスする際に利用する
+  - これは *現在実行中のスレッドに紐付けられた Lua VM 用 lua でアクセスする。*
+  - つまり、現在実行中のスレッドが __noasync であれば、__noasync 用 Lua VM でアクセスし、
+    現在実行中のスレッドが __async であれば、__async 用 Lua VM でアクセスする。
+
+
+**__luaDepend は、使用される Lua VM が実行時に決定されるため細心の注意が必要です。*
+
+
+*** サンプル
+
+以下は、 lua コードを実行するサンプルです。
+  
+#+BEGIN_SRC lns
+// @lnsFront: ok
+__luago {
+   let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+   let loaded, err = _load( code, nil );
+   when! loaded {
+      if! let obj = loaded( ## ) {
+         forsort val, key in obj@@Map<str,int> {
+            print( key, val + 100 ); 
+         }
+      }
+   } else {
+      print( err );
+   }
+}
+#+END_SRC
+
+変数 code に代入した lua のコード =return { val1 = 10, val2 = 20 }= を実行し、
+その結果得られた Map を foreach で列挙して出力しています。
+
+この先頭で、 __luago を宣言しています。
+
+*** lua アクセスブロックの使い分け
+
+前述している通り、非同期処理から Lua にアクセスするには、
+lua アクセスブロックの __luaLock と __luaDepend を使い分ける必要があります。
+
+しかし、よほど Lua の重い処理を非同期で実行しない限り、
+__luaDepend を使うべきではありません。
+
+
+__luaDepend を使わずに、 __luago と __luaLock に限定することで、
+Lua VM 内のロード処理を最低限にし、使用メモリを抑えられ、
+結果的に非同期で実行するよりも効率よく処理できることがあります。
+
+また__luaDepend を使う場合、使用される lua VM に注意する必要があり、
+それを間違えると *実行時に不定な結果* になります。
+
+__luaDepend を利用するには、
+非同期に処理を行なうメリットと、デメリットを良く考える必要があります。
+
+
+**** __luaDepend を使った方が良いケース
+
+string.gmatch() は lua にアクセスするため lua アクセスブロックが必要です。
+
+この時、 string.gmatch() が扱う Luaval データは apply ブロック内に閉じるため、
+__luaDepend を使った方が効率良く安全に処理できます。
+
+#+BEGIN_SRC lns
+   let mut list:List<str> = [];
+   __luaDepend {
+      apply token of string.gmatch( txt, pattern ) {
+         list.insert( token );
+      }
+   }
+#+END_SRC
 -----
 * *Go 言語へのトランスコンパイル (検討段階)*
 # -*- coding:utf-8 -*-
