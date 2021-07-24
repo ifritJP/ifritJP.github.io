@@ -1,0 +1,66 @@
+fn readFile( path:str, firstFlag:bool ) {
+   let! mut fileObj = io.open( path## ) {
+      error( "failed to open -- %s" ( path ) );
+   };
+   while true {
+      let! line = fileObj.read( "*l" ) {
+         break;
+      };
+      if firstFlag {
+         print( line );
+      }
+      else {
+         let mut conv = line;
+         if not conv.find( "[[http", 1, true ) and
+            not conv.find( "%[%[%d" ## ) and
+            not conv.find( ".svg]]", 1, true )
+         {
+            conv = conv.gsub( "%[%[%./", "[["  );
+            conv = conv.gsub( "%[%[(%a)", "[[%1"  );
+            conv = conv.gsub( "%[%[%.%./", "[["  );
+            let link = conv.gsub( ".*%[%[(.*)%]%].*", "%1" ).gsub( "%.", "_" ).lower();
+            conv = conv.gsub( "%[%[.*%]%]", "[[#%s]]" (link) );
+         }
+         conv = conv.gsub( "^(%*+) ", "%1* " );
+
+         let mut titleFlag = false;
+         if not conv.find( "#+TITLE:", 1, true ) and
+            not conv.find( "#+title:", 1, true ) and
+            not conv.find( "#+AUTHOR:", 1, true ) and
+            not conv.find( "#+date:", 1, true )
+         {
+            print( conv );
+         } elseif conv.find( "#+TITLE:", 1, true ) {
+            conv = conv.gsub( "^#%+TITLE:[ 0-9A-Z@%.]*%s(.*)%s*", "-----\n* *%1*" );
+            print( conv );
+            titleFlag = true;
+         } elseif conv.find( "#+title:", 1, true ) {
+            conv = conv.gsub( "^#%+title:[ 0-9A-Z@%.]*%s(.*)%s*", "-----\n* *%1*" );
+            print( conv );
+            titleFlag = true;
+         }
+         if titleFlag {
+            print( ```:PROPERTIES:
+:CUSTOM_ID: %s
+:END:
+``` ( path.gsub(".*/", "").gsub( "%.org$", "" ).gsub( "%.", "_" ).lower() ) );
+         }
+      }
+   }
+}
+
+
+pub fn __main(argList:&List<str> ) : int {
+   let input = unwrap io.stdin.read( "*a" ) default "";
+
+   let mut firstFlag = true;
+   apply src of input.gmatch( "%g+" ) {
+      readFile( src, firstFlag );
+      if firstFlag {
+         firstFlag = false;
+      }
+   }
+
+   return 0;
+}
+

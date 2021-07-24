@@ -1,7 +1,8 @@
 
 INDEX = _index.org
 
-SRCS += tutorial1.org
+IGNORE_SRCS += tutorial1.org
+
 SRCS += tutorial2.setup.org
 SRCS += tutorial3.hello.org
 SRCS += crosscompile.org
@@ -56,28 +57,36 @@ SRCS += Box.org
 SRCS := $(addprefix content/LuneScript/, $(SRCS))
 INDEX := $(addprefix content/LuneScript/, $(INDEX))
 
+IGNORE_SRCS := $(addprefix content/LuneScript/, $(IGNORE_SRCS))
+
 HEAD := content/LuneScript/_all.org.head
 
 EXCLUDE = -e '^\#+TITLE:' -e '^\#+AUTHOR:' -e '^\#+date:'
-SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z@]*\. *\(.*\)/-----\n* *\2*/g'
+#SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z\@\.]*\. *\(.*\)/-----\n* *\2*/g'
+#SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z@\.]* \(.*\) /-----\n* *\2*/g'
+SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z@\.]* \(.*[^ ]\)/-----\n* *\2*/g'
 
 help:
 	@echo make all
 	@echo make concat_all
 
 concat_all:
-	echo $(SRCS) | sed 's@ @\n@g' | sort > dump.list
+	@echo $(SRCS) | sed 's@ @\n@g' | sort > dump.list
 	find content/LuneScript -iname '*.org' | sort | \
 		grep -v -e 'all.org' -e '_index.org' > dump2.list
-	diff dump.list dump2.list 
+	diff dump.list dump2.list $(addprefix -I, $(IGNORE_SRCS))
 
-	cat $(INDEX) | sed 's@\[\[@[[../@g' | cat - $(SRCS) |		\
-		sed 's/^*/**/g'  | sed $(SEDPAT) |			\
-		grep -v $(EXCLUDE) > dump
-	cat $(HEAD) dump > dump2
+	@echo $(HEAD) $(INDEX) $(SRCS) | \
+		../../LuneScript/src/lnsc makeAll.lns shebang > content/LuneScript/all.org
 
-	mv dump2 content/LuneScript/all.org
-	rm dump
+
+#	cat $(INDEX) | sed 's@\[\[@[[../@g' | cat - $(SRCS) |		\
+#		sed 's/^*/**/g'  | sed $(SEDPAT) |			\
+#		grep -v $(EXCLUDE) > dump
+#	cat $(HEAD) dump > dump2
+#
+#	mv dump2 content/LuneScript/all.org
+#	rm dump
 
 all:
 	$(MAKE) concat_all

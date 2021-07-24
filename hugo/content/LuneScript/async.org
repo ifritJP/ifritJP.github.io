@@ -23,7 +23,7 @@ pub interface __Runner {
 #+END_SRC
 
 このインタフェースを実装すると、
-新しい組込み関数の __run(), __join() を利用できます。
+新しい組込み関数の =__run()=, =__join()= を利用できます。
 
 例えば、以下のような処理を実行すると、
 =print("hoge:", self.val );= が非同期で処理されます。
@@ -49,13 +49,13 @@ foreach hoge in list {
 
 ** __run() 関数
 
-__run() 関数は、 __Runner クラスの非同期実行を開始するための関数です。
+=__run()= 関数は、 __Runner クラスの非同期実行を開始するための関数です。
 
 非同期実行が開始されると、
-__Runner クラスの run() メソッドが別スレッドで実行されます。
+__Runner クラスの =run()= メソッドが別スレッドで実行されます。
 
 
-__run() 関数の型は以下の通りです。
+=__run()= 関数の型は以下の通りです。
 
 #+BEGIN_SRC lns
 pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool
@@ -82,7 +82,7 @@ lua にトランスコンパイルした場合、以下の動作になります�
 
 ** __join() 関数
 
-__join() 関数は、 __Runner の非同期処理の終了を待つ関数です。
+=__join()= 関数は、 __Runner の非同期処理の終了を待つ関数です。
 
 #+BEGIN_SRC lns
 pub fn __join( runner:__Runner ) 
@@ -131,7 +131,7 @@ class Hoge extend (__Runner) {
 
 * __async, __noasyc 属性
 
-__Runner インタフェースの run() メソッドの定義を見ると、
+__Runner インタフェースの =run()= メソッドの定義を見ると、
 __async が追加されているのが分かります。
 
 これは、その関数を非同期に実行可能であることを宣言しています。
@@ -429,7 +429,7 @@ class Test {
 *「基本は __Runner で __async 処理し、 __noasync の処理は必要最低限に留める」*
 
 例えば、
-__main() で起動直後に __Runner を起動し、その __Runner の終了を __join で待つ。
+=__main()= で起動直後に __Runner を起動し、その __Runner の終了を __join で待つ。
 というデザインをするのが基本となります。
 
 * 安全に非同期制御を行なうためのメカニズム
@@ -450,9 +450,9 @@ class Test {
 }
 #+END_SRC
 
-例えば、上記の func() から list へのアクセスは本来コンパイルエラーになりますが、
+例えば、上記の =func()= から list へのアクセスは本来コンパイルエラーになりますが、
 これをエラーとしない場合、
-func() メソッドを実行している間に、
+=func()= メソッドを実行している間に、
 別のスレッドで list の値を更新した場合、
 list に対して参照と変更が同時に発生し、不定な動作になります。
 
@@ -481,7 +481,7 @@ let hoge2 = new Hoge( workList );
 本来 Hoge のコンストラクタの list の型が
 mutable であるためコンパイルエラーになりますが、
 これをエラーとしない場合、同じ workList に対して、
-複数の Hoge の非同期処理によって insert() が同時に発生し、
+複数の Hoge の非同期処理によって =insert()= が同時に発生し、
 不定な動作になります。
 
 これをガードするために、
@@ -496,7 +496,7 @@ __Runner を extend したコンストラクタには制限が付きます。
 現状の制限を守っていても不定な動作を起すことが簡単に出来ます。
 
 例えば、以下のコードの
-func() からアクセスする list2 は &List<int> なので immutable であり、
+=func()= からアクセスする list2 は &List<int> なので immutable であり、
 __async 関数の制限を満します。
 
 #+BEGIN_SRC lns
