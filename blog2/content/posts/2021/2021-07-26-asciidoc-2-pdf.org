@@ -1,0 +1,215 @@
+#+TITLE: asciidoc の pdf 化
+#+DATE: 2021-07-26
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: lunescript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+asciidoctor-pdf を利用すると asciidoc を pdf 化できます。
+
+ここでは、 asciidoctor-pdf のセットアップと
+pdf 化時のレイアウト変更方法について説明します。
+
+
+* asciidoctor-pdf のセットアップ
+
+asciidoctor-pdf が既にインストールされている場合、
+日本語フォントのインストール時に conflict することがあるので、
+ここでは docker を利用します。
+
+docker を使わなくても、ローカル環境に ruby をインストールし、
+Dockerfile の RUN と同等の手順を実行してもインストールできます。
+asciidoctor-pdf が conflict した場合は、
+asciidoctor-pdf をアンインストールしてから
+asciidoctor-pdf をインストールしなおしてください。
+
+
+** Dockerfile
+  
+asciidoctor-pdf を利用するための Dockerfile は以下になります。
+
+#+BEGIN_SRC txt
+FROM alpine:3.14.0
+
+RUN apk update;
+RUN apk --no-cache add \
+	curl \
+	bash \
+	ruby
+
+# asciidoctor-pdf
+
+WORKDIR /
+
+RUN gem install asciidoctor
+RUN gem install --pre asciidoctor-pdf
+RUN gem install asciidoctor-pdf-cjk-kai_gen_gothic
+RUN asciidoctor-pdf-cjk-kai_gen_gothic-install
+RUN cp /usr/lib/ruby/gems/2.7.0/gems/asciidoctor-pdf-cjk-kai_gen_gothic-0.1.1/data/themes/KaiGenGothicJP-theme.yml /
+
+CMD ["/bin/bash"]
+#+END_SRC
+
+** docker-compose
+
+#+BEGIN_SRC txt
+version: '3'
+services:
+
+  2pdf:
+    build: ./
+    image: asciidoc2pdf
+    container_name: asciidoc2pdf
+    volumes:
+      - "./:/proj"
+    tty: true
+#+END_SRC
+
+** 変換
+
+以下を実行して asciidoc から pdf を生成します。
+   
+: $ docker-compose run 2pdf asciidoctor-pdf -a scripts=cjk -a pdf-theme=KaiGenGothicJP-theme.yml -a pdf-fontsdir=$(dirname $(gem which asciidoctor-pdf-cjk-kai_gen_gothic))/../data/fonts /proj/src.adoc
+
+ここで src.adoc は変換元の asciidoc です。
+
+実行すると src.pdf が生成されます。
+
+* pdf のレイアウト変更
+
+asciidoctor-pdf を使って asciidoc から pdf に変換する際、
+以下のオプションを指定しています。
+
+: -a pdf-theme=KaiGenGothicJP-theme.yml
+
+これは、 PDF 変換に使用する theme を指定しています。
+
+asciidoc には、最低限必要な文書情報だけで構成されているため、
+「その文書情報をどのように PDF としてレイアウトするか？」は、
+theme で制御します。
+
+theme を変更することで、同じ asciidoc でも様々な形式の pdf に変換することができます。 
+
+これは、html と css の関係と似ています。
+
+このような制御になるので、
+変換元の asciidoc と、
+その時に利用した theme ファイルはセットで保存しておくべきです。
+
+
+次の公式ドキュメントに、この theme の詳細があるのでそちらを見れば良いですが、
+ちょっと取っ掛り難いものがあるので、ここでは簡単に変更方法を説明します。
+
+<https://github.com/asciidoctor/asciidoctor-pdf/blob/main/docs/theming-guide.adoc#alignments>
+
+** theme.yml の変更
+
+theme.yml は、 拡張子から分かるように YAML 形式になっています。
+
+YAML 形式の詳細についてはここでは説明しませんが、
+最低限「インデントに意味がある」ことに注意すれば、
+theme.yml の変更程度であれば問題ありません。
+
+まず、 先ほどの docker container から KaiGenGothicJP-theme.yml をローカルにコピーします。
+
+: sudo docker-compose run 2pdf cp /KaiGenGothicJP-theme.yml /proj
+
+これをテキストエディタで開くと以下のようになります。
+
+ここで font: , page: は、 theme のカテゴリです。
+このカテゴリの下に、さらに別のカテゴリあるいは調整項目があります。
+
+#+BEGIN_SRC yaml
+font:
+  catalog:
+    KaiGen Gothic JP:
+      normal: KaiGenGothicJP-Regular.ttf
+      bold: KaiGenGothicJP-Bold.ttf
+      italic: KaiGenGothicJP-Regular-Italic.ttf
+      bold_italic: KaiGenGothicJP-Bold-Italic.ttf
+    Roboto Mono:
+      normal: RobotoMono-Regular.ttf
+      bold: RobotoMono-Bold.ttf
+      italic: RobotoMono-Italic.ttf
+      bold_italic: RobotoMono-BoldItalic.ttf
+  fallbacks:
+    - KaiGen Gothic JP
+page:
+  background_color: ffffff
+  layout: portrait
+#+END_SRC
+
+それぞれの調整項目毎に値を設定するだけなので、
+既に設定されている項目を変更すること自体は簡単にできます。
+
+どのようなカテゴリ、調整項目があるかは、公式のドキュメントを参照してください。
+
+** 設定項目のアクセス
+
+#+BEGIN_SRC yaml
+base:
+  font_color: 333333
+  font_family: KaiGen Gothic JP
+  font_size: 10.5
+  line_height_length: 15
+  line_height: $base_line_height_length / $base_font_size
+#+END_SRC
+
+上記の =line_height: $base_line_height_length / $base_font_size= を見ると、
+$base_line_height_length が使われています。
+これは、 base カテゴリの line_height_length を参照しています。
+
+設定項目にアクセスするには、
+以下のように YAML の階層表現を利用する方法と、
+
+#+BEGIN_SRC yaml
+base:
+  line_height_length: 15
+#+END_SRC
+
+階層名をシンボル名に含める方法があります。
+
+#+BEGIN_SRC yaml
+base_line_height_length: 15
+#+END_SRC
+
+なお、区切り記号は =_= と =-= を使えます。
+
+** Key Prefix
+
+設定項目名は、 Key として管理されています。
+
+例えば base_line_height_length が Key です。
+
+どのような Key があるかは、公式のドキュメントに記載があります。
+
+公式のドキュメントで Key を探す際、 =Key Prefix:= で検索すると、
+目的の Key を見つけ易いです。
+
+現在、以下の Key Prefix (抜粋)があります。
+
+- cover
+- page
+- numbering
+- base
+- quotes
+- link
+- literal
+- heading
+- heading-h<n>
+- section
+- title-page
+- title-page-logo
+- title-page-title
+- title-page-subtitle
+- title-page-authors
+- title-page-revision
+- prose
+
+例えば =base_line_height_length= は、 Key Prefix が base になります。
+
+base の説明の中に、 =line-height-length= の説明があります。
+
+なお =heading-h<n>= は、 =heading-h1=, =heading-h2= などを示します。

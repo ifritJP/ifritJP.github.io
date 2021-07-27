@@ -1,0 +1,103 @@
+#+TITLE: org-mode ドキュメントの翻訳ツールの使い方
+#+DATE: 2021-07-19
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: lunescript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+先日の記事に書いた org-mode ドキュメントの翻訳ツールを作成したので、
+今回はそのツールの使用方法を書きます。
+
+* セットアップ
+
+golang がインストールされている環境で、以下を実行してください。
+  
+: go install -tags gopherlua github.com/ifritJP/trans-orgmode@latest
+
+* GCP の設定
+
+GCP アカウントを既に持っていることを前提に説明します。  
+
+アカウントが無い場合は、作成してください。
+
+** プロジェクトの作成
+
+以下の手順に従って作業します。
+   
+<https://cloud.google.com/translate/docs/setup?hl=ja#project>
+
+これにより、以下を行ないます。
+
+- プロジェクトを作成
+- API の有効化
+- サービスアカウントの設定
+- 環境変数 GOOGLE_APPLICATION_CREDENTIALS の設定
+
+上記 URL に記載の「クライアントライブラリのインストール」は *不要* です。
+
+** token ファイルの作成
+
+この翻訳ツールは GCP の認証を行なわないため、
+事前に GCP のアクセストークンを取得し、
+token ファイルを作成しておく必要があります。
+
+アクセストークンは、以下のコマンドを実行すると stdout に出力されます。
+
+: $ gcloud auth application-default print-access-token
+
+これで取得したトークンを、以下の JSON 形式でファイルに記録します。
+ファイル名は何でも良いです。
+
+: { "token": "GCPTOKEN" }
+
+*上記 JSON の GCPTOKEN をアクセストークンに置き換えてください。*
+
+なお、アクセストークンは一定時間で expire するので、
+再度取得する必要があります。
+
+* 実行
+
+このツールのオプションは、以下の通りです。
+  
+: $ trans-orgmode [-v] [-m mode] [-c jsonpath] input.org
+
+ここで -m は、以下のモードを指定します。
+
+- org
+  - 指定された .org ファイルを解析し、 解析した結果の .org を stdout に出力します。
+  - これは、 .org ファイルの解析が正常に行なえているかどうかを確認するために利用します。
+- mkreq
+  - 指定された .org ファイルを解析し、翻訳が必要な日本語文字列を抽出し、
+    GCP REST API の request 形式に変換したものを stdout に出力します。
+  - これは、 REST API の request 形式に正しく変換できているかどうかを確認するために、
+    利用します。
+- trans
+  - 指定された .org ファイルを翻訳し、その結果を stdout に出力します。
+  - このモードでは、-c オプションの指定が必須です。
+- github
+  - github の README で .org ファイルを使う場合、
+    .org の CUSTOM_ID によるドキュメント内リンクが出来ません。
+    その代わり、 headline のリンクが利用可能なので、
+    CUSTOM_ID に相当する headline のリンクに置き換えを行ない、
+    結果を stdout に出力します。
+  - これは上記 GCP の翻訳とは関係なく単独で動作します。
+
+-c は、トークンを記載した JSON ファイルのパスを指定します。
+-m に trans を指定した場合に必要です。
+
+-v は、 .org ファイルの解析情報を出力します。
+デバッグ用の情報です。
+    
+* 制限
+
+- このツールは、org-mode のサブセットをサポートします。
+  - どの機能をサポートするかは、
+    -m のモード指定で org, あるいは mkreq を実行して、
+    正常に処理されているかどうかで確認できます。
+- 翻訳対象の文の中で =*bold*= や =/italic/= を利用している場合、
+  翻訳後の文全体を =*bold*= あるいは =/italic/= で強調処理します。
+- 翻訳対象の文の中で ~=verb=~ や =~exp~= を利用せずにアルファベットや () などの記号を
+  利用していると、翻訳結果に悪影響が出ることがあります。
+- =#+BEGIN_SRC= や =:= 内の日本語は、翻訳しません。
