@@ -39,7 +39,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス トランスコンパイラ LuneScript で Lua の開発をもっと楽に!">
 
-<meta itemprop="wordCount" content="103959">
+<meta itemprop="wordCount" content="104019">
 
 
 
@@ -13062,7 +13062,8 @@ LuneScript で非同期処理を行なうには、 __Runner インタフェー�
 __Runner インタフェースは、以下の型です。 <strong>__async については後述します。</strong>
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub interface __Runner {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub interface __Runner {
    pub fn run() __async mut;
 }</code></pre>
 </div>
@@ -13075,7 +13076,8 @@ __Runner インタフェースは、以下の型です。 <strong>__async につ
 <code class="verbatim">print(&#34;hoge:&#34;, self.val );</code> が非同期で処理されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge extend (__Runner) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge extend (__Runner) {
    let val:int;
    pub fn run() __async mut {
       print(&#34;hoge:&#34;, self.val );
@@ -13106,7 +13108,8 @@ __Runner クラスの <code class="verbatim">run()</code> メソッドが別ス�
 <code class="verbatim">__run()</code> 関数の型は以下の通りです。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool</code></pre>
 </div>
 <ul>
 <li>
@@ -13193,7 +13196,8 @@ __join() 関数
 <code class="verbatim">__join()</code> 関数は、 __Runner の非同期処理の終了を待つ関数です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub fn __join( runner:__Runner )</code></pre>
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn __join( runner:__Runner )</code></pre>
 </div>
 <p>
 lua にトランスコンパイルした場合、非同期処理はないため何もしません。
@@ -13221,7 +13225,8 @@ immutable な型
 つまり、以下のケースはエラーになります。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
 }
 class Hoge extend (__Runner) {
    pub fn __init( test:Test, list:List&lt;int&gt; ) __async { // error
@@ -13237,7 +13242,8 @@ class Hoge extend (__Runner) {
 以下のように immutable としての宣言が必要です。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
 }
 class Hoge extend (__Runner) {
    pub fn __init( test:&amp;Test, list:&amp;List&lt;int&gt; ) __async { // ok
@@ -13351,7 +13357,8 @@ __async 宣言された関数内から __noasync 宣言された関数は実行�
 これは、以下のケースがエラーになることを指します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    fn func1() __noasync {
    }
    fn func2() __async {
@@ -13370,7 +13377,8 @@ __async 宣言された関数内から、スコープ外の mutable な変数に
 これは、以下のケースがエラーになることを指します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let mut list = [ 1, 2 ];
 let list2 = [ 1, 2 ];
 class Test {
    fn func() __async {
@@ -13426,7 +13434,8 @@ __async の制限を一時的に解除する方法。 (__asyncLock)
 例えば、以下のように __asyncLock を利用します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    fn func1() __noasync {
    }
    fn func2() __async {
@@ -13470,7 +13479,8 @@ func2 実行時には既の __noasync として実行しているため、
 func2 の __asyncLock はブロックせずに実行されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    fn func1() __noasync {
    }
    fn func2() __async {
@@ -13492,7 +13502,8 @@ func2 の __asyncLock はブロックせずに実行されます。
 一方で同一関数内の __asyncLock はネストできません。エラーします。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    fn func1() __noasync {
    }
    fn func2() __async {
@@ -13518,7 +13529,8 @@ __asyncLock のオーバーヘッド
 ループ分のオーバーヘッドが余計に加算されます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    fn func1() __noasync {
    }
    fn func2() __async {
@@ -13555,7 +13567,8 @@ __asyncLock 内から return, break できない。
 つまり、以下のような処理は出来ません。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Test {
    fn func1() __noasync : bool {
       return true;
    }
@@ -13573,7 +13586,8 @@ __asyncLock 内から return, break できない。
 このような処理を行なう場合は、以下のよう書きます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Test {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
    fn func1() __noasync : bool {
       return true;
    }
@@ -13652,10 +13666,11 @@ __Runner を extend したクラスのコンストラクタの制限
 </li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+let mut list = [ 1, 2 ];
 class Test {
    fn func() __async {
-      foreach val in list {
+      foreach val in list { //error
          print( val );
       }
    }
@@ -13675,9 +13690,10 @@ list に対して参照と変更が同時に発生し、不定な動作になり
 また、次のようなコードを実行した場合、
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">class Hoge extend (__Runner) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Hoge extend (__Runner) {
    let list:List&lt;int&gt;;
-   pub fn __init( list:List&lt;int&gt; ) __async {
+   pub fn __init( list:List&lt;int&gt; ) __async { // error
       self.list = list;
 
       __run( self, __lns.runMode.Queue, &#34;test&#34; );
@@ -13718,7 +13734,8 @@ __Runner を extend したコンストラクタには制限が付きます。
 __async 関数の制限を満します。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">let mut list = [ 1, 2 ];
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let mut list = [ 1, 2 ];
 let list2 = list;
 class Test {
    fn func() __async {
@@ -14063,7 +14080,8 @@ Luaval
 Lua VM を意識する必要はありません。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">fn func( val:&amp;Luaval&lt;&amp;List&lt;int&gt;&gt; ) {
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:&amp;Luaval&lt;&amp;List&lt;int&gt;&gt; ) {
    let work = val;
 }</code></pre>
 </div>
@@ -14234,7 +14252,8 @@ __luaDepend を使った方が良いケース
 __luaDepend を使った方が効率良く安全に処理できます。
 </p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">   let mut list:List&lt;str&gt; = [];
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   let mut list:List&lt;str&gt; = [];
    __luaDepend {
       apply token of string.gmatch( txt, pattern ) {
          list.insert( token );

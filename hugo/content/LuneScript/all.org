@@ -9725,6 +9725,7 @@ LuneScript で非同期処理を行なうには、 __Runner インタフェー�
 __Runner インタフェースは、以下の型です。 *__async については後述します。*
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub interface __Runner {
    pub fn run() __async mut;
 }
@@ -9737,6 +9738,7 @@ pub interface __Runner {
 =print("hoge:", self.val );= が非同期で処理されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Hoge extend (__Runner) {
    let val:int;
    pub fn run() __async mut {
@@ -9766,6 +9768,7 @@ __Runner クラスの =run()= メソッドが別スレッドで実行されま�
 =__run()= 関数の型は以下の通りです。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool
 #+END_SRC
 
@@ -9793,6 +9796,7 @@ lua にトランスコンパイルした場合、以下の動作になります�
 =__join()= 関数は、 __Runner の非同期処理の終了を待つ関数です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn __join( runner:__Runner ) 
 #+END_SRC
 
@@ -9810,6 +9814,7 @@ __Runner を extend するクラスのコンストラクタの引数は、
 つまり、以下のケースはエラーになります。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
 }
 class Hoge extend (__Runner) {
@@ -9826,6 +9831,7 @@ class Hoge extend (__Runner) {
 以下のように immutable としての宣言が必要です。
    
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
 }
 class Hoge extend (__Runner) {
@@ -9904,6 +9910,7 @@ LuneScript では、 Rust ほど高度な *排他制御* を実現していな�
 これは、以下のケースがエラーになることを指します。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    fn func1() __noasync {
    }
@@ -9922,6 +9929,7 @@ class Test {
 これは、以下のケースがエラーになることを指します。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let mut list = [ 1, 2 ];
 let list2 = [ 1, 2 ];
 class Test {
@@ -9968,6 +9976,7 @@ LuneScript では、 非同期(=__async=)で動作するスレッドが複数(N)
 例えば、以下のように __asyncLock を利用します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    fn func1() __noasync {
    }
@@ -10004,6 +10013,7 @@ func2 実行時には既の __noasync として実行しているため、
 func2 の __asyncLock はブロックせずに実行されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    fn func1() __noasync {
    }
@@ -10025,6 +10035,7 @@ class Test {
 一方で同一関数内の __asyncLock はネストできません。エラーします。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    fn func1() __noasync {
    }
@@ -10050,6 +10061,7 @@ class Test {
 ループ分のオーバーヘッドが余計に加算されます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    fn func1() __noasync {
    }
@@ -10079,6 +10091,7 @@ __asyncLock には以下の制限があります。
 つまり、以下のような処理は出来ません。
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Test {
    fn func1() __noasync : bool {
       return true;
@@ -10097,6 +10110,7 @@ class Test {
 このような処理を行なう場合は、以下のよう書きます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 class Test {
    fn func1() __noasync : bool {
       return true;
@@ -10148,10 +10162,11 @@ LuneScript では、以下によって排他制御の抜け漏れを防止して
 - __Runner を extend したクラスのコンストラクタの制限
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 let mut list = [ 1, 2 ];
 class Test {
    fn func() __async {
-      foreach val in list {
+      foreach val in list { //error
          print( val );
       }
    }
@@ -10169,9 +10184,10 @@ list に対して参照と変更が同時に発生し、不定な動作になり
 また、次のようなコードを実行した場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: error
 class Hoge extend (__Runner) {
    let list:List<int>;
-   pub fn __init( list:List<int> ) __async {
+   pub fn __init( list:List<int> ) __async { // error
       self.list = list;
 
       __run( self, __lns.runMode.Queue, "test" );
@@ -10208,6 +10224,7 @@ __Runner を extend したコンストラクタには制限が付きます。
 __async 関数の制限を満します。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 let mut list = [ 1, 2 ];
 let list2 = list;
 class Test {
@@ -10480,6 +10497,7 @@ LuneScript は Lua のコードを実行できます。
 Lua VM を意識する必要はありません。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn func( val:&Luaval<&List<int>> ) {
    let work = val;
 }
@@ -10577,6 +10595,7 @@ __luaDepend を利用するには、
 __luaDepend を使った方が効率良く安全に処理できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    let mut list:List<str> = [];
    __luaDepend {
       apply token of string.gmatch( txt, pattern ) {
