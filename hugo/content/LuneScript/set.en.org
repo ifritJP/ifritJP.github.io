@@ -1,0 +1,127 @@
+#+TITLE: 04.2. Set
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This section describes how to handle the LuneScript value set Set.
+
+
+* Difference between Set and Map
+
+Set manages the set of values, and Map manages the association of values.
+
+When both are converted to Lua, they are managed as a table, so using Set is not superior to Map in terms of execution speed and memory.
+
+Using Set instead of Map has the following effects:
+- Clarify the use of data
+- No need to deal with Map value in vain
+- Easy to write literal values
+Set and Map are the same in the following ways:
+- Does not maintain the order of the stored values.
+- nilable cannot be stored.
+
+
+* Set constructor
+
+Set generates data by writing as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let obj = (@ 1, 2, 3, 4 ); // 1 2 3 4
+#+END_SRC
+
+
+This is a Set that holds 1,2,3,4 data.
+
+Set encloses the values with ~(@ )~.
+
+In the above process, the type declaration is omitted by type inference, but if it is not omitted, write as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let obj:Set<int> = (@ 1, 2, 3, 4 ); // 1 2 3 4
+#+END_SRC
+
+
+~Set<int>~ declares a Set whose element is an int.
+
+If you use an empty Set, you must specify the type because type inference is not possible.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let obj:Set<int> = (@);
+#+END_SRC
+
+
+
+* Operation of Set
+
+It supports the following operations:
+- addition
+  - =add()=
+- delete
+  - =del()=
+- Check for presence
+  - =has()=
+- Get the number of elements
+  - =len()=
+- Duplicate
+  - =clone()=
+Add or delete values to Set as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut obj = (@ 1, 2, 3, 4 );
+obj.add( 0 );  // 0 1 2 3 4
+obj.del( 2 );  // 0 1 3 4
+#+END_SRC
+
+
+Check the existence of the value managed by Set as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let obj = (@ 1, 2, 3, 4 );
+print( obj.has( 0 ) );  // false
+print( obj.has( 1 ) );  // true
+#+END_SRC
+
+
+=Set= can get the number of elements with the =len()= method. However, the =len()= method enumerates the elements and calculates the number, so the amount of calculation is proportional to the size.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut obj = (@ 1, 2, 3, 4 );
+print( obj.len() );
+#+END_SRC
+
+
+Use =clone()= to generate the same Set.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let obj = (@ 1, 2, 3, 4 );
+let obj2 = obj.clone();
+#+END_SRC
+
+
+clone copies the element shallowly.
+
+
+* Operations between Sets
+
+It supports the following operations:
+- Synthetic
+  - =or()=
+  - Leave the union of the two sets
+- common  
+  - =and()=
+  - Leave the intersection of the two sets
+- Difference
+  - =sub()=
+  - Leave the part that is not common to the set of arguments from the current set
+This operation rewrites the contents of the target Set.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let set1 = (@  1, 2, 3 );
+let set2 = (@  2, 3, 4 );
+let set3 = set1.clone().or(set2);   // 1 2 3 4
+let set4 = set1.clone().and(set2);  // 2 3 
+let set5 = set1.clone().sub(set2);  // 1
+#+END_SRC
+

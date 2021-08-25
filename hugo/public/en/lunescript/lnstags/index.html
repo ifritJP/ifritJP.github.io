@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A. Tag jump by lnstags (source code tag system) - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="A. Tag jump by lnstags (source code tag system)" />
+<meta property="og:description" content="LuneScript supports tag jump (source code tag system). What is Tag Jump (Source Code Tag System)? Tag jumps provide access to the following information in the source code: Definition position of symbols (classes, functions, variables etc ..) Reference position of symbols (classes, functions, variables etc ..) example An example is shown below. // @lnsFront: ok class Foo { pub fn func() { } } class Bar { pub fn func()" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/lnstags/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="A. Tag jump by lnstags (source code tag system)"/>
+<meta name="twitter:description" content="LuneScript supports tag jump (source code tag system). What is Tag Jump (Source Code Tag System)? Tag jumps provide access to the following information in the source code: Definition position of symbols (classes, functions, variables etc ..) Reference position of symbols (classes, functions, variables etc ..) example An example is shown below. // @lnsFront: ok class Foo { pub fn func() { } } class Bar { pub fn func()"/>
+<meta itemprop="name" content="A. Tag jump by lnstags (source code tag system)">
+<meta itemprop="description" content="LuneScript supports tag jump (source code tag system). What is Tag Jump (Source Code Tag System)? Tag jumps provide access to the following information in the source code: Definition position of symbols (classes, functions, variables etc ..) Reference position of symbols (classes, functions, variables etc ..) example An example is shown below. // @lnsFront: ok class Foo { pub fn func() { } } class Bar { pub fn func()">
+
+<meta itemprop="wordCount" content="1264">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>A. Tag jump by lnstags (source code tag system)</h1>
+
+<p>
+LuneScript supports tag jump (source code tag system).
+</p>
+<h2 id="headline-1">
+What is Tag Jump (Source Code Tag System)?
+</h2>
+<p>
+Tag jumps provide access to the following information in the source code:
+</p>
+<ul>
+<li>
+<p>
+Definition position of symbols (classes, functions, variables etc ..)
+</p>
+</li>
+<li>
+<p>
+Reference position of symbols (classes, functions, variables etc ..)
+</p>
+</li>
+</ul>
+<h3 id="headline-2">
+example
+</h3>
+<p>
+An example is shown below.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();</code></pre>
+</div>
+<p>
+For example, if you have a mini.lns file like the one above, to list the definition locations for the func method of the Foo class, run the following command:
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {</code></pre></div>
+</div>
+<p>
+To list the reference positions for the func method of the Bar class, run the following command:
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnstags inq ref @mini.Bar.func
+@mini.Bar.func     12 mini.lns         bar.func();</code></pre></div>
+</div>
+<p>
+Details on how to use the lnstags command will be described later.
+</p>
+<h2 id="headline-3">
+Features of lnstags
+</h2>
+<p>
+In addition to the general tag jump function, lnstags provides the following functions.
+</p>
+<ul>
+<li>
+<p>
+List of places where variable values are set
+</p>
+<ul>
+<li>
+<p>
+It distinguishes between setting a value and referencing it, and can list only where the value is set.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Consideration of inheritance relationship
+</p>
+<ul>
+<li>
+<p>
+When calling a method that is overridden, the method that is actually called depends on polymorphism.
+</p>
+</li>
+<li>
+<p>
+lnstags lists all the methods that can be called.
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="headline-4">
+How to use
+</h2>
+<p>
+lnstags is published at the following URL.
+</p>
+<p>
+&lt;<a href="https://github.com/ifritJP/lnstags">https://github.com/ifritJP/lnstags</a>&gt;
+</p>
+<h3 id="headline-5">
+How to build
+</h3>
+<p>
+There are two build methods:
+</p>
+<ul>
+<li>
+<p>
+Use go install
+</p>
+</li>
+<li>
+<p>
+Close the repository and make
+</p>
+</li>
+</ul>
+<p>
+Normally go install is fine.
+</p>
+<h4 id="headline-6">
+go install 
+</h4>
+<p>
+The following will install lnstags in $ GOPATH / bin.
+</p>
+<pre class="example">
+go install -tags gopherlua github.com/ifritJP/lnstags@latest
+</pre>
+<h4 id="headline-7">
+Build with go.
+</h4>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ git clone --depth 1 https://github.com/ifritJP/lnstags
+$ cd lnstags
+$ make build ONLY_GO=y</code></pre></div>
+</div>
+<p>
+The above will generate lnstags / lnstags.
+</p>
+<h3 id="headline-8">
+Source code analysis
+</h3>
+<p>
+The source code is analyzed on the project directory of the source code to be analyzed.
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ cd proj  // lune.js を置いてあるディレクトリに移動する
+$ lnstags init
+$ lnstags build test/main.lns</code></pre></div>
+</div>
+<p>
+<strong>The lnstags build should be run with one of the following:</strong>
+</p>
+<ul>
+<li>
+<p>
+Specify the main .lns file for your project
+</p>
+</li>
+</ul>
+<pre class="example">
+$ lnstags build main.lns
+</pre>
+<ul>
+<li>
+<p>
+Specify as <code class="verbatim">lnstags build @-</code> and specify the path of the .lns file in stdin line by line.
+</p>
+</li>
+</ul>
+<pre class="example">
+$ find . -iname &#39;*.lns&#39; | lnstags build @-
+</pre>
+<p>
+lnstags parses all imported modules from the specified lns file.
+</p>
+<p>
+This means that in most cases you just need to specify the main .lns file.
+</p>
+<p>
+The latter case is used when not all modules can be traced from one lns file.
+</p>
+<p>
+<strong>Note that the current lnstags do not support delta updates.</strong>
+</p>
+<p>
+<strong>Therefore, if you use @-for build, you need to specify all .lns files.</strong>
+</p>
+<p>
+<strong>The analysis result of the source code is registered in the lnstags.sqlite3 file.</strong>
+</p>
+<h3 id="headline-9">
+DB update
+</h3>
+<p>
+If the source code is changed after analysis by <code class="verbatim">lctags build</code>, the information registered in the DB and the actual source code information will be inconsistent.
+</p>
+<p>
+<strong>To update the DB, do one of the following:</strong>
+</p>
+<ul>
+<li>
+<p>
+Run <code class="verbatim">lctags build</code> again.
+</p>
+</li>
+<li>
+<p>
+Run <code class="verbatim">lctags update</code>.
+</p>
+</li>
+</ul>
+<pre class="example">
+$ lctags update
+</pre>
+<h4 id="headline-10">
+lctags update
+</h4>
+<p>
+<code class="verbatim">lctags update</code> updates the information based on the lns source file list registered in the DB.
+</p>
+<p>
+Unlike <code class="verbatim">lctags build</code>, there is no need to specify the source file to parse.
+</p>
+<p>
+If the number of lns files to be parsed increases or decreases, <code class="verbatim">lctags build</code> must be used instead of <code class="verbatim">lctags update</code>.
+</p>
+<h3 id="headline-11">
+inquiry
+</h3>
+<p>
+After parsing the source code with <code class="verbatim">lnstags build</code>, query the symbol information.
+</p>
+<p>
+There are the following patterns for inquiries.
+</p>
+<ul>
+<li>
+<p>
+inq
+</p>
+</li>
+<li>
+<p>
+inq-at
+</p>
+</li>
+<li>
+<p>
+suffix
+</p>
+</li>
+</ul>
+<h4 id="headline-12">
+inq
+</h4>
+<p>
+inq makes a query by specifying the symbol name.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();</code></pre>
+</div>
+<p>
+For example, if you had a mini.lns file like the one above, the symbol name for the func method of the Foo class would be:
+</p>
+<pre class="example">
+@mini.Foo.func
+</pre>
+<p>
+Where @mini indicates the module name and mini refers to mini.lns. For example, in the case of abc / def / ghi.lns, the module name will be @ abc. @ Def. @ Ghi. <code class="verbatim">Foo.func</code> points to the func method of the Foo class.
+</p>
+<p>
+Then, by executing the following command, the definition position of @ mini.Foo.func is listed.
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {</code></pre></div>
+</div>
+<p>
+<strong>The def of this command <code class="verbatim">lnstags inq def</code> specifies a definition location query.</strong>
+</p>
+<h4 id="headline-13">
+Inquiry mode
+</h4>
+<p>
+The types of inquiries are as follows.
+</p>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>motion</th>
+<th class="align-right"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>def</td>
+<td>Definition position</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>ref</td>
+<td>Reference position</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>set</td>
+<td>Setting position</td>
+<td class="align-right"></td>
+</tr>
+</tbody>
+</table>
+<h4 id="headline-14">
+inq-at
+</h4>
+<p>
+If you know the fully qualified name of the symbol you want to query, you can use the inq command, but finding the fully qualified name can be difficult or cumbersome.
+</p>
+<p>
+<strong>Therefore, inq-at makes an inquiry about the symbol at a predetermined position in the source.</strong>
+</p>
+<p>
+When querying the definition location of <code class="verbatim">foo.func()</code> in the 5th column of the 10th row when the following source is available,
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();</code></pre>
+</div>
+<p>
+Execute the following command.
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnstags inq-at def mini.lns 10 5
+@mini.Foo.func      2 mini.lns            pub fn func() {</code></pre></div>
+</div>
+<p>
+This will inquire about the symbol at the specified location.
+</p>
+<p>
+<strong>In the above case, we recognize that the fully qualified name of <code class="verbatim">foo.func</code> in mini.lns 105 is @ mini.Foo.func and make a def query about it.</strong>
+</p>
+<p>
+<strong>When using inq-at, the specified lns file must be able to be built without error.</strong>
+</p>
+<p>
+It also takes time to parse the AST of the specified lns file.
+</p>
+<h4 id="headline-15">
+suffix
+</h4>
+<p>
+inq-at gets the fully qualified name by specifying the location of the lns file, while suffix gets the list of fully qualified names with a suffix match of the symbol name.
+</p>
+<p>
+For example, to display a list of fully qualified names that end in func, do the following:
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnstags suffix func
+@mini.Foo.func
+@mini.Bar.func</code></pre></div>
+</div>
+<h2 id="headline-16">
+When using from emacs
+</h2>
+<p>
+Load lisp / lnstags-conf.el.
+</p>
+<p>
+The key bindings are as follows.
+</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>operation</th>
+<th></th>
+<th></th>
+<th class="align-right"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M-t</td>
+<td>Of the symbol at the cursor position</td>
+<td>Definition position</td>
+<td>Jump to</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>M-r</td>
+<td>Of the symbol at the cursor position</td>
+<td>Reference position</td>
+<td>Jump to</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>M-s</td>
+<td>Of the symbol at the cursor position</td>
+<td>Setting position</td>
+<td>Jump to</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>M-m</td>
+<td>Tag jump history</td>
+<td></td>
+<td></td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>C-t</td>
+<td>Jump back</td>
+<td></td>
+<td></td>
+<td class="align-right"></td>
+</tr>
+</tbody>
+</table>
+<p>
+For M-t, M-r, M-s, it performs a suffix query to get a fully qualified name, lists the fully qualified names that match the symbol, and makes an inq query for the selected fully qualified name.
+</p>
+<p>
+By adding the prefix C-u to M-t, M-r, and M-s, the inq-at query for the cursor position is performed.
+</p>
+<h2 id="headline-17">
+Analysis time
+</h2>
+<p>
+lnstags uses the AST analysis part of the LuneScript transcompiler to register the symbol information in the source code to be analyzed in the DB.
+</p>
+<p>
+<strong>Therefore, the time required for DB registration is almost equivalent to the transcompile time of the Lns file.</strong>
+</p>
+<p>
+Parsing LuneScript&#39;s self-hosted code takes less than 10 seconds.
+</p>
+<p>
+By performing the heaviest AST analysis of the source code tag system in the LuneScript module, the code of lnstags itself has a simple structure of over 2000 lines. (As of 2021)
+</p>
+<p>
+The lnstags themselves are also developed with LuneScript.
+</p>
+<p>
+As mentioned earlier, lnstags does not support DB diffs. This is because we have determined that there are currently no large-scale LuneScript projects that take such a long time.
+</p>
+<p>
+If you are using LuneScript for a large project, please contact me for reference.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/onweb/" title="A. LuneScript running on a web browser"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - A. LuneScript running on a web browser</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/recommend/" title="A. Transcompiler development recommendations">Next - A. Transcompiler development recommendations <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

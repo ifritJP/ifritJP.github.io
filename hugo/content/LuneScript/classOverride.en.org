@@ -1,0 +1,111 @@
+#+TITLE: 16. Class override
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript supports method overrides.
+
+
+* Method override
+
+All class methods can be overridden.
+
+Rather, it is currently not possible to suppress override.
+
+The following is an example of method override.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Super {
+   pub fn func() {
+      print( __func__ );
+   }
+}
+class Sub extend Super {
+   pub override fn func() {
+      print( __func__ );
+   }
+}
+fn test( obj:Super ) {
+   obj.func();
+}
+test( new Super() ); // Super.func
+test( new Sub() ); // Sub.func
+#+END_SRC
+
+
+Here, the Sub class overrides the func method of the Super class.
+
+The method on the Sub class side to override must be specified with the override keyword.
+
+
+* Parent class method call
+
+Use =super()= to call a parent class method from an overriding subclass.
+
+The following is an example of =super()=.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Super {
+   pub fn func(): int {
+      return 1;
+   }
+}
+class Sub extend Super {
+   pub override fn func(): int {
+      return 10 + super();
+   }
+}
+fn test( obj:Super ) {
+   print( obj.func() );
+}
+test( new Sub() ); // 11
+#+END_SRC
+
+
+In this example, the =func()= method of the Super class is overridden by the Sub class. It then uses =super()= from =func()= in the Sub class to call the =func()= method in the Super class.
+
+
+* abstract
+
+You can define an abstract method that has no substance.
+
+The following is an example of abstract.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+abstract class Super {
+   pub abstract fn func(): int;
+}
+class Sub extend Super {
+   pub override fn func(): int {
+      return 10;
+   }
+}
+fn test( obj:Super ) {
+   print( obj.func() );
+}
+test( new Sub() );
+#+END_SRC
+
+
+In this example, the =func()= method is an intangible abstract method.
+
+Note that a class with an abstract method must be declared as an abstract class.
+
+The substance of the abstract method is defined in the inherited class. If you do not override in a class that inherits all the abstract methods of the parent class, the inherited class must be declared as abstract.
+
+The abstract class cannot be instantiated by itself.
+
+
+* summary
+
+The specifications of the LuneScript method override / abstract are as follows:
+- All methods can be overridden
+- The class to override must specify override
+- Use =super()= to call the method that is the source of the override from the method that is overriding.
+- You can declare an abstract method that has no substance
+- A class with an abstract method becomes an abstract class
+- abstract method must be overridden in subclass
+- The abstract class cannot instantiate by itself
+Next time, I'll talk about class advertise.

@@ -1,0 +1,363 @@
+#+TITLE: @ .1 Transcompile to Go language
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript can be transcompiled to Go as well as Lua as the language to transcompile.
+
+This feature makes LuneScript faster (about 16 times faster) by transcompiling LuneScript's self-hosting code into go language code and building it with go.
+
+See below for speedups. https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/
+
+However, some features are not supported because the support is limited to the features required for LuneScript self-hosting.
+
+That said, LuneScript's self-hosting itself uses most of LuneScript's features, so it's fine for normal use.
+
+
+* How to transcompile to go language
+
+*To transcompile to the go language, specify -langGo when using the LuneScript command line option save or SAVE to output the transcompile result to go to a file with a .go extension.*
+
+
+* Cooperation with Lua
+
+When transcompiling to the go language, you need to use a special type when working with Lua.
+
+See below for details.
+
+[[../lua]]
+
+
+* Post-transcompile configuration to Go language
+
+LuneScript is a Lua transcompiler that features the ability to use Lua code directly from LuneScript.
+
+This feature is inherited even after transcompiling to the Go language.
+
+For example, you can run the following code even after converting it to Go language.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let step = 30;
+
+// Lua のフィボナッチ関数
+let code = ```
+local function fib ( n )
+   if n < 2 then return n end
+   return fib(n - 2) + fib(n - 1)
+end
+return fib
+```;
+
+// Lua コードのロード
+form fibFunc( num:int ):int;
+fn loadLua( txt:str ) : Luaval<fibFunc> {
+   let fib;
+   __luago {
+      let loaded = unwrap _load( txt ## );
+      fib = unwrap loaded(##);
+   }
+   return fib@@fibFunc;
+}
+
+// プロファイル用マクロ
+macro _profile( exec:__exp ) {
+   {}
+   {
+      let prev = os.clock();
+      print( "%s = %d: step = %d: time = %g"
+             (,,,,exec, ,,exec, step, os.clock() - prev ) );
+   }
+}
+
+// Lua のコードをロードして実行
+let fib_lua = loadLua( code );
+__luago {
+   _profile( fib_lua( step ) );
+}
+
+// LuneScript のフィボナッチ関数
+fn fib_lns( num:int ) : int {
+   if num < 2 {
+      return num;
+   }
+   return fib_lns( num - 2 ) + fib_lns( num - 1 );
+}
+// Go で定義した fib_lns 関数を実行
+_profile( fib_lns( step ) );
+#+END_SRC
+
+
+This code does the Fibonacci calculations in lua and LuneScript.
+
+The first code variable defines the lua code, loads it with the =loadLua()= function, and loads the Lua function with fib_lua. And the =fib_lns()= function in the latter half is a LuneScript function that performs Fibonacci calculations.
+
+
+** When transcompiled to Lua
+
+Transcompiling the above code into Lua and running it produces the following:
+#+BEGIN_SRC txt
+fib_lua( step ) = 24157817: step = 37: time = 5.69
+fib_lns( step ) = 24157817: step = 37: time = 5.38
+#+END_SRC
+
+
+This shows the calculation result and calculation time for each of = fib_lua () = and =fib_lns()=.
+
+Looking at this, we can see that the function =fib_lua()= loaded by Lua and the function =fib_lns()= of Lns take almost the same execution time.
+
+This is a natural result. This is because if you convert LuneScript to Lua, =fib_lns()= written in LuneScript and =fib_lua()= in Lua will have almost the same Lua code.
+
+The code when transcompiling the above code into Lua looks like this:
+#+BEGIN_SRC lua
+--miniGo.lns
+local _moduleObj = {}
+local __mod__ = '@miniGo'
+local _lune = require( "lune.base.runtime2" )
+if not _lune2 then
+   _lune2 = _lune
+end
+local step = 37
+local code = [==[
+local function fib ( n )
+   if n < 2 then return n end
+   return fib(n - 2) + fib(n - 1)
+end
+return fib
+]==]
+local function loadLua( txt )
+   local loaded = _lune.unwrap( _lune.loadstring52( txt ))
+   local fib = _lune.unwrap( loaded(  ))
+   return fib
+end
+local fib_lua = loadLua( code )
+do
+   local prev = os.clock(  )
+   print( string.format( "%s = %d: step = %d: time = %g", "fib_lua( step )", fib_lua( step ), step, os.clock(  ) - prev) )
+end
+local function fib_lns( num )
+   if num < 2 then
+      return num
+   end
+   return fib_lns( num - 2 ) + fib_lns( num - 1 )
+end
+do
+   local prev = os.clock(  )
+   print( string.format( "%s = %d: step = %d: time = %g", "fib_lns( step )", fib_lns( step ), step, os.clock(  ) - prev) )
+end
+return _moduleObj
+#+END_SRC
+
+
+The following is an excerpt of the notable definition of the =fib_lns()= function.
+#+BEGIN_SRC lua
+local function fib_lns( num )
+   if num < 2 then
+      return num
+   end
+   return fib_lns( num - 2 ) + fib_lns( num - 1 )
+end
+#+END_SRC
+
+
+As you can see, =fib_lns()= and =fib_lub()= are equivalent codes.
+
+Therefore, it is natural that = fib_lns () = and =fib_lua()= take about the same amount of time.
+
+
+** When transcompiled to go
+
+On the other hand, when transcompiled to go, the execution result is as follows.
+#+BEGIN_SRC txt
+fib_lua( step ) = 24157817: step = 37: time = 6.07
+fib_lns( step ) = 24157817: step = 37: time = 0.34
+#+END_SRC
+
+
+*You can see that the calculation time of =fib_lns()= is about 1/18 shorter than that of = fib_lua () =.*
+
+The result of transcompiling to go is as follows.
+#+BEGIN_SRC go
+// This code is transcompiled by LuneScript.
+package lnsc
+import . "lnsc/lune/base/runtime_go"
+var init_miniGo bool
+var miniGo__mod__ string
+var miniGo_step LnsInt
+var miniGo_code string
+var miniGo_fib_lua *Lns_luaValue
+type miniGo_fibFunc_1003_ func (arg1 LnsInt) LnsInt
+// 14: decl @miniGo.loadLua
+func miniGo_loadLua_1009_(txt string) *Lns_luaValue {
+    var loaded *Lns_luaValue
+    loaded = Lns_unwrap( Lns_car(Lns_getVM().Load(txt, nil))).(*Lns_luaValue)
+    var fib LnsAny
+    fib = Lns_unwrap( Lns_car(Lns_getVM().RunLoadedfunc(loaded,Lns_2DDD([]LnsAny{}))[0]))
+    return fib.(*Lns_luaValue)
+}
+
+// 36: decl @miniGo.fib_lns
+func miniGo_fib_lns_1025_(num LnsInt) LnsInt {
+    if num < 2{
+        return num
+    }
+    return miniGo_fib_lns_1025_(num - 2) + miniGo_fib_lns_1025_(num - 1)
+}
+
+func Lns_miniGo_init() {
+    if init_miniGo { return }
+    init_miniGo = true
+    miniGo__mod__ = "@miniGo"
+    Lns_InitMod()
+    miniGo_step = 37
+    miniGo_code = "local function fib ( n )   if n < 2 then return n end   return fib(n - 2) + fib(n - 1)endreturn fib"
+    miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)
+    {
+        var prev LnsReal
+        prev = Lns_getVM().OS_clock()
+        Lns_print([]LnsAny{Lns_getVM().String_format("%s = %d: step = %d: time = %g", []LnsAny{"fib_lua( step )", Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))[0].(LnsInt), miniGo_step, Lns_getVM().OS_clock() - prev})})
+    }
+    
+    {
+        var prev LnsReal
+        prev = Lns_getVM().OS_clock()
+        Lns_print([]LnsAny{Lns_getVM().String_format("%s = %d: step = %d: time = %g", []LnsAny{"fib_lns( step )", miniGo_fib_lns_1025_(miniGo_step), miniGo_step, Lns_getVM().OS_clock() - prev})})
+    }
+    
+}
+func init() {
+    init_miniGo = false
+}
+#+END_SRC
+
+
+Since it is very difficult to read, the definition part of the =fib_lns()= function is extracted as follows.
+#+BEGIN_SRC go
+func miniGo_fib_lns_1025_(num LnsInt) LnsInt {
+    if num < 2{
+        return num
+    }
+    return miniGo_fib_lns_1025_(num - 2) + miniGo_fib_lns_1025_(num - 1)
+}
+#+END_SRC
+
+
+The function name is longer, but you can see that the LuneScript code has been converted to go as is. When you execute a function, you just call the function normally as follows.
+:  miniGo_fib_lns_1025_(miniGo_step)
+
+
+On the other hand, Lua's =fib_lua()= function is loaded with a function for executing Lua's code by =miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)=, and when it is executed, the function is called as follows.
+: Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
+
+
+As you can see, the processing is completely different between = fib_lns () = and =fib_lua()=.
+
+
+** Build
+
+The following steps are required to transcompile and build to go.
+- Generate go.mod
+- Register the LuneScript runtime with go.mod
+- Generate main.go
+- Generate .go from .lns
+- Update go.mod
+- go build
+If you update .lns, repeat the process after "Generate .go from .lns".
+
+I will explain each step.
+
+
+*** Generate go.mod
+
+Execute the following command in the directory where lune.js is located.
+: $ go mod init test # <--- test は環境に合せて指定してください
+
+
+
+*** Register the LuneScript runtime with go.mod
+
+Register the LuneScript runtime with go.mod with the following command:
+: $ go get github.com/ifritJP/LuneScript/src@latest
+
+
+Run go mod tidy for the rest of the work, but be sure to run go get first.
+
+
+*** Generate main.go
+
+go requires the entry function =main()=.
+
+The following command will generate main.go, which defines the =main()= function for go.
+: $ lnsc hoge.lns mkmain main.go
+
+
+Here hoge.lns specifies the main module that defines __main in lns. main.go specifies the output path.
+
+A module that defines the __main function is required when transcompiling to go.
+
+The main.go generated by this command contains the code that initializes the lns runtime.
+
+
+*** Generate .go from .lns
+
+Generate .go with the following command.
+: $ lnsc hoge.lns save -langGo
+
+
+For the main module that contains the __main function, add the --main option as well.
+: $ lnsc hoge.lns save -langGo --main hoge
+
+
+Where the hoge in --main hoge is the import path for the main module.
+
+For example, if the main module is foo / bar / hoge.lns
+: $ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
+
+
+It will be.
+
+If you want to transcompile LuneScript to go, you need the __main function.
+
+
+*** Update go.mod
+
+Update go.mod with the following command.
+: $ go mod tidy
+
+
+
+*** go build
+
+After converting all the lns files and generating main.go, run go build.
+: $ go build
+
+
+*If the above fails, try the following:*
+: $ go build -tags gopherlua
+
+
+This will build the transcompiled module with go.
+
+
+** Lua library link required after transcompiling to go
+#+BEGIN_QUOTE
+追記
+
+*Lua ライブラリのリンクを回避する方法を用意しました。*
+
+[[../lua_runtime]]
+#+END_QUOTE
+
+
+As mentioned above, LuneScript works closely with Lua. And even after transcompiling to go, it supports the linked operation.
+
+To achieve this integration, the code after transcompiling to go requires a lua VM to do the lua processing.
+
+In detail, besides this Lua integration, LuneScript has some processing that requires a Lua VM. Specifically, Lua VM is used for macro expansion processing and some built-in function processing.
+
+*The lua VM assumes the official lua-5.3.4 and links liblua5.3.so.*
+
+The go language has the advantage of being able to generate one environment-independent executable, but unfortunately transcompiling LuneScript to go requires a link to liblua5.3.so.
+
+Not only do you need liblua5.3.so at run time, but you also need the lua-5.3.4 include file at build time.

@@ -1,0 +1,225 @@
+#+TITLE: 09. Repeated syntax
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This time, I will explain the iterative syntax of LuneScript.
+
+
+* Syntax list
+
+LuneScript supports the following iterative syntax:
+- while
+- repeat (to be deleted in the future)
+- for
+- apply
+- foreach
+- forsort  
+
+
+** while, repeat
+
+While and repeat are used as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut val = 1;
+while val < 10 {
+   val = val + 1;
+}
+print( val ); // 10
+repeat {
+   let mut endFlag = false;
+   val = val + 1;
+   if val >= 20 {
+      endFlag = true;
+   }
+} endFlag;
+print( val ); // 20
+#+END_SRC
+
+
+while processes the block while the expression holds, and repeat processes the block while the expression fails.
+
+Variables in scope inside the block are available in repeat expressions.
+
+*Repeat will be deleted in the future.*
+
+
+** infinite loop
+
+If you want to use an infinite loop, use while true {}. Where true must be an immediate value.
+
+For example, if you use a variable instead of an immediate value as shown below, it will loop infinitely in processing, but it will not be treated as an infinite loop in flow analysis.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+let flag = true;
+while flag {
+}
+#+END_SRC
+
+
+The problem with not being considered an infinite loop is that you can't do the intended flow analysis.
+
+For example, LuneScript determines that the =print()= statement after an infinite loop is not processed in the following cases:
+#+BEGIN_SRC lns
+// @lnsFront: error
+while true {
+}
+print( "hoge" );
+#+END_SRC
+
+
+However, if true above is not an immediate value, we assume that it is not an infinite loop and that the =print()= statement may be processed.
+
+If something that should not be processed is determined to be processed, what originally causes a compile error does not become an error, and you may miss a code defect.
+
+Be sure to use immediate true for infinite loops.
+
+Note that repeat {} false is also not treated as an infinite loop.
+
+I thought it would be better to prepare an instruction dedicated to infinite loops like Rust, but at present it is this specification.
+
+
+** for
+
+Use it as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+for count = 1, 10, 1 {
+  print( count );
+}
+#+END_SRC
+
+
+It has basically the same specifications as Lua. The above example processes the block by incrementing count by 1 from 1 to 10.
+
+Note that the values 1, 10, 1 are evaluated only once at the start of for.
+
+In other words, if you do something like this, it will behave differently than you expected.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut addVal = 1;
+for count = 1, 10, addVal {
+  addVal = addVal + 1;
+  print( count );
+}
+#+END_SRC
+
+
+*If the value to be incremented is omitted, 1 is used.*
+
+
+** apply
+
+apply is a Lua for in compatibility instruction.
+
+Use it as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+apply txt of string.gmatch( "hoge.foo.bar", '[^%.]+' ) {
+   print( txt );
+}
+#+END_SRC
+
+
+Note that the expression given to exp in ~apply val of exp {}~ must be a function call. This is the current limit.
+
+
+** foreach
+
+foreach is a function that enumerates the elements of lists, arrays, and maps.
+
+Use it as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+foreach val, index in [ 1, 2, 3 ] {
+   print( index, val );
+}
+foreach val, index in [@ 10, 20, 30 ] {
+   print( index, val );
+}
+foreach val, key in { "a":100, "b":200, "c":300 } {
+   print( key, val );
+}
+foreach val in (@ 1, 2, 3 ) {
+   print( val );
+}
+#+END_SRC
+
+
+*Set enumerates only values*
+
+The list, array index, and map key can be omitted as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+foreach val in [ 1, 2, 3 ] {
+   print( val );
+}
+foreach val in [@ 10, 20, 30 ] {
+   print( val );
+}
+foreach val in { "a":100, "b":200, "c":300 } {
+   print( val );
+}
+#+END_SRC
+
+
+*It is prohibited to change the enumerated objects during the loop processing of foreach and forsort. The behavior when changed is undefined.*
+
+For example, the following is prohibited.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+let mut list = [ 1, 2, 3 ];
+foreach val, index in list {
+   list[ index ] = val + 10;
+}
+#+END_SRC
+
+
+
+** forsort
+
+*If you enumerate the elements with Foreach in Set and Map, the enumeration order of the elements is indefinite.*
+
+When enumerating the elements of Set and Map, forsort enumerates them in the order sorted by key (ascending order).
+#+BEGIN_SRC lns
+// @lnsFront: ok
+forsort val, key in { "b":200, "c":300, "a":100 } {
+   print( key, val );
+}
+forsort val in (@ 2, 4, 1, 0 ) {
+   print( val );
+}
+#+END_SRC
+
+
+Map forsort can omit the key.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+forsort val in { "b":200, "c":300, "a":100 } {
+   print( val );
+}
+#+END_SRC
+
+
+*Since forsort does clone and sort internally, there is some overhead.*
+
+Also, if the Set type and Map key type are not sortable types, an error will occur.
+
+
+** break
+
+break breaks the innermost iterative control statement.
+
+There is no continue.
+
+
+* summary
+
+The general control syntax of LuneScript is basically the same as Lua.
+
+The main difference is that we have added foreach and forsort to process lists etc.
+
+Next time, I will explain the function.

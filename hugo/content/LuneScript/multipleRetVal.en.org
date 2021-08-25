@@ -1,0 +1,103 @@
+#+TITLE: 10.2. Multi-valued return value
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript supports multi-valued function return values.
+
+For example, a function can return multiple values:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(): int,int {
+   return 1, 2;
+}
+print( func() );  // 1 2
+#+END_SRC
+
+
+In the sample above, =func()= returns 1 and 2. This multi-valued return value is passed as it is as an argument of =print()=.
+
+Multi-valued return values are very useful, but there are still few languages that have multi-valued return values. Also, the second and subsequent values of the return value often have optional implications.
+
+Therefore, it is easy to forget the existence of the second and subsequent return values.
+
+This can cause glitches.
+
+
+* Problems due to multi-valued return values
+
+*The following code is from Lua, not LuneScript.*
+#+BEGIN_SRC lua
+local function func1( txt ) 
+   print( string.byte( txt:gsub( "b", "B" ) ) )
+end
+local function func2( txt ) 
+   print( string.byte( (txt:gsub( "b", "B" )) ) )
+end
+func1( "abcb" ) -- 66
+func2( "abcb" ) -- 97
+#+END_SRC
+
+
+The func1 () and func2 () output different results even though they give the same argument "abcb". Do you know why this is so?
+
+By the way, ~txt:gsub( "b", "B" )~ is Lua's standard library that returns the string that is converted from "b" to "B" in the string txt, and ~string.byte()~ is the standard library that returns the value contained in the specified string.
+
+Then the answer to the question.
+
+func1 () passes the return value of ~txt:gsub( "b", "B" )~ to string.byte as it is, while func2 () passes ~(txt:gsub( "b", "B" ))~ enclosed in ~()~.
+
+This causes func1 () to pass =string.byte()= the multivalued value of ~txt:gsub( "b", "B" )~ as is, while func2 () passes =string.byte()= only the string that is the first multivalued value of ~txt:gsub( "b", "B" )~.
+
+~string.byte()~ returns the character value of the index specified by the second argument if the second argument is passed. On the other hand, if the second argument is omitted, the value of the first character is returned.
+
+And ~txt:gsub( "b", "B" )~ is a function that returns multiple values. Specifically, it returns the converted string str and the number of converted ints.
+
+I think that anyone using Lua knows that ~txt:gsub( "b", "B" )~ is a function that returns a converted string. On the other hand, how many people recognize that this function is a multi-valued function?
+
+And how many people, if aware, immediately realize that it leads to glitches?
+
+Originally, you want to use only the converted character string of ~txt:gsub( "b", "B" )~ as an argument, but the function behavior may change due to the unintentionally passed multi-valued return value.
+
+In other words, when you originally had to use only the beginning of a multi-value using ~()~ like func2 (), you may end up using the multi-value as it is like func1 ().
+
+Remember what I wrote at the beginning here.
+- ~Multi-valued return values are very useful, but there are still few languages that have multi-valued return values.~
+- ~Also, the second and subsequent values of the return value often have optional implications.~
+- ~Therefore, it is easy to forget the existence of the second and subsequent return values.~
+Multi-valued return values are useful, but they also carry this risk.
+
+
+* For LuneScript
+
+In LuneScript, to avoid such a problem, I decided to make it explicit when dealing with multi-valued return values. If not specified, a warning will be issued.
+
+However, it is troublesome to specify when using multi-values.
+
+Therefore, we will limit the cases that need to be specified to the following cases.
+
+The destination of the multi-valued return value
+- If it is a function argument and the argument is optional
+- When the value specified for return and the value can be omitted
+In other words, if you want to assign a value directly to a variable such as let, you don't need to specify it. This is because I thought that preparing a variable to assign a value to was the same as explicitly stating that the second and subsequent arguments of multiple values would be used.
+
+
+* Explicit method
+
+The specific explicit method is as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func1(): int,int {
+   return 1, 2;
+}
+fn func2( val1:int, val2:int!) {
+   print( val1, val2 );
+}
+
+func2( func1()** );
+#+END_SRC
+
+
+By adding ~**~ after the function call, as in ~func1()**~ above, it is clearly stated that the multi-value of the function call is used.

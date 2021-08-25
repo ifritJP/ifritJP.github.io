@@ -1,61 +1,62 @@
 
-INDEX = _index.org
+INDEX = _index.ja.org
 
-IGNORE_SRCS += tutorial1.org
+IGNORE_SRCS += tutorial1.ja.org
 
-SRCS += tutorial2.setup.org
-SRCS += tutorial3.hello.org
-SRCS += crosscompile.org
-SRCS += value.org
-SRCS += set.org
-SRCS += enum.org
-SRCS += match.org
-SRCS += variable.org
-SRCS += branch.org
-SRCS += loop.org
-SRCS += func.org
-SRCS += multipleRetVal.org
-SRCS += defaultArg.org
-SRCS += arg.org
-SRCS += nilable.org
-SRCS += closure.org
-SRCS += class1.org
-SRCS += class2accessor.org
-SRCS += classInherit.org
-SRCS += classAdvertise.org
-SRCS += classOverride.org
-SRCS += interface.org
-SRCS += classMapping.org
-SRCS += generics.org
-SRCS += nilcond.org
-SRCS += import.org
-SRCS += require.org
-SRCS += glue.org
-SRCS += lua.org
-SRCS += make.org
-SRCS += macro.org
-SRCS += cast.org
-SRCS += subfile.org
-SRCS += lazyLoading.org
-SRCS += shebang_main.org
-SRCS += dir.org
-SRCS += go.org
-SRCS += go_package.org
-SRCS += lua_runtime.org
-SRCS += async.org
-SRCS += async_old.org
-SRCS += luago.org
-SRCS += go_study.org
-SRCS += lnstags.org
-SRCS += reason.org
-SRCS += recommend.org
-SRCS += completion.org
-SRCS += onWeb.org
-SRCS += test.org
-SRCS += Box.org
+SRCS += tutorial2.setup.ja.org
+SRCS += tutorial3.hello.ja.org
+SRCS += crosscompile.ja.org
+SRCS += value.ja.org
+SRCS += set.ja.org
+SRCS += enum.ja.org
+SRCS += match.ja.org
+SRCS += variable.ja.org
+SRCS += branch.ja.org
+SRCS += loop.ja.org
+SRCS += func.ja.org
+SRCS += multipleRetVal.ja.org
+SRCS += defaultArg.ja.org
+SRCS += arg.ja.org
+SRCS += nilable.ja.org
+SRCS += closure.ja.org
+SRCS += class1.ja.org
+SRCS += class2accessor.ja.org
+SRCS += classInherit.ja.org
+SRCS += classAdvertise.ja.org
+SRCS += classOverride.ja.org
+SRCS += interface.ja.org
+SRCS += classMapping.ja.org
+SRCS += generics.ja.org
+SRCS += nilcond.ja.org
+SRCS += import.ja.org
+SRCS += require.ja.org
+SRCS += glue.ja.org
+SRCS += lua.ja.org
+SRCS += make.ja.org
+SRCS += macro.ja.org
+SRCS += cast.ja.org
+SRCS += subfile.ja.org
+SRCS += lazyLoading.ja.org
+SRCS += shebang_main.ja.org
+SRCS += dir.ja.org
+SRCS += go.ja.org
+SRCS += go_package.ja.org
+SRCS += lua_runtime.ja.org
+SRCS += async.ja.org
+SRCS += async_old.ja.org
+SRCS += luago.ja.org
+SRCS += go_study.ja.org
+SRCS += lnstags.ja.org
+SRCS += reason.ja.org
+SRCS += recommend.ja.org
+SRCS += completion.ja.org
+SRCS += onWeb.ja.org
+SRCS += test.ja.org
+SRCS += Box.ja.org
 
 SRCS := $(addprefix content/LuneScript/, $(SRCS))
 INDEX := $(addprefix content/LuneScript/, $(INDEX))
+EN_SRCS := $(patsubst %.ja.org,%.en.org,$(SRCS) $(INDEX))
 
 IGNORE_SRCS := $(addprefix content/LuneScript/, $(IGNORE_SRCS))
 
@@ -69,15 +70,26 @@ SEDPAT = 's/^\#+\(TITLE\|title\):[ 0-9A-Z@\.]* \(.*[^ ]\)/-----\n* *\2*/g'
 help:
 	@echo make all
 	@echo make concat_all
+	@echo make trans
+	@echo make clean-trans
+
+clean-trans:
+	@rm $(EN_SRCS)
+
+trans: $(EN_SRCS)
+
+%.en.org: %.ja.org
+	../../trans-orgmode/trans-orgmode -o $@ -m trans \
+		-c ../../trans-org-accesstoken.json $<
 
 concat_all:
 	@echo $(SRCS) | sed 's@ @\n@g' | sort > dump.list
-	find content/LuneScript -iname '*.org' | sort | \
-		grep -v -e 'all.org' -e '_index.org' > dump2.list
+	find content/LuneScript -iname '*.ja.org' | sort | \
+		grep -v -e 'all.ja.org' -e '_index.ja.org' > dump2.list
 	diff dump.list dump2.list $(addprefix -I, $(IGNORE_SRCS))
 
 	@echo $(HEAD) $(INDEX) $(SRCS) | \
-		../../LuneScript/src/lnsc makeAll.lns shebang > content/LuneScript/all.org
+		../../LuneScript/src/lnsc makeAll.lns shebang > content/LuneScript/all.ja.org
 
 
 #	cat $(INDEX) | sed 's@\[\[@[[../@g' | cat - $(SRCS) |		\

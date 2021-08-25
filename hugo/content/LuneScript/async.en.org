@@ -1,0 +1,479 @@
+#+TITLE: @ .2 Safe asynchronous processing
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+Taking the opportunity of transcompiling from LuneScript to go language, asynchronous processing by LuneScript is supported.
+
+It has a simple function to statically eliminate data conflicts.
+
+
+* __Runner interface
+
+To do asynchronous processing with LuneScript, implement the __Runner interface.
+
+*The __Runner interface is of the following type: __async will be discussed later.*
+#+BEGIN_SRC lns
+// @lnsFront: skip
+pub interface __Runner {
+   pub fn run() __async mut;
+}
+#+END_SRC
+
+
+If you implement this interface, you can use the new built-in functions =__run()= and =__join()=.
+
+For example, if you execute the following process, =print("hoge:", self.val );= will be processed asynchronously.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge extend (__Runner) {
+   let val:int;
+   pub fn run() __async mut {
+      print("hoge:", self.val );
+   }
+}
+
+let list:List<Hoge> = [];
+for index = 0, 10 {
+   let mut hoge = new Hoge(index);
+   __run( hoge, __lns.runMode.Sync, "" );
+   list.insert( hoge );
+}
+foreach hoge in list {
+   __join( hoge );
+}
+#+END_SRC
+
+
+
+** __run () function
+
+The =__run()= function is a function to start asynchronous execution of the __Runner class.
+
+When asynchronous execution is started, the =run()= method of the __Runner class is executed in a separate thread.
+
+The types of =__run()= functions are as follows.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool
+#+END_SRC
+
+- The first argument, runner, specifies the __Runner object to run.
+- For the mode of the second argument, specify the following.
+  - __lns.runMode.Sync
+    - If the number of running __Runners exceeds a certain number, a new thread will not be started and will be executed here.
+  - __lns.runMode.Queue
+    - If the number of running __Runners exceeds a certain number, put it in the Runner queue and execute it when the running __Runner stops.
+  - __lns.runMode.Skip
+    - If the number of running __Runners exceeds a certain number, Runner will not be executed.
+    - If not executed, returns false.
+- For the name of the third argument, specify the name of this asynchronous process.
+When transcompiled to lua, the behavior is as follows.
+- If mode is __lns.runMode.Sync or __lns.runMode.Queue, run here without starting a new thread.
+- If mode is __lns.runMode.Skip, return false without executing.
+
+
+** __join () function
+
+The =__join()= function is a function that waits for the asynchronous processing of __Runner to finish.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+pub fn __join( runner:__Runner ) 
+#+END_SRC
+
+
+When transcompiled to lua, nothing is done because there is no asynchronous processing.
+
+
+** Constructor argument restrictions
+
+The arguments of the constructor of the class that extends __Runner are limited to the following types.
+- int, real, str, bool, enum 
+- immutable type
+In other words, the following cases will result in an error.
+#+BEGIN_SRC lns
+// @lnsFront: error
+class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:Test, list:List<int> ) __async { // error
+   }
+   pub fn run() __async mut {
+   }
+}
+#+END_SRC
+
+
+This error is because the arguments test and list are of mutable type.
+
+You need to declare it as immutable as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+}
+class Hoge extend (__Runner) {
+   pub fn __init( test:&Test, list:&List<int> ) __async { // ok
+   }
+   pub fn run() __async mut {
+   }
+}
+#+END_SRC
+
+
+
+* __async, __noasyc attributes
+
+If you look at the definition of the =run()= method in the __Runner interface, you can see that __async has been added.
+
+This declares that the function can be executed asynchronously.
+
+LuneScript manages the conventional synchronous processing in which only one thread operates and the asynchronous processing in which a new thread is started and executed.
+
+To execute a function asynchronously, you must declare that the function can be executed asynchronously.
+
+*That's __async.*
+
+*On the other hand, the traditional synchronization process is __noasyc.*
+
+//Normally, I think the pair of async is sync,//I dare to use noasync for the following reasons.//
+- Difficult to distinguish between async and sync
+- Noasync because the subject is asynchronous processing (async) and synchronous processing is an exception
+If neither __async nor __noasync is declared, the default is __noasyc, but there is a way to treat the default as __async.
+
+
+* __async Declared function limits
+
+*The __async declared function has the following restrictions:*
+- You cannot access the __noasync declared function from within the __async declared function.
+- __async Unable to access out-of-scope mutable variables from within the declared function.
+*On the other hand, functions declared with __noasync do not have such restrictions.*
+
+This is a guard to safely perform asynchronous processing.
+
+*Asynchronous processing must consider exclusive control. If you do not perform exclusive control where necessary, it will be a bug.*
+
+[[https://ja.wikipedia.org/wiki/%E7%AB%B6%E5%90%88%E7%8A%B6%E6%85%8B#%E6%83%85%E5%A0% B1% E5% 87% A6% E7% 90% 86] [Refer to here for the necessity of exclusive control. ]]]
+
+*However, it is very difficult to manually cover where exclusive control is required in all cases.*
+
+*Therefore, LuneScript adopts a method to reduce the omission of exclusive control due to human error by declaring meta information in the grammar and checking the inconsistency by the compiler.*
+
+Rust is a typical language that takes this approach.
+
+*Rust provides a high degree of exclusive control with a strict definition of meta information.*
+
+*LuneScript uses meta-information definitions that are relatively easy and easy to handle, instead of providing as high a level of exclusive control as Rust.*
+
+*By using __asyncLock, which will be described later, you can access __noasync from __async.*
+
+
+** Functions declared with __noasync cannot be executed from within the functions declared with __async.
+
+This means that the following cases will result in an error:
+#+BEGIN_SRC lns
+// @lnsFront: error
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      self.func1(); // error
+   }
+}
+#+END_SRC
+
+
+The above func1 is __noasync and func2 is __async. At this time, __noasync's func2 cannot access __noasync's func1.
+
+
+** __async Unable to access out-of-scope mutable variables from within the declared function.
+
+This means that the following cases will result in an error:
+#+BEGIN_SRC lns
+// @lnsFront: error
+let mut list = [ 1, 2 ];
+let list2 = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list { // error
+         print( val );
+      }
+      foreach val in list2 { // ok
+         print( val );
+      }
+   }
+}
+#+END_SRC
+
+
+The func above is __async and list is a mutable variable with top scope.
+
+At this time, you cannot access the mutable list from the __async func.
+
+On the other hand, list2 is immutable. Immutable variables can be accessed from func.
+
+You can also access mutable members from the __noasync method.
+
+
+* __async:__noasyc == N:1
+
+LuneScript is designed to have multiple threads (N) running asynchronously (=__async=) and one thread running on =__noasync=.
+
+If there are multiple threads running on =__noasync=, it's no longer asynchronous, so it's not surprising that there is only one thread on =__noasync=.
+
+
+* How to temporarily remove the __async restriction. (__asyncLock)
+
+As mentioned earlier, there are restrictions on the functions declared in __async.
+
+The ideal is to meet this limitation in everything, but in reality there are cases where that is not enough.
+
+Therefore, we provide a way to temporarily remove the restrictions on the functions declared in __async.
+
+*That is __asyncLock.*
+
+For example, use __asyncLock as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1(); // ok
+      }
+   }
+}
+#+END_SRC
+
+
+Since func2 is __async, you wouldn't normally be able to access the __noasync func2, but within the __asyncLock block, __async is unrestricted.
+
+
+** Relationship between __asyncLock and __noasync
+
+__asyncLock temporarily causes the __async declared function to act as __noasync.
+
+And as mentioned earlier, there must be one thread acting as __noasync.
+
+So __asyncLock waits until the __noasync thread stops running, and then executes the _asyncLock block after the __noasync thread stops running.
+
+Other __asyncLock blocks are treated in the same way as __noasync threads are running.
+
+
+*** Nesting __asyncLock across functions
+
+In the following case, we are calling func3-> func2-> func1.
+
+At this time, __asyncLock is executed by func3 and func2, but since it is executed as the existing __noasync when func2 is executed, __asyncLock of func2 is executed without blocking.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         self.func1();
+      }
+   }
+   fn func3() __async {
+      __asyncLock {
+         self.func2();
+      }
+   }
+}
+#+END_SRC
+
+
+In this way, __asyncLock across functions can be nested.
+
+On the other hand, __asyncLock in the same function cannot be nested. I get an error.
+#+BEGIN_SRC lns
+// @lnsFront: error
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      __asyncLock {
+         __asyncLock { // error
+            self.func1();
+         }
+      }
+   }
+}
+#+END_SRC
+
+
+
+** __asyncLock overhead
+
+As mentioned above, __asyncLock provides exclusive control.
+
+The use of __asyncLock should be minimized as exclusive control is overhead.
+
+For example, if you use __asyncLock inside a for loop as follows, the overhead of the loop will be added.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   fn func1() __noasync {
+   }
+   fn func2() __async {
+      for _ = 1, 10000000 {
+         __asyncLock {
+            self.func1();
+         }
+      }
+   }
+}
+#+END_SRC
+
+
+In this case, it's a good idea to put __asyncLock out of the for loop. However, there are cases where the exclusion range becomes too wide when you go out of the for loop.
+
+You need to be careful about which range you want to __asyncLock.
+
+
+** __asyncLock limits
+
+__asyncLock has the following restrictions:
+- You cannot return or break from within __asyncLock.
+In other words, the following processing cannot be performed.
+#+BEGIN_SRC lns
+// @lnsFront: error
+class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      __asyncLock {
+         if self.func1() {
+            return 1; // error
+         }
+      }
+      return 0;
+   }
+}
+#+END_SRC
+
+
+To perform such processing, write as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   fn func1() __noasync : bool {
+      return true;
+   }
+   fn func2() __async : int {
+      let mut val = 0;
+      __asyncLock {
+         if self.func1() {
+            val = 1;
+         }
+      }
+      return val;
+   }
+}
+#+END_SRC
+
+
+
+* Default to __async
+
+The undeclared function is __noasync.
+
+There is a way to make this the default __async.
+: _lune_control default_async_all
+
+
+If the above is declared at the beginning of a .lns file, it defaults to __async in that .lns file.
+
+
+* Software design
+
+The features so far are summarized below.
+- There are multiple __async threads (N) and one __noasync thread is N: 1.
+- In addition, __asyncLock blocks while the __noasync thread is running.
+From these, the following is required to perform asynchronous processing in LuneScript.
+
+*"Basically, __Runner handles __async, and __noasync processing is kept to the minimum necessary."*
+
+For example, start __Runner immediately after starting it with =__main()=, and wait for the end of that __Runner with __join. The basic design is.
+
+
+* Mechanism for safe asynchronous control
+
+LuneScript prevents omission of exclusive control by the following.
+- __async Declared function limits
+- Restrictions on constructors for classes that extend __Runner
+#+BEGIN_SRC lns
+// @lnsFront: error
+let mut list = [ 1, 2 ];
+class Test {
+   fn func() __async {
+      foreach val in list { //error
+         print( val );
+      }
+   }
+}
+#+END_SRC
+
+
+For example, accessing list from =func()= above would normally result in a compilation error, but if this is not an error, then if you update the value of list in another thread while executing the =func()= method, you will get to list. On the other hand, references and changes occur at the same time, resulting in indefinite behavior.
+
+To guard against this, there are restrictions on the functions declared in __async.
+
+Also, if you execute the following code,
+#+BEGIN_SRC lns
+// @lnsFront: error
+class Hoge extend (__Runner) {
+   let list:List<int>;
+   pub fn __init( list:List<int> ) __async { // error
+      self.list = list;
+
+      __run( self, __lns.runMode.Queue, "test" );
+   }
+   pub fn run() __async mut {
+      self.list.insert(1);
+   }
+}
+
+let mut workList = [1];
+let hoge1 = new Hoge( workList );
+let hoge2 = new Hoge( workList );
+#+END_SRC
+
+
+Originally, since the type of list in the constructor of Hoge is mutable, a compile error will occur, but if this is not an error, =insert()= will occur simultaneously due to asynchronous processing of multiple Hoge for the same workList, resulting in indefinite behavior. Become.
+
+To guard against this, there are restrictions on the constructor that extends __Runner.
+
+
+** Incomplete limits
+
+As mentioned above, LuneScript exclusive control is incomplete.
+
+As some of you may have already noticed, it is easy to cause indefinite behavior even if you follow the current restrictions.
+
+For example, list2 accessed from =func()= in the code below is immutable because it is & List <int>, which satisfies the restrictions of the __async function.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut list = [ 1, 2 ];
+let list2 = list;
+class Test {
+   fn func() __async {
+      foreach val in list2 {
+         print( val );
+      }
+   }
+}
+#+END_SRC
+
+
+However, if list is updated from another thread while func is running asynchronously, list2 accessed by func is the same instance as list, so it behaves indefinitely.
+
+The same can happen with constructor restrictions.
+
+As you can see, this is an incomplete limit, but this is a trade-off between the ease of programming development and the rigor of static checking, and LuneScript balances it to this specification at present. It has become.
+
+We will continue to seek ways to improve the rigor of static checking while maintaining the ease of programming development.

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>10.2. Multi-valued return value - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="10.2. Multi-valued return value" />
+<meta property="og:description" content="LuneScript supports multi-valued function return values.  For example, a function can return multiple values: // @lnsFront: ok fn func(): int,int { return 1, 2; } print( func() ); // 1 2   In the sample above, func() returns 1 and 2. This multi-valued return value is passed as it is as an argument of print().  Multi-valued return values are very useful, but there are still few languages that have multi-valued return values." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/multipleretval/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="10.2. Multi-valued return value"/>
+<meta name="twitter:description" content="LuneScript supports multi-valued function return values.  For example, a function can return multiple values: // @lnsFront: ok fn func(): int,int { return 1, 2; } print( func() ); // 1 2   In the sample above, func() returns 1 and 2. This multi-valued return value is passed as it is as an argument of print().  Multi-valued return values are very useful, but there are still few languages that have multi-valued return values."/>
+<meta itemprop="name" content="10.2. Multi-valued return value">
+<meta itemprop="description" content="LuneScript supports multi-valued function return values.  For example, a function can return multiple values: // @lnsFront: ok fn func(): int,int { return 1, 2; } print( func() ); // 1 2   In the sample above, func() returns 1 and 2. This multi-valued return value is passed as it is as an argument of print().  Multi-valued return values are very useful, but there are still few languages that have multi-valued return values.">
+
+<meta itemprop="wordCount" content="725">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>10.2. Multi-valued return value</h1>
+
+<p>
+LuneScript supports multi-valued function return values.
+</p>
+<p>
+For example, a function can return multiple values:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(): int,int {
+   return 1, 2;
+}
+print( func() );  // 1 2</code></pre>
+</div>
+<p>
+In the sample above, <code class="verbatim">func()</code> returns 1 and 2. This multi-valued return value is passed as it is as an argument of <code class="verbatim">print()</code>.
+</p>
+<p>
+Multi-valued return values are very useful, but there are still few languages that have multi-valued return values. Also, the second and subsequent values of the return value often have optional implications.
+</p>
+<p>
+Therefore, it is easy to forget the existence of the second and subsequent return values.
+</p>
+<p>
+This can cause glitches.
+</p>
+<h2 id="headline-1">
+Problems due to multi-valued return values
+</h2>
+<p>
+<strong>The following code is from Lua, not LuneScript.</strong>
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func1</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func2</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="p">(</span><span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">))</span> <span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="n">func1</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 66</span>
+<span class="n">func2</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 97</span></code></pre></div>
+</div>
+<p>
+The func1 () and func2 () output different results even though they give the same argument &#34;abcb&#34;. Do you know why this is so?
+</p>
+<p>
+By the way, <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> is Lua&#39;s standard library that returns the string that is converted from &#34;b&#34; to &#34;B&#34; in the string txt, and <code>string.byte()</code> is the standard library that returns the value contained in the specified string.
+</p>
+<p>
+Then the answer to the question.
+</p>
+<p>
+func1 () passes the return value of <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> to string.byte as it is, while func2 () passes <code>(txt:gsub( &#34;b&#34;, &#34;B&#34; ))</code> enclosed in <code>()</code>.
+</p>
+<p>
+This causes func1 () to pass <code class="verbatim">string.byte()</code> the multivalued value of <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> as is, while func2 () passes <code class="verbatim">string.byte()</code> only the string that is the first multivalued value of <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code>.
+</p>
+<p>
+<code>string.byte()</code> returns the character value of the index specified by the second argument if the second argument is passed. On the other hand, if the second argument is omitted, the value of the first character is returned.
+</p>
+<p>
+And <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> is a function that returns multiple values. Specifically, it returns the converted string str and the number of converted ints.
+</p>
+<p>
+I think that anyone using Lua knows that <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> is a function that returns a converted string. On the other hand, how many people recognize that this function is a multi-valued function?
+</p>
+<p>
+And how many people, if aware, immediately realize that it leads to glitches?
+</p>
+<p>
+Originally, you want to use only the converted character string of <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> as an argument, but the function behavior may change due to the unintentionally passed multi-valued return value.
+</p>
+<p>
+In other words, when you originally had to use only the beginning of a multi-value using <code>()</code> like func2 (), you may end up using the multi-value as it is like func1 ().
+</p>
+<p>
+Remember what I wrote at the beginning here.
+</p>
+<ul>
+<li>
+<p>
+<code>Multi-valued return values are very useful, but there are still few languages that have multi-valued return values.</code>
+</p>
+</li>
+<li>
+<p>
+<code>Also, the second and subsequent values of the return value often have optional implications.</code>
+</p>
+</li>
+<li>
+<p>
+<code>Therefore, it is easy to forget the existence of the second and subsequent return values.</code>
+</p>
+</li>
+</ul>
+<p>
+Multi-valued return values are useful, but they also carry this risk.
+</p>
+<h2 id="headline-2">
+For LuneScript
+</h2>
+<p>
+In LuneScript, to avoid such a problem, I decided to make it explicit when dealing with multi-valued return values. If not specified, a warning will be issued.
+</p>
+<p>
+However, it is troublesome to specify when using multi-values.
+</p>
+<p>
+Therefore, we will limit the cases that need to be specified to the following cases.
+</p>
+<p>
+The destination of the multi-valued return value
+</p>
+<ul>
+<li>
+<p>
+If it is a function argument and the argument is optional
+</p>
+</li>
+<li>
+<p>
+When the value specified for return and the value can be omitted
+</p>
+</li>
+</ul>
+<p>
+In other words, if you want to assign a value directly to a variable such as let, you don&#39;t need to specify it. This is because I thought that preparing a variable to assign a value to was the same as explicitly stating that the second and subsequent arguments of multiple values would be used.
+</p>
+<h2 id="headline-3">
+Explicit method
+</h2>
+<p>
+The specific explicit method is as follows.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1(): int,int {
+   return 1, 2;
+}
+fn func2( val1:int, val2:int!) {
+   print( val1, val2 );
+}
+
+func2( func1()** );</code></pre>
+</div>
+<p>
+By adding <code>**</code> after the function call, as in <code>func1()**</code> above, it is clearly stated that the multi-value of the function call is used.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/func/" title="10. Functions"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 10. Functions</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/" title="10.3. Omission of arguments">Next - 10.3. Omission of arguments <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

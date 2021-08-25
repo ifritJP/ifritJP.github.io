@@ -1,0 +1,292 @@
+#+TITLE: A. Tag jump by lnstags (source code tag system)
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript supports tag jump (source code tag system).
+
+
+* What is Tag Jump (Source Code Tag System)?
+
+Tag jumps provide access to the following information in the source code:
+- Definition position of symbols (classes, functions, variables etc ..)
+- Reference position of symbols (classes, functions, variables etc ..)
+
+
+** example
+
+An example is shown below.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();
+#+END_SRC
+
+
+For example, if you have a mini.lns file like the one above, to list the definition locations for the func method of the Foo class, run the following command:
+#+BEGIN_SRC txt
+$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {
+#+END_SRC
+
+
+To list the reference positions for the func method of the Bar class, run the following command:
+#+BEGIN_SRC txt
+$ lnstags inq ref @mini.Bar.func
+@mini.Bar.func     12 mini.lns         bar.func();
+#+END_SRC
+
+
+Details on how to use the lnstags command will be described later.
+
+
+* Features of lnstags
+
+In addition to the general tag jump function, lnstags provides the following functions.
+- List of places where variable values are set
+  - It distinguishes between setting a value and referencing it, and can list only where the value is set.
+- Consideration of inheritance relationship
+  - When calling a method that is overridden, the method that is actually called depends on polymorphism.
+  - lnstags lists all the methods that can be called.
+
+
+* How to use
+
+lnstags is published at the following URL.
+
+<https://github.com/ifritJP/lnstags>
+
+
+** How to build
+
+There are two build methods:
+- Use go install
+- Close the repository and make
+Normally go install is fine.
+
+
+*** go install 
+
+The following will install lnstags in $ GOPATH / bin.
+: go install -tags gopherlua github.com/ifritJP/lnstags@latest
+
+
+
+*** Build with go.
+#+BEGIN_SRC txt
+$ git clone --depth 1 https://github.com/ifritJP/lnstags
+$ cd lnstags
+$ make build ONLY_GO=y
+#+END_SRC
+
+
+The above will generate lnstags / lnstags.
+
+
+** Source code analysis
+
+The source code is analyzed on the project directory of the source code to be analyzed.
+#+BEGIN_SRC txt
+$ cd proj  // lune.js を置いてあるディレクトリに移動する
+$ lnstags init
+$ lnstags build test/main.lns
+#+END_SRC
+
+
+*The lnstags build should be run with one of the following:*
+- Specify the main .lns file for your project
+: $ lnstags build main.lns
+
+- Specify as =lnstags build @-= and specify the path of the .lns file in stdin line by line.
+: $ find . -iname '*.lns' | lnstags build @-
+
+
+lnstags parses all imported modules from the specified lns file.
+
+This means that in most cases you just need to specify the main .lns file.
+
+The latter case is used when not all modules can be traced from one lns file.
+
+*Note that the current lnstags do not support delta updates.*
+
+*Therefore, if you use @-for build, you need to specify all .lns files.*
+
+*The analysis result of the source code is registered in the lnstags.sqlite3 file.*
+
+
+** DB update
+
+If the source code is changed after analysis by =lctags build=, the information registered in the DB and the actual source code information will be inconsistent.
+
+*To update the DB, do one of the following:*
+- Run =lctags build= again.
+- Run =lctags update=.
+: $ lctags update
+
+
+
+*** lctags update
+
+=lctags update= updates the information based on the lns source file list registered in the DB.
+
+Unlike =lctags build=, there is no need to specify the source file to parse.
+
+If the number of lns files to be parsed increases or decreases, =lctags build= must be used instead of =lctags update=.
+
+
+** inquiry
+
+After parsing the source code with =lnstags build=, query the symbol information.
+
+There are the following patterns for inquiries.
+- inq
+- inq-at
+- suffix
+
+
+*** inq
+
+inq makes a query by specifying the symbol name.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();
+#+END_SRC
+
+
+For example, if you had a mini.lns file like the one above, the symbol name for the func method of the Foo class would be:
+: @mini.Foo.func
+
+
+Where @mini indicates the module name and mini refers to mini.lns. For example, in the case of abc / def / ghi.lns, the module name will be @ abc. @ Def. @ Ghi. =Foo.func= points to the func method of the Foo class.
+
+Then, by executing the following command, the definition position of @ mini.Foo.func is listed.
+#+BEGIN_SRC txt
+$ lnstags inq def @mini.Foo.func
+@mini.Foo.func      2 mini.lns            pub fn func() {
+#+END_SRC
+
+
+*The def of this command =lnstags inq def= specifies a definition location query.*
+
+
+*** Inquiry mode
+
+The types of inquiries are as follows.
+|-|-|
+| option | motion | 
+|-+-|
+| def | Definition position | 
+| ref | Reference position | 
+| set | Setting position | 
+
+
+*** inq-at
+
+If you know the fully qualified name of the symbol you want to query, you can use the inq command, but finding the fully qualified name can be difficult or cumbersome.
+
+*Therefore, inq-at makes an inquiry about the symbol at a predetermined position in the source.*
+
+When querying the definition location of =foo.func()= in the 5th column of the 10th row when the following source is available,
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Foo {
+   pub fn func() {
+   }
+}
+class Bar {
+   pub fn func() {
+   }
+}
+let foo = new Foo();
+foo.func();
+let bar = new Bar();
+bar.func();
+#+END_SRC
+
+
+Execute the following command.
+#+BEGIN_SRC txt
+$ lnstags inq-at def mini.lns 10 5
+@mini.Foo.func      2 mini.lns            pub fn func() {
+#+END_SRC
+
+
+This will inquire about the symbol at the specified location.
+
+*In the above case, we recognize that the fully qualified name of =foo.func= in mini.lns 105 is @ mini.Foo.func and make a def query about it.*
+
+*When using inq-at, the specified lns file must be able to be built without error.*
+
+It also takes time to parse the AST of the specified lns file.
+
+
+*** suffix
+
+inq-at gets the fully qualified name by specifying the location of the lns file, while suffix gets the list of fully qualified names with a suffix match of the symbol name.
+
+For example, to display a list of fully qualified names that end in func, do the following:
+#+BEGIN_SRC txt
+$ lnstags suffix func
+@mini.Foo.func
+@mini.Bar.func
+#+END_SRC
+
+
+
+* When using from emacs
+
+Load lisp / lnstags-conf.el.
+
+The key bindings are as follows.
+|-|-|
+| Key | operation | 
+|-+-|
+| M-t | Of the symbol at the cursor position | Definition position |  Jump to | 
+| M-r | Of the symbol at the cursor position | Reference position |  Jump to | 
+| M-s | Of the symbol at the cursor position | Setting position |  Jump to | 
+| M-m | Tag jump history | 
+| C-t | Jump back | 
+
+For M-t, M-r, M-s, it performs a suffix query to get a fully qualified name, lists the fully qualified names that match the symbol, and makes an inq query for the selected fully qualified name.
+
+By adding the prefix C-u to M-t, M-r, and M-s, the inq-at query for the cursor position is performed.
+
+
+* Analysis time
+
+lnstags uses the AST analysis part of the LuneScript transcompiler to register the symbol information in the source code to be analyzed in the DB.
+
+*Therefore, the time required for DB registration is almost equivalent to the transcompile time of the Lns file.*
+
+Parsing LuneScript's self-hosted code takes less than 10 seconds.
+
+By performing the heaviest AST analysis of the source code tag system in the LuneScript module, the code of lnstags itself has a simple structure of over 2000 lines. (As of 2021)
+
+The lnstags themselves are also developed with LuneScript.
+
+As mentioned earlier, lnstags does not support DB diffs. This is because we have determined that there are currently no large-scale LuneScript projects that take such a long time.
+
+If you are using LuneScript for a large project, please contact me for reference.

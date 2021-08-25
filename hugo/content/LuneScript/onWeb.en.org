@@ -1,0 +1,119 @@
+#+TITLE: A. LuneScript running on a web browser
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+To check the operation of LuneScript, we have prepared a LuneScript environment that runs on a web browser.
+
+<https://ifritjp.github.io/LuneScript-webFront/contents/>
+
+The link above has three textareas:
+- For LuneScript code input
+- For execution result output
+- For output of conversion result to Lua
+Enter the LuneScript code in the textarea for LuneScript code input and press the execute button to convert and execute it to Lua.
+
+All LuneScript processing is running on the browser.
+
+However, it has the following restrictions:
+- File operations such as =io.open()= cannot be performed
+- Modules such as =import()= cannot be loaded
+Since all the processing of LuneScript is running on the browser, it takes time to execute it for the first time on smartphones.
+
+
+* Technical explanation
+
+I'm using fengari to run a Lua VM on my browser and run the LuneScript compiler on that Lua VM.
+
+See the following article for fengari.
+
+[[../../lua/fengari/]]
+
+The fengari Lua VM loads its module with XMLHttpRequest when require on Lua. LuneScript consists of 30 Lua files, which means that you will load 30 Lua files sequentially. 30 Sequential loading of files is inefficient, so XMLHttpRequest is used to load them asynchronously in advance, and during require processing, the processing is switched so that the preloaded files are loaded.
+
+Then, after loading the LuneScript compiler, LuneScript translates the input user's LuneScript code and executes it.
+
+Loading the LuneScript compiler will take some time. It takes less than 10 seconds on my smartphone and less than 1 second on my PC. Once loaded, you don't need to load LuneScript until you reload your browser, and you can convert and execute your LuneScript code.
+
+As a countermeasure when the user's LuneScript code is buggy and goes out of control, it is forcibly stopped 2 seconds after execution.
+
+This LuneScript compiler works completely closed in the browser once loaded, so there is no load on the server side. The only function the server needs is hosting static content.
+
+
+** LuneScript fengari support
+
+In running LuneScript on the fengari Lua VM, the following processing of LuneScript has been modified.
+
+*"Switching List <X> type foreach processing from pairs () to ipairs ()"*
+
+In the original Lua VM, in the sequence table, =pairs()= and =ipairs()= list in the same order, whereas in the fengari Lua VM, =pairs()= seems to be in no particular order. LuneScript used =pairs()= instead of =ipairs()= for simplicity and certainty, but fengari Lua VM switched to =ipairs()=.
+
+Note that this switching is controlled by the --use-ipairs compile option. If --use-ipairs is specified, it will be =ipairs()=. Currently, =pairs()= is used when no option is specified, but we are considering reversing the default state in the future.
+
+
+* Reference sample code execution
+
+I'm trying to use this technique to run the sample code in the LuneScript reference.
+
+It's easy to embed, load the following JavaScript,
+: ifritJP.github.io/LuneScript-webFront/contents/lunescript-front.js
+
+
+Just execute the =lnsFront.setup()=, =lnsFront.compile()= functions.
+
+
+** lnsFront.setup()
+
+=lnsFront.setup()= loads fengari and LuneScript, associates each HTML element, compiles and executes the LuneScript code stored in the textarea.
+
+=setup()= is a function of the following type:
+#+BEGIN_SRC js
+lnsFront.setup( consoleId, luaCodeId, lnsCodeId, executeId )
+#+END_SRC
+
+|-|-|-|
+| argument | meaning | Required / Option | 
+|-+-+-|
+| consoleId | Id of textarea that stores console output results | Mandatory | 
+| luaCodeId | The id of the textarea that stores the converted Lua code | Option | 
+| lnsCodeId | The id of the textarea that stores the Lns code | Mandatory | 
+| executeId | The id of the trigger button that starts the conversion | Option | 
+
+If you do not use element in the above Option, specify an empty string for element ID.
+
+For example, if you don't need the converted Lua code, do the following:
+#+BEGIN_SRC js
+var frontId = lnsFront.setup( consoleId, "", lnsCodeId, executeId )
+#+END_SRC
+
+
+In addition, this function manages the consoleId etc. given to the argument collectively, issues an ID and associates it. And that ID is the return value.
+
+After executing =lnsFront.setup()=, if you click the button specified by executeId or execute =lnsFront.compile()=, the LuneScript code in the textarea of the registered lnsCodeId will be converted and executed, and the execution result will be stored in each textarea.
+
+If you have multiple textareas to enter LuneScript code, run =lnsFront.setup()= on each.
+
+
+*** Note on lnsFront.setup ()
+
+*Do not run lnsFront.setup () multiple times for a textarea.*
+
+After executing =lnsFront.setup()= once, click the button registered with executeId or execute =lnsFront.compile()= to execute the LuneScript code in the registered textarea.
+
+
+** =lnsFront.compile()=
+
+=lnsFront.compile()= compiles and executes the LuneScript code in the textarea registered with =lnsFront.setup()=.
+#+BEGIN_SRC js
+lnsFront.compile( frontId, maxTime )
+#+END_SRC
+
+|-|-|-|
+| argument | meaning | Required / Option | 
+|-+-+-|
+| frontId | =lnsFront.setup()= |  Return value of | Mandatory | 
+| maxTime | User's LuneScript execution time limit (seconds) | Option | 
+
+If maxTime is omitted, the default limit is 2 seconds. If 10 seconds or more is specified, it will be treated as an invalid value and the default value will be set.

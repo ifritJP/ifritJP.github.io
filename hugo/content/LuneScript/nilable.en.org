@@ -1,0 +1,397 @@
+#+TITLE: 11. nilable edition
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This time, I will explain about nilable of LuneScript.
+
+
+* What is nilable
+
+LuneScript has a value of nil.
+
+As mentioned earlier, variables of type stem can hold all types except nil.
+#+BEGIN_SRC lns
+// @lnsFront: error
+let mut val:stem = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+val = nil; // error
+#+END_SRC
+
+
+So how can we keep nil? Use stem! Instead of stem.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let mut val:stem! = 1;
+val = 1.0;
+val = "abc";
+val = {};
+val = [];
+val = [@];
+val = nil; // ok
+#+END_SRC
+
+
+A type that can hold nil in this way is called nilable.
+
+nilable is not only stem !, but all types except some have nilable types.
+
+For example, int! And str! Are nilable type of int and nilable type of str.
+
+By adding! To the end of the type name, it becomes a nilable type that can retain the original type and nil.
+#+BEGIN_SRC lns
+// @lnsFront: error
+let mut val1:int = 1;
+val1 = nil;  // error
+
+let mut val2:int! = 1;
+val2 = nil;  // ok
+#+END_SRC
+
+
+nil is a value that is different from any other value and is a convenient value to use as an outlier. However, the value of a variable becomes nil at an unintended timing, which often causes problems.
+
+LuneScript achieves nil safety (null safety) by dividing it into nilable types that can hold nil and non-nilable types that cannot hold nil.
+
+
+* nilable type restrictions
+
+The nilable type has the limitation that it cannot be used as the original type as it is.
+
+It's hard to tell what this explanation is, so take a look at the following example.
+#+BEGIN_SRC lns
+// @lnsFront: error
+let val:int! = 1;
+print( val + 1 );  // error
+#+END_SRC
+
+
+The above val is of type int nilable. And I'm running val + 1, which gives an error.
+
+This is because val is an int !, not an int, so it cannot be treated as an int as it is.
+
+So why nilable has such a limitation is as follows.
+- nilable is a type that can hold nil
+- That is, the nilable type can be nil
+- To use it as the original type, you have to make sure it is not nil
+
+You cannot assign nil to non-nilable types. And the nilable type cannot be used as the original type as it is.
+
+This restriction can logically prevent a variable from becoming nil at an unintended timing and becoming a malfunction.
+
+This is the nil-safe (null-safe) principle adopted by many languages.
+
+
+* Comparison with nilable type
+
+As mentioned earlier, the nilable type cannot be used as is as non-nilable.
+
+However, it can be compared as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn check( val:int! ) {
+   if val == 1 {
+      print( "ok" );
+   }
+   else {
+      print( "ng" );
+   }
+}
+check( 1 ); // ok
+check( 2 ); // ng
+#+END_SRC
+
+
+In the sample above, val is an int! And val == 1 is compared to an int. It is possible to compare nilable and non-nilable in this way.
+
+
+* Conversion from nilable type to non-nilable type
+
+The conversion from non-nilable to nilable is implicit, as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:int! = 1;   // int! <-- int
+#+END_SRC
+
+
+On the other hand, the conversion from nilable to non-nilable must be done explicitly.
+
+LuneScript provides the following for converting nilable to non-nilable types:
+- unwrap 
+- when!
+- if!
+- if! let
+- let!
+- unwrap!
+
+
+** unwrap
+
+unwrap converts an expression of type nilable to a non-nilable type.
+
+For example, use it as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val1:int! = 1;
+let val2:int = unwrap val1;
+#+END_SRC
+
+
+In this sample val1 is an int !. By unwrapping that val1, we are converting from int! To int.
+
+If the value to unwrap is nil as shown below, the program will make a run-time error.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val1:int! = nil;
+let val2:int = unwrap val1;   // runtime error
+#+END_SRC
+
+
+The unwrap default prevents this run-time error. unwrap default specifies the value when the value to be converted is nil.
+
+The following is an example using default.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val1:int! = nil;
+let val2:int = unwrap val1 default 0;
+#+END_SRC
+
+
+In this example, val1 is nil, so a default of 0 is the result of unwrap's evaluation.
+
+Use unwrap without default only when you know for sure that it is not nil.
+
+
+** when!
+
+*when! Determines if the specified variable of type nilable is nil and branches.*
+
+The following is an example of when !.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val:int!, val2:int! ): int {
+   when! val, val2 {
+      return val + val2;
+   }
+   else {
+      return 0;
+   }
+}
+print( func( 1, 2 ) );      // 3
+print( func( nil, 2 ) );    // 0
+print( func( 1, nil ) );    // 0
+print( func( nil, nil ) );  // 0
+#+END_SRC
+
+
+In this example, when! Branches to int! type val and val2.
+- Run ~return val + val2~ if val and val2 are non-nil
+- If val or val2 is nil, execute return 0
+when! Executes the first block when all the specified variables are non-nil.
+
+*Within this block, the behavior is as follows:*
+- The specified variable will be of unwrapped non-nilable type.
+- The specified variable is immutable.
+If any of the variables specified in when! are nil, the else block is executed. else is optional.
+
+*Note that only variables can be specified for when !. You cannot write members or expressions.*
+
+
+** if!
+
+*if! Determines if the specified expression is nil and branches.*
+
+The following is an example of if !.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val:int! ): int! {
+   return val;
+}
+fn sub( val:int! ): int {
+   if! func( val ) {
+      return _exp + 10;
+   }  
+   else {
+      return 0;
+   }
+}
+print( sub( 1 ) ); // 11
+print( sub( nil ) ); // 0
+#+END_SRC
+
+
+In this example, if! Branches to =func()=.
+- Run ~return _exp + 10;~ if =func()= is non-nil
+- If =func()= is nil, execute return 0
+*if! Executes the first block when the specified expression is non-nil. Within this block, you can access the result of the expression as _exp. At this time, _exp is of non-nilable type.*
+
+If the expression specified in if! is nil, the else block is executed. else is optional.
+
+By the way, if the expression specified by if! Returns multiple values, only the first return value is the target. Ignore the second and subsequent return values.
+
+Note that if! Cannot be nested as follows.
+
+This is because the inner if! _Exp is shadowed by the outer if! _Exp.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+   if! func( val ) {
+      if! func( val ) {
+         return _exp + 10;
+      }  
+      else {
+         return 0;
+      }  
+   }  
+#+END_SRC
+
+
+To prevent this, use the following if! Let.
+
+
+** if! let
+
+if! let is a version in which you can specify the variable name that stores the result of the expression judged by if !.
+
+The following is a sample if! Let.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val1:int!, val2:int! ): int!, int! {
+   return val1, val2;
+}
+fn sub( val1:int!, val2:int! ): int {
+   if! let work1, work2 = func( val1, val2 ) {
+      return work1 + work2;
+   }  
+   else {
+      return 0;
+   }
+}
+print( sub( 1, 2 ) ); // 3
+print( sub( nil, 2 ) ); // 0
+print( sub( 1, nil ) ); // 0
+print( sub( nil, nil ) ); // 0
+#+END_SRC
+
+
+In this example, we are running ~if! let work1, work2 = func( val1, val2 )~.
+
+This assigns the result of =func()= to work1, work2 and executes the first block if everything is non-nil. You can access work1 and work2 within this block. work1 and work2 are of non-nilable type. The scope of the variable declared with if! let is the first block.
+
+If either is nilable, execute an else block. else is optional.
+
+
+** let!
+
+let! declares a variable with an initial value other than nil.
+
+Here is a sample let!
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val1:int!, val2:int! ): int!, int! {
+   return val1, val2;
+}
+fn sub( val1:int!, val2:int! ): int {
+   let mut work0 = 0;
+   let! work1, work2 = func( val1, val2 ) {
+      work1 = 0;
+      work2 = 0;
+   }
+   then {
+      work0 = 10;
+   };     
+   return work0 + work1 + work2;
+}
+print( sub( 1, 2 ) ); // 3
+print( sub( nil, 2 ) ); // 0
+print( sub( 1, nil ) ); // 0
+print( sub( nil, nil ) ); // 0
+#+END_SRC
+
+
+In this example, we are running ~let! work1, work2 = func( val1, val2 )~.
+- It declares work1 and work2 with the result of =func()= as the initial value.
+- If either work1 or work2 is nil, the first block is executed.
+- If everything is non-nil, then execute the block. then is optional.
+The let statement requires;. In the sample above,; is added as ~};~ at the end of the block then.
+
+The first block has a limitation that must handle one of the following:
+- Set values for all variables declared with let.
+- Exit the scope declaring let.
+In the above example, the values are set for work1 and work2, but it is OK to exit this function with return.
+
+*The behavior when the above restrictions are not observed is undefined.*
+
+
+** unwrap!
+
+unwrap! is a control similar to let !. The difference is that instead of declaring a variable, it assigns it to an existing variable.
+
+The following is an example of unwrap !.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn test( arg:int! ) {
+  let mut val = 0;
+
+  unwrap! val = arg { print( 0 ); return; } then { val = val + 1; };
+  print( val );
+}
+test( 1 );  // print( 2 );
+test( 2 );  // print( 3 );
+test( nil );  // print( 0 );
+#+END_SRC
+
+
+In the above example, val is an int type variable. I'm using unwrap! To assign an int! Type arg to this variable.
+
+The above ~unwrap! val = arg { print( 0 ); return; } then { val = val + 1; };~ performs the following processing.
+- If arg is nil, execute ~{ print( 0 ); return; }~.
+- If arg is non-nil, assign arg to val. Then execute the block.
+- then is optional.
+
+
+* Map type access
+
+If you access an element of Map type data, the result is nilable.
+
+For example, in the following cases
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val = { "abc": 1 };
+let val2 = val.abc;
+#+END_SRC
+
+
+val2 is an int! instead of an int.
+
+This is because if there is no Map type element, the evaluation result will be nil.
+
+By the way, list and array element access is not nilable.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val = [ 1, 2, 3 ];
+let val2 = val[ 1 ];
+#+END_SRC
+
+
+In the above example, val2 would be an int instead of an int !.
+
+*The behavior when accessing val [4] is undefined.*
+
+Be careful when accessing lists and arrays by index.
+
+I also thought about making the index access result of the list and array nilable, but I didn't do it because I felt it was overkill.
+
+
+* summary
+
+LuneScript provides nil safety with the following specifications:
+- nilable and non-nilable
+- unwrap 
+
+Next time, I will talk about classes.

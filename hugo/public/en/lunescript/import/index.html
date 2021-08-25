@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>21. import / provide - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/import/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="21. import / provide" />
+<meta property="og:description" content="This time, I will explain the module management of LuneScript. module   Module management in LuneScript is basically the same as Lua.  The differences from Lua are listed below.    Unless otherwise declared, each file is a module.    The extension of the file name is .lns, and the name excluding .lns is the module name.    init.lns is not supported." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/import/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="21. import / provide"/>
+<meta name="twitter:description" content="This time, I will explain the module management of LuneScript. module   Module management in LuneScript is basically the same as Lua.  The differences from Lua are listed below.    Unless otherwise declared, each file is a module.    The extension of the file name is .lns, and the name excluding .lns is the module name.    init.lns is not supported."/>
+<meta itemprop="name" content="21. import / provide">
+<meta itemprop="description" content="This time, I will explain the module management of LuneScript. module   Module management in LuneScript is basically the same as Lua.  The differences from Lua are listed below.    Unless otherwise declared, each file is a module.    The extension of the file name is .lns, and the name excluding .lns is the module name.    init.lns is not supported.">
+
+<meta itemprop="wordCount" content="752">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>21. import / provide</h1>
+
+<p>
+This time, I will explain the module management of LuneScript.
+</p>
+<h2 id="headline-1">
+module
+</h2>
+<p>
+Module management in LuneScript is basically the same as Lua.
+</p>
+<p>
+The differences from Lua are listed below.
+</p>
+<ul>
+<li>
+<p>
+Unless otherwise declared, each file is a module.
+</p>
+</li>
+<li>
+<p>
+The extension of the file name is .lns, and the name excluding .lns is the module name.
+</p>
+</li>
+<li>
+<p>
+init.lns is not supported.
+</p>
+</li>
+<li>
+<p>
+LuneScript built-in keywords (class, etc.) file names are not supported.
+</p>
+</li>
+</ul>
+<p>
+To be on the safe side, here&#39;s what LuneScript and Lua have in common with module management.
+</p>
+<ul>
+<li>
+<p>
+The package search path is controlled by the path information stored in package.path.
+</p>
+</li>
+<li>
+<p>
+Module names are separated by. To represent subdirectories.
+</p>
+</li>
+<li>
+<p>
+Does not support cross-reference modules.
+</p>
+</li>
+</ul>
+<p>
+For example, the module name in the file hoge / test.lns would be hoge.test.
+</p>
+<p>
+As you can see from the above,. Cannot be included in the directory name and file name (other than the extension).
+</p>
+<p>
+The LuneScript source is a module without any declaration.
+</p>
+<p>
+For example, Test.lns like this would be a module with the func function.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
+fn func(): str, str {
+   return __mod__, __func__;
+}</code></pre>
+</div>
+<p>
+However, a pub declaration is required to expose the information in the module to the outside world.
+</p>
+<p>
+Specifically, you need to declare pub as follows:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}</code></pre>
+</div>
+<p>
+This makes the <code class="verbatim">func()</code> function of this module available externally.
+</p>
+<h2 id="headline-2">
+import
+</h2>
+<p>
+import declares the use of external modules.
+</p>
+<p>
+Declare import at the beginning of the module.
+</p>
+<p>
+<strong>(2019/6/24) Added support for declaring inside functions.</strong>
+</p>
+<p>
+To use the above Test.lns, do the following:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import Test;
+
+print( Test.func() ); // @Test   Test.func</code></pre>
+</div>
+<p>
+In the above example, <code class="verbatim">Test.func()</code> is calling <code class="verbatim">func()</code> in the Test module.
+</p>
+<p>
+By importing in this way, you can access the symbols declared by the external module in the pub.
+</p>
+<p>
+When importing work / Test.lns, it will be as follows.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import work.Test;
+
+print( Test.func() ); // work.Test	Test.func</code></pre>
+</div>
+<p>
+As you can see from the above example, to access the imported module, use the name after the last. In the module name. In the case of the above example, work.Test is imported, so access it with the symbol Test.
+</p>
+<p>
+When importing multiple modules, if the access names are the same (for example, when importing foo.bar and hoge.bar), use as described below.
+</p>
+<h3 id="headline-3">
+import as
+</h3>
+<p>
+import as specifies the access name after import.
+</p>
+<p>
+For example, if the above work.Test is foo with import as, it will be as follows.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+import work.Test as foo;
+
+print( foo.func() ); // work.Test	Test.func</code></pre>
+</div>
+<h2 id="headline-4">
+Require () from Lua a module transcompiled with LuneScript
+</h2>
+<p>
+LuneScript is a Lua transcompiler. In other words, modules written in LuneScript can be used from Lua as <code class="verbatim">require()</code>.
+</p>
+<p>
+In this case, the module written in LuneScript is always a table.
+</p>
+<p>
+For example, the transcompiled Lua source for Test.lns above looks like this:
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--work/Test.lns</span>
+<span class="kd">local</span> <span class="n">_moduleObj</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;work.Test&#39;</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune</span> <span class="kr">then</span>
+   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="kd">local</span> <span class="n">__func__</span> <span class="o">=</span> <span class="s1">&#39;Test.func&#39;</span>
+
+   <span class="kr">return</span> <span class="n">__mod__</span><span class="p">,</span> <span class="n">__func__</span>
+<span class="kr">end</span>
+<span class="n">_moduleObj.func</span> <span class="o">=</span> <span class="n">func</span>
+<span class="kr">return</span> <span class="n">_moduleObj</span></code></pre></div>
+</div>
+<p>
+As you can see from the source above, <code class="verbatim">require()</code> of this source from Lua yields _moduleObj.
+</p>
+<p>
+On the other hand, Lua&#39;s <code class="verbatim">require()</code> can return any value. And you may expect this behavior.
+</p>
+<p>
+This means that Lua modules transcompiled with LuneScript cannot be used by directly requiring from Lua, which expects to get objects other than tables.
+</p>
+<p>
+The mechanism that enables compatibility with such Lua modules is provide.
+</p>
+<h2 id="headline-5">
+provide
+</h2>
+<p>
+provide provides compatibility with existing Lua modules.
+</p>
+<p>
+<strong>Avoid using it if compatibility with the Lua module is not required.</strong>
+</p>
+<p>
+The following is an example of provide.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+
+provide func;</code></pre>
+</div>
+<p>
+In the above example, provide is given the function <code class="verbatim">func()</code>.
+</p>
+<p>
+As a result, the transcompiled result of this Test.lns module looks like this:
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--work/Test.lns</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;work.Test&#39;</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune</span> <span class="kr">then</span>
+   <span class="n">_lune</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="kd">local</span> <span class="n">__func__</span> <span class="o">=</span> <span class="s1">&#39;Test.func&#39;</span>
+
+   <span class="kr">return</span> <span class="n">__mod__</span><span class="p">,</span> <span class="n">__func__</span>
+<span class="kr">end</span>
+<span class="kr">return</span> <span class="n">func</span></code></pre></div>
+</div>
+<p>
+As you can see from the above, <code class="verbatim">require()</code> of this module from Lua gives us the function func.
+</p>
+<p>
+By using provide in this way, you can generate a module that is compatible with existing Lua modules.
+</p>
+<p>
+<strong>Note that only symbols can be specified for provide. You cannot specify an immediate value.</strong>
+</p>
+<h2 id="headline-6">
+summary
+</h2>
+<p>
+LuneScript makes it easy to create modules and is compatible with existing Lua modules.
+</p>
+<p>
+Next time, I&#39;ll show you how to leverage an existing Lua module from LuneScript.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/nilcond/" title="20. nil conditional operator edition"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 20. nil conditional operator edition</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/require/" title="22. require / module edition">Next - 22. require / module edition <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

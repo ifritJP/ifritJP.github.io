@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>X. Importance of self-hosting and test design in quality control of language development - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/test/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="X. Importance of self-hosting and test design in quality control of language development" />
+<meta property="og:description" content="If you&#39;re looking at this document, you&#39;re probably coding in a &#34;programming language&#34; every day. And many of you are busy crushing bugs that someone has put in. Since the &#34;programming language&#34; that is taken care of every day is also software made by someone, quality control of how to prevent bugs is important. I&#39;m lucky (?), And I&#39;ve never run into a language bug while using a programming language" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/test/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="X. Importance of self-hosting and test design in quality control of language development"/>
+<meta name="twitter:description" content="If you&#39;re looking at this document, you&#39;re probably coding in a &#34;programming language&#34; every day. And many of you are busy crushing bugs that someone has put in. Since the &#34;programming language&#34; that is taken care of every day is also software made by someone, quality control of how to prevent bugs is important. I&#39;m lucky (?), And I&#39;ve never run into a language bug while using a programming language"/>
+<meta itemprop="name" content="X. Importance of self-hosting and test design in quality control of language development">
+<meta itemprop="description" content="If you&#39;re looking at this document, you&#39;re probably coding in a &#34;programming language&#34; every day. And many of you are busy crushing bugs that someone has put in. Since the &#34;programming language&#34; that is taken care of every day is also software made by someone, quality control of how to prevent bugs is important. I&#39;m lucky (?), And I&#39;ve never run into a language bug while using a programming language">
+
+<meta itemprop="wordCount" content="1411">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>X. Importance of self-hosting and test design in quality control of language development</h1>
+
+<p>
+If you&#39;re looking at this document, you&#39;re probably coding in a &#34;programming language&#34; every day. And many of you are busy crushing bugs that someone has put in.
+</p>
+<p>
+Since the &#34;programming language&#34; that is taken care of every day is also software made by someone, quality control of how to prevent bugs is important.
+</p>
+<p>
+I&#39;m lucky (?), And I&#39;ve never run into a language bug while using a programming language at work.
+</p>
+<p>
+<em><em>There are some language standards that seem like bugs. .. ..</em></em>
+</p>
+<p>
+If you run into a programming language bug, dealing with it can be one of the most annoying software bugs out there.
+</p>
+<p>
+<em><em>It&#39;s hard to reach that it&#39;s a programming language bug in the first place.</em></em>
+</p>
+<p>
+Here, I would like to introduce how to test my own language that I am developing.
+</p>
+<p>
+Programming languages can be classified into the following two types.
+</p>
+<ul>
+<li>
+<p>
+Compiler type
+</p>
+</li>
+<li>
+<p>
+Interpreter type
+</p>
+</li>
+</ul>
+<p>
+Since the language I&#39;m developing is compiler type, I&#39;ll talk about compiler type testing from now on.
+</p>
+<p>
+By the way, I will introduce LuneScript, my own language, in the next article.
+</p>
+<p>
+https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
+</p>
+<p>
+We hope that it will be of some help to those who are considering developing their own language in the future.
+</p>
+<h3 id="headline-1">
+Compiler is a function
+</h3>
+<p>
+The job of a compiler-type programming language is to convert code written in that programming language into machine language or the like.
+</p>
+<p>
+for example,
+</p>
+<ul>
+<li>
+<p>
+C language compiler converts to Native code
+</p>
+</li>
+<li>
+<p>
+Java compiler translates to JVM code
+</p>
+</li>
+<li>
+<p>
+Convert C # to CIL
+</p>
+</li>
+<li>
+<p>
+Clang translates to LLVM-IR, LLVM translates to various codes
+</p>
+</li>
+</ul>
+<p>
+In other words, a compiler can be thought of as &#34;one large function that gives input and returns output according to that input.&#34;
+</p>
+<p>
+If you think of the compiler as a function, its testing is very simple. You can test by giving various inputs and comparing the output with the expected value.
+</p>
+<p>
+The idea is exactly the same as the UNIT TEST function that I create on a daily basis.
+</p>
+<h3 id="headline-2">
+Compiler testing
+</h3>
+<p>
+The proprietary language, LuneScript, has the following tests:
+</p>
+<ul>
+<li>
+<p>
+Self-hosting LuneScript own build
+</p>
+</li>
+<li>
+<p>
+Normal system of all syntaxes supported by the language
+</p>
+</li>
+<li>
+<p>
+Abnormal system of all syntaxes supported by the language
+</p>
+</li>
+</ul>
+<p>
+Of particular importance here is self-hosting.
+</p>
+<p>
+By self-hosting, you don&#39;t have to write test code, your own code becomes test code.
+</p>
+<p>
+Creating meaningful test code on a reasonable scale can be a daunting task.
+</p>
+<p>
+<strong>Especially in the case of a unique language that no one else is using, it is not easy to find proper practical code instead of test code by searching github, so to some extent Scale test code is valuable.</strong>
+</p>
+<p>
+When you&#39;re self-hosting, your own code becomes that valuable test code.
+</p>
+<p>
+However, even if you say &#34;your own code becomes test code as it is&#34;, that alone is not enough testing. The syntax and design patterns used will be biased, and the test will be unsatisfactory in terms of completeness. Also, you can&#39;t put anomalous code that causes a compile error into your own self-hosted code. Therefore, self-hosting your own code is not enough as a test case, and you need a test to comprehensively check the normal system and a test to detect the compilation error.
+</p>
+<p>
+For this normal system and abnormal system test, you can check the success or failure of the test by preparing the expected value in advance.
+</p>
+<p>
+On the other hand, how should we determine &#34;whether the result of compiling my own code is correct&#34;? Is the problem.
+</p>
+<p>
+Since the test case code is generally immutable, its compilation results are also immutable. This means that once you create a test case and expected value pair, you can continue to use the same expected value unless you change the test case.
+</p>
+<p>
+On the other hand, the self-hosting code of your own will naturally change. In other words, the expected value changes constantly, so it is impossible to prepare the expected value in advance.
+</p>
+<p>
+Now, how to determine if your self-hosted code compiles correctly is based on the following:
+</p>
+<pre class="example">
+「使用中のコンパイラでのテストケースの結果」 == 「新しくコンパイルしたコンパイラでのテストケースの結果」
+</pre>
+<p>
+This is based on the assumption that the compiler you are using is working correctly, and the results of the test cases you ran with the compiler you are using and the results of the test cases you ran with the newly compiled compiler. The logic is that if they are the same, then the newly compiled compiler is also correct.
+</p>
+<p>
+In addition, I am compiling myself again with the newly compiled compiler. I&#39;m doing this to make sure that when I compile the same code, the output is exactly the same.
+</p>
+<p>
+In summary, the LuneScript test does the following:
+</p>
+<dl>
+<dt>
+step1
+</dt>
+<dd>
+<p>
+Compile your own self-hosted code to generate compiler B using your current compiler A
+</p>
+</dd>
+<dt>
+step2
+</dt>
+<dd>
+<p>
+Use compiler B to compile your code again to generate compiler C
+</p>
+</dd>
+<dt>
+step3
+</dt>
+<dd>
+<p>
+Use compiler C to compile your code again to generate compiler D
+</p>
+</dd>
+<dt>
+step4
+</dt>
+<dd>
+<p>
+Make sure compiler C and compiler D are the same
+</p>
+</dd>
+<dt>
+step5
+</dt>
+<dd>
+<p>
+Executes normal and abnormal tests of compiler A and saves the test results in result A
+</p>
+</dd>
+<dt>
+step6
+</dt>
+<dd>
+<p>
+Executes normal and abnormal tests of compiler D and saves the test results in result D
+</p>
+</dd>
+<dt>
+step7
+</dt>
+<dd>
+<p>
+Make sure result A and result D are the same
+</p>
+</dd>
+</dl>
+<p>
+After passing the above tests, we will use compiler D as the latest compiler A next time. In addition, we will add tests for normal and abnormal systems with extended language specifications as needed.
+</p>
+<p>
+In the case of self-hosting, if there is a problem, you may not be able to compile yourself, and you may not be able to proceed with development. This test ensures that the newly built compiler works properly and allows you to safely extend your language.
+</p>
+<p>
+For your own language, the timing of your transition to self-hosting can be very important.
+</p>
+<p>
+As the code scale of the compiler increases, the time required for porting work also increases, so when developing your own language with full scratch, prioritize the functions required for self-hosting and make it self-hosting at the earliest possible stage. We recommend that you migrate.
+</p>
+<h2 id="headline-3">
+Still bugs remain
+</h2>
+<p>
+I introduced the tests that I am conducting in my own language development, but unfortunately the bugs remain even if I test them.
+</p>
+<p>
+There are two categories of causes for the bug:
+</p>
+<ul>
+<li>
+<p>
+Case where abnormal system cannot be detected
+</p>
+</li>
+<li>
+<p>
+A case where it should work normally but it does not work
+</p>
+</li>
+</ul>
+<p>
+Of the above two, the overwhelming majority of cases cannot detect an abnormal system.
+</p>
+<p>
+This is because the normal path needs to be confirmed to work by writing the code according to the language specification, while the abnormal path needs to write the code that does not meet the language specification to detect the error.
+</p>
+<p>
+It is quite difficult to say that this &#34;out of the language specifications&#34;, and there are often holes.
+</p>
+<p>
+Rather than seeking a perfect test from the beginning, it is important for testing to find these &#34;holes&#34;, add test cases to close them, and respond so that they can be detected when the same &#34;hole&#34; is opened again. I think.
+</p>
+<h2 id="headline-4">
+Finally
+</h2>
+<p>
+I think that the reason why we have continued to develop our own language is that we have proceeded with the following test policy.
+</p>
+<ul>
+<li>
+<p>
+Early transition to self-hosting
+</p>
+<ul>
+<li>
+<p>
+If you move to self-hosting, you will inevitably need a certain level of quality assurance.
+</p>
+<ul>
+<li>
+<p>
+If the quality is poor, self-hosting will be hindered, so the quality will be maintained naturally.
+</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Don&#39;t aim for 100% test from the beginning
+</p>
+<ul>
+<li>
+<p>
+The purpose is to develop a proprietary language, not a test.
+</p>
+</li>
+<li>
+<p>
+You can concentrate on your own language.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+What we have done in synchronization with the expansion of language specifications and the expansion of test codes
+</p>
+<ul>
+<li>
+<p>
+Can prevent omissions and degradation of tests
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Testing at the compiler I / O level, not at the function level
+</p>
+<ul>
+<li>
+<p>
+For function-level tests, it is necessary to change the test case every time the design is changed, but for tests at the compiler I / O level, there is no need to change the test case unless there is a change in the compiler specifications.
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+When developing your own language, I think it is efficient to aim for self-hosting first in terms of ensuring quality.
+</p>
+<p>
+that&#39;s all.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/go_study/" title="Transcompile to Z. Go language (under consideration)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Transcompile to Z. Go language (under consideration)</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/" title="">Next -  <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

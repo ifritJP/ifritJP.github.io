@@ -108,3 +108,77 @@ pub fn __main( argList:&List<str> ):int {
 }
 #+END_SRC
 
+* lua へトランスコンパイルした時の __main() 関数の動作
+
+次の LuneScript のコードはコマンドラインオプションを出力します。
+  
+#+BEGIN_SRC lns
+pub fn __main( argList:&List<str> ) : int {
+   foreach arg, index in argList {
+      print( index, arg );
+   }
+   return 0;
+}
+#+END_SRC
+
+以下は実行結果のサンプルです。
+
+#+BEGIN_SRC txt
+$ lnsc -shebang mini.lns a b c 
+1	mini.lns
+2	a
+3	b
+4	c
+#+END_SRC
+
+このコードをトランスコンパイラするには、次のコマンドを実行します。
+
+: lnsc mini.lns save
+
+これによって、 mini.lua が出力されます。
+
+この mini.lua を実行すると、以下のようになります。
+
+#+BEGIN_SRC txt
+$ lua5.3 mini.lua a b c
+#+END_SRC
+
+これが何を意味するかというと、「 *__main() 関数が呼ばれていない* 」ということです。
+
+lnsc に -shebang オプションを指定して実行した場合、
+.lns ファイルに定義されている __main() 関数を実行します。
+一方で、トランスコンパイルした lua コードには __main() を実行するコードが
+出力されないため、このような動作になります。
+
+トランスコンパイルした lua コードの __main() を実行するには、次のいずれかが必要です。
+
+- __main() を実行するコードを別途自前で作成する
+- トランスコンパイルする際に =--main= オプションを指定する
+
+** =--main= オプション
+
+トランスコンパイルする際に =--main= オプションを指定することで、
+指定のモジュールに =__main()= 関数を実行する処理を出力します。
+
+以下は、 =--main= オプションのサンプルです。
+
+: $ lnsc mini.lns save --main mini
+
+ここで、 =--main mini= の mini は、実行する __main() を含むモジュール名です。
+
+これにより、 mini.lua には __main() を実行するコードが出力されます。
+
+以下は、 =--main mini= を指定して生成した mini.lua の実行結果です。
+
+#+BEGIN_SRC txt
+$ lua5.3 mini.lua a b c
+1	mini.lua
+2	a
+3	b
+4	c
+#+END_SRC
+
+ここで注意が必要なのは、
+lnsc の shebang で実行した場合の argList の第一引数には *.lns* のパスが入るのに対し、
+lua へトランスコンパイルした後の argList の第一引数には
+*.lua* のパスが入る違いがあります。

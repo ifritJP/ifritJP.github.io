@@ -1,0 +1,229 @@
+#+TITLE: 23. Build
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This time, I will explain how to build a project using LuneScript.
+
+++ LuneScript provides a transcompiler for use from the command line,++We do not provide a build tool dedicated to LuneScript.++Therefore, here we will explain the general build method.+
+
+You can transcompile LuneScript in the following ways:
+- Individual build
+- Batch build
+Batch builds transcompile multiple .lns files at once.
+
+
+* Individual build
+
+To transcompile to Lua, run the following command:
+#+BEGIN_SRC txt
+$ lnsc hello.lns save
+#+END_SRC
+
+
+This transcompiles hello.lns and outputs the converted code to hello.lua.
+
+This hello.lua can be run with the Lua command.
+#+BEGIN_SRC txt
+$ lua hello.lua
+#+END_SRC
+
+
+You can transcompile all .lns files by doing this for all .lns files.
+
+However, if you have a lot of .lns files, this is inefficient.
+
+
+* Batch build
+
+Batch builds transcompile multiple .lns files at once.
+
+To specify multiple .lns files, specify @-in the lnsc option and pass the .lns file path to stdin. The .lns file path passed to stdin will output one file per line.
+
+For example, if you want to pass all the .lns files from the proj directory:
+#+BEGIN_SRC txt
+$ find proj -name '*.lns' | lnsc @- save
+#+END_SRC
+
+
+At the moment, this is the fastest way to do it.
+
+
+* Reference information
+
+*The following is reference information.*
+
+
+** Meta information file
+
+A meta information file is a file that collects information such as the classes published by a module and the dependencies of other modules imported by that module.
+
+When importing, you can reduce the analysis time by reading this meta information file instead of analyzing the module.
+
+The meta information file can be generated with the following command.
+#+BEGIN_SRC txt
+$ lnsc hello.lns SAVE
+#+END_SRC
+
+
+*What is different from the previous command is the difference between "save" and "SAVE".*
+
+Lowercase save produces only transcompiled Lua code, while uppercase SAVE produces Lua code and meta information files.
+
+Specifically, executing the above command will generate hello.lua and hello.meta.
+
+When importing a module, LuneScript loads the .meta file when all of the following conditions are met: At this time, the .lns file to be imported is not analyzed.
+- There are .lua and .meta corresponding to .lns
+- The following conditions are met for the update time of each file.
+  - ~.lns < .meta~
+- The following conditions are satisfied for the update time of the module mod2 being imported in the mod1.lns to be imported.
+  - ~mod1 > mod2~
+- The format version of the .meta file is correct
+
+
+** Dependency
+
+If you have two modules, mod1 and mod2, and mod1 is importing mod2, then "mod1 depends on mod2".
+
+"Mod1 depends on mod2" means that when you modify mod2, "not only mod2, but mod1 also needs to be transcompiled".
+
+The make command has long been used to build modules with such dependencies. There are various build tools in recent years, but make must be a typical build tool.
+
+The make command controls the updates of files that depend on a file when it is modified by the defined dependencies.
+
+Defining this dependency manually can be a daunting task.
+
+LuneScript provides the ability to automatically generate dependencies for make commands.
+
+To have LuneScript automatically generate dependencies, specify options during SAVE as follows:
+#+BEGIN_SRC sh
+$ lnsc mod1.lns --depends depends/mod1.d SAVE
+#+END_SRC
+
+
+This transcompiles mod1.lns and at the same time prints mod1.lns dependency information to depends / mod1.d.
+
+By incorporating this dependency information into the Makefile, you can easily control the build with make without having to manually define the dependencies.
+
+
+*** sample
+
+For example, suppose you create a project with the following modules.
+#+BEGIN_SRC txt
+test/proj/
+      |
+      +--- Mod1.lns
+      |
+      +--- Mod2.lns
+      |
+      +--- Mod3.lns
+      |
+      +--- Mod4.lns
+#+END_SRC
+
+
+Here, the contents of each file are as follows.
+- Mod1.lns
+#+NAME: Mod1.lns
+#+BEGIN_SRC lns
+// @lnsFront: skip
+import test.proj.Mod2;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod2.func() );
+}
+print( func() );
+#+END_SRC
+
+- Mod2.lns
+#+NAME: Mod2.lns
+#+BEGIN_SRC lns
+// @lnsFront: skip
+import test.proj.Mod3;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod3.func() );
+}
+#+END_SRC
+
+- Mod3.lns
+#+NAME: Mod3.lns
+#+BEGIN_SRC lns
+// @lnsFront: skip
+import test.proj.Mod4;
+
+pub fn func(): str {
+   return "%s -> %s" (__func__, Mod4.func() );
+}
+#+END_SRC
+
+- Mod4.lns
+#+NAME: Mod4.lns
+#+BEGIN_SRC lns
+// @lnsFront: ok
+pub fn func(): str {
+   return __func__;
+}
+#+END_SRC
+
+
+The above file dependencies are as follows:
+|-|-|
+| File | Dependent files | 
+|-+-|
+| Mod1.lns | Mod2.lns | 
+| Mod2.lns | Mod3.lns | 
+| Mod3.lns | Mod4.lns | 
+| Mod4.lns | none | 
+
+The Makefile that builds this project looks like this:
+#+BEGIN_SRC makefile
+PROJ_DIR=test/proj
+MKFILE=$(PROJ_DIR)/Makefile
+SRC_DIR=$(PROJ_DIR)/
+
+.PHONY: test all build setup
+
+define comp
+	@echo "$1 -> $2"
+	lnsc $1 --depends depends/$(shell echo $1 | sed 's@/@.@g').d SAVE
+endef
+
+%.meta: %.lns
+	$(call comp,$<,$@)
+
+SRCS =
+SRCS += Mod1.lns
+SRCS += Mod2.lns
+SRCS += Mod3.lns
+SRCS += Mod4.lns
+
+SRCS := $(addprefix $(SRC_DIR),$(SRCS))
+
+META_LIST=$(SRCS:.lns=.meta)
+LUA_LIST=$(SRCS:.lns=.lua)
+
+-include depends/*.d
+
+all:
+	@echo make setup
+	@echo make build
+
+setup:
+	mkdir -p depends
+
+build: $(META_LIST)
+#+END_SRC
+
+
+The important part here is ~define comp~ and ~-include depends/*.d~.
+- ~define comp~ registers transcompilation and dependency information file generation processing.
+- ~-include depends/*.d~ is reading the generated dependency information file.
+By creating such a makefile, it is possible to build according to the import dependency.
+
+
+* summary
+
+You can easily control the build of your LuneScript project by using the make command.

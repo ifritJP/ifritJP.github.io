@@ -1,0 +1,84 @@
+#+TITLE: 18. mapping
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript supports mutual conversion between class instances and maps.
+
+
+* mapping
+
+LuneScript supports mutual conversion between class instances and map objects.
+
+Specifically, you can:
+- Creating a map object from an instance of a class
+- Creating an instance of a class from a map object
+This allows you, for example, to generate JSON data from an instance of a class, or vice versa.
+
+This feature is called mapping.
+
+To use mapping, you need to declare Mapping as the interface to implement when declaring the class.
+
+Here is an example:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test extend (Mapping){
+   let val1:int {pub};
+   let val2:str {pub};
+}
+let test = new Test(1, "abc" );
+let map = test._toMap();
+print( map.val1, map.val2 ); // 1 abc
+let test2 = unwrap Test._fromMap( map );
+print( test2.$val1, test2.$val2 ); // 1 abc
+#+END_SRC
+
+
+In the above example, the class Test declares a Mapping implementation.
+
+This will generate the following method internally:
+- fn _toMap():&Map<str,&stem>
+- static fn _fromMap(map:&Map<str,&stem>):Test!,str!
+=_toMap()= is a method that creates a map object from an instance, and =_fromMap()= is a class method that creates an instance from a map object.
+
+Note that =_fromMap()= returns nil if the map object does not meet the conditions for instantiation.
+
+Specifically, if you pass the following map object to =_fromMap()= in Test above, an instance will be created, but
+#+BEGIN_SRC js
+{
+   "val1": 1,
+   "val2": "abc"
+}
+#+END_SRC
+
+
+If you pass the following map object, no instance will be created.
+#+BEGIN_SRC js
+{
+   "val1": 1,
+   "val2": 2
+}
+#+END_SRC
+
+
+In the case of the above map object, val2 should be str, but it is int and it becomes inconsistent.
+
+Also note that =_fromMap()= checks for member type inconsistencies, but not ranges.
+
+For example, even if it is a value that cannot be taken originally, it will be instantiated as long as it has the same type. However, for enums, if the value of the map object is not defined in the enum, it returns nil.
+
+
+** Mapping restrictions
+
+Classes that implement mapping have the following restrictions on their members:
+- If you have a class instance as a member, the class must be mappable.
+- If you have a map object as a member, the key must be int, real, or str.
+
+
+* summary
+
+Mapping makes it easy to generate JSON data from an instance of a class.
+
+Next time, I'll talk about the nil conditional operator.

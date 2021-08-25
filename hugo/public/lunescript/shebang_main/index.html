@@ -39,13 +39,18 @@
 <meta itemprop="name" content="28. shebang とコマンドライン引数">
 <meta itemprop="description" content="LuneScript は shebang に対応しています。 shebang 対応 shebang とは、シェルスクリプト等で良く見られるスクリプトファイルの最初の行に、 使用するインタプリタをコメントに指定す">
 
-<meta itemprop="wordCount" content="628">
+<meta itemprop="wordCount" content="1275">
 
 
 
 <meta itemprop="keywords" content="" /></head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
 
 </header>
 <div class="global-menu">
@@ -175,6 +180,104 @@ pub fn __main( argList:&amp;List&lt;str&gt; ):int {
    return 0;
 }</code></pre>
 </div>
+<h2 id="headline-5">
+lua へトランスコンパイルした時の __main() 関数の動作
+</h2>
+<p>
+次の LuneScript のコードはコマンドラインオプションを出力します。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub fn __main( argList:&amp;List&lt;str&gt; ) : int {
+   foreach arg, index in argList {
+      print( index, arg );
+   }
+   return 0;
+}</code></pre>
+</div>
+<p>
+以下は実行結果のサンプルです。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lnsc -shebang mini.lns a b c 
+1	mini.lns
+2	a
+3	b
+4	c</code></pre></div>
+</div>
+<p>
+このコードをトランスコンパイラするには、次のコマンドを実行します。
+</p>
+<pre class="example">
+lnsc mini.lns save
+</pre>
+<p>
+これによって、 mini.lua が出力されます。
+</p>
+<p>
+この mini.lua を実行すると、以下のようになります。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua5.3 mini.lua a b c</code></pre></div>
+</div>
+<p>
+これが何を意味するかというと、「 <strong>__main() 関数が呼ばれていない</strong> 」ということです。
+</p>
+<p>
+lnsc に -shebang オプションを指定して実行した場合、
+.lns ファイルに定義されている __main() 関数を実行します。
+一方で、トランスコンパイルした lua コードには __main() を実行するコードが
+出力されないため、このような動作になります。
+</p>
+<p>
+トランスコンパイルした lua コードの __main() を実行するには、次のいずれかが必要です。
+</p>
+<ul>
+<li>
+<p>
+__main() を実行するコードを別途自前で作成する
+</p>
+</li>
+<li>
+<p>
+トランスコンパイルする際に <code class="verbatim">--main</code> オプションを指定する
+</p>
+<h3 id="headline-6">
+<code class="verbatim">--main</code> オプション
+</h3>
+</li>
+</ul>
+<p>
+トランスコンパイルする際に <code class="verbatim">--main</code> オプションを指定することで、
+指定のモジュールに <code class="verbatim">__main()</code> 関数を実行する処理を出力します。
+</p>
+<p>
+以下は、 <code class="verbatim">--main</code> オプションのサンプルです。
+</p>
+<pre class="example">
+$ lnsc mini.lns save --main mini
+</pre>
+<p>
+ここで、 <code class="verbatim">--main mini</code> の mini は、実行する __main() を含むモジュール名です。
+</p>
+<p>
+これにより、 mini.lua には __main() を実行するコードが出力されます。
+</p>
+<p>
+以下は、 <code class="verbatim">--main mini</code> を指定して生成した mini.lua の実行結果です。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua5.3 mini.lua a b c
+1	mini.lua
+2	a
+3	b
+4	c</code></pre></div>
+</div>
+<p>
+ここで注意が必要なのは、
+lnsc の shebang で実行した場合の argList の第一引数には <strong>.lns</strong> のパスが入るのに対し、
+lua へトランスコンパイルした後の argList の第一引数には
+<strong>.lua</strong> のパスが入る違いがあります。
+</p>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/lazyloading/" title="27. 遅延ロード 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 27. 遅延ロード 編</a>

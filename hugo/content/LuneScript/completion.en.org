@@ -1,0 +1,195 @@
+#+TITLE: A. Let's have more fun in an exciting development environment
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
+#+HTML_HEAD: <style type="text/css"> <!-- pre.src { color: #ffffff; background-color: #101010; } --> </style>
+
+What editors do you use to develop Lua?
+
+Is it an environment full of crazy features like Lua Development Tools, Atom, VSCode? Or is it a classic environment such as emacs or vim?
+
+In either environment, are you dissatisfied with the completion features while coding Lua?
+
+Lua's completion feature is often pretty smart, but it's quite possible that it doesn't work, right?
+
+Even with a little confirmation, the complement does not seem to work in the next scene.
+- Field completion of the method of the object passed to the argument of the function
+- Complementing object-oriented programming with metatable
+With light processing, the above problem may not be of much concern, but when writing processing of a certain scale, it is quite anxious.
+
+Lua's transcompiler LuneScript provides completion at the compiler level so that completion can be used in any situation.
+
+Here, I will introduce the development support of Imadoki that can be used when coding LuneScript.
+
+Specifically, there are three functions:
+- Code completion function
+- Confirmation of cursor position type information
+- Syntax error checking function
+- Search that recognizes subfile
+
+
+* Code completion function
+
+LuneScript provides class field completion.
+
+For example, in the following code
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Super {
+   pub let val:int;
+   pri let val2:int { pub };
+   pub fn funcsuper():int! {
+      return 0;
+   }
+}
+class Test extend Super {
+   pub fn __init( val: int ) {
+      super( val, val + 1 );
+   }
+   pub fn func( val: int ):int {
+      return 1;
+   }
+}
+let test = new Test( 1 );
+#+END_SRC
+
+
+You can complete the test field as follows:
+
+[[https://ifritjp.github.io/doc/LuneScript/comp1.gif]]
+
+I would like you to pay attention to the following points.
+- Recognizing inheritance relationships, Super and Test fields are listed as candidates
+- Super's private val2 member is excluded from the list, recognizing access control
+- Constructor (__ init) that cannot be accessed from the instance is excluded from the list
+- Undefined get_val2 () is listed
+It is a natural function, but it is surprisingly few that the compiler itself provides this natural function firmly.
+
+
+* Confirmation of cursor position type information
+
+LuneScript supports type inference.
+
+This allows you to proceed with coding without having to specify the type information.
+
+For example, the following code has no type explicit.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+foreach val, key in { "abc": 1, "xyz": 10 } {
+  print( key, val );
+}
+#+END_SRC
+
+
+This is convenient, but the disadvantage is that you can't check the type.
+
+Therefore, we provide a function that allows you to check what type of symbol the cursor position is.
+
+You can check the type information of the symbol by moving the cursor to the symbol you want to check and executing C-c I.
+
+
+* Syntax error checking function
+
+Since LuneScript is a compiler, it naturally has a Syntax error checking function.
+
+Based on this error check information, the error location can be displayed on the editor.
+
+For example, with the following source
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val: int ) {
+   print( val );
+}
+let map = { "a": 1, "b":2 };
+#+END_SRC
+
+
+An error will occur if the following processing is added.
+
+[[https://ifritjp.github.io/doc/LuneScript/error.gif]]
+
+[[https://ifritjp.github.io/doc/LuneScript/error2.PNG]]
+
+This means that the result of accessing a map type item will be nilable type, and if you give it to =func()=, you will get an int! And int type mismatch error.
+
+You can easily check such errors that are often overlooked on the editor.
+
+
+* Search that recognizes subfile
+
+LuneScript has a function subfile that divides a file that defines a large module into multiple files and defines them.
+
+By using this function, you can relieve the stress of making the file larger and the editor heavier.
+
+However, it has the disadvantage of poor searchability within the module because the file is split.
+
+For example, if a module consists of owner.lns, sub1.lns, sub2.lns, sub3.lns, to find out where the data in a module is accessed, owner.lns, sub1.lns You need to switch between the four files, sub2.lns and sub3.lns.
+
+This is a tedious operation.
+
+This troublesome operation is automatically performed at the time of search.
+
+Specifically, if you can't find it by searching for owner.lns, switch to sub1.lns and search. If you can't find it in sub1.lns, then switch to sub2.lns and search. ... this process is done automatically.
+
+
+* Configuration
+
+This is the emacs setting.
+#+BEGIN_SRC lisp
+(require 'lns-conf)
+;;(require 'lns-flymake)
+(require 'lns-flycheck)
+(require 'lns-company-mode)
+;;(require 'lns-auto-complete)
+(require 'lns-helm)
+#+END_SRC
+
+
+Select either code completion or Syntax check according to your environment.
+- Code completion
+  - flycheck 
+  - flymake
+- Syntax check
+  - company-mode
+  - auto-complete
+LuneScript's flymake and auto-complete support is not maintained. We recommend using flycheck, company-mode.
+
+
+* project
+
+LuneScript manages module paths relative to the project. For this reason, you need to make emacs aware of the project root directory.
+
+*To make emacs aware of your project's root directory, create the following lune.js file in your project's root directory:*
+#+BEGIN_SRC txt
+lune.js
+#+END_SRC
+
+
+*In this lune.js file, write the following:*
+#+BEGIN_SRC js
+{}
+#+END_SRC
+
+
+
+** Module path
+
+If you created lune.js in the following location, the module path for proj / foo / bar / module1.lsn would be foo.bar.module1.
+#+BEGIN_SRC txt
+proj/lune.js
+proj/foo/bar/module1.lsn
+#+END_SRC
+
+
+
+* Finally
+
+This function has been confirmed to work on emacs. By the way, code completion corresponds to company-mode, auto-complete, syntax error check corresponds to flymake, flycheck.
+
+By default, LuneScript provides settings for emacs, but emacs does only front-end control, and all back-ends are done by LuneScript.
+
+In other words, it is quite possible to port it to an environment other than emacs. However, since I am an emacs user myself, I am developing emacs as a top priority.
+
+If you are interested in LuneScript, I would appreciate it if you could support environments other than emacs.

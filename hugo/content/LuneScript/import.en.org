@@ -1,0 +1,187 @@
+#+TITLE: 21. import / provide
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This time, I will explain the module management of LuneScript.
+
+
+* module
+
+Module management in LuneScript is basically the same as Lua.
+
+The differences from Lua are listed below.
+- Unless otherwise declared, each file is a module.
+- The extension of the file name is .lns, and the name excluding .lns is the module name.
+- init.lns is not supported.
+- LuneScript built-in keywords (class, etc.) file names are not supported.
+To be on the safe side, here's what LuneScript and Lua have in common with module management.
+- The package search path is controlled by the path information stored in package.path.
+- Module names are separated by. To represent subdirectories.
+- Does not support cross-reference modules.
+
+For example, the module name in the file hoge / test.lns would be hoge.test.
+
+As you can see from the above,. Cannot be included in the directory name and file name (other than the extension).
+
+The LuneScript source is a module without any declaration.
+
+For example, Test.lns like this would be a module with the func function.
+#+NAME: Test.lns
+#+BEGIN_SRC lns
+// @lnsFront: ok
+// Test.lns
+fn func(): str, str {
+   return __mod__, __func__;
+}
+#+END_SRC
+
+
+However, a pub declaration is required to expose the information in the module to the outside world.
+
+Specifically, you need to declare pub as follows:
+#+NAME: Test.lns
+#+BEGIN_SRC lns
+// @lnsFront: ok
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+#+END_SRC
+
+
+This makes the =func()= function of this module available externally.
+
+
+* import
+
+import declares the use of external modules.
+
+Declare import at the beginning of the module.
+
+*(2019/6/24) Added support for declaring inside functions.*
+
+To use the above Test.lns, do the following:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+import Test;
+
+print( Test.func() ); // @Test   Test.func
+#+END_SRC
+
+
+In the above example, =Test.func()= is calling =func()= in the Test module.
+
+By importing in this way, you can access the symbols declared by the external module in the pub.
+
+When importing work / Test.lns, it will be as follows.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+import work.Test;
+
+print( Test.func() ); // work.Test	Test.func
+#+END_SRC
+
+
+As you can see from the above example, to access the imported module, use the name after the last. In the module name. In the case of the above example, work.Test is imported, so access it with the symbol Test.
+
+When importing multiple modules, if the access names are the same (for example, when importing foo.bar and hoge.bar), use as described below.
+
+
+** import as
+
+import as specifies the access name after import.
+
+For example, if the above work.Test is foo with import as, it will be as follows.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+import work.Test as foo;
+
+print( foo.func() ); // work.Test	Test.func
+#+END_SRC
+
+
+
+* Require () from Lua a module transcompiled with LuneScript
+
+LuneScript is a Lua transcompiler. In other words, modules written in LuneScript can be used from Lua as =require()=.
+
+In this case, the module written in LuneScript is always a table.
+
+For example, the transcompiled Lua source for Test.lns above looks like this:
+#+BEGIN_SRC lua
+--work/Test.lns
+local _moduleObj = {}
+local __mod__ = 'work.Test'
+if not _lune then
+   _lune = {}
+end
+local function func(  )
+   local __func__ = 'Test.func'
+
+   return __mod__, __func__
+end
+_moduleObj.func = func
+return _moduleObj
+#+END_SRC
+
+
+As you can see from the source above, =require()= of this source from Lua yields _moduleObj.
+
+On the other hand, Lua's =require()= can return any value. And you may expect this behavior.
+
+This means that Lua modules transcompiled with LuneScript cannot be used by directly requiring from Lua, which expects to get objects other than tables.
+
+The mechanism that enables compatibility with such Lua modules is provide.
+
+
+* provide
+
+provide provides compatibility with existing Lua modules.
+
+*Avoid using it if compatibility with the Lua module is not required.*
+
+The following is an example of provide.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+// Test.lns
+pub fn func(): str, str {
+   return __mod__, __func__;
+}
+
+provide func;
+#+END_SRC
+
+
+In the above example, provide is given the function =func()=.
+
+As a result, the transcompiled result of this Test.lns module looks like this:
+#+BEGIN_SRC lua
+--work/Test.lns
+local __mod__ = 'work.Test'
+if not _lune then
+   _lune = {}
+end
+local function func(  )
+   local __func__ = 'Test.func'
+
+   return __mod__, __func__
+end
+return func
+#+END_SRC
+
+
+As you can see from the above, =require()= of this module from Lua gives us the function func.
+
+By using provide in this way, you can generate a module that is compatible with existing Lua modules.
+
+*Note that only symbols can be specified for provide. You cannot specify an immediate value.*
+
+
+* summary
+
+LuneScript makes it easy to create modules and is compatible with existing Lua modules.
+
+Next time, I'll show you how to leverage an existing Lua module from LuneScript.

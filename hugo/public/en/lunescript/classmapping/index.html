@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>18. mapping - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="18. mapping" />
+<meta property="og:description" content="LuneScript supports mutual conversion between class instances and maps. mapping   LuneScript supports mutual conversion between class instances and map objects.  Specifically, you can:    Creating a map object from an instance of a class    Creating an instance of a class from a map object    This allows you, for example, to generate JSON data from an instance of a class, or vice versa." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/classmapping/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="18. mapping"/>
+<meta name="twitter:description" content="LuneScript supports mutual conversion between class instances and maps. mapping   LuneScript supports mutual conversion between class instances and map objects.  Specifically, you can:    Creating a map object from an instance of a class    Creating an instance of a class from a map object    This allows you, for example, to generate JSON data from an instance of a class, or vice versa."/>
+<meta itemprop="name" content="18. mapping">
+<meta itemprop="description" content="LuneScript supports mutual conversion between class instances and maps. mapping   LuneScript supports mutual conversion between class instances and map objects.  Specifically, you can:    Creating a map object from an instance of a class    Creating an instance of a class from a map object    This allows you, for example, to generate JSON data from an instance of a class, or vice versa.">
+
+<meta itemprop="wordCount" content="385">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>18. mapping</h1>
+
+<p>
+LuneScript supports mutual conversion between class instances and maps.
+</p>
+<h2 id="headline-1">
+mapping
+</h2>
+<p>
+LuneScript supports mutual conversion between class instances and map objects.
+</p>
+<p>
+Specifically, you can:
+</p>
+<ul>
+<li>
+<p>
+Creating a map object from an instance of a class
+</p>
+</li>
+<li>
+<p>
+Creating an instance of a class from a map object
+</p>
+</li>
+</ul>
+<p>
+This allows you, for example, to generate JSON data from an instance of a class, or vice versa.
+</p>
+<p>
+This feature is called mapping.
+</p>
+<p>
+To use mapping, you need to declare Mapping as the interface to implement when declaring the class.
+</p>
+<p>
+Here is an example:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test extend (Mapping){
+   let val1:int {pub};
+   let val2:str {pub};
+}
+let test = new Test(1, &#34;abc&#34; );
+let map = test._toMap();
+print( map.val1, map.val2 ); // 1 abc
+let test2 = unwrap Test._fromMap( map );
+print( test2.$val1, test2.$val2 ); // 1 abc</code></pre>
+</div>
+<p>
+In the above example, the class Test declares a Mapping implementation.
+</p>
+<p>
+This will generate the following method internally:
+</p>
+<ul>
+<li>
+<p>
+fn _toMap():&amp;Map&lt;str,&amp;stem&gt;
+</p>
+</li>
+<li>
+<p>
+static fn _fromMap(map:&amp;Map&lt;str,&amp;stem&gt;):Test!,str!
+</p>
+</li>
+</ul>
+<p>
+<code class="verbatim">_toMap()</code> is a method that creates a map object from an instance, and <code class="verbatim">_fromMap()</code> is a class method that creates an instance from a map object.
+</p>
+<p>
+Note that <code class="verbatim">_fromMap()</code> returns nil if the map object does not meet the conditions for instantiation.
+</p>
+<p>
+Specifically, if you pass the following map object to <code class="verbatim">_fromMap()</code> in Test above, an instance will be created, but
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{</span>
+   <span class="s2">&#34;val1&#34;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+   <span class="s2">&#34;val2&#34;</span><span class="o">:</span> <span class="s2">&#34;abc&#34;</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<p>
+If you pass the following map object, no instance will be created.
+</p>
+<div class="src src-js">
+<div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{</span>
+   <span class="s2">&#34;val1&#34;</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span>
+   <span class="s2">&#34;val2&#34;</span><span class="o">:</span> <span class="mi">2</span>
+<span class="p">}</span>
+</code></pre></div>
+</div>
+<p>
+In the case of the above map object, val2 should be str, but it is int and it becomes inconsistent.
+</p>
+<p>
+Also note that <code class="verbatim">_fromMap()</code> checks for member type inconsistencies, but not ranges.
+</p>
+<p>
+For example, even if it is a value that cannot be taken originally, it will be instantiated as long as it has the same type. However, for enums, if the value of the map object is not defined in the enum, it returns nil.
+</p>
+<h3 id="headline-2">
+Mapping restrictions
+</h3>
+<p>
+Classes that implement mapping have the following restrictions on their members:
+</p>
+<ul>
+<li>
+<p>
+If you have a class instance as a member, the class must be mappable.
+</p>
+</li>
+<li>
+<p>
+If you have a map object as a member, the key must be int, real, or str.
+</p>
+</li>
+</ul>
+<h2 id="headline-3">
+summary
+</h2>
+<p>
+Mapping makes it easy to generate JSON data from an instance of a class.
+</p>
+<p>
+Next time, I&#39;ll talk about the nil conditional operator.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/interface/" title="17. Interface"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 17. Interface</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/generics/" title="19. generics edition">Next - 19. generics edition <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

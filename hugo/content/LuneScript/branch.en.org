@@ -1,0 +1,285 @@
+#+TITLE: 08. General branch syntax
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This time, I will explain the general branching syntax of LuneScript.
+
+
+* Syntax list
+
+LuneScript supports the following general branching syntax:
+- if
+- switch
+By the way, the reason why we use "general" branch control here is that there is a separate branch control in the nilable control.
+
+
+** if
+
+Use the if statement as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val = 1;
+if val == 1 {
+   print( "hoge" );
+}
+elseif val == 2 {
+   print( "foo" );
+}
+else {
+   print( "bar" );
+}
+#+END_SRC
+
+
+I don't think it's necessary to explain, but it is processed as follows.
+- If the if expression holds, the if block is executed.
+- If the if expression does not hold and the elseif expression holds, the elseif block is executed.
+- If all expressions are unsuccessful, the else block is executed.
+- There may be multiple elseifs.
+- elseif and else do not have to exist.
+- The condition for an expression to "fail" is when the result of the expression is nil or false.
+
+
+*** Comparison with bool value
+
+LuneScript does not recommend comparing with bool values.
+
+Specifically, we do not recommend the following operations.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+   let val1 = true;
+   if val1 == true {
+   }
+   if val1 == false {
+   }
+   if val1 ~= false {
+   }
+   if val1 ~= true {
+   }
+#+END_SRC
+
+
+The above operations will be deprecated in the near future.
+
+Currently, it prints a warning message at compile time.
+
+If you want to switch the process depending on the boolean value of bool, do as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let exp = true;
+if exp {
+   print( "exp is true" );
+}
+else {
+   print( "exp is false" );
+}
+if not exp {
+   print( "exp is false" );
+}
+#+END_SRC
+
+
+
+** switch
+
+Use the switch statement as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val = 1;
+switch val {
+   case 1 {
+      print( "hoge" );
+   }
+   case 2 {
+      print( "foo" );
+   }
+   default {
+      print( "bar" );
+   }
+}
+#+END_SRC
+
+
+This sample is synonymous with the if sample above.
+
+You can write multiple expressions in the switch case as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val = 1;
+switch val {
+   case 10, 20, 30 {
+      print( "hoge" );
+   }
+   default {
+      print( "bar" );
+   }
+}
+#+END_SRC
+
+
+This is synonymous with the following if statement, which executes the block if it matches any of the values.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val = 1;
+if val == 10 or val == 20 or val == 30 {
+   print( "hoge" );
+}
+else {
+   print( "bar" );
+}
+#+END_SRC
+
+
+The point to note in the switch statement is that break is not required unlike C language.
+
+For example, the following break exits the for statement instead of exiting the switch statement.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+for count = 1, 10 {
+   switch count {
+      case 5 {
+         break;
+      }
+   }
+}
+#+END_SRC
+
+
+
+*** Flow analysis of enum values
+
+If the switch condition is an enum value, the case statement checks whether all enum values are specified and analyzes the flow.
+
+For example, in the following cases, the =print()= statement after the switch statement in the =func()= function results in an unreachable error. This is because return is specified for all values of the enum value Val (Val1, Val2).
+#+BEGIN_SRC lns
+// @lnsFront: error
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+   }
+   print( work ); // error : 全ての enum 値の case があり、 return している
+}
+#+END_SRC
+
+
+Also, if cases are specified for all enum values and default is also specified, the default will not be reached and a warning will be issued.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+      default { // warning : ここには到達しない
+         return;
+      }
+   }
+}
+#+END_SRC
+
+
+
+**** fail safe default
+
+As mentioned above, if cases are specified for all enum values and default is also specified, the default will not be reached and a warning will be issued.
+
+However, if you are using default as fail safe, you may want to specify default.
+
+In such cases, you can suppress the warning by specifying _default instead of default.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+      _default { // ここには到達しないが、 warning は出力されない
+         return;
+      }
+   }
+}
+#+END_SRC
+
+
+
+*** All cases forced switch
+:PROPERTIES:
+:CUSTOM_ID: _switch
+:END:
+
+
+In a switch that requires an enum value, if you want to make sure that cases are declared for all enum values, you can use _switch as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   _switch val {
+      case .Val1 {
+         return;
+      }
+      case .Val2 {
+         return;
+      }
+   }
+}
+#+END_SRC
+
+
+In _switch, if there is a missing case for enum, a compile error will occur. Also, default cannot be used.
+#+BEGIN_SRC lns
+// @lnsFront: error
+enum Val {
+   Val1,
+   Val2,
+}
+fn func( val:Val ) {
+   _switch val { // error
+      case .Val1 {
+         return;
+      }
+   }
+}
+#+END_SRC
+
+
+By using _switch, when the enum value increases during development, it is possible to reliably detect omissions in the switch-case statement.
+
+_Match can be used in match-case as well.
+
+
+* summary
+
+The general branching syntax for LuneScript is if and switch.
+
+There is no goto.
+
+Next time, I will talk about repetitive control.

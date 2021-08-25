@@ -1,0 +1,278 @@
+#+TITLE: 06. match edition
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript supports algebraic data types and pattern matching.
+
+
+* Algebraic data type (alge type)
+
+The enum type can limit the range by grouping int, real, or str values.
+
+On the other hand, the algebraic data type is a more general version of the enum type, and all types can be grouped, not limited to int, real, and str.
+
+Algebraic data types are declared with the alge keyword.
+
+Here is an example:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   pri let val:int {pub};
+}
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( num:int, txt:str ),
+}
+#+END_SRC
+
+
+This example declares an alge type Test.
+
+Test has a range from Val1 to Val5. In addition, Val1 to Val5 each have the following parameters.
+|-|-|
+| value | Parameters | 
+|-+-|
+| Val1 | none | 
+| Val2 | int | 
+| Val3 | str | 
+| Val4 | Hoge | 
+| Val5 | int, str | 
+
+There are no restrictions on the parameter types. In this example, Val4 has a Hoge class type as a parameter.
+
+There is no limit to the number of parameters. In this example, Val5 has int and str as parameters.
+
+There are two ways to specify the parameter, one is to specify only the type, and the other is to specify the name and type. In this example, Val2 through Val4 specify only the type, and Val5 specifies the parameter name and type. The parameter name only has the effect of clarifying the meaning of that parameter.
+
+To use this alge type value, write:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+let val1 = Test.Val1;
+let val2 = Test.Val2( 1 );
+let val3 = Test.Val3( "abc" );
+let val4 = Test.Val4( new Hoge( 100 ) );
+let val5 = Test.Val5( 10, "xyz" );
+#+END_SRC
+
+
+The meaning of each is as follows.
+- val1 is Test.Val1
+- val2 has 1 as a parameter Test.Val2
+- val3 has "abc" as a parameter Test.Val3
+- val4 has new Hoge (100) as a parameter Test.Val4
+- val5 has 10, "xyz" as a parameter Test.Val5
+
+
+* match
+
+The enum type can be used in the same way as the original value as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+enum TestEnum {
+  val0,
+  val1,
+  val2,
+}
+fn func( val:TestEnum ): int {
+   return val + 100;
+}
+let val = 1;
+func( unwrap TestEnum._from( val ) );
+#+END_SRC
+
+
+In this example, we have a TestEnum type value of +100 in the function =func()=, which indicates that the TestEnum type can also be used as an int number.
+
+On the other hand, alge type values require special processing. That process is match.
+
+The following is an example of match.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   pri let val:int {pub};
+}
+
+alge Test {
+   Val1,
+   Val2( int ),
+   Val3( str ),
+   Val4( Hoge ),
+   Val5( int, str ),
+}
+
+fn func( test:Test ) {
+   match test {
+      case .Val1 {
+         print( test.$_txt );
+      }
+      case .Val2( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val3( x ) {
+         print( test.$_txt, x );
+      }
+      case .Val4( x ) {
+         print( test.$_txt, x.$val );
+      }
+      case .Val5( x, y ) {
+         print( test.$_txt, x, y );
+      }
+   }
+}
+
+func( Test.Val1 ); // Test.Val1
+func( Test.Val2( 1 ) ); // Test.Val2 1
+func( Test.Val3( "abc" ) ); // Test.Val3 abc
+func( Test.Val4( new Hoge( 100 ) ) ); // Test.Val4  100
+func( Test.Val5( 10, "xyz" ) ); // Test.Val5 10 xyz
+#+END_SRC
+
+
+In this example, match is performed inside the =func()= function.
+
+In case, it branches from Val1 to Val5. Val2 to Val5 each declare a variable that receives a parameter.
+
+For example, func (Test.Val2 (1)) passes ~Test.Val2( 1 )~ to =func()=. Here it matches ~case .Val2( x )~ of match in =func()=. Then x is set to 1 and ~print( test.$_txt, x )~ is executed.
+
+Here ~test.$_txt~ expands the string "Test.Val2" that indicates Val2 in the range.
+
+match can use default, _default, and _match as well as switch.
+
+
+* abbreviation for alge type
+
+Like enum types, alge types can use abbreviations.
+
+If you have the following algae type Test and a function that takes that Test as an argument,
+#+BEGIN_SRC lns
+// @lnsFront: ok
+alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   print( test );
+}
+#+END_SRC
+
+
+When calling =func()=, Test can be omitted as follows:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+func( .Val1 );
+func( .Val2 );
+func( .Val3( 10 ) );
+#+END_SRC
+
+
+If you want to omit the alge type defined in the external module, you need to import the external module.
+
+
+* Alge type comparison
+
+Simple alge values with no parameters can be compared as follows:
+#+BEGIN_SRC lns
+// @lnsFront: error
+alge Test {
+   Val1,
+   Val2,
+   Val3( int ),
+}
+fn func( test:Test ) {
+   if test == .Val1 {
+      print( "Val1" );
+   }
+   elseif test == .Val2 {
+      print( "Val2" );
+   }
+   elseif test == .Val3(1) {  // error
+      print( "Val3" );
+   }
+   else {
+      print( "no" );
+   }
+}
+func( .Val1 ); // Val1
+func( .Val2 ); // Val2
+#+END_SRC
+
+
+Note that the values with parameters (Val3 in the above case) will be different even if the same parameters are given. By the way, the above ~test == .Val3(1)~ will result in an error. This is because the result of this expression will always be "false", so a compile error will prevent unintended consequences at run time.
+
+
+* Example of using algae
+
+Using alge you can write the JSON structure as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+alge JsonVal {
+   JNull,
+   JBool(bool),
+   JInt(int),
+   JReal(real),
+   JStr(str),
+   JArray(List<JsonVal>),
+   JObj(Map<str,JsonVal>),
+}
+fn dumpJson( stream:oStream, jval:JsonVal ) {
+   match jval {
+      case .JNull {
+         stream.write( "null" );
+      }
+      case .JBool( val ) {
+         stream.write( "%s" (val) );
+      }     
+      case .JInt( val ) {
+         stream.write( "%d" (val ) );
+      }        
+      case .JReal( val ) {
+         stream.write( "%g" (val ) );
+      }        
+      case .JStr( val ) {
+         stream.write( '"%s"' (val ) );
+      }        
+      case .JArray( list ) {
+         stream.write( "[" );
+         foreach val, index in list {
+            if index > 1 {
+               stream.write( "," );
+            }
+            dumpJson( stream, val );
+         }
+         stream.write( "]" );
+      }        
+      case .JObj( map ) {
+         stream.write( "{" );
+         let mut cont = false;
+         foreach val, key in map {
+            if cont {
+               stream.write( ',' );
+            }
+            else {
+               cont = true;
+            }
+            stream.write( '"%s":' (key) );
+            dumpJson( stream, val );
+         }
+         stream.write( "}" );
+      }
+   }
+}
+dumpJson( io.stdout,
+          JsonVal.JObj( { "foo": JsonVal.JInt( 1 ),
+                          "bar": JsonVal.JStr( "abc" ) } ) );
+#+END_SRC
+
+
+You can do the same thing by using cast, inheritance, etc. without using algae. However, there are drawbacks to inheritance as well as casting.
+
+Alge isn't a panacea either, but I think it's a better option than using cast or inheritance in some situations.
+
+Next time, I will explain the interface.

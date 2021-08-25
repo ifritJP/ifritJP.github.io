@@ -1,0 +1,141 @@
+#+TITLE: 25. Cast edition
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript provides three types of casts.
+- ~@@~
+- ~@@@~
+- ~@@=~
+
+
+* ~@@~  
+
+~@@~ forces a type conversion without checking the type of the source value at runtime.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val1:stem = 1;
+let val2:int = val1@@int;
+#+END_SRC
+
+
+The following values that cannot be converted can also be forcibly cast.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val1:stem = 1;
+let val2:str[] = val1@@str[];
+print( #val2 ); // runtime error 
+#+END_SRC
+
+
+*The above assigns the value 1 of type int to val1 of stem type and casts it to val2 of str list type. That is, I have cast the int to a str list. Accessing this val2 will result in a run-time error.*
+
+If you explicitly cast something that can implicitly perform type conversion with @@, you will get a warning.
+
+For example, ~func( "abc"@@stem )~ in the following sample outputs a warning because the conversion from the string "abc" to stem can be done without an explicit cast.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val:stem ) {
+}
+func( "abc"@@stem );
+#+END_SRC
+
+
+Also, apparently incorrect type conversions will result in compilation errors.
+
+For example, in the following case, ~1@@str~ is converting from int to str, but this type conversion is not possible, so a compile error will occur.
+#+BEGIN_SRC lns
+// @lnsFront: error
+let val = "abc"@@int;  // error
+let val2 = 1@@str;  // error
+#+END_SRC
+
+
+Casting =@@= to a class type will output a warning.
+
+=@@= cannot cast from nilable to non-nilable.
+
+Use ~@@@~ or ~@@=~ to cast to a class type.
+
+
+* ~@@@~
+
+~@@@~ dynamically checks the source type and converts it.
+
+The following is an example of ~@@@~.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val:stem ) {
+   if! val@@@int {
+      print( "int:%d" ( _exp ) );
+   }
+   if! val@@@str {
+      print( "str:%s" ( _exp ) );
+   }
+}
+func( 1 ); // int:1
+func( "abc" ); // str:abc
+#+END_SRC
+
+
+~val@@@int~ checks the type of val, converts it if it is an int, and returns nil if it is not an int. ~val@@@str~ also checks the type of val, converts it if it is str, and returns nil if it is not str.
+
+This causes ~func( 1 )~ to print an int: 1 and ~func( "abc" )~ to print str: abc.
+
+=@@@= can be cast even if the cast source is nilable.
+
+
+** Limitation of ~@@@~ 1
+
+A @@@ cast from a real value to an int should return nil, but in some cases it succeeds.
+
+That case is when you cast a real type value that has no decimal point to an int.
+
+By default, @@@ casts from real values to ints should return nil, which is a current limitation.
+
+When transcompiled to Go language, @@@ cast from real type value to int returns nil as originally specified.
+
+This behavior is subject to change in the future.
+
+For example, the following ~func( 1 )~ outputs ~int:1~, ~real:1~, and ~func( 2.5 )~ outputs ~real:2.5~.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( val:stem ) {
+   if! val@@@int {
+      print( "int:%d" ( _exp ) );
+   }
+   if! val@@@real {
+      print( "real:%g" ( _exp ) );
+   }
+}
+func( 1.0 );
+func( 2.5 );
+#+END_SRC
+
+
+
+** Limitation of ~@@@~ 2
+
+@@@ is only available for int / real / str / class / interface.
+
+Enum etc. cannot be used.
+
+Also, generics are not available in class.
+
+
+* ~@@=~
+
+~@@=~ is used when converting a class that does not have a method. If you specify a class that has a method or a class other than the class, a compile error will occur.
+
+Note that ~@@=~ also forcibly performs type conversion without checking the conversion source value.
+
+~@@=~ should only be used if type checking takes a long time.
+
+
+* summary
+
+*Cast should be avoided as much as possible except for conversion between int and real. You can create generic processing while preserving the type by using generics or alge.*
+
+Even if you use the cast, use ~@@@~ and design so that the use of ~@@~ and ~@@=~ is the minimum necessary.

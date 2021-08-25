@@ -1,0 +1,156 @@
+#+TITLE: 13. accessor edition
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This time, I will explain about the member accessor.
+
+
+* accessor
+
+You can easily create accessors (get, set) for members.
+
+Here is an example:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   pri let val1:int;
+   pri let mut val2:int {pub,pub};
+   pri let val3:int {pub};
+}
+let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3
+test.set_val2( 10 );
+print( test.$val2, test.$val3 );  // 10 3
+#+END_SRC
+
+
+In the above example, the definition of val2 is ~pri let val2:int {pub,pub};~.
+
+This ~{pub,pub}~ defines an accessor for val2. This specifies access control for getter and setter. This specification creates the following method internally:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+pub fn Test.get_val2(): int {
+   return self.val2;
+}
+pub fn Test.set_val2( val:int ) {
+   self.val2 = val;
+}
+#+END_SRC
+
+
+To access getter, use $ to access it as follows:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3
+#+END_SRC
+
+
+~test.$val2~ is syntactic sugar for ~test.get_val2()~.
+
+As mentioned above, accessor is declared in the order of "getter access control" and "setter access control".
+
+If you don't need setter, omit "setter access control".
+
+If you don't need a getter and you need a setter, declare it as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   pri let mut val1:int {non,pub};
+}
+#+END_SRC
+
+
+This function can be used when customizing getter while automatically generating setter.
+
+LuneScript accessors are ordinary methods. It's not something like a C # property.
+
+
+* return type of getter
+
+The return type of getter usually matches the type of its members.
+
+For example, getter in the member list of the following Test returns a return value of type =List<int>=.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   pri let mut list:List<int> {pub};
+}
+let test = new Test( [] );
+foreach val in test.$list { 
+   print( val );
+}
+#+END_SRC
+
+
+Here, since the =List<int>= type is a mutable type, the value of the member list can be changed by an external operation.
+
+However, there are many situations where you do not want to allow changes even if you allow references in external operations.
+
+In such a case, you can control the return type of getter. There are two ways to limit it:
+- Returns as an immutable type
+- Return as type of super class or interface
+
+
+** Returns as an immutable type
+
+You can create a getter that returns mutable members as immutables by declaring getter as follows:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Test {
+   pri let mut list:List<int> {pub&};
+}
+#+END_SRC
+
+
+*In this example, it is =pub&=. By adding & to the "access control" of getter, its return type becomes immutable.*
+
+
+** Return as type of super class or interface
+
+By declaring getter as follows, it can be returned as the type of super class or interface instead of the member type itself.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Val {
+}
+class ValSub extend Val {
+}
+
+class Test {
+   pri let val1:ValSub {pub};
+   pri let val2:ValSub {pub:Val};
+}
+let test = new Test( new ValSub(), new ValSub() );
+let val1 = test.$val1;
+let val2 = test.$val2;
+#+END_SRC
+
+
+*Here, the getter for =Test.val1= is pub, but the getter for Test.val2 is pub: Val.*
+
+This causes =test.$val1= to return type =ValSub=, while =test.$val2= returns type Sub.
+
+
+* Accessor customization
+
+LuneScript's accessor doesn't provide any customization features like C # properties (the ability to implement non-simple setter / getter processing).
+
+This is because LuneScript's accessor is just a simplification of method declaration, not a "separate thing" like C # properties, so if you need an accessor that does its own processing, you can create it yourself. Because.
+
+You can also use $ if you have defined your own getter.
+
+$ val is =get_val()= syntax sugar, not dedicated to accessors.
+
+
+* summary
+
+The LuneScript accessor has the following specifications:
+- Can be declared at the same time as member declaration
+- Declare in the order of getter, setter
+- When accessing getter, prefix the member name with $.
+- accessor is a simple method definition and is not a different concept from a method.
+
+Next time, I will explain inheritance.

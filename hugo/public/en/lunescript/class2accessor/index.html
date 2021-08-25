@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>13. accessor edition - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="13. accessor edition" />
+<meta property="og:description" content="This time, I will explain about the member accessor. accessor   You can easily create accessors (get, set) for members.  Here is an example: // @lnsFront: ok class Test { pri let val1:int; pri let mut val2:int {pub,pub}; pri let val3:int {pub}; } let mut test = new Test( 1, 2, 3 ); print( test.$val2, test.$val3 ); // 2 3 test.set_val2( 10 ); print( test.$val2, test.$val3 ); // 10 3   In the above example, the definition of val2 is pri let val2:int {pub,pub};." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/class2accessor/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="13. accessor edition"/>
+<meta name="twitter:description" content="This time, I will explain about the member accessor. accessor   You can easily create accessors (get, set) for members.  Here is an example: // @lnsFront: ok class Test { pri let val1:int; pri let mut val2:int {pub,pub}; pri let val3:int {pub}; } let mut test = new Test( 1, 2, 3 ); print( test.$val2, test.$val3 ); // 2 3 test.set_val2( 10 ); print( test.$val2, test.$val3 ); // 10 3   In the above example, the definition of val2 is pri let val2:int {pub,pub};."/>
+<meta itemprop="name" content="13. accessor edition">
+<meta itemprop="description" content="This time, I will explain about the member accessor. accessor   You can easily create accessors (get, set) for members.  Here is an example: // @lnsFront: ok class Test { pri let val1:int; pri let mut val2:int {pub,pub}; pri let val3:int {pub}; } let mut test = new Test( 1, 2, 3 ); print( test.$val2, test.$val3 ); // 2 3 test.set_val2( 10 ); print( test.$val2, test.$val3 ); // 10 3   In the above example, the definition of val2 is pri let val2:int {pub,pub};.">
+
+<meta itemprop="wordCount" content="666">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>13. accessor edition</h1>
+
+<p>
+This time, I will explain about the member accessor.
+</p>
+<h2 id="headline-1">
+accessor
+</h2>
+<p>
+You can easily create accessors (get, set) for members.
+</p>
+<p>
+Here is an example:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
+   pri let val1:int;
+   pri let mut val2:int {pub,pub};
+   pri let val3:int {pub};
+}
+let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3
+test.set_val2( 10 );
+print( test.$val2, test.$val3 );  // 10 3</code></pre>
+</div>
+<p>
+In the above example, the definition of val2 is <code>pri let val2:int {pub,pub};</code>.
+</p>
+<p>
+This <code>{pub,pub}</code> defines an accessor for val2. This specifies access control for getter and setter. This specification creates the following method internally:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn Test.get_val2(): int {
+   return self.val2;
+}
+pub fn Test.set_val2( val:int ) {
+   self.val2 = val;
+}</code></pre>
+</div>
+<p>
+To access getter, use $ to access it as follows:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let mut test = new Test( 1, 2, 3 );
+print( test.$val2, test.$val3 );  // 2 3</code></pre>
+</div>
+<p>
+<code>test.$val2</code> is syntactic sugar for <code>test.get_val2()</code>.
+</p>
+<p>
+As mentioned above, accessor is declared in the order of &#34;getter access control&#34; and &#34;setter access control&#34;.
+</p>
+<p>
+If you don&#39;t need setter, omit &#34;setter access control&#34;.
+</p>
+<p>
+If you don&#39;t need a getter and you need a setter, declare it as follows:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
+   pri let mut val1:int {non,pub};
+}</code></pre>
+</div>
+<p>
+This function can be used when customizing getter while automatically generating setter.
+</p>
+<p>
+LuneScript accessors are ordinary methods. It&#39;s not something like a C # property.
+</p>
+<h2 id="headline-2">
+return type of getter
+</h2>
+<p>
+The return type of getter usually matches the type of its members.
+</p>
+<p>
+For example, getter in the member list of the following Test returns a return value of type <code class="verbatim">List&lt;int&gt;</code>.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
+   pri let mut list:List&lt;int&gt; {pub};
+}
+let test = new Test( [] );
+foreach val in test.$list { 
+   print( val );
+}</code></pre>
+</div>
+<p>
+Here, since the <code class="verbatim">List&lt;int&gt;</code> type is a mutable type, the value of the member list can be changed by an external operation.
+</p>
+<p>
+However, there are many situations where you do not want to allow changes even if you allow references in external operations.
+</p>
+<p>
+In such a case, you can control the return type of getter. There are two ways to limit it:
+</p>
+<ul>
+<li>
+<p>
+Returns as an immutable type
+</p>
+</li>
+<li>
+<p>
+Return as type of super class or interface
+</p>
+</li>
+</ul>
+<h3 id="headline-3">
+Returns as an immutable type
+</h3>
+<p>
+You can create a getter that returns mutable members as immutables by declaring getter as follows:
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Test {
+   pri let mut list:List&lt;int&gt; {pub&amp;};
+}</code></pre>
+</div>
+<p>
+<strong>In this example, it is <code class="verbatim">pub&amp;</code>. By adding &amp; to the &#34;access control&#34; of getter, its return type becomes immutable.</strong>
+</p>
+<h3 id="headline-4">
+Return as type of super class or interface
+</h3>
+<p>
+By declaring getter as follows, it can be returned as the type of super class or interface instead of the member type itself.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Val {
+}
+class ValSub extend Val {
+}
+
+class Test {
+   pri let val1:ValSub {pub};
+   pri let val2:ValSub {pub:Val};
+}
+let test = new Test( new ValSub(), new ValSub() );
+let val1 = test.$val1;
+let val2 = test.$val2;</code></pre>
+</div>
+<p>
+<strong>Here, the getter for <code class="verbatim">Test.val1</code> is pub, but the getter for Test.val2 is pub: Val.</strong>
+</p>
+<p>
+This causes <code class="verbatim">test.$val1</code> to return type <code class="verbatim">ValSub</code>, while <code class="verbatim">test.$val2</code> returns type Sub.
+</p>
+<h2 id="headline-5">
+Accessor customization
+</h2>
+<p>
+LuneScript&#39;s accessor doesn&#39;t provide any customization features like C # properties (the ability to implement non-simple setter / getter processing).
+</p>
+<p>
+This is because LuneScript&#39;s accessor is just a simplification of method declaration, not a &#34;separate thing&#34; like C # properties, so if you need an accessor that does its own processing, you can create it yourself. Because.
+</p>
+<p>
+You can also use $ if you have defined your own getter.
+</p>
+<p>
+$ val is <code class="verbatim">get_val()</code> syntax sugar, not dedicated to accessors.
+</p>
+<h2 id="headline-6">
+summary
+</h2>
+<p>
+The LuneScript accessor has the following specifications:
+</p>
+<ul>
+<li>
+<p>
+Can be declared at the same time as member declaration
+</p>
+</li>
+<li>
+<p>
+Declare in the order of getter, setter
+</p>
+</li>
+<li>
+<p>
+When accessing getter, prefix the member name with $.
+</p>
+</li>
+<li>
+<p>
+accessor is a simple method definition and is not a different concept from a method.
+</p>
+</li>
+</ul>
+<p>
+Next time, I will explain inheritance.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/class1/" title="12. Class Basics"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 12. Class Basics</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/classinherit/" title="14. Class inheritance">Next - 14. Class inheritance <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

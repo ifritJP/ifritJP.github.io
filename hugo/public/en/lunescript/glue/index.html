@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>22.1. Semi-automatic generation of glue code - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/glue/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="22.1. Semi-automatic generation of glue code" />
+<meta property="og:description" content="There are two cases of Lua&#39;s external modules:    Case consisting of Lua script    Case of using Native Library such as C    To use the Native Library from Lua, you need a glue that bridges the interface for Lua.  LuneScript has the ability to generate this glue semi-automatically.  The LuneScript glue automatic generation function is not a function that automatically generates Lua glue from a source such as C / C &#43;&#43; represented by swig, but a function that automatically generates the glue code of a module declared as a module in LuneScript." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/glue/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="22.1. Semi-automatic generation of glue code"/>
+<meta name="twitter:description" content="There are two cases of Lua&#39;s external modules:    Case consisting of Lua script    Case of using Native Library such as C    To use the Native Library from Lua, you need a glue that bridges the interface for Lua.  LuneScript has the ability to generate this glue semi-automatically.  The LuneScript glue automatic generation function is not a function that automatically generates Lua glue from a source such as C / C &#43;&#43; represented by swig, but a function that automatically generates the glue code of a module declared as a module in LuneScript."/>
+<meta itemprop="name" content="22.1. Semi-automatic generation of glue code">
+<meta itemprop="description" content="There are two cases of Lua&#39;s external modules:    Case consisting of Lua script    Case of using Native Library such as C    To use the Native Library from Lua, you need a glue that bridges the interface for Lua.  LuneScript has the ability to generate this glue semi-automatically.  The LuneScript glue automatic generation function is not a function that automatically generates Lua glue from a source such as C / C &#43;&#43; represented by swig, but a function that automatically generates the glue code of a module declared as a module in LuneScript.">
+
+<meta itemprop="wordCount" content="846">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>22.1. Semi-automatic generation of glue code</h1>
+
+<p>
+There are two cases of Lua&#39;s external modules:
+</p>
+<ul>
+<li>
+<p>
+Case consisting of Lua script
+</p>
+</li>
+<li>
+<p>
+Case of using Native Library such as C
+</p>
+</li>
+</ul>
+<p>
+To use the Native Library from Lua, you need a glue that bridges the interface for Lua.
+</p>
+<p>
+LuneScript has the ability to generate this glue semi-automatically.
+</p>
+<p>
+The LuneScript glue automatic generation function is not a function that automatically generates Lua glue from a source such as C / C ++ represented by swig, but a function that automatically generates the glue code of a module declared as a module in LuneScript.
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">swig:		C/C++ ==&gt; glue
+LuneScript:	Lns   ==&gt; glue</code></pre></div>
+</div>
+<h2 id="headline-1">
+how to use
+</h2>
+<p>
+To generate glue, specify the glue keyword when defining the module.
+</p>
+<p>
+The following is a sample that generates glue for the test.ext module.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+module External require &#34;test.ext&#34; glue &#39;hoge_&#39; {
+   pub static fn create( val:int ): External;
+   pub fn add( val:int ):int;
+}
+
+let obj = External.create( 1 );
+print( obj.add( 10 ) ); // 11</code></pre>
+</div>
+<p>
+The &#34;test.ext&#34; and&#39;hoge_&#39;specified here are used when generating glue.
+</p>
+<p>
+To generate glue code from this source, run the following command:
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ lua lune/base/base.lua src.lns glue [dir]</code></pre></div>
+</div>
+<p>
+Where src.lns is the source of the input and dir is the path of the destination directory.
+</p>
+<p>
+This command generates two glue codes:
+</p>
+<ul>
+<li>
+<p>
+test_ext_glue.c
+</p>
+</li>
+<li>
+<p>
+test_ext_glue.h  
+</p>
+</li>
+</ul>
+<p>
+test_ext_glue.c has the following contents:
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&#34;test_ext_glue.h&#34;</span><span class="cp">
+</span><span class="cp"></span><span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+<span class="k">static</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">s_full_class_name</span> <span class="o">=</span> <span class="s">&#34;test_ext&#34;</span><span class="p">;</span>
+<span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">s_lua_func_info</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="p">{</span> <span class="s">&#34;create&#34;</span><span class="p">,</span> <span class="n">lns_glue_create</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span> <span class="p">}</span>
+<span class="p">};</span>
+<span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">s_lua_method_info</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="p">{</span> <span class="s">&#34;add&#34;</span><span class="p">,</span> <span class="n">lns_glue_add</span> <span class="p">},</span>
+  <span class="p">{</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span> <span class="p">}</span>
+<span class="p">};</span>
+<span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_get_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">index</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="n">luaL_checkudata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">s_full_class_name</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">static</span> <span class="kt">void</span> <span class="nf">lns_glue_setupObjMethod</span><span class="p">(</span>
+    <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">pName</span><span class="p">,</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="o">*</span> <span class="n">pReg</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">luaL_newmetatable</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="n">pName</span> <span class="p">);</span>
+    <span class="n">lua_pushvalue</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+    <span class="n">lua_setfield</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#34;__index&#34;</span><span class="p">);</span>
+
+<span class="cp">#if LUA_VERSION_NUM &gt;= 502
+</span><span class="cp"></span>    <span class="n">luaL_setfuncs</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="n">pReg</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+    <span class="n">lua_pop</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="cp">#else
+</span><span class="cp"></span>    <span class="n">luaL_register</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="n">pReg</span> <span class="p">);</span>
+
+    <span class="n">lua_pop</span><span class="p">(</span><span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="cp">#endif
+</span><span class="cp"></span><span class="p">}</span>
+
+<span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_new_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">size</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">void</span> <span class="o">*</span> <span class="n">pBuf</span> <span class="o">=</span> <span class="n">lua_newuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size</span> <span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span> <span class="n">pBuf</span> <span class="o">==</span> <span class="nb">NULL</span> <span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    
+<span class="cp">#if LUA_VERSION_NUM &gt;= 502
+</span><span class="cp"></span>    <span class="n">luaL_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span> <span class="p">);</span>
+<span class="cp">#else
+</span><span class="cp"></span>    <span class="n">luaL_getmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span> <span class="p">);</span>
+    <span class="n">lua_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span> <span class="p">);</span>
+<span class="cp">#endif
+</span><span class="cp"></span>
+    <span class="k">return</span> <span class="n">pBuf</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">luaopen_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">lns_glue_setupObjMethod</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span><span class="p">,</span> <span class="n">s_lua_method_info</span> <span class="p">);</span>
+
+<span class="cp">#if LUA_VERSION_NUM &gt;= 502
+</span><span class="cp"></span>    <span class="n">luaL_newlib</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_lua_func_info</span> <span class="p">);</span>
+<span class="cp">#else
+</span><span class="cp"></span>    <span class="n">luaL_register</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">s_full_class_name</span><span class="p">,</span> <span class="n">s_lua_func_info</span> <span class="p">);</span>
+<span class="cp">#endif
+</span><span class="cp"></span>    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">){</span>
+  <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">val</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">2</span> <span class="p">);</span>
+  <span class="k">return</span> <span class="n">hoge_add</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="k">static</span> <span class="kt">int</span> <span class="nf">lns_glue_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">){</span>
+  <span class="kt">int</span> <span class="n">val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">val</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+  <span class="k">return</span> <span class="n">hoge_create</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">val</span><span class="p">);</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+This test_ext_glue.c is the code that registers the <code class="verbatim">create()</code> and <code class="verbatim">add()</code> methods defined in LuneScript with Lua.
+</p>
+<p>
+The functions corresponding to <code class="verbatim">create()</code> and <code class="verbatim">add()</code> defined in LuneScript are <code class="verbatim">lns_glue_create()</code> and <code class="verbatim">lns_glue_add()</code>.
+</p>
+<p>
+<strong>Note that this function calls <code class="verbatim">hoge_create()</code> and <code class="verbatim">hoge_add()</code>, respectively. This hoge_ uses the glue string specified in the LuneScript code.</strong>
+</p>
+<p>
+test_ext_glue.h has the following contents.
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;lauxlib.h&gt;</span><span class="cp">
+</span><span class="cp"></span><span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">int</span> <span class="nf">luaopen_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_get_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">index</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">void</span> <span class="o">*</span> <span class="nf">lns_glue_new_test_ext</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">size</span> <span class="p">);</span></code></pre></div>
+</div>
+<p>
+Here, = hoge_create () = and <code class="verbatim">hoge_add()</code> have the following types.
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span>
+<span class="k">extern</span> <span class="kt">int</span> <span class="nf">hoge_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">);</span></code></pre></div>
+</div>
+<p>
+The first argument lua_State * and the return value int have the same meaning as Lua&#39;s glue interface.
+</p>
+<p>
+The second argument, int, contains the argument of the method defined in LuneScript. This is because test_ext_glue.c, which is automatically generated by LuneScript, takes the value from the Lua stack and sets the value.
+</p>
+<p>
+In Lua glue, you need to call the API to get the function arguments, but if you generate glue with LuneScript, you are running the API to get the function arguments in the glue code. This eliminates the need for the user to call the API to get the function arguments.
+</p>
+<p>
+However, if the argument type of the method defined on the LuneScript side is other than int (int!), Real (real!), Str (str!), The glue generated by LuneScript cannot handle it, so a separate user It is necessary to take measures on the side.
+</p>
+<p>
+Also, the return value of glue needs to be controlled by the user in the same way as Lua&#39;s glue interface.
+</p>
+<p>
+By defining <code class="verbatim">hoge_create()</code> and <code class="verbatim">hoge_add()</code> separately, the test.ext module is completed.
+</p>
+<p>
+For example, define as follows (glue.c).
+</p>
+<div class="src src-c">
+<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// glue.c
+</span><span class="c1"></span><span class="cp">#include</span> <span class="cpf">&lt;test_ext_glue.h&gt;</span><span class="cp">
+</span><span class="cp"></span>
+<span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+<span class="p">}</span> <span class="n">glue_t</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">hoge_create</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">glue_t</span> <span class="o">*</span> <span class="n">pGlue</span> <span class="o">=</span> <span class="p">(</span><span class="n">glue_t</span><span class="o">*</span><span class="p">)</span><span class="n">lns_glue_new_test_ext</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span> <span class="n">glue_t</span> <span class="p">)</span> <span class="p">);</span>
+    <span class="n">pGlue</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">hoge_add</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">glue_t</span> <span class="o">*</span> <span class="n">pGlue</span> <span class="o">=</span> <span class="n">lns_glue_get_test_ext</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+    <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">val</span> <span class="o">+</span> <span class="n">pGlue</span><span class="o">-&gt;</span><span class="n">val</span> <span class="p">);</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+By the way, the build is done as follows.
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ gcc -std=c99 -fPIC -shared -o test/ext.so glue.c test_ext_glue.c</code></pre></div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/require/" title="22. require / module edition"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 22. require / module edition</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/lua/" title="22.2. Cooperation with Lua">Next - 22.2. Cooperation with Lua <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

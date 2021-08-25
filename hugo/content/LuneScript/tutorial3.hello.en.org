@@ -1,0 +1,283 @@
+#+TITLE: 02. Hello world
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+This time, I would like to introduce Hello world using LuneScript.
+
+
+* lnsc command
+
+Installing LuneScript installs the lnsc command.
+
+Use the lnsc command as follows.
+#+BEGIN_SRC sh
+$ lnsc src.lns exe
+#+END_SRC
+
+
+Where src.lns is the path of the script created by LuneScript. exe is an option of lnsc, which means to execute the specified script.
+
+
+* Hello world 
+
+Now let's use LuneScript to run the traditional Hello world.
+
+Create a file hello.lns with the following content:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+print( "Hello world." );
+#+END_SRC
+
+
+Then run the following command:
+#+BEGIN_SRC sh
+$ lnsc hello.lns exe
+#+END_SRC
+
+
+This will output "Hello world".
+
+It's not interesting if it's just this, so I'll continue talking a little more.
+
+First, modify hello.lns a bit like this:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let txt = "world";
+print( "Hello %s." ( txt ) );
+#+END_SRC
+
+
+The result of this script is also ~Hello world.~.
+
+Now try running the following command:
+#+BEGIN_SRC sh
+$ lnsc hello.lns lua
+#+END_SRC
+
+
+I think the following was output.
+#+BEGIN_SRC lua
+--hello.lns
+local _moduleObj = {}
+local __mod__ = 'hello'
+if not _lune then
+   _lune = {}
+end
+local txt = "world"
+print( string.format( "Hello %s.", txt) )
+return _moduleObj
+#+END_SRC
+
+
+This is the code that converted hello.lns to Lua.
+
+It's kind of messy, but you can see that ~print( string.format( "Hello %s.", txt) )~ is being output.
+
+This indicates that ~print( "Hello %s." ( txt ) )~ written in LuneScript is expanded to ~print( string.format( "Hello %s.", txt) )~ when transcompiled to Lua.
+
+Now run the following command:
+#+BEGIN_SRC sh
+$ lnsc hello.lns save
+#+END_SRC
+
+
+This created the hello.lua file. The contents of the hello.lua file are the same as the Lua code you just output.
+
+Now run hello.lua with the following command:
+#+BEGIN_SRC sh
+$ lua5.3 hello.lua
+#+END_SRC
+
+
+~Hello world.~ will be output. The code transcompiled to Lua is Lua code that does not depend on LuneScript.
+
+The first ~lnsc hello.lns exe~ executed is a command that transcompiles a LuneScript script and executes it.
+
+The next ~lnsc hello.lns lua~ command is a command that transcompiles a LuneScript script and outputs Lua code as standard.
+
+The last command I ran, ~lnsc hello.lns save~, is a command that transcompiles a LuneScript script and saves the Lua code.
+
+In this document, we will use the exe, but use the save command to check the converted code.
+
+
+** Main function
+
+You can handle command line options by defining the main function.
+
+Please refer to the following.
+
+[[../shebang_main]]
+
+
+* Error message
+
+LuneScript requires the delimiter =;=. If you do not put =;= at the end as follows, an error will occur.
+#+BEGIN_SRC lns
+// @lnsFront: error
+print( "Hello world." )
+#+END_SRC
+
+
+At this time, the following error message is output.
+#+BEGIN_SRC txt
+mini.lns:1:23: error: EOF
+lua5.3: ./lune/base/Util.lua:176: has error
+stack traceback:
+	[C]: in function 'error'
+	./lune/base/Util.lua:176: in function 'lune.base.Util.err'
+	./lune/base/TransUnit.lua:3465: in method 'error'
+	./lune/base/TransUnit.lua:3538: in method 'getToken'
+	./lune/base/TransUnit.lua:11641: in method 'analyzeStatement'
+	./lune/base/TransUnit.lua:3710: in method 'analyzeStatementList'
+	./lune/base/TransUnit.lua:5430: in function <./lune/base/TransUnit.lua:5393>
+	(...tail calls...)
+	./lune/base/front.lua:848: in method 'loadFileToLuaCode'
+	./lune/base/front.lua:914: in method 'loadFile'
+	./lune/base/front.lua:1066: in method 'loadModule'
+	./lune/base/front.lua:1709: in method 'exec'
+	./lune/base/front.lua:1744: in function 'lune.base.front.exec'
+	lune/base/base.lua:1: in main chunk
+	[C]: in ?  
+#+END_SRC
+
+
+In this error output, the following message indicates a compilation error:
+: mini.lns:1:23: error: EOF
+
+
+This error indicates that an unexpected EOF error occurred on the 23rd byte of the first line of mini.lns.
+
+Any other error output is an internal error in LuneScript. To suppress error output inside LuneScript, specify the following option (diag --nodebug).
+#+BEGIN_SRC sh
+$ lnsc hello.lns exe diag --nodebug
+mini.lns:1:23: error: EOF
+has error
+#+END_SRC
+
+
+
+* runtime
+
+It's a bit heavy for an article about Hello world, but I'll explain the runtime while looking at the output Lua code.
+
+The code output from LuneScript to Lua is supplemented with the runtime required for the code to work.
+
+For example, if you convert the following LuneScript code to Lua,
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn add( val:int! ):int {
+   return 10 + unwrap val default 0;
+}
+print( add( 1 ) ); // 11
+print( add( nil ) ); // 10
+#+END_SRC
+
+
+It will be as follows.
+#+SRCNAME: mini.lns
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = {}
+if _lune1 then
+   _lune = _lune1
+end
+function _lune.unwrap( val )
+   if val == nil then
+      __luneScript:error( 'unwrap val is nil' )
+   end
+   return val
+end
+function _lune.unwrapDefault( val, defval )
+   if val == nil then
+      return defval
+   end
+   return val
+end
+
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+
+You can see that a decent amount of runtime is being output. By the way, above =local function add( val )= is the runtime.
+
+The content of the source LuneScript code increases or decreases the amount of runtime inserted. The output of the entire runtime is about 10KB in size.
+
+This runtime prints to all converted Lua code.
+
+If you are concerned about the runtime code being inserted into your Lua code, you can replace the runtime deployment with =require= by specifying =-r= as a command line option for lnsc:
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = require( "lune.base._lune1" )
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+
+However, in this case, lune.base._lune1 will be required, so it must be in the load path so that lune.base._lune1 can be loaded.
+
+Where 1 in _lune1 indicates the runtime version.
+
+You don't have to worry if you are running the Lua version of LuneScript, but be careful if you only want to run the converted Lua code in another environment.
+
+By specifying the =--runtime mod= option instead of the =-r= option,
+#+BEGIN_SRC lua
+--mini.lns
+local _moduleObj = {}
+local __mod__ = 'mini'
+local _lune = require( "mod" )
+if not _lune1 then
+   _lune1 = _lune
+end
+local function add( val )
+
+   return 10 + _lune.unwrapDefault( val, 0)
+end
+
+print( add( 1 ) )
+print( add( nil ) )
+return _moduleObj
+#+END_SRC
+
+
+Instead of loading lune.base._lune as above, you can switch to the specified mod module.
+
+As the version of LuneScript changes, so does the runtime of LuneScript. If you have a mix of Lua modules converted with different versions of LuneScript, using the default lune.base._lune may not work properly.
+
+To avoid this, use the --runtime option to prevent an unintended version of the runtime from loading.
+
+By specifying =-mklunemod path= on the command line, the runtime module file will be generated at the specified path.
+
+
+* comment
+
+The comments in LuneScript are ~//~ and ~/* */~.
+
+~//~ treats up to the end of the line as a comment, and ~/* */~ treats multiple lines as a comment.
+
+Next time, I will explain the values handled by LuneScript.

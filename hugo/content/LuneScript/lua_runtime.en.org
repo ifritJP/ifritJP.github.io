@@ -1,0 +1,67 @@
+#+TITLE: @ .1.3 Lua runtime when transcompiled to Go
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua's assets, LuneScript also supports working with Lua.
+
+This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.
+
+To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally.
+
+The cooperation between LuneScript and Lua is an important function due to the nature of Lua's transcompiler. On the other hand, if you think of LuneScript as a Go transcompiler, working with Lua isn't very important.
+
+In addition, the advantages of go are as follows.
+- It is possible to create a single file that operates independently without depending on the library of the execution environment.
+- Supports cross-compilation to various environments
+If you need to link the Lua runtime, you lose the above advantages.
+
+The Lua runtime is environment-independent, but it's a big shackle to maintain the above advantages.
+
+Therefore, it is possible to execute transcompiled code without linking the Native Lua runtime.
+
+
+* Use of gopher-lua
+
+gopher-lua is a Lua runtime implemented in go. Avoid linking with the Native Lua runtime by using gopher-lua.
+
+To use gopher-lua, specify -tags as an option during go build.
+: go build -tags gopherlua
+
+
+Specifying this option switches the Lua runtime from Native Lua to gopher-lua.
+
+
+** Precautions for gopher-lua
+
+When using gopher-lua, the Lua runtime specification is limited by the gopher-lua specification.
+
+Specific examples are given below.
+- lua version is 5.1
+- Some APIs such as string.dump are not available
+- Non-pure Lua libraries such as luasocket are not available
+- Slower than Native Lua
+If you're not using LuneScript and Lua integration, you don't have to worry about it, but you should be aware that there are differences between Native Lua and gopher-lua.
+
+
+* Other Lua runtimes
+
+There are several types of Lua runtimes implemented in go.
+
+The following are typical examples.
+- https://github.com/yuin/gopher-lua
+- https://github.com/Azure/golua
+- https://github.com/Shopify/go-lua  
+yuin / gopher-lua is the implementation used this time. The only implementation that was able to execute LuneScript's self-hosted Lua code, as a typical example.
+
+Azure / golua seems to be a project launched by Microsoft. I expected it to be based on lua5.3, but it didn't do what I expected it to do (I can't parse Lua). Since the repository of github is Archived, future development cannot be expected.
+
+Shopify / go-lua is based on lua5.2. A simple Lua script works, but I couldn't load lua, which self-hosts LuneScript. For this reason, it was expected that there would be a compatibility problem, so this time we decided not to adopt it in LuneScript.
+
+I've tried several Lua implementations with go, but it's a shame that few Lua implementations support a level of compatibility that allows LuneScript to run.
+
+If I implement Lua in the future, I thought that it could be used as a test case to check the compatibility of Lua by checking whether LuneScript works.
+
+However, if it doesn't work, it's not easy to know what caused it to not work, so it's not realistic considering that it's not easy to use as a test case.

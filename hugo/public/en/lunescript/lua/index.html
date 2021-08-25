@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>22.2. Cooperation with Lua - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/lua/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="22.2. Cooperation with Lua" />
+<meta property="og:description" content="LuneScript can execute Lua code. However, there are a few things to keep in mind when running Lua code. The following are some things to keep in mind when running Lua code on LuneScript. Run Lua code In LuneScript, you can execute Lua code from within LuneScript by using the _load() function and so on. The _load() function has basically the same specifications as the lua load() function. A sample" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/lua/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="22.2. Cooperation with Lua"/>
+<meta name="twitter:description" content="LuneScript can execute Lua code. However, there are a few things to keep in mind when running Lua code. The following are some things to keep in mind when running Lua code on LuneScript. Run Lua code In LuneScript, you can execute Lua code from within LuneScript by using the _load() function and so on. The _load() function has basically the same specifications as the lua load() function. A sample"/>
+<meta itemprop="name" content="22.2. Cooperation with Lua">
+<meta itemprop="description" content="LuneScript can execute Lua code. However, there are a few things to keep in mind when running Lua code. The following are some things to keep in mind when running Lua code on LuneScript. Run Lua code In LuneScript, you can execute Lua code from within LuneScript by using the _load() function and so on. The _load() function has basically the same specifications as the lua load() function. A sample">
+
+<meta itemprop="wordCount" content="1322">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>22.2. Cooperation with Lua</h1>
+
+<p>
+LuneScript can execute Lua code.
+</p>
+<p>
+However, there are a few things to keep in mind when running Lua code.
+</p>
+<p>
+The following are some things to keep in mind when running Lua code on LuneScript.
+</p>
+<h2 id="headline-1">
+Run Lua code
+</h2>
+<p>
+In LuneScript, you can execute Lua code from within LuneScript by using the <code class="verbatim">_load()</code> function and so on.
+</p>
+<p>
+The <code class="verbatim">_load()</code> function has basically the same specifications as the lua <code class="verbatim">load()</code> function.
+</p>
+<p>
+A sample is shown below.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      forsort val, key in obj@@Map&lt;str,int&gt; {
+         print( key, val + 100 ); 
+      }
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+This sample outputs the following values:
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">val1	110
+val2	120</code></pre></div>
+</div>
+<p>
+This is the result of listing Lua tables returned by Lua code <code>return { val1 = 10, val2 = 20 }</code> with forsort and outputting them with <code class="verbatim">print( key, val + 100 );</code>.
+</p>
+<p>
+The above sample is almost the same as the LuneScript code below.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func():Map&lt;str,int&gt; {
+   return { &#34;val1&#34;:10, &#34;val2&#34;:20 };
+}
+forsort val, key in func() {
+   print( key, val + 100 ); 
+}</code></pre>
+</div>
+<p>
+In this way, LuneScript and Lua can work together.
+</p>
+<h2 id="headline-2">
+Lua → LuneScript data conversion
+</h2>
+<p>
+When you execute Lua code from LuneScript, the result of executing that Lua code is of type Luaval.
+</p>
+<p>
+The Luaval type is a type that holds the data in the Lua code, and the data in the Lua code that corresponds to the LuneScript type T is <code class="verbatim">Luaval&lt;T&gt;</code>.
+</p>
+<p>
+For example, <code>{ val1 = 10, val2 = 20 }</code> in the above sample corresponds to Map &lt;str, int&gt; of LuneScritp and becomes <code class="verbatim">Luaval&lt;Map&lt;str,int&gt;&gt;</code>.
+</p>
+<p>
+<strong>Note that when transcompiling from LuneScript to Lua, Luaval &lt;T&gt; will be the exact type of T. When transcompiling from LuneScript to Lua, you don&#39;t need to be aware of Luaval &lt;T&gt; because even if you explicitly declare it as Luaval &lt;T&gt;, it will be converted internally as T.</strong>
+</p>
+<p>
+When converting from LuneScript to a language other than Lua (currently convertible to go), Luaval &lt;T&gt; and T are treated differently, so you need to be aware of Luaval &lt;T&gt; when converting to something other than Lua. ..
+</p>
+<p>
+<strong>By specifying &#34;–valid-luaval&#34; as the transcompile option, Luaval &lt;T&gt; and T are managed separately when transcompiling to Lua.</strong>
+</p>
+<p>
+The above sample can be rewritten to use <code class="verbatim">func()</code> with an argument of <code class="verbatim">Luaval&lt;Map&lt;str,int&gt;&gt;</code> as follows.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(map:Luaval&lt;&amp;Map&lt;str,int&gt;&gt;) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map&lt;str,int&gt; );
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+<strong>Also, for the Luaval type data of Map like the above sample, you can refer to the data in Map by element access using foreach or <code class="verbatim">[]</code> like Map of LuneScript. However, you can refer to it, but you cannot change it.</strong>
+</p>
+<h3 id="headline-3">
+Mutual convertible type
+</h3>
+<p>
+If the data types in your Lua code are:
+</p>
+<ul>
+<li>
+<p>
+int, real, bool, str
+</p>
+</li>
+<li>
+<p>
+Nilable above
+</p>
+</li>
+</ul>
+<p>
+<strong>For str, there is an overhead proportional to the string length.</strong>
+</p>
+<h2 id="headline-4">
+Luaval type cast
+</h2>
+<p>
+There are restrictions on casting Luaval types.
+</p>
+<p>
+In the above sample, <code class="verbatim">obj@@Map&lt;str,int&gt;</code> is passed as an argument of func as follows.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip   
+   if! let obj = loaded( ## ) {
+      func( obj@@Map&lt;str,int&gt; );
+   }</code></pre>
+</div>
+<p>
+This is an operation that casts obj to Map &lt;str, int&gt;, where the type of obj is Luaval &lt;stem&gt;, and if you cast it to Map &lt;str, int&gt;, the cast type will be It becomes Luaval &lt;Map &lt;str, int &gt;&gt;.
+</p>
+<p>
+When it is possible to cast from a type T1 to type T2, if you instruct to cast from Luaval &lt;T1&gt; to T2, the cast result will be Luaval &lt;T2&gt;.
+</p>
+<p>
+Also, the next cast is not possible.
+</p>
+<ul>
+<li>
+<p>
+Cast from T1 type to Luaval &lt;T1&gt; type
+</p>
+</li>
+<li>
+<p>
+Luaval &lt;T1&gt; type to T1 type cast
+</p>
+</li>
+</ul>
+<p>
+Specifically, you cannot cast from Map &lt;str, int&gt; to Luaval &lt;Map &lt;str, int &gt;&gt;.
+</p>
+<p>
+However, the stem type is exceptionally capable of mutual casting with Luaval.
+</p>
+<p>
+It is possible to cast from Luaval type to non-Luaval type by going through stem type as follows.
+</p>
+<pre class="example">
+Luaval =&gt; stem =&gt; Luaval
+</pre>
+<p>
+<strong>The behavior when casting to a different type is undefined.</strong>
+</p>
+<h3 id="headline-5">
+expandLuavalMap
+</h3>
+<p>
+The data in the collection in the Lua code is treated as Luaval.
+</p>
+<p>
+For example, Map type data is Luaval &lt;Map&gt;. Map type and Luaval &lt;Map&gt; type data are not compatible and cannot be assigned.
+</p>
+<p>
+The following functions are provided as a way to expand the Luaval type data of this collection as LuneScript values.
+</p>
+<pre class="example">
+fn expandLuavalMap( Luaval&lt;stem&gt;! ) : stem!;
+</pre>
+<p>
+When you use this function, the following processing is applied.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(map:Luaval&lt;&amp;Map&lt;str,int&gt;&gt;) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+fn func2(map:&amp;Map&lt;str,int&gt;) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map&lt;str,int&gt; );
+      if! let map = expandLuavalMap( obj ) {
+         func2( map@@Map&lt;str,int&gt; );
+      }
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+In this sample, there is a <code class="verbatim">func()</code> function that enumerates Luaval &lt;&amp; Map &lt;str, int &gt;&gt; and a <code class="verbatim">func2()</code> function that enumerates &amp; Map &lt;str, int&gt;.
+</p>
+<p>
+Expand Luaval type data with <code class="verbatim">expandLuavalMap()</code> before calling func2 () and cast it to Map &lt;str, int&gt; to map &lt;str, int&gt; instead of Luaval &lt;Map &lt;str, int &gt;&gt; It is processed as.
+</p>
+<p>
+Note that <code class="verbatim">expandLuavalMap()</code> creates a clone that expands the Luaval type data given by the argument.
+</p>
+<h2 id="headline-6">
+Luaval type conversion
+</h2>
+<p>
+The Luaval type that holds a nilable type T! Is Luaval &lt;T&gt; !. It cannot be Luaval &lt;T!&gt;.
+</p>
+<p>
+Also, the Immutable of Luaval &lt;T&gt; becomes Luaval &lt;&amp; T&gt;.
+</p>
+<h2 id="headline-7">
+Luaval type function, Luaval type object method
+</h2>
+<p>
+The functional type Luaval has its argument and return value of Luaval type.
+</p>
+<p>
+For example, the argument proc of the func function in the following sample is from of type Luaval &lt;Process&gt;, the argument of this Form is Luaval &lt;&amp; List &lt;int &gt;&gt;, and the return value is Luaval &lt;&amp; List &lt;int &gt;&gt;.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   form Process( val:&amp;List&lt;int&gt; ) : &amp;Map&lt;int&gt;;
+   fn func( proc:Luaval&lt;Process&gt; ) {
+      let list = proc( [ 1, 2, 3 ] );
+   }</code></pre>
+</div>
+<h2 id="headline-8">
+LuneScript → Lua data conversion
+</h2>
+<p>
+When you pass a LuneScript value to a Lua function, you must pass a value of type Luaval.
+</p>
+<p>
+However, if the Lua function argument has the following values, it will be of the same type instead of the Luava type.
+</p>
+<ul>
+<li>
+<p>
+int, real, bool, str
+</p>
+</li>
+<li>
+<p>
+Collection type such as List that has the above as an element
+</p>
+</li>
+<li>
+<p>
+Nilable above
+</p>
+</li>
+</ul>
+<p>
+Here is a sample.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let code = ```
+return function( tbl )
+   local total = 0
+   for key, val in pairs( tbl ) do
+      total = total + val
+   end
+   return total
+end
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+   let map = { &#34;val1&#34;:1, &#34;val2&#34;:10 };
+      print( (obj@@form)( map ) );  // Lua の関数コール
+   }
+} else {
+   print( err );
+}</code></pre>
+</div>
+<p>
+This sample calls a function that calculates the sum of the values of the Lua table elements given as arguments.
+</p>
+<p>
+In this sample, a data map of type Map &lt;str, int&gt; is specified as an argument of a Lua function and executed.
+</p>
+<p>
+At this time, Map &lt;str, int&gt; type data is internally converted to Lua table.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/glue/" title="22.1. Semi-automatic generation of glue code"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 22.1. Semi-automatic generation of glue code</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/make/" title="23. Build">Next - 23. Build <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

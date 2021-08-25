@@ -1,0 +1,796 @@
+#+TITLE: Transcompile to Z. Go language (under consideration)
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+For transcompiling support for Go language, refer to the following article.
+
+[[../go]]
+
+*The information here is out of date, but I'll leave it for reference only.*
+
+Considering transcompiling from LuneScript to Go language.
+
+Here, the content under consideration is recorded.
+
+
+* aim
+
+The aim of transcompiling from LuneScript to the Go language is as follows.
+- Speed up LuneScript
+  - LuneScript supports code completion, but large code is heavy and unusable.
+  - By speeding up, the usability of LuneScript's code completion function will be improved.
+- Upgrade work efficiency of LuneScript itself by speeding up
+  - LuneScript's self-hosted build and test time is currently less than 2 minutes.
+  - It's painful to take 2 minutes for each change, so go for speed.
+  - We were working on transcompiling to C, but the GC implementation in C didn't go as planned, so we'll go ahead with Go, which supports GC at the language level.
+
+
+* value
+|-|-|-|
+| LuneScript type | Go type | Type in Lns lantern for Go | 
+|-+-+-|
+| nil, null | interface{} | nil | 
+| int | int | LnsInt (alias) | 
+| real | float64 | LnsReal(alias) | 
+| str | string | LnsStr (alias) | 
+| bool | bool | LnsBool(alias) | 
+| List | Unique structure | LnsList | 
+| Array | arrangement | LnsArray | 
+| Map | map | LnsMap | 
+| Set | map (put item in key) | LnsSet | 
+| class | Structure | 
+| interface | interface | 
+| form | func | LnsForm | 
+| enum | int/float64/string | LnsEnum | 
+| stem | interface{} | LnsStem | 
+| nilable | interface{} | 
+
+
+** Handling of int / real
+
+LuneScript int / real is defined using go's type alias as follows:
+#+BEGIN_SRC go
+type LnsInt = int
+type LnsReal = float64
+#+END_SRC
+
+
+
+** Handling of nilable
+
+LuneScript nilable cannot be treated as the original value as it is. However, you can check if they are equal. This is the same as go and LuneScript.
+
+
+** Handling of false values
+
+LuneScript has nil and false false, otherwise true. Since go needs to be judged by true / false, prepare a conditional conversion function for LuneScript.
+
+
+** Handling of and / or
+
+LuneScript's and / or is not a logical operation, it controls the evaluation of expressions, and the evaluation result is not bool. The evaluation result of go is bool.
+
+
+** Handling of generics
+
+Since go does not have Generics, all Generics types are handled by interface {}.
+
+
+** Handling of Set
+
+Since go does not have Set, Map is used instead.
+
+
+* Multi-value return
+
+Multi-valued return of go and LuneScript behaves differently.
+
+When =hoge()= is a multi-valued return function that returns x and y, the actions are as follows.
+|-|-|-|
+| code | LuneScript deployment result | go deployment result | 
+|-+-+-|
+| (hoge()) | x | x, y | 
+| hoge(), val | x, val | x, y, val | 
+
+To realize the above difference, go prepares the following conversion function.
+#+BEGIN_SRC go
+// 多値返却の先頭 int を返す
+func carInt( multi ...interface{} ) int {
+    if len( multi ) == 0 {
+        panic( "nothing" )
+    }
+    return multi[0].(int)
+}
+// 多値返却の先頭 int! を返す
+func carIntN( multi ...interface{} ) interface{} {
+    if len( multi ) == 0 {
+        return nil
+    }
+    if multi[0] == nil {
+        return nil
+    }
+    return multi[0].(int)
+}
+#+END_SRC
+
+
+
+* Classes and inheritance
+
+Go has structs and receivers, but no inheritance.
+
+LuneScript has inheritance, so you need to implement inheritance in Go.
+
+Here's how to support the following LuneScript class in Go.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+interface IF {
+  pub fn sub1():int;
+}
+class Parent {
+   let val1:int;
+   pub fn sub1():int {
+      return self.val1;
+   }
+}
+class Sub extend Parent {
+   let val2:int;
+   pub override fn sub1():int {
+      return self.val2;
+   }
+   pub fn sub2():int {
+      return self.val2;
+   }
+}
+class SubSub extend Sub {
+   let val3:int;
+   pub override fn sub1():int {
+      return self.val3;
+   }
+   pub fn sub3():int {
+      return self.val3;
+   }
+}
+#+END_SRC
+
+
+
+** Equivalent code by Go
+
+Show the equivalent code by Go
+#+BEGIN_SRC go
+package main
+
+import "fmt"
+
+type ParentMtd interface {
+    sub1 () int
+}
+type Parent struct {
+    val1 int
+    FP ParentMtd
+}
+type ParentDownCast interface {
+    ToParent() *Parent
+}
+
+func (obj *Parent ) ToParent() *Parent {
+    return obj
+}
+
+
+func (self *Parent) sub1() int {
+    return self.val1
+}
+
+func NewParent(val1 int) *Parent {
+    parent := Parent{ val1, nil }
+    parent.FP = &parent
+    return &parent
+}
+
+type SubMtd interface {
+    ParentMtd
+    sub2 () int
+}
+
+type Sub struct {
+    Parent
+    val2 int
+    FP SubMtd
+}
+type SubDownCast interface {
+    ToSub() *Sub
+}
+
+func (obj *Sub ) ToSub() *Sub {
+    return obj
+}
+
+
+func (self *Sub) sub1() int {
+    return self.val2
+}
+func (self *Sub) sub2() int {
+    return self.val2
+}
+
+func newSub(val1,val2 int) *Sub {
+    sub := Sub{ Parent{ val1, nil }, val2, nil }
+    sub.Parent.FP = &sub
+    sub.FP = &sub
+    return &sub
+}
+
+
+type SubSubMtd interface {
+    SubMtd
+    sub3 () int
+}
+
+type SubSub struct {
+    Sub
+    val3 int
+    FP SubSubMtd
+}
+type SubSubDownCast interface {
+    ToSubSub() *SubSub
+}
+
+func (obj *SubSub ) ToSubSub() *SubSub {
+    return obj
+}
+func (obj *SubSub ) ToSub() *Sub {
+    return &obj.Sub
+}
+
+func (self *SubSub) sub1() int {
+    return self.val3
+}
+func (self *SubSub) sub2() int {
+    return self.Sub.sub2()
+}
+func (self *SubSub) sub3() int {
+    return self.val3
+}
+
+
+func newSubSub(val1,val2,val3 int) *SubSub {
+    subsub := SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
+    subsub.Parent.FP = &subsub
+    subsub.Sub.FP = &subsub
+    subsub.FP = &subsub
+    return &subsub
+}
+
+func testParent( obj *Parent ) {
+    fmt.Println( obj.FP.sub1() )
+}
+
+func testSub( mess string, obj *Sub ) {
+    fmt.Println( mess, obj.FP.sub1(), obj.FP.sub2() )
+}
+
+func testCast( obj *Parent ) {
+    cast, ok := obj.FP.(SubDownCast)
+    if ok {
+        testSub( "cast", cast.ToSub() )
+    } else {
+        fmt.Println( "cast NG" )
+    }
+    
+}
+
+func Lns_init() {
+    subsub := newSubSub( 1, 2, 3 )
+    fmt.Println( subsub.val1, subsub.val2, subsub.val3 )
+    fmt.Println( subsub.FP.sub1(), subsub.FP.sub2(), subsub.FP.sub3() )
+    testSub( "subsub.Sub", &subsub.Sub )
+    testParent( &subsub.Parent )
+    testCast( &subsub.Parent )
+
+    sub := newSub( 1, 2 )
+    testSub( "sub", sub )
+    testParent( &sub.Parent )
+    testCast( &sub.Parent )
+
+    testCast( NewParent( 1 ) )
+}
+#+END_SRC
+
+
+
+** Inheritance realization method
+
+
+*** Parent class
+
+First, the Parent class will be described.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Parent {
+   let val1:int;
+   pub fn sub1():int {
+      return self.val1;
+   }
+}
+#+END_SRC
+
+
+
+**** data structure
+
+To represent the Parent class, define the following structure and interface.
+#+BEGIN_SRC go
+type ParentMtd interface {
+    sub1 () int
+}
+type Parent struct {
+    val1 int
+    FP ParentMtd
+}
+type ParentDownCast interface {
+    ToParent() *Parent
+}
+func (obj *Parent ) ToParent() *Parent {
+    return obj
+}
+#+END_SRC
+
+- The ParentMtd interface has the following roles:
+  - Define methods for Parent class
+  - Expressing the morimorphism of the Parent class
+- Parent structure has members and ParentMtd
+- ParentDownCast is defined per class for downcast
+
+
+**** Method
+
+To represent the method of Parent class, define the following receiver function.
+#+BEGIN_SRC go
+func (self *Parent) sub1() int {
+    return self.val1
+}
+#+END_SRC
+
+
+
+**** constructor
+
+Define the following as the constructor of the Parent class.
+#+BEGIN_SRC go
+func NewParent(val1 int) *Parent {
+    super := &Parent{ val1, nil }
+    super.FP = super
+    return super
+}
+#+END_SRC
+
+
+This constructor does the following:
+- Member initialization
+- FP settings
+
+
+**** How to use the Parent class
+
+Parent is used as follows.
+#+BEGIN_SRC go
+parent := NewParent( 1 )
+print( parent.FP.sub1() )
+#+END_SRC
+
+
+When calling a method, be sure to call it through the FP interface.
+
+
+*** Sub class
+
+Describe the Sub class.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+class Sub extend Parent {
+   let val2:int;
+   pub override fn sub1():int {
+      return self.val2;
+   }
+   pub fn sub2():int {
+      return self.val2;
+   }
+}
+#+END_SRC
+
+
+
+**** data structure
+
+To represent the Sub class, define the following structure and interface.
+#+BEGIN_SRC go
+type SubMtd interface {
+    ParentMtd
+    sub2 () int
+}
+type Sub struct {
+    Parent
+    val2 int
+    FP SubMtd
+}
+type SubDownCast interface {
+    ToSub() *Sub
+}
+func (obj *Sub ) ToSub() *Sub {
+    return obj
+}
+func (obj *Sub ) ToParent() *Parent {
+    return &obj.Parent
+}
+#+END_SRC
+
+- The SubMtd interface declares the methods defined in Sub.
+  - Do not include Parent methods
+- The Sub structure declares the data of the Parent structure and the members defined in Sub.
+
+
+**** Method
+
+To represent the method of Sub class, define the following receiver function.
+#+BEGIN_SRC go
+func (self *Sub) sub1() int {
+    return self.val2
+}
+func (self *Sub) sub2() int {
+    return self.val2
+}
+#+END_SRC
+
+
+
+**** constructor
+
+Define the following as the constructor of the Sub class.
+#+BEGIN_SRC go
+func newSub(val1,val2 int) *Sub {
+    sub := &Sub{ Parent{ val1, nil }, val2, nil }
+    sub.Parent.FP = sub
+    sub.FP = sub
+    return sub
+}
+#+END_SRC
+
+
+This constructor does the following:
+- Member initialization
+- FP settings
+  - The super FP is also set here
+  - Achieve polymorphism by setting & sub instead of & super in the FP of this super
+
+
+*** SubSub class
+
+Describes the SubSub class.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+class SubSub extend Sub {
+   let val3:int;
+   pub override fn sub1():int {
+      return self.val3;
+   }
+   pub fn sub3():int {
+      return self.val3;
+   }
+}
+#+END_SRC
+
+
+
+**** data structure
+
+To represent the SubSub class, define the following structure and interface.
+#+BEGIN_SRC go
+type SubSubMtd interface {
+    SubMtd
+    sub3 () int
+}
+
+type SubSub struct {
+    Sub
+    val3 int
+    FP SubSubMtd
+}
+type SubSubDownCast interface {
+    ToSubSub() *SubSub
+}
+func (obj *SubSub ) ToSubSub() *SubSub {
+    return obj
+}
+func (obj *SubSub ) ToSub() *Sub {
+    return &obj.Sub
+}
+func (obj *SubSub ) ToParent() *Parent {
+    return &obj.Parent
+}
+#+END_SRC
+
+- The SubSubMtd interface declares the methods defined in SubSub.
+  - Do not include Sub methods
+- The SubSub structure declares the data of the Sub structure and the members defined in SubSub.
+
+
+**** Method
+
+To represent the method of SubSub class, define the following receiver function.
+#+BEGIN_SRC go
+func (self *SubSub) sub1() int {
+    return self.val3
+}
+func (self *SubSub) sub2() int {
+    return self.Sub.sub2()
+}
+func (self *SubSub) sub3() int {
+    return self.val3
+}
+#+END_SRC
+
+
+
+***** Method definition not overridden
+
+Of note above is the fact that the sub2 () method calls =self.Sub.sub2()=.
+
+The SubSub class does not override the sub2 method. In other words, the sub2 method of SubSub will use the method of the Sub class. Therefore, we are calling the Sub.sub2 method.
+
+
+**** constructor
+
+Define the following as the constructor of the SubSub class.
+#+BEGIN_SRC go
+func newSubSub(val1,val2,val3 int) *SubSub {
+    subsub := &SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
+    subsub.Parent.FP = subsub
+    subsub.Sub.FP = subsub
+    subsub.FP = subsub
+    return subsub
+}
+#+END_SRC
+
+
+This constructor does the following:
+- Member initialization
+- FP settings
+  - Parent and Sub FPs are also set here
+  - Achieve polymorphism by setting & subsub in the FP of Parent and Sub
+
+
+*** IF interface
+#+BEGIN_SRC lns
+// @lnsFront: ok
+interface IF {
+  pub fn sub1():int;
+}
+#+END_SRC
+
+
+
+**** data structure
+
+The LuneScript interface uses the Go interface as it is.
+#+BEGIN_SRC go
+interface IF {
+  pub fn sub1():int;
+}
+#+END_SRC
+
+
+
+*** Method call
+
+To call a method of the Parent class:
+#+BEGIN_SRC go
+func test(parent *Parent) int {
+  print( parent.FP.sub1() )
+  print( parent.sub1() )
+}  
+#+END_SRC
+
+
+
+**** Difference between parent.FP.sub1 () and parent.sub1 ()
+
+There are two patterns of method calls:
+- parent.FP.sub1()
+  - Method call corresponding to polymorphism
+- parent.sub1()
+  - Method call defined in Parent class
+    - Not compatible with polymorphism
+
+
+**** overhead
+- Method calls that support polymorphism have a large overhead.
+- Method calls that support polymorphism should be limited to cases where polymorphism is required.
+- There is currently no definition in LuneScript as to whether polymorphism is needed.
+  - Need to introduce final declarations in classes and methods to make it clear that polymorphism is not needed
+
+
+*** up-cast / down-cast
+- up-cast is achieved by accessing the embedded pointer
+  - Up-cast to an interface uses the interface type held by the object
+- down-cast implements interface with type assertions.
+  - Define a DownCast interface for each class, cast to that interface, and then execute the cast function to the desired class.
+#+BEGIN_SRC go
+var ifObj IF = obj.FP // インタフェースをセットする
+parent := &obj.Parent // アップキャスト
+(parent.FP.(SubDownCast)).ToSub() // obj を Sub にダウンキャストする
+#+END_SRC
+
+
+
+** Class summary
+- Declare an interface that defines the methods of the class
+  - Embed the interface of the method defined in the Super class
+#+BEGIN_SRC go
+type TestMtd interface {
+    SuperMtd
+    method() int
+}
+#+END_SRC
+
+- Declare a structure that holds the members of the class and the interface above
+  - Inheritance embeds the inherited type
+#+BEGIN_SRC go
+type Test struct {
+    Super
+    val int
+    FP TestMtd
+}
+#+END_SRC
+
+- Define an interface for downcasting
+#+BEGIN_SRC go
+type TestDownCast interface {
+    ToTest() *Test
+}
+#+END_SRC
+
+- Define a method for downcasting
+  - This method declares everything for the Super class
+#+BEGIN_SRC go
+func (obj *SubSub) ToSub() *Sub {
+    return &obj.Sub
+}
+#+END_SRC
+
+- Declare a receiver that defines the behavior of the methods in the class
+  - The receiver declares including the methods of the Super class
+  - Functions that are not overridden call the methods of the structure that defines the method.
+#+BEGIN_SRC go
+func (self *Test) method() int {
+    return self.super.method()
+}
+#+END_SRC
+
+- Initialize the members and interface FP in the constructor
+  - The interface is initialized to include the interface FP of the Super class.
+- Method calls are made via interface FP
+  - Polymorphism Invalid method call calls the method of the structure directly
+#+BEGIN_SRC go
+obj.FP.method() // ポリモーフィズム有効
+obj.method()    // ポリモーフィズム無効
+#+END_SRC
+
+- up-cast is realized by accessing the pointer of the member Super class.
+  - Up-cast to an interface uses the interface type held by the object
+- down-cast implements an interface with a type assertion and an interface for downcasting.
+#+BEGIN_SRC go
+var ifObj IF = obj.FP // インタフェースをセットする
+super := &obj.super // アップキャスト
+(parent.FP.(SubDownCast)).ToSub() // obj を Sub にダウンキャストする
+#+END_SRC
+
+- The interface uses Go's interface as it is
+  - Use interface FP when up-casting from a class object to an interface
+
+
+* Symbol name
+
+The LuneScript and go symbol names differ significantly in the following ways:
+- Namespace
+  - LuneScript is in the same file (module)
+  - go is in the same directory (package)
+- Public / private control method
+  - LuneScript is controlled by pub / pro etc.
+  - go is controlled by the case of the first letter of the symbol
+This difference causes the following problems.
+- When different files FileA.lns and FileB.lns are defined with the same name symbol sym in LuneScript, when converting this to go, if the symbol sym with the same name is defined in FileA.go and FileB.go with the same configuration. , The symbol sym results in a duplicate definition error.
+- Symbols that are publicly defined in lowercase in LuneScript are private in go.
+  - Symbols that are defined privately in uppercase in LuneScript are made public in go.
+To address this issue, we process symbol names as follows:
+
+Add the file name to the beginning of the symbol of the function or class to be controlled as public or private. If it is public, add G (G of GLOBAL), and if it is private, add l (l of local).
+
+So if you want to convert the following LuneScript source to go,
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func() {
+}
+pub class Class {
+   let val1:int;
+   pub let val2:int;
+}
+#+END_SRC
+
+
+The relationship between the LuneScript and go symbols is as follows.
+|-|-|-|
+| Public / Private | lns | go | 
+|-+-+-|
+| private | func | lfile_func | 
+| Release | Class | Gfile_Class | 
+| private | val1 | lval1 | 
+| Release | val2 | Gval2 | 
+
+Since there is no difference in scope between LuneScript and go for arguments and local variables, they are basically converted as they are.
+
+
+* Lua VM
+
+The current LuneScript uses Lua VM when deploying Macro. There are two ways to use the Lua VM with Go:
+- Use gopher-lua, a port of Lua to Go
+- Use liblua
+Using gopher-lua makes it easier to work with Lua VMs, but with the following limitations:
+- Lua VM version becomes Lua5.1
+- Slow compared to liblua
+  - According to the information on the official Wiki (<https://github.com/yuin/gopher-lua/wiki/Benchmarks>), the execution time of fib (35) is as follows.
+    - lua5.1.4 :: 1.71sec
+    - Gopherlua :: 5.40sec
+From the above, the LuneScript transcompiler uses liblua.
+
+
+** cgo
+
+Use cgo to use liblua from Go.
+
+cgo is a package for calling C language libraries from Go.
+
+The C code written in the comment before import "C" is parsed and extracted into the C package so that it can be accessed from Go as follows.
+#+BEGIN_SRC go
+// #include <stdlib.h>
+// #cgo CFLAGS: -I/usr/include/lua
+// #cgo LDFLAGS: -ldl -lm -llua
+// #include <lauxlib.h>
+// #include <lualib.h>
+import "C"
+
+import "unsafe"
+
+// lua のコードを実行する
+func lua_runScript( script string ) {
+    var vm * C.lua_State = C.luaL_newstate()
+    if vm == nil {
+        return
+    }
+    defer C.lua_close( vm )
+    
+    C.luaL_openlibs( vm )
+
+    block := C.CString( script )
+    defer C.free( unsafe.Pointer( block ) )
+    
+    C.luaL_loadstring( vm, block )
+    C.lua_pcallk( vm, 0, C.LUA_MULTRET, 0, 0, nil )
+}
+
+func main() {
+   lua_runScript( "print( 'hello world' )" )
+}
+#+END_SRC
+
+
+*Since cgo does not support the #define macro function, the following macro-defined functions must be expanded and written by themselves.*
+#+BEGIN_SRC c
+#define luaL_dostring(L, s) \
+	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))
+#+END_SRC
+

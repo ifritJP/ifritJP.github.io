@@ -1,0 +1,104 @@
+#+TITLE: @ 1.2 Package when transcompiling to Go language
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+Modules packaged with go are available from LuneScript.
+
+
+* go package management overview
+
+go manages packages with go.mod.
+
+Packages managed by this go.mod are cached in the local directory specified by the environment variable GOPATH.
+
+LuneScript can take advantage of this cached module.
+
+To use the package on github with go, write as follows.
+#+BEGIN_SRC go
+import "github.com/ifritJP/lnshttpd"
+#+END_SRC
+
+
+LuneScript can access the go modules in the same way.
+
+
+* import
+
+To import the .lns file in the go package with LuneScript, write:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+import go/github:com.ifritJP.lnshttpd.lnsservlet;
+#+END_SRC
+
+
+This is an example of importing lnsservlet.lns from https://github.com/ifritJP/lnshttpd.
+
+Now let's look at =go/github:com.ifritJP.lnshttpd.lnsservlet=.
+
+As you can probably imagine by comparing =https://github.com/ifritJP/lnshttpd= and =go/github:com.ifritJP.lnshttpd.lnsservlet=, there are additional rules when using the go package:
+- Prepend =go/=
+- If there is a., Like github.com, specify: instead of.
+LuneScript searches for modules in the go package path instead of the normal search path when a module of the above format is specified.
+
+Specifically, it searches the files in the following order:
+- vendor/github.com/ifritJP/lnshttpd/lnsservlet.lns 
+- ${GOPATH}/pkg/mod/github.com/ifrit!j!p/lnshttpd@XXXXXXXXXXXXXXXXX/lnsservlet.lns
+Here, the =XXXXXXXXXXXXXXXXX= part of =@XXXXXXXXXXXXXXXXX/lnsservlet.lns= is obtained from the TAG information of the module described in go.mod. In other words, you need to run go mod tidy in advance.
+
+
+* module
+
+To use the go module from LuneScript, you need a module declaration.
+
+The module declaration is also used when using the Lua module from LuneScript, but when using the go module, there are additional rules:
+- Add to the module declaration that you are using the go module
+The following is an example declaration when using servlet.go on github.com.ifritJP.lnshttpd.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+module servlet require "go/github:com.ifritJP.lnshttpd.servlet" of "" {
+   pub static fn Start( listenPort:int,
+                        handlerList: &List<&lnsservlet.HandlerInfo>,
+                        hostingList:&List<&lnsservlet.HostingInfo> );
+}
+#+END_SRC
+
+
+Here, =of ""= of =module servlet require "go/github:com.ifritJP.lnshttpd.servlet" of ""= declares the type of module to be used.
+
+The character strings that can be specified are as follows.
+|-|-|
+| String | Module language | 
+|-+-|
+| "" | Same as transcompile destination language | 
+| "Lua" | lua | 
+| "Go" | go | 
+
+
+** Available languages
+
+There are restrictions on the combination of languages that can be transcompiled and the languages that can be used with module.
+|-|-|
+| go module | lua module | 
+|-+-|
+| Transcompile to go | Possible | Possible | 
+| Transcompile to lua | Impossible | Possible | 
+
+
+** Type compatibility
+
+The go module is available from LuneScript in the module declaration.
+
+However, type compatibility is limited.
+
+The following types are paired with LuneScript and go.
+|-|-|
+| LuneScript type | type of go | 
+|-+-|
+| int | int | 
+| real | float64 | 
+| bool | bool | 
+| str | string | 
+| nilable | interface{} | 

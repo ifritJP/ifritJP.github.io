@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>@ .1 Transcompile to Go language - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/go/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="@ .1 Transcompile to Go language" />
+<meta property="og:description" content="LuneScript can be transcompiled to Go as well as Lua as the language to transcompile. This feature makes LuneScript faster (about 16 times faster) by transcompiling LuneScript&#39;s self-hosting code into go language code and building it with go. See below for speedups. https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/ However, some features are not supported because the support is limited to the features required for LuneScript self-hosting. That said, LuneScript&#39;s self-hosting itself uses most of LuneScript&#39;s" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/go/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="@ .1 Transcompile to Go language"/>
+<meta name="twitter:description" content="LuneScript can be transcompiled to Go as well as Lua as the language to transcompile. This feature makes LuneScript faster (about 16 times faster) by transcompiling LuneScript&#39;s self-hosting code into go language code and building it with go. See below for speedups. https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/ However, some features are not supported because the support is limited to the features required for LuneScript self-hosting. That said, LuneScript&#39;s self-hosting itself uses most of LuneScript&#39;s"/>
+<meta itemprop="name" content="@ .1 Transcompile to Go language">
+<meta itemprop="description" content="LuneScript can be transcompiled to Go as well as Lua as the language to transcompile. This feature makes LuneScript faster (about 16 times faster) by transcompiling LuneScript&#39;s self-hosting code into go language code and building it with go. See below for speedups. https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/ However, some features are not supported because the support is limited to the features required for LuneScript self-hosting. That said, LuneScript&#39;s self-hosting itself uses most of LuneScript&#39;s">
+
+<meta itemprop="wordCount" content="1679">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>@ .1 Transcompile to Go language</h1>
+
+<p>
+LuneScript can be transcompiled to Go as well as Lua as the language to transcompile.
+</p>
+<p>
+This feature makes LuneScript faster (about 16 times faster) by transcompiling LuneScript&#39;s self-hosting code into go language code and building it with go.
+</p>
+<p>
+See below for speedups. <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/">https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/</a>
+</p>
+<p>
+However, some features are not supported because the support is limited to the features required for LuneScript self-hosting.
+</p>
+<p>
+That said, LuneScript&#39;s self-hosting itself uses most of LuneScript&#39;s features, so it&#39;s fine for normal use.
+</p>
+<h2 id="headline-1">
+How to transcompile to go language
+</h2>
+<p>
+<strong>To transcompile to the go language, specify -langGo when using the LuneScript command line option save or SAVE to output the transcompile result to go to a file with a .go extension.</strong>
+</p>
+<h2 id="headline-2">
+Cooperation with Lua
+</h2>
+<p>
+When transcompiling to the go language, you need to use a special type when working with Lua.
+</p>
+<p>
+See below for details.
+</p>
+<p>
+<a href="../lua">../lua</a>
+</p>
+<h2 id="headline-3">
+Post-transcompile configuration to Go language
+</h2>
+<p>
+LuneScript is a Lua transcompiler that features the ability to use Lua code directly from LuneScript.
+</p>
+<p>
+This feature is inherited even after transcompiling to the Go language.
+</p>
+<p>
+For example, you can run the following code even after converting it to Go language.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let step = 30;
+
+// Lua のフィボナッチ関数
+let code = ```
+local function fib ( n )
+   if n &lt; 2 then return n end
+   return fib(n - 2) + fib(n - 1)
+end
+return fib
+```;
+
+// Lua コードのロード
+form fibFunc( num:int ):int;
+fn loadLua( txt:str ) : Luaval&lt;fibFunc&gt; {
+   let fib;
+   __luago {
+      let loaded = unwrap _load( txt ## );
+      fib = unwrap loaded(##);
+   }
+   return fib@@fibFunc;
+}
+
+// プロファイル用マクロ
+macro _profile( exec:__exp ) {
+   {}
+   {
+      let prev = os.clock();
+      print( &#34;%s = %d: step = %d: time = %g&#34;
+             (,,,,exec, ,,exec, step, os.clock() - prev ) );
+   }
+}
+
+// Lua のコードをロードして実行
+let fib_lua = loadLua( code );
+__luago {
+   _profile( fib_lua( step ) );
+}
+
+// LuneScript のフィボナッチ関数
+fn fib_lns( num:int ) : int {
+   if num &lt; 2 {
+      return num;
+   }
+   return fib_lns( num - 2 ) + fib_lns( num - 1 );
+}
+// Go で定義した fib_lns 関数を実行
+_profile( fib_lns( step ) );</code></pre>
+</div>
+<p>
+This code does the Fibonacci calculations in lua and LuneScript.
+</p>
+<p>
+The first code variable defines the lua code, loads it with the <code class="verbatim">loadLua()</code> function, and loads the Lua function with fib_lua. And the <code class="verbatim">fib_lns()</code> function in the latter half is a LuneScript function that performs Fibonacci calculations.
+</p>
+<h3 id="headline-4">
+When transcompiled to Lua
+</h3>
+<p>
+Transcompiling the above code into Lua and running it produces the following:
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">fib_lua( step ) = 24157817: step = 37: time = 5.69
+fib_lns( step ) = 24157817: step = 37: time = 5.38</code></pre></div>
+</div>
+<p>
+This shows the calculation result and calculation time for each of = fib_lua () = and <code class="verbatim">fib_lns()</code>.
+</p>
+<p>
+Looking at this, we can see that the function <code class="verbatim">fib_lua()</code> loaded by Lua and the function <code class="verbatim">fib_lns()</code> of Lns take almost the same execution time.
+</p>
+<p>
+This is a natural result. This is because if you convert LuneScript to Lua, <code class="verbatim">fib_lns()</code> written in LuneScript and <code class="verbatim">fib_lua()</code> in Lua will have almost the same Lua code.
+</p>
+<p>
+The code when transcompiling the above code into Lua looks like this:
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="c1">--miniGo.lns</span>
+<span class="kd">local</span> <span class="n">_moduleObj</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="kd">local</span> <span class="n">__mod__</span> <span class="o">=</span> <span class="s1">&#39;@miniGo&#39;</span>
+<span class="kd">local</span> <span class="n">_lune</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s2">&#34;lune.base.runtime2&#34;</span> <span class="p">)</span>
+<span class="kr">if</span> <span class="ow">not</span> <span class="n">_lune2</span> <span class="kr">then</span>
+   <span class="n">_lune2</span> <span class="o">=</span> <span class="n">_lune</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="n">step</span> <span class="o">=</span> <span class="mi">37</span>
+<span class="kd">local</span> <span class="n">code</span> <span class="o">=</span> <span class="s">[==[
+</span><span class="s">local function fib ( n )
+</span><span class="s">   if n &lt; 2 then return n end
+</span><span class="s">   return fib(n - 2) + fib(n - 1)
+</span><span class="s">end
+</span><span class="s">return fib
+</span><span class="s">]==]</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">loadLua</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span>
+   <span class="kd">local</span> <span class="n">loaded</span> <span class="o">=</span> <span class="n">_lune.unwrap</span><span class="p">(</span> <span class="n">_lune.loadstring52</span><span class="p">(</span> <span class="n">txt</span> <span class="p">))</span>
+   <span class="kd">local</span> <span class="n">fib</span> <span class="o">=</span> <span class="n">_lune.unwrap</span><span class="p">(</span> <span class="n">loaded</span><span class="p">(</span>  <span class="p">))</span>
+   <span class="kr">return</span> <span class="n">fib</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="n">fib_lua</span> <span class="o">=</span> <span class="n">loadLua</span><span class="p">(</span> <span class="n">code</span> <span class="p">)</span>
+<span class="kr">do</span>
+   <span class="kd">local</span> <span class="n">prev</span> <span class="o">=</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="s2">&#34;fib_lua( step )&#34;</span><span class="p">,</span> <span class="n">fib_lua</span><span class="p">(</span> <span class="n">step</span> <span class="p">),</span> <span class="n">step</span><span class="p">,</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kd">local</span> <span class="kr">function</span> <span class="nf">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="p">)</span>
+   <span class="kr">if</span> <span class="n">num</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="kr">then</span>
+      <span class="kr">return</span> <span class="n">num</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">2</span> <span class="p">)</span> <span class="o">+</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kr">do</span>
+   <span class="kd">local</span> <span class="n">prev</span> <span class="o">=</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span>
+   <span class="n">print</span><span class="p">(</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="s2">&#34;fib_lns( step )&#34;</span><span class="p">,</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">step</span> <span class="p">),</span> <span class="n">step</span><span class="p">,</span> <span class="n">os.clock</span><span class="p">(</span>  <span class="p">)</span> <span class="o">-</span> <span class="n">prev</span><span class="p">)</span> <span class="p">)</span>
+<span class="kr">end</span>
+<span class="kr">return</span> <span class="n">_moduleObj</span></code></pre></div>
+</div>
+<p>
+The following is an excerpt of the notable definition of the <code class="verbatim">fib_lns()</code> function.
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="p">)</span>
+   <span class="kr">if</span> <span class="n">num</span> <span class="o">&lt;</span> <span class="mi">2</span> <span class="kr">then</span>
+      <span class="kr">return</span> <span class="n">num</span>
+   <span class="kr">end</span>
+   <span class="kr">return</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">2</span> <span class="p">)</span> <span class="o">+</span> <span class="n">fib_lns</span><span class="p">(</span> <span class="n">num</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">)</span>
+<span class="kr">end</span></code></pre></div>
+</div>
+<p>
+As you can see, <code class="verbatim">fib_lns()</code> and <code class="verbatim">fib_lub()</code> are equivalent codes.
+</p>
+<p>
+Therefore, it is natural that = fib_lns () = and <code class="verbatim">fib_lua()</code> take about the same amount of time.
+</p>
+<h3 id="headline-5">
+When transcompiled to go
+</h3>
+<p>
+On the other hand, when transcompiled to go, the execution result is as follows.
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">fib_lua( step ) = 24157817: step = 37: time = 6.07
+fib_lns( step ) = 24157817: step = 37: time = 0.34</code></pre></div>
+</div>
+<p>
+<strong>You can see that the calculation time of <code class="verbatim">fib_lns()</code> is about 1/18 shorter than that of = fib_lua () =.</strong>
+</p>
+<p>
+The result of transcompiling to go is as follows.
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="c1">// This code is transcompiled by LuneScript.
+</span><span class="c1"></span><span class="kn">package</span> <span class="nx">lnsc</span>
+<span class="kn">import</span> <span class="p">.</span> <span class="s">&#34;lnsc/lune/base/runtime_go&#34;</span>
+<span class="kd">var</span> <span class="nx">init_miniGo</span> <span class="kt">bool</span>
+<span class="kd">var</span> <span class="nx">miniGo__mod__</span> <span class="kt">string</span>
+<span class="kd">var</span> <span class="nx">miniGo_step</span> <span class="nx">LnsInt</span>
+<span class="kd">var</span> <span class="nx">miniGo_code</span> <span class="kt">string</span>
+<span class="kd">var</span> <span class="nx">miniGo_fib_lua</span> <span class="o">*</span><span class="nx">Lns_luaValue</span>
+<span class="kd">type</span> <span class="nx">miniGo_fibFunc_1003_</span> <span class="kd">func</span> <span class="p">(</span><span class="nx">arg1</span> <span class="nx">LnsInt</span><span class="p">)</span> <span class="nx">LnsInt</span>
+<span class="c1">// 14: decl @miniGo.loadLua
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">miniGo_loadLua_1009_</span><span class="p">(</span><span class="nx">txt</span> <span class="kt">string</span><span class="p">)</span> <span class="o">*</span><span class="nx">Lns_luaValue</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">loaded</span> <span class="o">*</span><span class="nx">Lns_luaValue</span>
+    <span class="nx">loaded</span> <span class="p">=</span> <span class="nf">Lns_unwrap</span><span class="p">(</span> <span class="nf">Lns_car</span><span class="p">(</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">Load</span><span class="p">(</span><span class="nx">txt</span><span class="p">,</span> <span class="kc">nil</span><span class="p">))).(</span><span class="o">*</span><span class="nx">Lns_luaValue</span><span class="p">)</span>
+    <span class="kd">var</span> <span class="nx">fib</span> <span class="nx">LnsAny</span>
+    <span class="nx">fib</span> <span class="p">=</span> <span class="nf">Lns_unwrap</span><span class="p">(</span> <span class="nf">Lns_car</span><span class="p">(</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">RunLoadedfunc</span><span class="p">(</span><span class="nx">loaded</span><span class="p">,</span><span class="nf">Lns_2DDD</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{}))[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="nx">fib</span><span class="p">.(</span><span class="o">*</span><span class="nx">Lns_luaValue</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="c1">// 36: decl @miniGo.fib_lns
+</span><span class="c1"></span><span class="kd">func</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="nx">LnsInt</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">num</span> <span class="p">&lt;</span> <span class="mi">2</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nx">num</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">func</span> <span class="nf">Lns_miniGo_init</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">init_miniGo</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">true</span>
+    <span class="nx">miniGo__mod__</span> <span class="p">=</span> <span class="s">&#34;@miniGo&#34;</span>
+    <span class="nf">Lns_InitMod</span><span class="p">()</span>
+    <span class="nx">miniGo_step</span> <span class="p">=</span> <span class="mi">37</span>
+    <span class="nx">miniGo_code</span> <span class="p">=</span> <span class="s">&#34;local function fib ( n )   if n &lt; 2 then return n end   return fib(n - 2) + fib(n - 1)endreturn fib&#34;</span>
+    <span class="nx">miniGo_fib_lua</span> <span class="p">=</span> <span class="nf">miniGo_loadLua_1009_</span><span class="p">(</span><span class="nx">miniGo_code</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">prev</span> <span class="nx">LnsReal</span>
+        <span class="nx">prev</span> <span class="p">=</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+        <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">String_format</span><span class="p">(</span><span class="s">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="p">[]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="s">&#34;fib_lua( step )&#34;</span><span class="p">,</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">RunLoadedfunc</span><span class="p">(</span><span class="nx">miniGo_fib_lua</span><span class="p">,</span><span class="nf">Lns_2DDD</span><span class="p">(</span><span class="nx">miniGo_step</span><span class="p">))[</span><span class="mi">0</span><span class="p">].(</span><span class="nx">LnsInt</span><span class="p">),</span> <span class="nx">miniGo_step</span><span class="p">,</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">prev</span><span class="p">})})</span>
+    <span class="p">}</span>
+    
+    <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">prev</span> <span class="nx">LnsReal</span>
+        <span class="nx">prev</span> <span class="p">=</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+        <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">String_format</span><span class="p">(</span><span class="s">&#34;%s = %d: step = %d: time = %g&#34;</span><span class="p">,</span> <span class="p">[]</span><span class="nx">LnsAny</span><span class="p">{</span><span class="s">&#34;fib_lns( step )&#34;</span><span class="p">,</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">miniGo_step</span><span class="p">),</span> <span class="nx">miniGo_step</span><span class="p">,</span> <span class="nf">Lns_getVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">prev</span><span class="p">})})</span>
+    <span class="p">}</span>
+    
+<span class="p">}</span>
+<span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">false</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+Since it is very difficult to read, the definition part of the <code class="verbatim">fib_lns()</code> function is extracted as follows.
+</p>
+<div class="src src-go">
+<div class="highlight"><pre class="chroma"><code class="language-go" data-lang="go"><span class="kd">func</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="nx">LnsInt</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="nx">num</span> <span class="p">&lt;</span> <span class="mi">2</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nx">num</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="nf">miniGo_fib_lns_1025_</span><span class="p">(</span><span class="nx">num</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+The function name is longer, but you can see that the LuneScript code has been converted to go as is. When you execute a function, you just call the function normally as follows.
+</p>
+<pre class="example">
+ miniGo_fib_lns_1025_(miniGo_step)
+</pre>
+<p>
+On the other hand, Lua&#39;s <code class="verbatim">fib_lua()</code> function is loaded with a function for executing Lua&#39;s code by <code class="verbatim">miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)</code>, and when it is executed, the function is called as follows.
+</p>
+<pre class="example">
+Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
+</pre>
+<p>
+As you can see, the processing is completely different between = fib_lns () = and <code class="verbatim">fib_lua()</code>.
+</p>
+<h3 id="headline-6">
+Build
+</h3>
+<p>
+The following steps are required to transcompile and build to go.
+</p>
+<ul>
+<li>
+<p>
+Generate go.mod
+</p>
+</li>
+<li>
+<p>
+Register the LuneScript runtime with go.mod
+</p>
+</li>
+<li>
+<p>
+Generate main.go
+</p>
+</li>
+<li>
+<p>
+Generate .go from .lns
+</p>
+</li>
+<li>
+<p>
+Update go.mod
+</p>
+</li>
+<li>
+<p>
+go build
+</p>
+</li>
+</ul>
+<p>
+If you update .lns, repeat the process after &#34;Generate .go from .lns&#34;.
+</p>
+<p>
+I will explain each step.
+</p>
+<h4 id="headline-7">
+Generate go.mod
+</h4>
+<p>
+Execute the following command in the directory where lune.js is located.
+</p>
+<pre class="example">
+$ go mod init test # &lt;--- test は環境に合せて指定してください
+</pre>
+<h4 id="headline-8">
+Register the LuneScript runtime with go.mod
+</h4>
+<p>
+Register the LuneScript runtime with go.mod with the following command:
+</p>
+<pre class="example">
+$ go get github.com/ifritJP/LuneScript/src@latest
+</pre>
+<p>
+Run go mod tidy for the rest of the work, but be sure to run go get first.
+</p>
+<h4 id="headline-9">
+Generate main.go
+</h4>
+<p>
+go requires the entry function <code class="verbatim">main()</code>.
+</p>
+<p>
+The following command will generate main.go, which defines the <code class="verbatim">main()</code> function for go.
+</p>
+<pre class="example">
+$ lnsc hoge.lns mkmain main.go
+</pre>
+<p>
+Here hoge.lns specifies the main module that defines __main in lns. main.go specifies the output path.
+</p>
+<p>
+A module that defines the __main function is required when transcompiling to go.
+</p>
+<p>
+The main.go generated by this command contains the code that initializes the lns runtime.
+</p>
+<h4 id="headline-10">
+Generate .go from .lns
+</h4>
+<p>
+Generate .go with the following command.
+</p>
+<pre class="example">
+$ lnsc hoge.lns save -langGo
+</pre>
+<p>
+For the main module that contains the __main function, add the –main option as well.
+</p>
+<pre class="example">
+$ lnsc hoge.lns save -langGo --main hoge
+</pre>
+<p>
+Where the hoge in –main hoge is the import path for the main module.
+</p>
+<p>
+For example, if the main module is foo / bar / hoge.lns
+</p>
+<pre class="example">
+$ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
+</pre>
+<p>
+It will be.
+</p>
+<p>
+If you want to transcompile LuneScript to go, you need the __main function.
+</p>
+<h4 id="headline-11">
+Update go.mod
+</h4>
+<p>
+Update go.mod with the following command.
+</p>
+<pre class="example">
+$ go mod tidy
+</pre>
+<h4 id="headline-12">
+go build
+</h4>
+<p>
+After converting all the lns files and generating main.go, run go build.
+</p>
+<pre class="example">
+$ go build
+</pre>
+<p>
+<strong>If the above fails, try the following:</strong>
+</p>
+<pre class="example">
+$ go build -tags gopherlua
+</pre>
+<p>
+This will build the transcompiled module with go.
+</p>
+<h3 id="headline-13">
+Lua library link required after transcompiling to go
+</h3>
+<blockquote>
+<p>
+追記
+</p>
+<p>
+<strong>Lua ライブラリのリンクを回避する方法を用意しました。</strong>
+</p>
+<p>
+<a href="../lua_runtime">../lua_runtime</a>
+</p>
+</blockquote>
+<p>
+As mentioned above, LuneScript works closely with Lua. And even after transcompiling to go, it supports the linked operation.
+</p>
+<p>
+To achieve this integration, the code after transcompiling to go requires a lua VM to do the lua processing.
+</p>
+<p>
+In detail, besides this Lua integration, LuneScript has some processing that requires a Lua VM. Specifically, Lua VM is used for macro expansion processing and some built-in function processing.
+</p>
+<p>
+<strong>The lua VM assumes the official lua-5.3.4 and links liblua5.3.so.</strong>
+</p>
+<p>
+The go language has the advantage of being able to generate one environment-independent executable, but unfortunately transcompiling LuneScript to go requires a link to liblua5.3.so.
+</p>
+<p>
+Not only do you need liblua5.3.so at run time, but you also need the lua-5.3.4 include file at build time.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/dir/" title="29. Recommended directory structure for projects that use LuneScript"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 29. Recommended directory structure for projects that use LuneScript</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/" title="@ .1.3 Lua runtime when transcompiled to Go">Next - @ .1.3 Lua runtime when transcompiled to Go <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

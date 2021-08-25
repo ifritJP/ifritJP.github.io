@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>@ 3. Collaboration with Lua - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/luago/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="@ 3. Collaboration with Lua" />
+<meta property="og:description" content="LuneScript can execute Lua code.  This feature is preserved after transcompiling to the go language, but there are a few things to keep in mind.  Be especially careful with the combination of asynchronous processing and lua code execution. Luaval   As already explained in the link, the result executed by lua is managed by Luaval type.  ../lua  This Luaval type data has the following restrictions." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/luago/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="@ 3. Collaboration with Lua"/>
+<meta name="twitter:description" content="LuneScript can execute Lua code.  This feature is preserved after transcompiling to the go language, but there are a few things to keep in mind.  Be especially careful with the combination of asynchronous processing and lua code execution. Luaval   As already explained in the link, the result executed by lua is managed by Luaval type.  ../lua  This Luaval type data has the following restrictions."/>
+<meta itemprop="name" content="@ 3. Collaboration with Lua">
+<meta itemprop="description" content="LuneScript can execute Lua code.  This feature is preserved after transcompiling to the go language, but there are a few things to keep in mind.  Be especially careful with the combination of asynchronous processing and lua code execution. Luaval   As already explained in the link, the result executed by lua is managed by Luaval type.  ../lua  This Luaval type data has the following restrictions.">
+
+<meta itemprop="wordCount" content="673">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>@ 3. Collaboration with Lua</h1>
+
+<p>
+LuneScript can execute Lua code.
+</p>
+<p>
+This feature is preserved after transcompiling to the go language, but there are a few things to keep in mind.
+</p>
+<p>
+Be especially careful with the combination of asynchronous processing and lua code execution.
+</p>
+<h2 id="headline-1">
+Luaval
+</h2>
+<p>
+<strong>As already explained in the link, the result executed by lua is managed by Luaval type.</strong>
+</p>
+<p>
+<a href="../lua">../lua</a>
+</p>
+<p>
+This Luaval type data has the following restrictions.
+</p>
+<p>
+<strong>The Lua VM that you run to get the data dataA of type Luaval and the Lua VM that you run to access that dataA must be the same Lua VM.</strong>
+</p>
+<p>
+<strong>The behavior is undefined if this limit is not met.</strong>
+</p>
+<p>
+If you do not handle Luaval in asynchronous processing, you need to be aware of which Lua VM is used because only one Lua VM is used.
+</p>
+<p>
+<strong>Note that &#34;access to Luaval type data&#34; does not include assignments between variables. In other words, the next <code>work = val</code> is not &#34;access to Luaval type data&#34;, so you don&#39;t need to be aware of the Lua VM.</strong>
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func( val:&amp;Luaval&lt;&amp;List&lt;int&gt;&gt; ) {
+   let work = val;
+}</code></pre>
+</div>
+<h2 id="headline-2">
+Lua VM type
+</h2>
+<p>
+There are two types of Lua VMs:
+</p>
+<ul>
+<li>
+<p>
+Lua VM running with __noasync
+</p>
+</li>
+<li>
+<p>
+Lua VM running on __async
+</p>
+<ul>
+<li>
+<p>
+Lua VM for __async exists for each asynchronous thread
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+When you run lua, you need to control which Lua VMs you access.
+</p>
+<p>
+<strong>The lua access block controls this.</strong>
+</p>
+<h2 id="headline-3">
+lua access block
+</h2>
+<p>
+<strong>There are the following types of lua access blocks: Also, the lua access block to use depends on whether the function to be accessed is __async or __noasync.</strong>
+</p>
+<ul>
+<li>
+<p>
+__luago
+</p>
+<ul>
+<li>
+<p>
+Used when accessing lua from the __noasync function
+</p>
+</li>
+<li>
+<p>
+This is a Lua VM for __noasync to access lua.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__luaLock
+</p>
+<ul>
+<li>
+<p>
+Used when accessing lua from __async functions
+</p>
+</li>
+<li>
+<p>
+This is equivalent to the combination of __asyncLock and __luago.
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+__luaDepend
+</p>
+<ul>
+<li>
+<p>
+Used when accessing lua from __async functions
+</p>
+</li>
+<li>
+<p>
+It is accessed by lua for the Lua VM associated with the currently running thread.
+</p>
+</li>
+<li>
+<p>
+That is, if the currently running thread is __noasync, it will be accessed by the __noasync Lua VM, and if the currently running thread is __async, it will be accessed by the __async Lua VM.
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+<strong>__luaDepend requires great care as the Lua VM used is determined at run time.</strong>
+</p>
+<h3 id="headline-4">
+sample
+</h3>
+<p>
+Below is a sample that executes the lua code.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+__luago {
+   let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+   let loaded, err = _load( code, nil );
+   when! loaded {
+      if! let obj = loaded( ## ) {
+         forsort val, key in obj@@Map&lt;str,int&gt; {
+            print( key, val + 100 ); 
+         }
+      }
+   } else {
+      print( err );
+   }
+}</code></pre>
+</div>
+<p>
+The code <code class="verbatim">return { val1 = 10, val2 = 20 }</code> of lua assigned to the variable code is executed, and the resulting Map is enumerated and output by foreach.
+</p>
+<p>
+At the beginning of this, we declare __luago.
+</p>
+<h3 id="headline-5">
+Use of lua access block properly
+</h3>
+<p>
+As mentioned above, in order to access Lua from asynchronous processing, it is necessary to use __luaLock and __luaDepend of the lua access block properly.
+</p>
+<p>
+However, you shouldn&#39;t use __luaDepend unless you&#39;re doing a lot of Lua&#39;s heavy work asynchronously.
+</p>
+<p>
+By limiting to __luago and __luaLock instead of using __luaDepend, you may be able to minimize the load process in the Lua VM, reduce memory usage, and result in more efficient processing than running asynchronously.
+</p>
+<p>
+<strong>Also, if you use __luaDepend, you need to be careful about the lua VM used, and if you make a mistake, you will get uncertain results at run time.</strong>
+</p>
+<p>
+In order to use __luaDepend, it is necessary to carefully consider the advantages and disadvantages of asynchronous processing.
+</p>
+<h4 id="headline-6">
+Cases where it is better to use __luaDepend
+</h4>
+<p>
+<code class="verbatim">string.gmatch()</code> requires a lua access block to access lua.
+</p>
+<p>
+At this time, the Luaval data handled by <code class="verbatim">string.gmatch()</code> is closed in the apply block, so it is more efficient and safe to use __luaDepend.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   let mut list:List&lt;str&gt; = [];
+   __luaDepend {
+      apply token of string.gmatch( txt, pattern ) {
+         list.insert( token );
+      }
+   }</code></pre>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/go_package/" title="@ 1.2 Package when transcompiling to Go language"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @ 1.2 Package when transcompiling to Go language</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/completion/" title="A. Let&#39;s have more fun in an exciting development environment">Next - A. Let&#39;s have more fun in an exciting development environment <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

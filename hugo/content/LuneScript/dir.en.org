@@ -1,0 +1,97 @@
+#+TITLE: 29. Recommended directory structure for projects that use LuneScript
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript supports transcompiling to lua and go.
+
+On the other hand, lua and go have different directory management methods.
+
+This section describes the recommended directory structure so that you can use it in directory management in either language without any problems.
+
+
+* Premise
+
+The explanation here assumes that you are developing with the following github repository.
+: github.com/HOGE/PROJ
+
+- HOGE is any github account name.
+- PROJ is any repository name.
+In addition, the explanation is based on the assumption that the following modules are defined.
+: foo.bar.lib
+
+
+
+* Basic configuration
+
+Shows the basic structure of the directory.
+#+BEGIN_SRC txt
+PROJ/
+ +-- go.mod
+ +-- lune.js
+ +-- foo/
+   +-- bar/
+      +-- lib.lns
+#+END_SRC
+
+
+Place go.mod, lune.js, and foo / directly under the PROJ directory.
+
+
+** lune.js
+
+lune.js is created with the following contents.
+: {}
+
+
+
+** go.mod
+
+The configuration of go.mod at this time is shown. Note that go.mod is not needed if you do not transcompile to go.
+#+BEGIN_SRC txt
+module github.com/HOGE/PROJ
+
+go 1.16
+#+END_SRC
+
+
+
+** Main and sub modules
+
+*The repository may manage the main program and the submodules used by the main program.*
+
+*When managed as a submodule, the above basic structure restrictions are slightly relaxed.*
+
+Specifically, the following are mitigated:
+- You don't have to have go.mod, lune.js, foo directly under PROJ.
+- You no longer need to register go.sum on github.
+For example, it can be placed under src as follows.
+#+BEGIN_SRC txt
+PROJ/
+ +-- src/  <--- ※任意のディレクトリ以下に配置可能
+   +-- go.mod
+   +-- lune.js
+   +-- foo/
+     +-- bar/
+        +-- lib.lns
+#+END_SRC
+
+
+In this case, go.mod has a different module path as follows:
+#+BEGIN_SRC txt
+module github.com/HOGE/PROJ/src
+
+go 1.16
+#+END_SRC
+
+
+
+** Environment variable GOPATH
+
+When transcompiling to go, the above PROJ directory must be placed in the following location.
+: ${GOPATH}/src/github.com/HOGE/PROJ
+
+
+If GOPATH is not set, =${HOME}/go= will be used.

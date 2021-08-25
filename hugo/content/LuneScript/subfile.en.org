@@ -1,0 +1,112 @@
+#+TITLE: 26. subfile edition
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+As the processing of the module increases, the file grows accordingly.
+
+Since it is not good for file bloat, in such a case, it is a general refactoring to subdivide the responsibility of the module and separate the file for each module.
+
+However, it is often the case that the responsibilities cannot be divided neatly, or that the division has a large effect on other modules. As an alternative means when it is not possible to deal with module division in this way, subfile is created.
+
+Subfile is the division of a module that originally consists of one file into multiple files.
+
+In principle, LuneScript has 1 module = 1 file, but when it is subfiled, 1 module = multiple files.
+
+
+* Subfile structure
+
+A subfile consists of one main and multiple subs.
+#+BEGIN_SRC
+- main
+  +- sub1
+  +- sub2
+  +- ...
+  +- ...
+  +- subN
+#+END_SRC
+
+
+
+* how to use
+
+If main.lns, sub.lns exist under the foo / bar directory and sub.lns is a subfile of main.lns as follows:
+#+BEGIN_SRC
+foo/bar
+     + main.lns
+     + sub.lns
+#+END_SRC
+
+
+To use the subfile, declare as follows on the main side.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+subfile use foo.bar.sub;
+#+END_SRC
+
+
+Also, on the subfile side, declare as follows.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+subfile owner foo.bar.main;
+#+END_SRC
+
+
+This treats the specified module (foo.bar.sub in the above example) as a split subfile and treats sub.lns as part of the main.lns module.
+
+
+** limit
+
+Module declarations must be made at the beginning of the script. However, comments are excluded.
+
+Multiple subfile use can be declared in one file. Only one subfile owner can be declared. That is, a file can have multiple subfiles, but one subfile can only be used by one owner.
+
+If multiple subfile use is declared, the subfiles will be processed in the order in which they were declared.
+
+Subfiles can be thought of as basically the same as C's #include, but differ from #include in the following ways:
+- C's =#include= expands the file where it was declared, while LuneScript expands the subfile to the final location of the file.
+- The subfile must be complete as a statement.
+  - You cannot write part of an expression in a subfile, such as =#include=.
+- There must be one main file for a subfile.
+- No further subfiles can be used from the subfile.
+For example, if you have the following main.lns, sub1.lns, sub2.lns
+- main.lns
+#+BEGIN_SRC lns
+// @lnsFront: skip
+//------ main.lns -------
+subfile use sub1;
+subfile use sub2;
+
+pub let val = 1;
+#+END_SRC
+
+- sub1.lns
+#+BEGIN_SRC lns
+// @lnsFront: skip
+//------ sub1.lns -------
+subfile owner main;
+
+pub let val1 = 1;
+#+END_SRC
+
+- sub2.lns
+#+BEGIN_SRC lns
+// @lnsFront: skip
+//------ sub2.lns -------
+subfile owner main;
+
+pub let val2 = 1;
+#+END_SRC
+
+
+main.lns is equivalent to the following script.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+//------ main.lns -------
+pub let val = 1;
+pub let val1 = 1;
+pub let val2 = 1;
+#+END_SRC
+

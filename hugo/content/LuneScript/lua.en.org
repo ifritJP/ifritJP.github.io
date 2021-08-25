@@ -1,0 +1,247 @@
+#+TITLE: 22.2. Cooperation with Lua
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript can execute Lua code.
+
+However, there are a few things to keep in mind when running Lua code.
+
+The following are some things to keep in mind when running Lua code on LuneScript.
+
+
+* Run Lua code
+
+In LuneScript, you can execute Lua code from within LuneScript by using the =_load()= function and so on.
+
+The =_load()= function has basically the same specifications as the lua =load()= function.
+
+A sample is shown below.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      forsort val, key in obj@@Map<str,int> {
+         print( key, val + 100 ); 
+      }
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+
+This sample outputs the following values:
+#+BEGIN_SRC txt
+val1	110
+val2	120
+#+END_SRC
+
+
+This is the result of listing Lua tables returned by Lua code ~return { val1 = 10, val2 = 20 }~ with forsort and outputting them with =print( key, val + 100 );=.
+
+The above sample is almost the same as the LuneScript code below.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func():Map<str,int> {
+   return { "val1":10, "val2":20 };
+}
+forsort val, key in func() {
+   print( key, val + 100 ); 
+}
+#+END_SRC
+
+
+In this way, LuneScript and Lua can work together.
+
+
+* Lua → LuneScript data conversion
+
+When you execute Lua code from LuneScript, the result of executing that Lua code is of type Luaval.
+
+The Luaval type is a type that holds the data in the Lua code, and the data in the Lua code that corresponds to the LuneScript type T is =Luaval<T>=.
+
+For example, ~{ val1 = 10, val2 = 20 }~ in the above sample corresponds to Map <str, int> of LuneScritp and becomes =Luaval<Map<str,int>>=.
+
+*Note that when transcompiling from LuneScript to Lua, Luaval <T> will be the exact type of T. When transcompiling from LuneScript to Lua, you don't need to be aware of Luaval <T> because even if you explicitly declare it as Luaval <T>, it will be converted internally as T.*
+
+When converting from LuneScript to a language other than Lua (currently convertible to go), Luaval <T> and T are treated differently, so you need to be aware of Luaval <T> when converting to something other than Lua. ..
+
+*By specifying "--valid-luaval" as the transcompile option, Luaval <T> and T are managed separately when transcompiling to Lua.*
+
+The above sample can be rewritten to use =func()= with an argument of =Luaval<Map<str,int>>= as follows.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(map:Luaval<&Map<str,int>>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+
+*Also, for the Luaval type data of Map like the above sample, you can refer to the data in Map by element access using foreach or =[]= like Map of LuneScript. However, you can refer to it, but you cannot change it.*
+
+
+** Mutual convertible type
+
+If the data types in your Lua code are:
+- int, real, bool, str
+- Nilable above
+*For str, there is an overhead proportional to the string length.*
+
+
+* Luaval type cast
+
+There are restrictions on casting Luaval types.
+
+In the above sample, =obj@@Map<str,int>= is passed as an argument of func as follows.
+#+BEGIN_SRC lns
+// @lnsFront: skip   
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+   }
+#+END_SRC
+
+
+This is an operation that casts obj to Map <str, int>, where the type of obj is Luaval <stem>, and if you cast it to Map <str, int>, the cast type will be It becomes Luaval <Map <str, int >>.
+
+When it is possible to cast from a type T1 to type T2, if you instruct to cast from Luaval <T1> to T2, the cast result will be Luaval <T2>.
+
+Also, the next cast is not possible.
+- Cast from T1 type to Luaval <T1> type
+- Luaval <T1> type to T1 type cast
+Specifically, you cannot cast from Map <str, int> to Luaval <Map <str, int >>.
+
+However, the stem type is exceptionally capable of mutual casting with Luaval.
+
+It is possible to cast from Luaval type to non-Luaval type by going through stem type as follows.
+: Luaval => stem => Luaval
+
+
+*The behavior when casting to a different type is undefined.*
+
+
+** expandLuavalMap
+
+The data in the collection in the Lua code is treated as Luaval.
+
+For example, Map type data is Luaval <Map>. Map type and Luaval <Map> type data are not compatible and cannot be assigned.
+
+The following functions are provided as a way to expand the Luaval type data of this collection as LuneScript values.
+: fn expandLuavalMap( Luaval<stem>! ) : stem!;
+
+
+When you use this function, the following processing is applied.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(map:Luaval<&Map<str,int>>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+fn func2(map:&Map<str,int>) {
+   forsort val, key in map {
+      print( key, val + 100 ); 
+   }
+}
+let code = ```
+return { val1 = 10, val2 = 20 }
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+      func( obj@@Map<str,int> );
+      if! let map = expandLuavalMap( obj ) {
+         func2( map@@Map<str,int> );
+      }
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+
+In this sample, there is a =func()= function that enumerates Luaval <& Map <str, int >> and a =func2()= function that enumerates & Map <str, int>.
+
+Expand Luaval type data with =expandLuavalMap()= before calling func2 () and cast it to Map <str, int> to map <str, int> instead of Luaval <Map <str, int >> It is processed as.
+
+Note that =expandLuavalMap()= creates a clone that expands the Luaval type data given by the argument.
+
+
+* Luaval type conversion
+
+The Luaval type that holds a nilable type T! Is Luaval <T> !. It cannot be Luaval <T!>.
+
+Also, the Immutable of Luaval <T> becomes Luaval <& T>.
+
+
+* Luaval type function, Luaval type object method
+
+The functional type Luaval has its argument and return value of Luaval type.
+
+For example, the argument proc of the func function in the following sample is from of type Luaval <Process>, the argument of this Form is Luaval <& List <int >>, and the return value is Luaval <& List <int >>.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+   form Process( val:&List<int> ) : &Map<int>;
+   fn func( proc:Luaval<Process> ) {
+      let list = proc( [ 1, 2, 3 ] );
+   }
+#+END_SRC
+
+
+
+* LuneScript → Lua data conversion
+
+When you pass a LuneScript value to a Lua function, you must pass a value of type Luaval.
+
+However, if the Lua function argument has the following values, it will be of the same type instead of the Luava type.
+- int, real, bool, str
+- Collection type such as List that has the above as an element
+- Nilable above
+Here is a sample.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let code = ```
+return function( tbl )
+   local total = 0
+   for key, val in pairs( tbl ) do
+      total = total + val
+   end
+   return total
+end
+```;
+let loaded, err = _load( code, nil );
+when! loaded {
+   if! let obj = loaded( ## ) {
+   let map = { "val1":1, "val2":10 };
+      print( (obj@@form)( map ) );  // Lua の関数コール
+   }
+} else {
+   print( err );
+}
+#+END_SRC
+
+
+This sample calls a function that calculates the sum of the values of the Lua table elements given as arguments.
+
+In this sample, a data map of type Map <str, int> is specified as an argument of a Lua function and executed.
+
+At this time, Map <str, int> type data is internally converted to Lua table.

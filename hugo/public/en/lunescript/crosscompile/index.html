@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>03. Cross-compiling between Lua versions - tech</title>
+<meta name="generator" content="Hugo 0.68.3" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'UA-120218599-2');
+</script>
+<style>
+:root {}
+</style>
+<meta property="og:title" content="03. Cross-compiling between Lua versions" />
+<meta property="og:description" content="This time, I&#39;ll change the schedule a little and explain the cross-compilation of LuneScript. Cross-compile   &#34;Cross-compilation&#34; here means &#34;cross-compilation&#34; between versions of Lua.  When transcompiling to Lua, LuneScript transcompiles according to the version of Lua running LuneScript.  For example, the following control is performed.    When running on Lua5.2, bitwise operations use the bit32 library.    When running on Lua5.3, bitwise operations use Lua&#39;s built-in operators." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/crosscompile/" />
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="03. Cross-compiling between Lua versions"/>
+<meta name="twitter:description" content="This time, I&#39;ll change the schedule a little and explain the cross-compilation of LuneScript. Cross-compile   &#34;Cross-compilation&#34; here means &#34;cross-compilation&#34; between versions of Lua.  When transcompiling to Lua, LuneScript transcompiles according to the version of Lua running LuneScript.  For example, the following control is performed.    When running on Lua5.2, bitwise operations use the bit32 library.    When running on Lua5.3, bitwise operations use Lua&#39;s built-in operators."/>
+<meta itemprop="name" content="03. Cross-compiling between Lua versions">
+<meta itemprop="description" content="This time, I&#39;ll change the schedule a little and explain the cross-compilation of LuneScript. Cross-compile   &#34;Cross-compilation&#34; here means &#34;cross-compilation&#34; between versions of Lua.  When transcompiling to Lua, LuneScript transcompiles according to the version of Lua running LuneScript.  For example, the following control is performed.    When running on Lua5.2, bitwise operations use the bit32 library.    When running on Lua5.3, bitwise operations use Lua&#39;s built-in operators.">
+
+<meta itemprop="wordCount" content="469">
+
+
+
+<meta itemprop="keywords" content="" /></head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>03. Cross-compiling between Lua versions</h1>
+
+<p>
+This time, I&#39;ll change the schedule a little and explain the cross-compilation of LuneScript.
+</p>
+<h2 id="headline-1">
+Cross-compile
+</h2>
+<p>
+&#34;Cross-compilation&#34; here means &#34;cross-compilation&#34; between versions of Lua.
+</p>
+<p>
+When transcompiling to Lua, LuneScript transcompiles according to the version of Lua running LuneScript.
+</p>
+<p>
+For example, the following control is performed.
+</p>
+<ul>
+<li>
+<p>
+When running on Lua5.2, bitwise operations use the bit32 library.
+</p>
+</li>
+<li>
+<p>
+When running on Lua5.3, bitwise operations use Lua&#39;s built-in operators.
+</p>
+</li>
+</ul>
+<p>
+Cross-compiling transcompiles the output Lua code to the specified Lua version instead of the version of Lua running LuneScript.
+</p>
+<p>
+This allows you to:
+</p>
+<p>
+  &#34;Run LuneScript on Lua5.3 and transcompile to Lua5.1&#34;
+</p>
+<h3 id="headline-2">
+how to use  
+</h3>
+<p>
+To use it, simply specify the version with the -ol option as follows:
+</p>
+<div class="src src-sh">
+<div class="highlight"><pre class="chroma"><code class="language-sh" data-lang="sh">$ lnsc src.lns lua -ol <span class="m">51</span></code></pre></div>
+</div>
+<p>
+The above example transcompiles src.lns for lua5.1 and prints the result to stdout.
+</p>
+<p>
+The values specified for the -ol option are as follows:
+</p>
+<table>
+<thead>
+<tr>
+<th class="align-right">option</th>
+<th>version</th>
+<th class="align-right"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="align-right">51</td>
+<td>Lua5.1</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td class="align-right">52</td>
+<td>Lua5.2</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td class="align-right">53</td>
+<td>Lua5.3</td>
+<td class="align-right"></td>
+</tr>
+</tbody>
+</table>
+<p>
+The -ol option can be specified with save and lua.
+</p>
+<h2 id="headline-3">
+LuneScript for Lua5.1
+</h2>
+<p>
+Until now, LuneScript required Lua5.2 and Lua5.3 to execute, but with the above cross-compilation support, it can now be executed with Lua5.1 as well.
+</p>
+<p>
+Since LuneScript is self-hosting that develops itself in LuneScript, it is compatible with Lua5.1 by cross-compiling LuneScript itself.
+</p>
+<p>
+<strong>By developing with LuneScript, in addition to &#34;increasing productivity&#34;, there is an advantage that &#34;it can absorb the difference in Lua version to some extent&#34;.</strong>
+</p>
+<p>
+<strong>However, it can only be absorbed to some extent.</strong>
+</p>
+<p>
+Lua5.1 has the limitations described in the next section.
+</p>
+<h3 id="headline-4">
+Lua5.1 Limits
+</h3>
+<p>
+Transcompiling LuneScript code to Lua5.1 has the following restrictions:
+</p>
+<p>
+<em><em>It&#39;s more of a Lua5.1 limitation than a LuneScript limitation. ..</em></em>
+</p>
+<ul>
+<li>
+<p>
+The class destructor cannot be used.
+</p>
+</li>
+<li>
+<p>
+Bitwise operations cannot be used.
+</p>
+</li>
+<li>
+<p>
+% G is not available for character classes such as <code class="verbatim">find()</code>.
+</p>
+</li>
+<li>
+<p>
+When% s and% q are specified in the <code class="verbatim">string.format()</code> format, only character strings can be specified.
+</p>
+</li>
+</ul>
+<p>
+In the above, for destructors and bit operations, an error is output at compile time, but for% g,% s,% q, an error is not output at compile time, so be careful.
+</p>
+<p>
+However, regarding% s and% q, the following pattern avoids an error by adding <code class="verbatim">tostring()</code> at the time of transcompiling.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+print( string.format( &#34;%d,%s,%s,%s&#34;,  1, 1.0, {}, [] ) );</code></pre>
+</div>
+<p>
+As mentioned above, the format format using a literal string looks at% s and the corresponding data type, and if it is not str, adds <code class="verbatim">tostring()</code> as follows.
+</p>
+<div class="src src-lua">
+<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">print</span><span class="p">(</span> <span class="n">string.format</span><span class="p">(</span> <span class="s2">&#34;%d,%s,%s,%s&#34;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">tostring</span><span class="p">(</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">tostring</span><span class="p">(</span> <span class="p">{}),</span> <span class="n">tostring</span><span class="p">(</span> <span class="p">{})</span> <span class="p">)</span> <span class="p">)</span></code></pre></div>
+</div>
+<p>
+This conversion is possible only when using literal strings.
+</p>
+<p>
+For example, the following cases cannot be converted.
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let formatTxt = &#34;%d,%s,%s,%s&#34;;
+print( string.format( formatTxt,  1, 1.0, {}, [] ) );</code></pre>
+</div>
+<h2 id="headline-5">
+summary
+</h2>
+<p>
+LuneScript supports cross-compilation between versions of Lua.
+</p>
+<p>
+This will support execution on Lua5.1, Lua5.2, Lua5.3.
+</p>
+<p>
+However, Lua5.1 has its limitations.
+</p>
+<p>
+Next time, I will talk about classes.
+</p>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/" title="02. Hello world"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 02. Hello world</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/value/" title="04. Value">Next - 04. Value <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Making Lua easier with the transcompiler LuneScript !!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repeated syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-valued return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omission of arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic argument, return value</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closure</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class Basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import / provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require / module edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Cooperation with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Transcompiler development recommendations</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Why Lua&#39;s transcompiler LuneScript was developed</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Transcompile to Z. Go language (under consideration)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. Importance of self-hosting and test design in quality control of language development</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
