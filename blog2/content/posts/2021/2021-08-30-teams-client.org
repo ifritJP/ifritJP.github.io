@@ -1,0 +1,129 @@
+#+TITLE: MS Teams client の作り方
+#+DATE: 2021-08-30
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: javascript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+自作ツールで、MS Teams に対して投稿を read/write する方法について書きます。
+
+* Teams の管理者権限の許可が必須
+
+「 *Teams の管理者権限の許可が必須* 」です。
+
+大事なことなので始めに書きます。
+
+自作ツールで、MS Teams に任意に投稿を read/write するには、
+「 *Teams の管理者権限の許可が必須* 」です。
+
+たとえ自分自身のアカウントを使って投稿したくても、
+*自作ツールから行なうには管理者権限の許可が必須* なんです。
+
+* MS Graph API へのアクセス
+
+MS Graph API は、以下のサイトにリファレンスが載っています。
+
+<https://docs.microsoft.com/ja-jp/graph/>
+
+これの Teams の API を叩けばアクセスできます。
+
+当然と言えば当然ですが、MS Graph API で Teams にアクセスするには、
+その Teams のアカウント認証が必要です。
+
+そして、アカウント認証するには、Azure から発行した ClientID を使用する必要があります。
+
+なお、 CliendID の発行時に、クライアントの種別を指定します。
+その種別には、
+そのクライアントを登録したアカウントに属する組織のみにアクセスするクライアントか、
+それとも組織を限定せずにアクセス可能なクライアントか、を指定します。
+
+より具体的な説明は以下を参照してください。
+
+[[https://docs.microsoft.com/ja-jp/graph/auth-register-app-v2?context=graph%2Fapi%2F1.0&view=graph-rest-1.0][リンク]]
+
+Azure の CliendID 発行が出来るユーザは当然限られています。
+
+個人で作った Azure アカウントなら、
+自分が管理者でもあるので自由にクライアントを登録できますが、
+誰かから発行された Azure アカウントなら、
+その発行者(管理者)によって、制限されている可能性があります。
+
+*ここで、クライアント登録が出来ないのであれば、ほとんどの場合そこで終わりです。*
+
+** token 取得
+
+発行された ClientID を指定して、アカウント認証するのですが、
+通常はブラウザのインタフェースを通して認証するのが一般的です。
+
+ブラウザを介さずにアカウント認証する場合は、以下の手順になります。
+
+<https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow>
+
+
+** permission
+
+Graph API は、そのスコープごとにアクセス制御されます。
+
+このアクセス制御に permission を与えることで、
+API にアクセスできるようになります。
+
+API に permission を与えるには権限が必要になります。
+*その権限には、個人アカウントで良いものと、管理者権限が必要なものとがあります。*
+
+なお、任意にメッセージを投稿するには、管理者権限による permission が必要です。
+
+** Teams への投稿
+
+Teams へ投稿するには以下の API を利用します。
+
+<https://docs.microsoft.com/ja-jp/graph/api/resources/teams-api-overview?view=graph-rest-1.0>
+
+
+Teams のチームへの投稿は次の概念で管理され、
+それぞれがユニークな ID を持っています。
+
+- team
+  - Teams 内の各チーム
+- channel
+  - 各チーム内に作られるチャネル
+- message
+  - チャネル内に投稿された各メッセージ
+
+例えば、あるチーム内の、ある channel に *新規投稿する* 場合、
+対象チームの ID と、対象 channel の ID を取得し、
+それら ID を指定してメッセージを投稿します。
+
+新規投稿ではなく、 *あるメッセージに対する reply* には、
+前述の対象チームの ID と、対象 channel の ID に加え、
+対象のメッセージ ID を取得する必要があります。
+
+このメッセージ ID を取得するには、
+*ChannelMessage.Read.All スコープの permission* が必要であり、
+*その permission を与えるには管理者権限が必要になります。*
+
+なお、個人間のチャットはチームのメッセージとは異なります。
+
+* Graph Explorer
+
+<https://developer.microsoft.com/en-us/graph/graph-explorer>
+
+MS Graph API をブラウザから試すことができる
+Web ツール(Graph Explorer)が用意されています。
+
+これを利用することで、 token 取得や permission の設定を簡単に行なえます。
+
+なお、このツール上で token 取得はできますが、
+その token は短時間で expire する access token なので、
+実際にクライアントを自作する際には、 ClientID の発行が必須になります。
+
+* MS Graph API について
+
+MS Graph API は、MS のさまざまなサービスにアクセスできる強力な API です。
+
+ですが、強力であるために、セキュリティはかなり安全方面に振っているように思えます。
+さまざまなケースで管理者権限による許可が必要になっています。
+
++なんでもかんでも「管理者権限による許可が必要」というのは、+
++セキュリティの管理手法として、安直ではないのか？と思わないでもない。+
