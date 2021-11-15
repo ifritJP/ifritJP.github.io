@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        LuneScript がエラーハンドリングと大域脱出をサポートできていない理由 - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="数ヶ月間 LuneScript から離れていますが、生存アピールのためにちょっと触れておきます 今日現在、 LuneScript は言語機能としてエラーハンドリングと大域脱出をサポートし" />
+    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <title>LuneScript がエラーハンドリングと大域脱出をサポートできていない理由 - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="LuneScript がエラーハンドリングと大域脱出をサポートできていない理由" />
+<meta property="og:description" content="数ヶ月間 LuneScript から離れていますが、生存アピールのためにちょっと触れておきます 今日現在、 LuneScript は言語機能としてエラーハンドリングと大域脱出をサポートし" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-11-14-lunescript-error-handling/" />
+<meta property="article:published_time" content="2021-11-14T00:00:00+00:00" />
+<meta property="article:modified_time" content="2021-11-14T00:00:00+00:00" />
+<meta itemprop="name" content="LuneScript がエラーハンドリングと大域脱出をサポートできていない理由">
+<meta itemprop="description" content="数ヶ月間 LuneScript から離れていますが、生存アピールのためにちょっと触れておきます 今日現在、 LuneScript は言語機能としてエラーハンドリングと大域脱出をサポートし">
+<meta itemprop="datePublished" content="2021-11-14T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2021-11-14T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="2451">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LuneScript がエラーハンドリングと大域脱出をサポートできていない理由"/>
+<meta name="twitter:description" content="数ヶ月間 LuneScript から離れていますが、生存アピールのためにちょっと触れておきます 今日現在、 LuneScript は言語機能としてエラーハンドリングと大域脱出をサポートし"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-11-14-lunescript-error-handling/" class="title">LuneScript がエラーハンドリングと大域脱出をサポートできていない理由</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-11-14 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-11-14</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-11-08-wsl2-virtualbox/" class="title">WSL2 共存による VirtualBox/VMWare の性能低下と、性能重視時の排他設定方法</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-11-08 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-11-08</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-08-30-teams-client/" class="title">MS Teams client の作り方</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-08-30 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-08-30</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-07-26-asciidoc-2-pdf/" class="title">asciidoc の pdf 化</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-07-26 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-07-26</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-07-25-org-traslation-intro/" class="title">org-mode ドキュメントの翻訳ツールの使い方</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-07-19 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-07-19</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2021/2021-11-14-lunescript-error-handling/"
+    >LuneScript がエラーハンドリングと大域脱出をサポートできていない理由</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-11-14-lunescript-error-handling/" class="article-date">
+  <time datetime="2021-11-14 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-11-14</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2021/2021-11-14-lunescript-error-handling/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2451</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">5 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+<em>数ヶ月間 LuneScript から離れていますが、生存アピールのためにちょっと触れておきます</em>
+</p>
+<p>
+今日現在、
+LuneScript は言語機能としてエラーハンドリングと大域脱出をサポートしていません。
+</p>
+<p>
+現在でも、module 機能を利用して
+裏技的にエラーハンドリングと大域脱出を使うことは出来なくもないです。
+しかし、それはあくまでも裏技で正式機能ではありません。
+</p>
+<p>
+「何故サポートしていないか？」というと、
+エラーハンドリングと大域脱出のベストプラクティスが分からないためです。
+</p>
+<p>
+なお、「今の LuneScript の言語仕様が全てベストプラクティスなのか？」と問われれば、
+残念ながら違います。
+しかし、 <strong>自分の中で納得した仕様</strong> になっています。
+</p>
+<p>
+一方で、「エラーハンドリングと大域脱出」に関しては、
+イマイチ決めかねています。
+</p>
+<h2 id="headline-1">
+エラーは例外か？
+</h2>
+<p>
+『エラー』を、『例外として投げて、投げられた例外を掴まえて処理する』という方法は、
+よく使われています。
+しかし、 この方法はなにか違う気がしています。
+</p>
+<p>
+そもそも <strong>『「例外」ってなんだ？』</strong> という疑問が浮びます。
+</p>
+<p>
+私は、「例外 == 普通は起らないような状態を表わすべきもの」と考えています。
+例えば「kill ジグナルの受信」などが例外に該当すると思います。
+</p>
+<p>
+しかし幾つかの言語では、
+「正常系ではない異常系」を「例外」として扱かっているケースがあります。
+例えば、「ファイルの書き込みに失敗した状態」が「例外」として扱われていたりします。
+</p>
+<p>
+これは <strong>なにか違う</strong> 気がします。
+</p>
+<p>
+何が違うって、「ファイルの書き込みに失敗した状態」なんていうのは、
+良くあるケースです。
+<strong>良くあるケースが「例外」って何か変じゃない？</strong> と感じるんです。
+</p>
+<p>
+プログラムっていうのは、エラー処理を含めて完成するものだと私は思います。
+つまり、エラー処理って「例外」じゃないですよね？と考えています。
+</p>
+<p>
+まぁ、ユースケース記述でいうところの「メインフロー、代替フロー、例外フロー」のうち、
+「例外フロー」がエラー処理になるから、やっぱり「例外」じゃないか？
+というツッコミはあると思います。
+ですが、 <strong>ちょっとした操作ミス等で発生するエラーと、</strong>
+<strong>普通は発生しないエラーとを「例外」という一つの概念で扱うのは間違っているんじゃないか？</strong>
+と感じています。
+</p>
+<p>
+たとえば Java では <strong>Error</strong> と <strong>RuntimeException</strong> と <strong>その他Exception</strong> とで、
+これらエラーを区別して管理できるようになっていますが、
+exception という 1 つの概念であることには違いありません。
+</p>
+<p>
+区別できるという点では、Java のエラー種別は私の考えと一致しています。
+しかし、 実際に Java でプログラムしているとメンドイなぁ、と思ってしまいます。
+</p>
+<p>
+<strong>「メンドイ」と思ってしまうのは、「何かが違う」ということだと思います。</strong>
+</p>
+<p>
+例えば nil 安全を実現する unwrap 等の処理は一手間かかりますが、
+nil 安全によるメリットと、unwrap 等の一手間を天秤にかければ、
+メリットの方が大きいと感じることができ、面倒とはそれほど思いません。
+</p>
+<p>
+<em>もちろん「それほど思わない」というのは「少しは思っている」ということであり、
+nil 安全に関しても、もっと手間がかからない方法があるんじゃないか模索しています。</em>
+</p>
+<p>
+「例外」の良くないところは、
+「エラー」と「大域脱出」が一括りに扱われてしまっているところだと思います。
+</p>
+<p>
+「例外」が「 <strong>普通は発生しないエラー</strong> 」に限られるのであれば、
+「大域脱出」とセットになっているのも理解できますし、合理的だと思います。
+例えば、 kill シグナルを受けたら「大域脱出」するのは納得できますよね？
+</p>
+<p>
+しかし上述した通り、「 <strong>ちょっとした操作ミス等で発生するエラー</strong> 」も
+「例外」として扱う場合は、
+「大域脱出」がセットになっているのは影響が大き過ぎると考えます。
+</p>
+<p>
+「大域脱出」は最終手段であり、文法上も専用に扱わなければなりません。
+この「専用の文法」が、「メンドイ」と感じる元になっています。
+</p>
+<p>
+「 <strong>ちょっとした操作ミス等で発生するエラー</strong> 」は、
+普通に発生する可能性があるものであり、
+普通に発生するならば、 <strong>特別に扱うことなく普通に処理を書けるべきです。</strong>
+</p>
+<h2 id="headline-2">
+go のエラーハンドリング
+</h2>
+<p>
+go のエラーハンドリングは error 型のデータを戻り値で返し、
+それを処理することでエラーハンドリングしています。
+</p>
+<p>
+なお、 error 型のデータはあくまでも関数の戻り値であって、大域脱出とは別ものです。
+</p>
+<p>
+つまり、 <strong>go のエラーハンドリングは、特別に扱うことなく普通に処理が書けます。</strong>
+</p>
+<p>
+この error 型によるエラーハンドリングは、
+以下の go の特徴によって支えられています。
+</p>
+<ul>
+<li>
+<p>
+関数の多値返却
+</p>
+</li>
+<li>
+<p>
+defer
+</p>
+</li>
+</ul>
+<p>
+<strong>特に defer は go の大きな特徴と言えます。</strong>
+</p>
+<p>
+この仕様をパクって「LuneScript でエラーハンドリングをサポートする」ことも考えましたが、
+LuneScript はトランスコンパイラであり、
+<strong>go の特徴に依存する実現方法は採用すべきでない</strong> 、
+ということもあって採用を見送っています。
+</p>
+<p>
+defer がなくても error 型を追加すれば
+それなりのエラーハンドリングは実現出来ます。
+しかし、go のエラーハンドリングは defer があってこそです。
+</p>
+<p>
+そもそも、error 型を追加するだけなら、
+LuneScript の言語仕様として組込まなくても
+ユーザプログラムレベルで実現できますし。。
+</p>
+<h2 id="headline-3">
+LuneScript でのエラーハンドリング
+</h2>
+<p>
+上で例として挙げた go だけでなく、
+Rust でも関数戻り値の Option, Result 型でエラーを扱っています。
+</p>
+<p>
+エラー型を追加し、それを処理することでエラーハンドリングする、
+というのは「 <strong>特別に扱うことなく普通に処理を書けるべき</strong> 」という
+私の考えにも合致します。一方で go の defer は便利ですが、
+トランスコンパイル先の言語仕様に大きく依存します。
+</p>
+<p>
+今後対応するかもしれないトランスコンパイル先の言語で、
+defer と同等の機能が実現できない、
+あるいは実現できてもコストが大きくかかる、ということが容易に想像できます。
+</p>
+<p>
+現状でも、Lua では簡単には defer を実現できません。
+</p>
+<p>
+そんな訳で、LuneScript はエラーハンドリングと大域脱出をサポートしていません。
+</p>
+<p>
+言語仕様に依存せず、且つ、
+簡便にエラーハンドリングを記述できる方法を模索中です。
+</p>
+<p>
+とはいえ、
+そう遠くない未来に、
+必要に迫られてなんらかの方法を対応しなければならなくなる気はしています。
+</p>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-11-08-wsl2-virtualbox/" title="WSL2 共存による VirtualBox/VMWare の性能低下と、性能重視時の排他設定方法"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2021
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>
