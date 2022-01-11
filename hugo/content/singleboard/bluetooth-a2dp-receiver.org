@@ -4,12 +4,14 @@
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 
-*2019/6 Bluetooth のファイル転送、PAN 設定について書きました。* 
+*2019/6 Bluetooth のファイル転送、PAN 設定について書きました。*
 
 - https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html
 
 
-*2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。* 
+*2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。*
+
+*2022/1 raspberry pi os bullseye を使用した時の補足を追加。*
 
 
 RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
@@ -88,6 +90,8 @@ $ sudo apt-get upgrade
 $ sudo apt-get install bluez pulseaudio-module-bluetooth python-gobject python-gobject-2
 #+END_SRC
 
+*bullseye の場合 python-gobject python-gobject-2 は不要*  
+
 このバージョンの OS イメージでは、
 bluez はインストール済みですが念のため指定しておきます。
 
@@ -129,6 +133,8 @@ Controller XX:XX:XX:XX:XX:XX
 これがないと A2DP で接続出来ません。
 
 以下では、Audio Sink を出すための設定について説明します。
+Audio Sink がある場合は、ペアリングまで手順を飛ばしてください。
+
 
 まずは、 bluetoothctl を抜けてから以下を実行します。
 
@@ -216,10 +222,23 @@ Bluetooth を使用したことがあれば分かると思いますが、
 	Discoverable: yes
 	Pairable: yes
 #+END_SRC
+
+*bullseye の場合、更に以下の実行が必要です。*
+
+: [bluetooth]# default-agent
 	
 この状態で、 client 側で検索し、ペアリングします。
 
+*bullseye の場合、client 側でペアリングを開始すると、*
+*以下のメッセージが raspberrypi 側に出力されるので、*
+*?????? の部分が client 側に表示されている数字と同じか確認して、*
+*問題なければ yes を入力します。*
+
+: [agent] Confirm passkey ?????? (yes/no): yes
+
+
 一定時間経過すると、 discoverable が自動で off になりますが、
+discoverable off で明示的に off にしてください。
 念のため show コマンドで discoverable の状態を確認します。
 
 discoverable が on の状態だと新規にペアリングを登録可能なので、
@@ -227,6 +246,9 @@ discoverable が on の状態だと新規にペアリングを登録可能なの
 必ず discoverable が off になっていることを確認してください。
 
 ** ペアリングの認証
+
+*bullseye の場合、この『ペアリングの認証』作業は不要です。*
+*というか、上記の Confirm passkey の確認が、『ペアリングの認証』になります。*
 
 ペアリングすると、次のように出力されます。
 
@@ -287,6 +309,8 @@ client 側の設定で出力を A2DP に変更してください。
 
 * /etc/rc.local の編集
 
+*bullseye の場合は不要。問題が発生する場合に設定してください。*  
+  
 デフォルトの起動状態では Audio Sink が有効にならないので、
 Audio Sink を有効にするために /etc/rc.local に次の処理を追加します。
 
@@ -313,6 +337,10 @@ $ pactl list sinks short
 : set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
 
 これでリブートすれば出力先が切り替わります。
+
+一時的に出力先を変更する場合は、以下を実行します。
+
+: set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
 
 
 * WiFi を無効化
@@ -380,7 +408,21 @@ https://gitlab.freedesktop.org/pulseaudio/pulseaudio/-/merge_requests/239
 
 開発者オプションで絶対音量機能を off にしてください。
 
+* 「To install the screen reader press control alt spce」音声出力が定期的に出力される
+
+raspberry pi os bullseye にすると、次の英語の音声が数秒ごとに出力されます。
+
+: To install the screen reader press control alt spce
+
+以下を実行し Raspberry Pi を再起動すると、再生されなくなります。
+  
+: sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak 
+    
+
 * 参考
 
 - https://www.raspberrypi.org/forums/viewtopic.php?t=68779
 - https://qiita.com/yyano/items/802da53ad8a4a00d00e1  
+- https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt
+
+
