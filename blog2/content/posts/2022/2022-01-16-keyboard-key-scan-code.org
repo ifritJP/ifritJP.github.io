@@ -1,0 +1,155 @@
+#+TITLE: HID Keyboard の Key スキャンコード
+#+DATE: 2022-01-16
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: keyboard
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+普段、何気に使っている keyboard。
+
+このキーボードがどのように動いているか。
+そして、カスタマイズするにはどうすれば良いかを簡単に説明していく。
+
+* キーボードと OS の役割り
+
+USB で定義される HID keyboard の各キーには、
+スキャンコードという値を割り振られています。
+
+- keyboard は、キーが押下された時にこのスキャンコードを PC に通知します。
+- そして、PC はそのスキャンコードを受け、どのキーが押下されたかを検出します。
+
+ところで、キーボードには 日本語の JIS 配列や US 配列など、
+さまざまなキー配列があり、配置されているキーもさまざまです。
+
+
+前述している通り、スキャンコードはどの *キー* が押下されたかを示すものです。
+
+ここで重要なのは、 *「文字ではなく、キー」* ということです。
+
+例えば、JIS 配列のキーボードで ="= を入力するには、
+=Shift= キーを押しながら =2= を押下します。
+これは、「 =Shift= キーと =2= キーを押下している」、
+という情報を通知するのが *キーボードの仕事* で、
+その結果が「 ="= になる」というのは *PC 側で判断した結果* です。
+
+OS の設定に、「キーボードのレイアウト」がありますが、
+あれが何を意味してるかといえば、
+「 =Shift= キーと =2= キーを押下した場合に、 ="= になる」というような
+「変換テーブルに何を使うのか」を指定しています。
+
+* HID Keyboard の report
+
+USB HID デバイスは、デバイスの状態を通知するのに report という形で
+PC に通知します。
+
+HID Keyboard の report は、以下の 8 バイトで構成されます。
+
+- offset 0 :: modifier
+- offset 1 :: reserve
+- offset 2 :: Key1
+- offset 3 :: Key2
+- offset 4 :: Key3
+- offset 5 :: Key4
+- offset 6 :: Key5
+- offset 7 :: Key6
+
+offset 0 の modifier は、
+キーボードの左右に配置されている Ctrl, Alt, Shift, GUI の
+押下状態をビットで示します。
+例えば Left-Ctrl と Left-Alt が押下されている場合、
+=0x05 (0x01 | 0x04 = 0x05)= です。
+
+offset 2 以降は、押下されているキーのスキャンコードを示します。
+
+=a= が押下されている場合の report は以下になります。
+
+: 0x00 0x00 0x04 0x00 0x00 0x00 0x00 0x00
+
+
+この report は、押下されているキーを通知します。
+逆に言えば、この report に含まれていないキーは押下されていないということです。
+
+なお、Keyboard には USB 接続と PS/2 接続がありますが、
+この 2 つのスキャンコードは互換がありません。
+
+詳しくは、以下の資料を参照してください。
+
+<https://download.microsoft.com/download/1/6/1/161ba512-40e2-4cc9-843a-923143f3456c/translate.pdf>
+
+* キーの入れ替え
+  
+前述している通り、
+キーボードのキーを押下した時に、実際にどの文字として扱うかは、
+OS の仕事です。
+
+よって、「キーボードの配置をカスタマイズしたい」という時は、
+OS 側で実現すべきことです。
+
+しかし、全ての OS がキーボードの配置をカスタマイズ出来るとは限りません。
+
+そこで、 OS に依存せずにキーボードをカスタマイズするツール
+hw-keyboard-remapper を作成しています。
+
+<https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/>
+
+** hw-keyboard-remapper 
+
+ここでは、 hw-keyboard-remapper が何をやっているのかを簡単に説明します。
+
+まず、このツールは Raspberry pi zero w (pi0w) 上で動作します。
+
+そして、カスタマイズ対象の Bluetooth keyboard を pi0w と接続し、
+さらに pi0w を HID keyboard として USB で PC に接続します。
+
+この Bluetooth keyboard から通知されるキーイベントを処理し、
+USB HID keyboard の report に変換することで、
+Bluetooth keyboard の remapper として動作します。
+
+** 入れ替え
+
+hw-keyboard-remapper は、
+独立した入力元の *キー* を別の独立した *キー* に入れ替える際、以下を行ないます。
+
+*ここで「独立した」とは、 modifier の修飾によって PC 側の処理が変わらないことを意味します。*
+
+変換元
+
+
+- 入れ替え元のキーが押されているかどうかを判定し、
+  押されている場合以下を実行する。
+- 入れ替え元のキーが modifier に属するキーかどうか判定する。
+  - modifier に属するキーなら、modifier の対応するビットをクリアする
+- 入れ替え先のキーが modifier に属するキーかどうか判定する。
+ - modifier に属するキーなら、modifier に対応するビットをセットする
+ - modifier に属さないキーなら、
+   report の offset 2 以降に入れ替え先のスキャンコードをセットする
+
+modifier の状態と連携して動きが変るキーを入れ替える場合、
+以下を行ないます。
+
+ここでは US 配列の =&(Shift + 7)= を、
+JIS 配列っぽく ='= に置き換える場合を例に挙げます。
+
+なお、 US 配列と JIS 配列のキーがどのように配置されているかは以下で確認してください。
+
+http://www.nagasaki-gaigo.ac.jp/toguchi/pc/multilingual/keyboard_us_jis.htm
+
+- まず、7 が押下されているか判定する。さらに、
+  Left-Shift あるいは Right-Shift が押下されているか modifier から判定する。
+  - 押下されていれば、 modifier から Shift のビットをクリアする。
+  - report の offset 2 以降に、 ='= に対応するスキャンコードの 0x34 をセットする
+
+このように置き換えを行なうことで、
+例えば US 配列のキーボードを JIS 配列に置き換えることも可能になります。
+
+なお、市販されているキーボードには、
+切り替えボタンの付いている製品があります。
+
+あの切り替えボタン機能は、
+ここで説明した HID keyboard の report の入れ替えを行なっています。
+
+amazon などの Bluetooth Keyboard の商品レビューで、
+「押したキーと違うキーが入力される」といった内容のレビューをよく見かけますが、
+あれば意図せずに切り替えボタンを押したで発生していることがほとんどです。
