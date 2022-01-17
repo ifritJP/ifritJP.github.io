@@ -1,0 +1,173 @@
+#+TITLE: USB Gadget 機能を利用して Raspberry Pi を HID Keyboard と RNDIS の複合デバイスにする
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+Raspberry Pi を HID Keyboard デバイスにする方法、
+あるいは RNDIS デバイスにする方法はネット上に色々転がっていますが、
+複合デバイスにする方法はあまりまとまっていなかったので、
+ここにまとめます。
+
+* 宣伝
+
+いきなり本題から離れますが、
+USB Gadget 機能を利用して Raspberry Pi Zero W を
+*OS に依存しない keyboard remapper にするツール* を公開しています。
+
+keyboard のキー入れ替えを使用している方は使ってみてください。
+
+<https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/>
+
+* USB Gadget 機能
+
+USB Gadget は Linux カーネルでサポートされる由緒正しい機能で、
+HID デバイスや MASS Storage など様々なデバイスの機能をサポートしています。
+
+USB Gadget は、予め用意された機能を提供するデバイスとして振る舞う方法と、
+複数の機能を組み合わせて提供する
+複合デバイスとして動作する方法 (libcomposite) の 2 種類あります。
+
+前者の「予め用意された機能」の代表的な機能には、以下があります。
+
+- Serial (g_serial)
+- Ethernet (g_ether)
+- Mass storage (g_mass_storage)
+
+例えば Ethernet(RNDIS) として利用したい場合、
+次のようにモジュールを読み込むだけで USB を使った NIC がカーネル上に認識されます。
+
+: $ modprobe g_ether
+
+** 単機能と複合デバイスの違い
+
+予め用意された機能を利用するには、
+modprobe でモジュールを読み込むだけで実現できます。
+
+一方で、複合デバイスの場合、
+どの機能を組合せるのかを指定する必要があり、複雑になります。
+
+*「予め用意された機能」単体で利用するのと、「複数の機能を組み合わせる」のとでは、*
+*設定方法が全く異なるということを認識しておく必要があります。*
+
+この違いさえ理解すれば、後は組み合わせ方法が分かれば実現できます。
+
+** libcomposite と configfs
+
+複合デバイスの制御は libcomposite を利用します。
+そのため、まずは libcomposite を読み込みます。
+
+: $ modprobe libcomposite
+
+次に、 どの機能を組合せるのかを指定するには
+configfs というファイルシステムを利用し、
+そこに予め規定されているファイルを作成することで、必要なパラメータを指定します。
+
+configfs は事前に /sys/kernel/config にマウントされているので、
+ここを利用するか、
+別途新しいディレクトリを configfs でマウントして作業します。
+
+USB Gadget のパラメータをセットする場合、
+/sys/kernel/config の下の usb_gadget ディレクトリ内に任意の名前のディレクトリを作成し、
+そのディレクトリ中に設定ファイルを作成することになります。
+
+: sudo mkdir -p /sys/kernel/config/usb_gadget/g1
+
+以降の説明では、この usb_gadget ディレクトリ内に
+作成した任意のディレクトリを =GADGET_ROOT= とします。
+
+=GADGET_ROOT= 以降に作成するファイルは、
+組合せる機能に関係なく共通で指定するものと、
+組合せる機能ごとに指定が必要なものがあります。
+
+*以降のファイルパスは、原則 GADGET_ROOT からの相対です*
+
+手順の概要は以下の通りです。
+
+- 共通ファイルの作成
+- 機能ごとのファイルの作成
+- 機能の組み合わせを示すファイルの作成  
+- config 確定    
+
+*** 共通ファイルの作成 の作成
+
+共通ファイルは、 USB 規格で定義されている Device Descriptor の内容を設定する情報です。
+
+| ファイルパス               | 規定値   | 内容                           | Mandatory |
+|----------------------------+----------+--------------------------------+-----------|
+| idVendor                   | "0x1d6b" | Linux Foundation               | mandatory |
+| idProduct                  | "0x0104" | Multifunction Composite Gadget | mandatory |
+| bcdDevice                  |          |                                | option    |
+| bcdUSB                     |          |                                | option    |
+| bMaxPacketSize0            |          |                                | option    |
+| bDeviceProtocol            |          |                                | option    |
+| bDeviceSubClass            |          |                                | option    |
+| bDeviceClass               |          |                                | option    |
+| strings/0x409/serialnumber |          |                                | mandatory |
+| strings/0x409/manufacturer |          |                                | mandatory |
+| strings/0x409/product      |          |                                | mandatory |
+
+idVendor, idProduct については <http://www.linux-usb.org/usb.ids> 参照。
+
+*** 機能ごとのファイルの作成
+
+機能ごとのファイルは、以下のパス以下に作成します。
+
+: functions/<name>.<instance name>
+
+ここで =<name>= は、機能を示す文字列です。
+
+例えば RNDIS の場合は rndis、 HID の場合は hid になります。
+
+このディレクトリ内に、それぞれの機能ごとのパラメータを指定するファイルを作成します。
+
+機能毎に作成すべきディレクトリ名や、パラメータを指定するファイル名などの情報は、
+以下を参照してください。
+
+<https://wiki.tizen.org/USB/Linux_USB_Layers/Configfs_Composite_Gadget>
+    
+
+*** 機能の組み合わせを示すファイルの作成
+
+複合デバイスで提供する機能の組み合わせを、以下のディレクトリ以下に定義します。
+        
+: configs/<name>.<number>
+
+ここで name は任意の文字列です。number は 1 から初まる数字です。
+
+例えば以下になります。
+
+: configs/c.1
+
+このディレクトリの下に、複数の機能を組合せることが出来ます。
+
+どの機能を組み合わせるのかを示すには、
+以下のように機能毎のディレクトリのシンボリックリンクを作成することで設定します。
+
+: ln -s functions/<name>.<instance name> configs/<name>.<number>
+
+configs/<name>.<number> 内には、複数の機能を含められます。
+
+また、このディレクトリの下には以下を作成する必要があります。
+
+: configs/<name>.<number>/strings/0x409
+
+*** config 確定
+
+全ての機能、組み合わせの情報のファイルを作成後、
+それらを確定させために以下を実行します。
+
+: ls /sys/class/udc/ > UDC
+
+
+* HID Keyboard と RNDIS の複合デバイスにする設定
+
+以下を参照してください。
+
+<https://github.com/ifritJP/hw-keyboard-remapper/blob/main/usb_gadget/rndis_hid.sh>
+
+* 参考
+
+libcomposite の使用方法のオリジナルリファレンスは以下です。
+
+<https://www.kernel.org/doc/html/latest/usb/gadget_configfs.html>
