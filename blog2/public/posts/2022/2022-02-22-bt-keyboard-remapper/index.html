@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版) - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="前回 Raspberry pi zero w 版の keyboard remapper に引き続き、 M5stack 版の keyboard remapper を作成しました。 M5stack は、 Raspberry pi zero w と比べて以下の長所があります。 モデルによっては小型軽量 基板が剥き出し" />
+    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <title>OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版) - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版)" />
+<meta property="og:description" content="前回 Raspberry pi zero w 版の keyboard remapper に引き続き、 M5stack 版の keyboard remapper を作成しました。 M5stack は、 Raspberry pi zero w と比べて以下の長所があります。 モデルによっては小型軽量 基板が剥き出し" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/" />
+<meta property="article:published_time" content="2022-02-22T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-02-22T00:00:00+00:00" />
+<meta itemprop="name" content="OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版)">
+<meta itemprop="description" content="前回 Raspberry pi zero w 版の keyboard remapper に引き続き、 M5stack 版の keyboard remapper を作成しました。 M5stack は、 Raspberry pi zero w と比べて以下の長所があります。 モデルによっては小型軽量 基板が剥き出し">
+<meta itemprop="datePublished" content="2022-02-22T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2022-02-22T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="4051">
+
+
+
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版)"/>
+<meta name="twitter:description" content="前回 Raspberry pi zero w 版の keyboard remapper に引き続き、 M5stack 版の keyboard remapper を作成しました。 M5stack は、 Raspberry pi zero w と比べて以下の長所があります。 モデルによっては小型軽量 基板が剥き出し"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/" class="title">OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-02-22 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-02-22</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-16-keyboard-key-scan-code/" class="title">HID Keyboard の Key スキャンコード</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-01-16 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-16</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/" class="title">Hardware Keyboard Remapper(OS に依存しないキーボードのキー入れ替え)を作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-01-10 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-10</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-12-05-display-dots/" class="title">液晶ディスプレイメーカーのドット抜け保証</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-12-05 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-12-05</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-11-14-lunescript-error-handling/" class="title">LuneScript がエラーハンドリングと大域脱出をサポートできていない理由</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2021-11-14 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-11-14</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/"
+    >OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版)</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/" class="article-date">
+  <time datetime="2022-02-22 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-02-22</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">4051</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">9 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+<a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/">前回</a> Raspberry pi zero w 版の keyboard remapper に引き続き、
+M5stack 版の keyboard remapper を作成しました。
+</p>
+<p>
+M5stack は、 Raspberry pi zero w と比べて以下の長所があります。
+</p>
+<ul>
+<li>
+<p>
+モデルによっては小型軽量
+</p>
+</li>
+<li>
+<p>
+基板が剥き出しになっていない  
+</p>
+</li>
+<li>
+<p>
+<strong>今は</strong> Raspberry pi より入手性が良い
+</p>
+</li>
+<li>
+<p>
+消費電力が 1/5 以下
+</p>
+</li>
+<li>
+<p>
+本体に汎用的に使えるボタンが付いている
+</p>
+</li>
+<li>
+<p>
+モデルによっては、本体にディスプレイが付いている
+</p>
+</li>
+</ul>
+<p>
+一方で、以下の短所があります。
+</p>
+<ul>
+<li>
+<p>
+ROM/RAM が圧倒的に少ない
+</p>
+</li>
+<li>
+<p>
+独自 OS で、開発環境が限定的
+</p>
+</li>
+<li>
+<p>
+情報が少ない
+</p>
+</li>
+<li>
+<p>
+環境構築に時間がかかる  
+</p>
+</li>
+<li>
+<p>
+動作確認にはファーム書き換えが必要で、時間がかかる(数十秒程度だが回数が多くなると気になる)
+</p>
+</li>
+</ul>
+<p>
+長所で挙げた項目を魅力に感じない場合は、
+Raspberry pi zero w の方が良いでしょう。
+</p>
+<p>
+とはいえ、
+暫くは半導体不足の影響で Raspberry pi zero w が入手不可能に近いため、
+必然的に M5stack を選択することになるでしょう。
+</p>
+<p>
+なお値段は、モデルによりますが、多くの場合 M5stack の方が高いです。
+ただこれは、M5stack が高いというより Raspberry pi zero w が安いというべきでしょう。
+</p>
+<h2 id="headline-1">
+構成
+</h2>
+<p>
+<img src="../bt-keyboard-remapper.jpg" alt="../bt-keyboard-remapper.jpg" title="../bt-keyboard-remapper.jpg" />
+</p>
+<p>
+M5stack 版の keyboard remapper は、
+Bluetooth キーボードの中継器のような動きになります。
+</p>
+<p>
+PC 等とキーボードの間の Bluetooth 通信に M5stack を入れ、
+そこで任意のキー入れ替えを行ないます。
+</p>
+<p>
+接続先はBluetooth keyboard に対応する端末であれば PC に限りませんが、
+以降の説明では PC と記します。
+</p>
+<p>
+M5stack は、現状 USB Keyboad に対応していないため、
+Bluetooth 接続に限定されます。
+</p>
+<p>
+USB 対応が必要な場合は、
+前述の Raspberry pi zero w 版 keyboard remapper を利用するか、
+USB -&gt; Bluetooth 変換などを利用してください。
+</p>
+<p>
+なお、 使用する M5stack は ATOM U を前提にしています。
+</p>
+<p>
+ATOM シリーズであれば動くとは思いますが、
+確認しているのは ATOM U だけです。
+</p>
+<p>
+ATOM シリーズでなくても、
+M5stack であれば、プログラムを少し変更するだけで動くとは思います。
+</p>
+<p>
+ATOM U 特有の機能で利用しているものは、ボタンと LED だけです。
+これらは、 M5stack シリーズでほぼ共通なので、
+その部分を置き換えるだけで移植可能です。
+</p>
+<h2 id="headline-2">
+git リポジトリ
+</h2>
+<p>
+以下で公開しています。
+</p>
+<p>
+&lt;<a href="https://github.com/ifritJP/bt-keyboard-remapper">https://github.com/ifritJP/bt-keyboard-remapper</a>&gt;
+</p>
+<h2 id="headline-3">
+準備
+</h2>
+<p>
+M5stack に対応する開発環境には幾つか種類がありますが、
+bt-keyboard-remapper は esp-idf の Ver4.4 を利用します。
+</p>
+<p>
+esp-idf は ESP32 のチップベンダが公式にサポートしている開発環境です。
+</p>
+<p>
+環境構築は面倒なので、
+ここでは docker を使ってビルド、書き込み、設定まで行なう方法を説明します。
+</p>
+<p>
+docker を使わずに自前で環境を構築したい人は、
+以下の説明で利用する Dockerfile や docker-compose.yml の中を確認してください。
+</p>
+<h3 id="headline-4">
+手順
+</h3>
+<p>
+手順は以下のステップから成ります。
+</p>
+<ul>
+<li>
+<p>
+git の clone
+</p>
+</li>
+<li>
+<p>
+設定
+</p>
+</li>
+<li>
+<p>
+ビルド
+</p>
+</li>
+<li>
+<p>
+M5stack の接続  
+</p>
+</li>
+<li>
+<p>
+ビルドしたファームの書き込み
+</p>
+</li>
+<li>
+<p>
+コンソール接続
+</p>
+</li>
+</ul>
+<p>
+<strong>※ docker は事前に設定していることを前提にしています。</strong>
+</p>
+<p>
+ホストは Linux か WSL2 を使ってください。
+</p>
+<h3 id="headline-5">
+git の clone
+</h3>
+<p>
+以下を実行し、 clone してください。
+</p>
+<pre class="example">
+git clone --depth 1 --recursive --shallow-submodules https://github.com/ifritJP/bt-keyboard-remapper.git
+</pre>
+<h3 id="headline-6">
+設定
+</h3>
+<p>
+以下を実行し環境を設定してください。
+</p>
+<pre class="example">
+cd bt-keyboard-remapper
+make setup
+</pre>
+<h3 id="headline-7">
+ビルド
+</h3>
+<p>
+以下を実行しビルドしてください。
+</p>
+<pre class="example">
+$ make req-build-on-docker
+</pre>
+<p>
+これにより、 docker のイメージとコンテナが作成され(名前: bt-kbd-remapper )、
+そのコンテナ内で M5stack のファームがビルドされます。
+</p>
+<p>
+環境にもよりますが、このコマンドには 10 分程度掛ります。
+</p>
+<h3 id="headline-8">
+M5stack の接続  
+</h3>
+<p>
+ここからは、M5stack を PC に接続して作業する必要があります。
+</p>
+<h4 id="headline-9">
+WSL2 の場合    
+</h4>
+<p>
+WSL2 の場合、M5stack を認識させるためドライバーをインストールしてください。
+</p>
+<p>
+USB ドライバー: &lt;<a href="https://ftdichip.com/drivers/vcp-drivers/">https://ftdichip.com/drivers/vcp-drivers/</a>&gt;
+</p>
+<p>
+また、現時点では WSL2 から M5stack の COM に手軽にアクセスできないので
+(アクセスするにはカーネルのビルド等が必要)、
+迂回して COM にアクセスするために hub4com を利用します。
+</p>
+<p>
+以下から hub4com をダウンロードし、
+</p>
+<p>
+&lt;<a href="https://sourceforge.net/projects/com0com/files/hub4com/">https://sourceforge.net/projects/com0com/files/hub4com/</a>&gt;
+</p>
+<p>
+展開した com2tcp-rfc2217.bat を windows 上で実行します。
+</p>
+<pre class="example">
+com2tcp-rfc2217.bat COM8 5555
+</pre>
+<p>
+ここで COM8 は、 Windows が認識している M5stack の COM ポートを指定します。
+</p>
+<h4 id="headline-10">
+Linux の場合
+</h4>
+<p>
+カーネルがよほど古くないかぎり、
+USB を接続するだけで <code class="verbatim">/dev/ttyUSB?</code> (? は数字) が認識されるはずです。
+</p>
+<h3 id="headline-11">
+書き込み
+</h3>
+<p>
+M5stack を PC に接続した状態で、以下を実行します。
+</p>
+<h4 id="headline-12">
+linux の場合
+</h4>
+<pre class="example">
+$ docker exec -it bt-kbd-remapper make -C /proj/bt-kbd-remapper burn COM=/proj/dev/ttyUSB0
+</pre>
+<p>
+<strong>ここで ttyUSB0 は、環境に合せて指定してください。</strong>
+</p>
+<h4 id="headline-13">
+WSL2 の場合
+</h4>
+<pre class="example">
+$ docker exec -it bt-kbd-remapper make -C /proj/bt-kbd-remapper burn HOSTPC=???.???.???.???
+</pre>
+<p>
+<strong>ここで <code class="verbatim">???.???.???.???</code> には、 Windows の IP を指定してください。</strong>
+</p>
+<h3 id="headline-14">
+コンソール接続
+</h3>
+<p>
+M5stack を PC に接続した状態で、以下を実行します。
+これにより、 M5stack のコンソールが操作可能になります。
+</p>
+<p>
+M5stack のペアリングは、このコンソールを通して行ないます。
+</p>
+<p>
+<strong>ここで指定する COM, HOSTPC は、前述の通りです。</strong>
+</p>
+<h4 id="headline-15">
+linux の場合
+</h4>
+<pre class="example">
+$ docker exec -it bt-kbd-remapper make -C /proj/bt-kbd-remapper monitor COM=/proj/dev/ttyUSB0
+</pre>
+<h4 id="headline-16">
+WSL2 の場合
+</h4>
+<pre class="example">
+$ docker exec -it bt-kbd-remapper make -C /proj/bt-kbd-remapper monitor HOSTPC=???.???.???.???
+</pre>
+<p>
+<strong>コンソールは、 <code class="verbatim">Ctrl</code> を押下しながら <code class="verbatim">]</code> で切断されます。</strong>
+</p>
+<h2 id="headline-17">
+コンソールの操作方法
+</h2>
+<p>
+前述の接続したコンソールを操作し、 M5stack をペアリングします。
+</p>
+<p>
+コンソールは、簡易的な対話型の UI を提供します。
+</p>
+<p>
+単に enter を入力すると、以下のプロンプトが表示されます。
+</p>
+<pre class="example">
+esp32&gt;
+</pre>
+<p>
+この状態でコマンドを入力することで、操作が可能です。
+</p>
+<p>
+help を入力すると、対応するコマンド一覧が表示されます。
+</p>
+<p>
+また help につづいてコマンドを入力することで、
+そのコマンドの説明が表示されます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">esp32&gt; help bt
+
+bt  [-cDFlp] [-s dev-id] [-d host-id] [--sendkey=sendkey] [--initdev] [--inithost] [--scan=on or off or now] [--unpair=addr or &#39;all&#39;] [--wlist=&#39;set&#39; or &#39;clear&#39;]
+  control bluetooth device
+     -s dev-id  connect to device
+            -c  dump channel
+    -d host-id  connect as device
+            -D  set discoverable as device
+            -F  clear discoverable as device
+  --sendkey=sendkey  send key as device
+     --initdev  init as device
+    --inithost  init as host
+            -l  list connections
+            -p  paired devices
+  --scan=on or off or now  scan devices. on or off
+  --unpair=addr or &#39;all&#39;  remove pair.
+  --wlist=&#39;set&#39; or &#39;clear&#39;  white list.</code></pre></div>
+</div>
+<h3 id="headline-18">
+手順
+</h3>
+<p>
+以下を実行します。
+</p>
+<ul>
+<li>
+<p>
+setup モードに切り替え
+</p>
+</li>
+<li>
+<p>
+keyboard とのペアリング
+</p>
+</li>
+<li>
+<p>
+PC とのペアリング
+</p>
+</li>
+<li>
+<p>
+キーの入れ替え
+</p>
+</li>
+<li>
+<p>
+normal モードに切り替え  
+</p>
+</li>
+</ul>
+<p>
+以降で、各ステップを説明します。
+</p>
+<h3 id="headline-19">
+setup モードに切り替え
+</h3>
+<p>
+bt-kbd-remapper は、次の 2 つのモードを持ちます。
+</p>
+<ul>
+<li>
+<p>
+setup
+</p>
+</li>
+<li>
+<p>
+normal
+</p>
+</li>
+</ul>
+<p>
+setup モードは、ペアリングを行なうモードです。
+normal モードは、setup モードでペアリングされた機器と自動で接続し、
+キーの入れ替えを行なうモードです。
+normal モードでは、新規のペアリングはできません。
+</p>
+<p>
+モード切り替えは、 config コマンドを利用します。
+</p>
+<p>
+単に config だけ入力すると、現在の設定を表示します。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">esp32&gt; config
+ mode: setup
+ toHostAddr: 00:00:00:00:00:00
+ hidDeviceMode: bt
+ demoMode: 0</code></pre></div>
+</div>
+<p>
+以下を実行すると setup モードに切り替わります。
+</p>
+<pre class="example">
+config -m setup
+</pre>
+<p>
+モード切り替えは M5stack を再起動させる必要があります。
+</p>
+<p>
+M5stack は以下の方法でリセットできます。
+</p>
+<ul>
+<li>
+<p>
+M5stack のリセットボタンを押す
+</p>
+</li>
+<li>
+<p>
+コンソールで <code class="verbatim">Ctrl t</code> <code class="verbatim">Ctrl r</code> 
+</p>
+</li>
+</ul>
+<h3 id="headline-20">
+keyboard とのペアリング
+</h3>
+<p>
+M5stack と接続したい keyboard を、事前にペアリングモードにセットします。
+</p>
+<p>
+次に以下を実行します。
+</p>
+<pre class="example">
+esp32&gt; bt --inithost
+esp32&gt; bt --scan=on
+</pre>
+<p>
+これにより、ペアリング可能な Bluetooth 一覧をスキャンするので、
+目的のキーボードの情報が出力されたら、以下を実行します。
+</p>
+<pre class="example">
+esp32&gt; bt --scan=off
+</pre>
+<p>
+これにより以下が出力されます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">----scan result----
+No.0:  XX:XX:XX:XX:XX:XX, 0x2540 ==&gt; 
+----</code></pre></div>
+</div>
+<p>
+次に、以下を実行しペアリングします。
+</p>
+<pre class="example">
+esp32&gt; bt -s ?
+</pre>
+<p>
+ここで <code class="verbatim">?</code> には、 scan 結果の No.? の番号を指定します。
+</p>
+<p>
+数秒待つとペアリングが完了し、以下が出力されます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">I (28798) console: console_hid_packet_handler_meta_bt: 2
+I (28799) console: HID_SUBEVENT_CONNECTION_OPENED
+I (28811) console: CONSOLE_BT_STATE_CONNECTING
+HID Host connected.</code></pre></div>
+</div>
+<h3 id="headline-21">
+PC とのペアリング
+</h3>
+<h4 id="headline-22">
+Bluetooth classic と BLE の切り替え
+</h4>
+<p>
+bt-kbd-remapper では、 BT classic の HID keyboard と、
+BLE の HID keyboard の HID モードを切り替え可能です。
+</p>
+<p>
+接続先の PC によって、キーボード接続や不安定や接続できない場合は、
+HID モードを切り替えてください。
+</p>
+<p>
+切り替えは以下のコマンドで行ないます。
+</p>
+<pre class="example">
+esp32 config -h hidDevMode
+</pre>
+<p>
+ここで hidDevMode は以下を指定します。
+</p>
+<ul>
+<li>
+<p>
+classic の場合
+</p>
+</li>
+</ul>
+<pre class="example">
+esp32 config -h bt
+</pre>
+<ul>
+<li>
+<p>
+BLE の場合
+</p>
+</li>
+</ul>
+<pre class="example">
+esp32 config -h le
+</pre>
+<p>
+HID モード切り替えの反映はリブートが必要です。
+</p>
+<h4 id="headline-23">
+ペアリング
+</h4>
+<p>
+以下を実行します。
+</p>
+<pre class="example">
+esp32&gt; bt --initdev
+esp32&gt; bt -D
+</pre>
+<p>
+この状態で PC 側でペアリングします。
+</p>
+<p>
+ペアリング終了後は、以下を実行して discoverable 状態を停止させます。
+</p>
+<pre class="example">
+esp32&gt; bt -F
+</pre>
+<h3 id="headline-24">
+キーの入れ替え
+</h3>
+<p>
+キーの入れ替えは以下のコマンドを使用します。
+</p>
+<ul>
+<li>
+<p>
+remap -k old,new
+</p>
+</li>
+<li>
+<p>
+remap -c code,mask,result,code,xor
+</p>
+</li>
+<li>
+<p>
+remap –b64read
+</p>
+</li>
+<li>
+<p>
+remap -p
+</p>
+<h4 id="headline-25">
+remap -k old,new
+</h4>
+</li>
+</ul>
+<p>
+このコマンドは、 HID キーコードを単純に置き換えます。
+</p>
+<p>
+old のコードを new のコードに置き換えます。
+</p>
+<p>
+例えば キーボードの A を B にする場合は、以下を実行します。
+</p>
+<pre class="example">
+esp32&gt; remap -k 4,5
+</pre>
+<p>
+この HID コードの詳細は、次の USB の規格書を参照してください。
+</p>
+<ul>
+<li>
+<p>
+各キーのコード情報は、以下の資料の 「10 Keyboard/Keypad Page (0x07)」 を参照
+</p>
+<ul>
+<li>
+<p>
+<a href="https://usb.org/document-library/hid-usage-tables-122">https://usb.org/document-library/hid-usage-tables-122</a>
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+Ctl, Alt 等の modifier キー情報は、以下の資料の「8.3 Report Format for Array Items」を参照
+</p>
+<ul>
+<li>
+<p>
+<a href="https://www.usb.org/document-library/device-class-definition-hid-111">https://www.usb.org/document-library/device-class-definition-hid-111</a>
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+あるいは、ペアリングした状態でキーボードのキーを押下すると以下のようなログが出力されるので、
+それも確認できます。
+</p>
+<div class="src src-txt">
+<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">I (8568910) console: console_hid_packet_handler_meta_bt: 12
+[02:22:48.912] LOG -- btstack_util.c.258: 0xA1, 0x01, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 
+[02:22:48.924] LOG -- btstack_util.c.258: 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 
+I (8568925) console: console_hid_packet_handler_meta_bt: 4
+[02:22:48.936] LOG -- btstack_util.c.258: 0xA1, 0x01, 0x00, 0x00, 0x28, 0x00, 0x00, 0x00, 0x00, 0x00, 
+I (8568978) console: console_hid_packet_handler_meta_bt: 12
+[02:22:48.979] LOG -- btstack_util.c.258: 0xA1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+[02:22:48.991] LOG -- btstack_util.c.258: 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+I (8568992) console: console_hid_packet_handler_meta_bt: 4
+[02:22:49.003] LOG -- btstack_util.c.258: 0xA1, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</code></pre></div>
+</div>
+<p>
+これは、 enter キーを押して離したときのログです。
+</p>
+<p>
+前半の 5 行が押下時で、後半の 5 行が離した時です。
+</p>
+<p>
+5行の構成は、上から順に以下になっています。
+</p>
+<ul>
+<li>
+<p>
+keyboard から report を受信したことを示すログ
+</p>
+</li>
+<li>
+<p>
+受信した report の内容のダンプログ
+</p>
+</li>
+<li>
+<p>
+キー変換後のダンプログ
+</p>
+</li>
+<li>
+<p>
+PC 側への report 送信開始を示すログ
+</p>
+</li>
+<li>
+<p>
+送信する report のダンプログ
+</p>
+</li>
+</ul>
+<p>
+ここで、「受信した report の内容のダンプ」の 0x28 が enter キーの HID コードです。
+</p>
+<p>
+<strong>なお、normal モード時は report ダンプしません</strong>
+</p>
+<h4 id="headline-26">
+remap -c code,mask,result,code,xor
+</h4>
+<p>
+このコマンドは modifier (shift や ctrl など) とのキーの組み合わせ時の、
+動作を入れ替えます。
+</p>
+<p>
+例えば、 Shift を押下しながら Space キー押下を数字の 1 キーにする場合は、
+以下を実行します。
+</p>
+<pre class="example">
+esp32&gt; remap -c 44,2,2,30,2
+</pre>
+<h4 id="headline-27">
+remap –b64read
+</h4>
+<p>
+このコマンドは、
+後述する設定変更ツールで出力されたデータを読み込ます。
+入れ替えるキーが多い場合や、設定単体を保持しておきたい場合に利用します。
+</p>
+<p>
+以下を実行すると、
+</p>
+<pre class="example">
+esp32&gt; remap --b64read
+</pre>
+<p>
+データ入力待ちになるので、以下を入力すると、設定が反映されます。
+</p>
+<pre class="example">
+16
+AQAAAAAAAAAAAAAAEAAAAA==
+</pre>
+<h3 id="headline-28">
+remap -p
+</h3>
+<p>
+このコマンドは現在の設定を表示します。
+</p>
+<h3 id="headline-29">
+normal モードに切り替え  
+</h3>
+<p>
+設定終了後、以下を実行して normal モードに設定します。
+</p>
+<pre class="example">
+esp32&gt; config -m setup
+</pre>
+<p>
+モード切り替えの反映は、 M5stack の再起動が必要です。
+</p>
+<h4 id="headline-30">
+nomal モードの動き
+</h4>
+<p>
+normal モードは、setup モードでペアリングされた PC/keyboard と自動で接続されます。
+</p>
+<p>
+接続は次の順番に行ないます。
+</p>
+<ul>
+<li>
+<p>
+PC
+</p>
+</li>
+<li>
+<p>
+keyboard
+</p>
+</li>
+</ul>
+<p>
+それぞれの接続中の状態を示すため、 LED の点滅パターンが変化します。
+</p>
+<p>
+PC 接続待ち中は高速点滅し、
+keyboard 待ち中は点滅のパターンが変化します。
+keyboard との接続終了後は常時点灯します。
+</p>
+<h2 id="headline-31">
+設定変更ツール
+</h2>
+<p>
+JSON フォーマットで記述したキーの入れ替え情報を、
+<code class="verbatim">remap --b64read</code> コマンドで読み込み可能な形式に変換するツールです。
+</p>
+<h3 id="headline-32">
+ビルド
+</h3>
+<p>
+このツールは go で作成しています。
+</p>
+<p>
+go 1.16 以降をインストールした環境で以下を実行してください。
+</p>
+<pre class="example">
+$ cd configConv
+$ make all
+</pre>
+<p>
+これで conv が生成されます。
+</p>
+<h3 id="headline-33">
+JSON
+</h3>
+<p>
+キーの入れ替え情報は以下の JSON フォーマットです。
+</p>
+<div class="src src-json">
+<div class="highlight"><pre class="chroma"><code class="language-json" data-lang="json"><span class="p">{</span>
+    <span class="nt">&#34;Comments&#34;</span><span class="p">:</span> <span class="p">[</span>
+	<span class="s2">&#34;HID Code&#34;</span><span class="p">,</span>
+	<span class="s2">&#34;modifier: LeftControl = 1,  LeftShift = 2,  LeftAlt = 4,  LeftGUI = 8&#34;</span><span class="p">,</span>
+	<span class="s2">&#34;          LeftControl = 16, LeftShift = 32, LeftAlt = 64, LeftGUI = 128&#34;</span><span class="p">,</span>
+	<span class="s2">&#34;alnum: A-Z = 4-29,  1-9,0 = 30-39&#34;</span><span class="p">,</span>
+	<span class="s2">&#34;arrow: right,left,down,up = 79-82&#34;</span><span class="p">,</span>
+	<span class="s2">&#34; others: execute the next command: sudo ./convkey.raspi -mode scan&#34;</span>
+    <span class="p">],</span>
+    <span class="nt">&#34;InputKeyboardName&#34;</span><span class="p">:</span> <span class="s2">&#34;&#34;</span><span class="p">,</span>
+    <span class="nt">&#34;SwitchKeys&#34;</span><span class="p">:</span> <span class="p">[</span>
+	<span class="p">{</span> <span class="nt">&#34;Src&#34;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="nt">&#34;Dst&#34;</span><span class="p">:</span> <span class="mi">5</span> <span class="p">},</span>
+	<span class="p">{</span> <span class="nt">&#34;Src&#34;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="nt">&#34;Dst&#34;</span><span class="p">:</span> <span class="mi">6</span> <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&#34;ConvKeyMap&#34;</span><span class="p">:</span> <span class="p">{</span>
+	<span class="nt">&#34;44&#34;</span><span class="p">:</span> <span class="p">[</span>
+	    <span class="p">{</span>
+		<span class="nt">&#34;CondModifierMask&#34;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+		<span class="nt">&#34;CondModifierResult&#34;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+		<span class="nt">&#34;Code&#34;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span>
+		<span class="nt">&#34;ModifierXor&#34;</span><span class="p">:</span> <span class="mi">2</span>
+	    <span class="p">}</span>
+	<span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></div>
+</div>
+<p>
+キーの入れ替えは以下の項目で指定します。
+</p>
+<ul>
+<li>
+<p>
+SwitchKeys   
+</p>
+</li>
+<li>
+<p>
+ConvKeyMap
+</p>
+</li>
+</ul>
+<p>
+各項目の書式については、以下の URL を参照してください。
+</p>
+<p>
+&lt;<a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/#headline-13">https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/#headline-13</a>&gt;
+</p>
+<h3 id="headline-34">
+変換
+</h3>
+<p>
+ビルドした conv を実行して JSON を変換します。
+</p>
+<pre class="example">
+$ ./conv config.json
+</pre>
+<p>
+これにより、変換結果が標準出力されます。
+</p>
+<p>
+以上。
+</p>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-16-keyboard-key-scan-code/" title="HID Keyboard の Key スキャンコード"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2022
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>
