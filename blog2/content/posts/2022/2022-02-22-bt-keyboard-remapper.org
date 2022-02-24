@@ -49,7 +49,7 @@ PC 等とキーボードの間の Bluetooth 通信に M5stack を入れ、
 そこで任意のキー入れ替えを行ないます。
 
 接続先はBluetooth keyboard に対応する端末であれば PC に限りませんが、
-以降の説明では PC と記します。
+以降の説明では接続先を PC と記します。
 
 
 M5stack は、現状 USB Keyboad に対応していないため、
@@ -109,15 +109,15 @@ docker を使わずに自前で環境を構築したい人は、
 
 以下を実行し、 clone してください。
    
-: git clone --depth 1 --recursive --shallow-submodules https://github.com/ifritJP/bt-keyboard-remapper.git
+: $ git clone --depth 1 --recursive --shallow-submodules https://github.com/ifritJP/bt-keyboard-remapper.git
 
    
 ** 設定
 
 以下を実行し環境を設定してください。
 
-: cd bt-keyboard-remapper
-: make setup
+: $ cd bt-keyboard-remapper
+: $ make setup
 
 ** ビルド
 
@@ -271,7 +271,7 @@ esp32> config
 
 以下を実行すると setup モードに切り替わります。
 
-: config -m setup
+: esp32> config -m setup
 
 モード切り替えは M5stack を再起動させる必要があります。
 
@@ -329,17 +329,17 @@ HID モードを切り替えてください。
 
 切り替えは以下のコマンドで行ないます。
 
-: esp32 config -h hidDevMode
+: esp32> config -h hidDevMode
 
 ここで hidDevMode は以下を指定します。
 
 - classic の場合
 
-: esp32 config -h bt
+: esp32> config -h bt
 
 - BLE の場合
 
-: esp32 config -h le
+: esp32> config -h le
 
 HID モード切り替えの反映はリブートが必要です。
 
@@ -416,12 +416,37 @@ I (8568992) console: console_hid_packet_handler_meta_bt: 4
 
 *なお、normal モード時は report ダンプしません*
 
-*** remap -c code,mask,result,code,xor
+*** remap -c code,mask,result,newcode,xor
 
 このコマンドは modifier (shift や ctrl など) とのキーの組み合わせ時の、
 動作を入れ替えます。
 
-例えば、 Shift を押下しながら Space キー押下を数字の 1 キーにする場合は、
+
+各パラメータの意味は以下の通りです。
+- code
+  - 押下されるキーボードの HID コードを指定します
+- mask
+  - modifier のマスク値を指定します。
+- result
+  - modifier のマスク結果を指定します。
+- newcode
+  - 条件成立時の HID コードを指定します。
+- xor
+  - 条件成立時の modifier の XOR 値を指定します。
+
+これは、以下のような処理を行ないます。
+
+#+BEGIN_SRC lns
+fn conv( modifier:int, key:int ) {
+  if (modifier & mask) == mask and key == code {
+     key = newcode;
+     modifier = modifier ^ xor;
+  }
+}
+#+END_SRC
+
+例えば、 Shift を押下(modifier:2)しながら
+Space キー押下(HID:44) を、数字の 1 キー(HID:30)にする場合は、
 以下を実行します。
 
 : esp32> remap -c 44,2,2,30,2

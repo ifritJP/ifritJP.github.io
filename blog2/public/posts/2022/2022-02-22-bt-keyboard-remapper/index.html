@@ -44,7 +44,7 @@
 <meta itemprop="description" content="前回 Raspberry pi zero w 版の keyboard remapper に引き続き、 M5stack 版の keyboard remapper を作成しました。 M5stack は、 Raspberry pi zero w と比べて以下の長所があります。 モデルによっては小型軽量 基板が剥き出し">
 <meta itemprop="datePublished" content="2022-02-22T00:00:00&#43;00:00" />
 <meta itemprop="dateModified" content="2022-02-22T00:00:00&#43;00:00" />
-<meta itemprop="wordCount" content="4051">
+<meta itemprop="wordCount" content="4239">
 
 
 
@@ -218,6 +218,16 @@
             <li>
                 <div class="item-inner">
                     <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-23-m5stack-btstack/" class="title">M5stack(ESP32) で Bluetooth(btstack) の機能を利用する際の注意点</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-02-23 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-02-23</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
                         <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/" class="title">OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版)</a>
                     </p>
                     <p class="item-date">
@@ -252,16 +262,6 @@
                     </p>
                     <p class="item-date">
                         <time datetime="2021-12-05 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-12-05</time>
-                    </p>
-                </div>
-            </li>
-            <li>
-                <div class="item-inner">
-                    <p class="item-title">
-                        <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-11-14-lunescript-error-handling/" class="title">LuneScript がエラーハンドリングと大域脱出をサポートできていない理由</a>
-                    </p>
-                    <p class="item-date">
-                        <time datetime="2021-11-14 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-11-14</time>
                     </p>
                 </div>
             </li>
@@ -306,7 +306,7 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">4051</span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">4239</span>
 		<span class="post-readcount hidden-xs" itemprop="timeRequired">9 </span>
       </div>
     </div>
@@ -410,7 +410,7 @@ PC 等とキーボードの間の Bluetooth 通信に M5stack を入れ、
 </p>
 <p>
 接続先はBluetooth keyboard に対応する端末であれば PC に限りませんが、
-以降の説明では PC と記します。
+以降の説明では接続先を PC と記します。
 </p>
 <p>
 M5stack は、現状 USB Keyboad に対応していないため、
@@ -515,7 +515,7 @@ git の clone
 以下を実行し、 clone してください。
 </p>
 <pre class="example">
-git clone --depth 1 --recursive --shallow-submodules https://github.com/ifritJP/bt-keyboard-remapper.git
+$ git clone --depth 1 --recursive --shallow-submodules https://github.com/ifritJP/bt-keyboard-remapper.git
 </pre>
 <h3 id="headline-6">
 設定
@@ -524,8 +524,8 @@ git clone --depth 1 --recursive --shallow-submodules https://github.com/ifritJP/
 以下を実行し環境を設定してください。
 </p>
 <pre class="example">
-cd bt-keyboard-remapper
-make setup
+$ cd bt-keyboard-remapper
+$ make setup
 </pre>
 <h3 id="headline-7">
 ビルド
@@ -758,7 +758,7 @@ normal モードでは、新規のペアリングはできません。
 以下を実行すると setup モードに切り替わります。
 </p>
 <pre class="example">
-config -m setup
+esp32&gt; config -m setup
 </pre>
 <p>
 モード切り替えは M5stack を再起動させる必要があります。
@@ -842,7 +842,7 @@ HID モードを切り替えてください。
 切り替えは以下のコマンドで行ないます。
 </p>
 <pre class="example">
-esp32 config -h hidDevMode
+esp32&gt; config -h hidDevMode
 </pre>
 <p>
 ここで hidDevMode は以下を指定します。
@@ -855,7 +855,7 @@ classic の場合
 </li>
 </ul>
 <pre class="example">
-esp32 config -h bt
+esp32&gt; config -h bt
 </pre>
 <ul>
 <li>
@@ -865,7 +865,7 @@ BLE の場合
 </li>
 </ul>
 <pre class="example">
-esp32 config -h le
+esp32&gt; config -h le
 </pre>
 <p>
 HID モード切り替えの反映はリブートが必要です。
@@ -1020,14 +1020,91 @@ PC 側への report 送信開始を示すログ
 <strong>なお、normal モード時は report ダンプしません</strong>
 </p>
 <h4 id="headline-26">
-remap -c code,mask,result,code,xor
+remap -c code,mask,result,newcode,xor
 </h4>
 <p>
 このコマンドは modifier (shift や ctrl など) とのキーの組み合わせ時の、
 動作を入れ替えます。
 </p>
 <p>
-例えば、 Shift を押下しながら Space キー押下を数字の 1 キーにする場合は、
+各パラメータの意味は以下の通りです。
+</p>
+<ul>
+<li>
+<p>
+code
+</p>
+<ul>
+<li>
+<p>
+押下されるキーボードの HID コードを指定します
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+mask
+</p>
+<ul>
+<li>
+<p>
+modifier のマスク値を指定します。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+result
+</p>
+<ul>
+<li>
+<p>
+modifier のマスク結果を指定します。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+newcode
+</p>
+<ul>
+<li>
+<p>
+条件成立時の HID コードを指定します。
+</p>
+</li>
+</ul>
+</li>
+<li>
+<p>
+xor
+</p>
+<ul>
+<li>
+<p>
+条件成立時の modifier の XOR 値を指定します。
+</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+これは、以下のような処理を行ないます。
+</p>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">fn conv( modifier:int, key:int ) {
+  if (modifier &amp; mask) == mask and key == code {
+     key = newcode;
+     modifier = modifier ^ xor;
+  }
+}</code></pre>
+</div>
+<p>
+例えば、 Shift を押下(modifier:2)しながら
+Space キー押下(HID:44) を、数字の 1 キー(HID:30)にする場合は、
 以下を実行します。
 </p>
 <pre class="example">
@@ -1208,6 +1285,11 @@ $ ./conv config.json
                 <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-16-keyboard-key-scan-code/" title="HID Keyboard の Key スキャンコード"><i
                         class="icon icon-angle-left"
                         aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            <li class="next">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-23-m5stack-btstack/"
+                    title="M5stack(ESP32) で Bluetooth(btstack) の機能を利用する際の注意点"><span>&nbsp;&nbsp;</span><i
+                        class="icon icon-angle-right" aria-hidden="true"></i></a>
             </li>
             
             <li class="toggle-toc">
