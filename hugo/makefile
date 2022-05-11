@@ -46,6 +46,7 @@ SRCS += async.ja.org
 SRCS += async_old.ja.org
 SRCS += luago.ja.org
 SRCS += go_study.ja.org
+SRCS += go_wasm.ja.org
 SRCS += lnstags.ja.org
 SRCS += reason.ja.org
 SRCS += recommend.ja.org

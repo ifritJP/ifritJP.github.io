@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>20. nil 条件演算子 編 - 公開技術情報</title>
+<title>@.1.4 LuneScript の WebAssembly 対応 - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.68.3" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/nilcond/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/go_wasm/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -28,18 +28,18 @@
 <style>
 :root {}
 </style>
-<meta property="og:title" content="20. nil 条件演算子 編" />
-<meta property="og:description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 // @lnsFront: ok let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } }" />
+<meta property="og:title" content="@.1.4 LuneScript の WebAssembly 対応" />
+<meta property="og:description" content="LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、 次の 2 つあります。 LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす LuneScript から go に" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/nilcond/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/go_wasm/" />
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="20. nil 条件演算子 編"/>
-<meta name="twitter:description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 // @lnsFront: ok let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } }"/>
-<meta itemprop="name" content="20. nil 条件演算子 編">
-<meta itemprop="description" content="今回は LuneScript の nil 条件演算子について説明します。 Map アクセス 例えば次のような Map のデータがあった場合、 // @lnsFront: ok let json = { &#34;lv1&#34;: { &#34;lv2&#34;: { &#34;lv3&#34;: { &#34;lv4&#34;: { &#34;lv5&#34;: { &#34;val&#34;: 1 } } } } }">
+<meta name="twitter:title" content="@.1.4 LuneScript の WebAssembly 対応"/>
+<meta name="twitter:description" content="LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、 次の 2 つあります。 LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす LuneScript から go に"/>
+<meta itemprop="name" content="@.1.4 LuneScript の WebAssembly 対応">
+<meta itemprop="description" content="LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、 次の 2 つあります。 LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす LuneScript から go に">
 
-<meta itemprop="wordCount" content="775">
+<meta itemprop="wordCount" content="1130">
 
 
 
@@ -62,154 +62,216 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>20. nil 条件演算子 編</h1>
+<main><h1>@.1.4 LuneScript の WebAssembly 対応</h1>
 
 <p>
-今回は LuneScript の nil 条件演算子について説明します。
+LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、
+次の 2 つあります。
+</p>
+<ul>
+<li>
+<p>
+LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす
+</p>
+</li>
+<li>
+<p>
+LuneScript から go にトランスコンパイルし、その go コードを WebAssemly に変換する
+</p>
+</li>
+</ul>
+<p>
+ここでは、 go から WebAssemly に変換する方法について説明します。
 </p>
 <h2 id="headline-1">
-Map アクセス
+go から Web Assemly への変換
 </h2>
 <p>
-例えば次のような Map のデータがあった場合、
+go から WebAssemly への変換は、 go の機能を利用します。
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-let json = {
-   &#34;lv1&#34;: {
-      &#34;lv2&#34;: {
-         &#34;lv3&#34;: {
-            &#34;lv4&#34;: { 
-               &#34;lv5&#34;: {
-                  &#34;val&#34;: 1
-               }           
-            }        
-         }     
-      }  
-   }
-};</code></pre>
-</div>
 <p>
-lv5 の val にアクセスするには、次のように処理する必要があります。
+go で WebAssembly を利用する方法の基本的な流れは、
+次のオフィシャルドキュメントを参照してください。
 </p>
+<p>
+&lt;<a href="https://github.com/golang/go/wiki/WebAssembly">https://github.com/golang/go/wiki/WebAssembly</a>&gt;
+</p>
+<p>
+ここでは、 LuneScript 特有の話をします。
+</p>
+<h3 id="headline-2">
+Lua のランタイムは gopherlua を利用する
+</h3>
+<p>
+LuneScript のコードを go のアプリに変換するには、 Lua のランタイムが必要になります。
+</p>
+<p>
+LuneScript は、Lua のランタイムとして次の 2 つをサポートしています。
+</p>
+<ul>
+<li>
+<p>
+オフィシャルな Lua ランタイム
+</p>
+</li>
+<li>
+<p>
+gopherlua
+</p>
+</li>
+</ul>
+<p>
+ここで、「オフィシャルな Lua ランタイム」は WebAssembly では利用できないため、
+gopherlua を利用することになります。
+</p>
+<p>
+よって、 go から WebAssembly に変換する場合のコマンドは以下のように
+<code class="verbatim">-tags gopherlua</code> を指定することになります。
+</p>
+<pre class="example">
+$ GOOS=js GOARCH=wasm go build -tags gopherlua -o main.wasm
+</pre>
+<h3 id="headline-3">
+JavaScript と LuneScript 間の連携動作
+</h3>
+<p>
+JavaScript と LuneScript 間の連携動作は、main() が実行されている間可能です。
+</p>
+<p>
+逆に言えば、 JavaScript から非同期に LuneScript と連携動作させるには、
+LuneScript の処理を終わらさずに待たせる必要があります。
+</p>
+<p>
+この待ち処理を実現するには、次の 2 つの方法があります。
+</p>
+<ul>
+<li>
+<p>
+go 外部モジュールで処理する
+</p>
+</li>
+<li>
+<p>
+__AsyncItem を利用する  
+</p>
+</li>
+</ul>
+<p>
+以下で説明します。
+</p>
+<h4 id="headline-4">
+go 外部モジュールで処理する
+</h4>
+<ul>
+<li>
+<p>
+go の channel を生成して、その channel からデータの読み出しを行なう。
+</p>
+</li>
+<li>
+<p>
+この処理を go の外部モジュールとして定義し、 LuneScript の module 宣言等で、
+そのモジュールを実行する。
+</p>
+</li>
+</ul>
+<h4 id="headline-5">
+__AsyncItem を利用する    
+</h4>
+<ul>
+<li>
+<p>
+LuneScript の __AsyncItem インタフェースを利用し、 pipe を作成し、その pipe からデータ読み出しを行なう。
+</p>
+</li>
+<li>
+<p>
+__AsyncItem のインタフェースを extend した独自のクラスを定義し、
+そのクラスから pipe を作成する。
+</p>
+</li>
+<li>
+<p>
+この pipe の put, get メソッドを利用する。
+</p>
+</li>
+<li>
+<p>
+次のサンプルの loop() が待ち処理で、 notify() が pipe へのデータ書き込み処理です。
+</p>
+</li>
+<li>
+<p>
+この notify() を利用することで、JavaScript から非同期のメッセージを受信できます。
+</p>
+</li>
+</ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-if! let lv1 = json.lv1 {
-   if! let lv2 = lv1.lv2 {
-      if! let lv3 = lv2.lv3 {
-         if! let lv4 = lv3.lv4 {
-            if! let lv5 = lv4.lv5 {
-               print( lv5.val );
-            }        
-         }     
-      }  
-   }  
+<pre><code class="language-lns" data-lang="lns">pub class AsyncItem extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+let queue:__pipe&lt;AsyncItem&gt;! = AsyncItem._createPipe( 0 );
+
+fn loop() {
+  while! queue {
+    while true {
+       let! item = queue.get() {
+          break;
+       };
+       print( item.$val );
+    }
+  }
+}
+pub fn notify( val:str ) {
+   when! queue {
+      queue.put( new AsyncItem( val ) );
+   }
 }</code></pre>
 </div>
+<h3 id="headline-6">
+LuneScript 内の非同期処理
+</h3>
 <p>
-あるいは次のように unwrap する必要があります。
+現状の WebAssembly では、
+LuneScript 内の非同期処理は次が指定された時と同じ動きになります。
 </p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val );</code></pre>
-</div>
+<pre class="example">
+GOMAXPROCS=1
+</pre>
 <p>
-どちらにしてもイマイチです。
+つまり、いずれかの処理が動作している間は、他の処理は動きません。
 </p>
 <p>
-このようなネストされた nil チェックを簡単に行なうために利用できるのが
-nil 条件演算子です。
+__asyncLock や pipe の待ちなどのタイミングで処理が切り替わります。
 </p>
-<h2 id="headline-2">
-nil 条件演算子
+<p>
+__asyncLock や pipe 以外で、いずれかの処理がブロックすると、
+そのブロックを抜けるまでは全体の処理が止まります。
+</p>
+<h2 id="headline-7">
+tinygo
 </h2>
 <p>
-nil 条件演算子を使って上記の lv5 の val にアクセスすると、
-次のようになります。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
-print( json.lv1$.lv2$.lv3$.lv4$.lv5$.val );</code></pre>
-</div>
-<p>
-だいぶスッキリします。
+go から WebAssembly に変換する方法には、
+オフィシャルな go を使う方法と、tinygo を使う方法があります。
 </p>
 <p>
-nil 条件演算子は、
-nilable の式の直後に指定することで、
-nilable の式が nil かどうかで、その後の式を実行するかどうかを制御します。
+tinygo を利用した方が、
+WebAssembly のサイズや JavaScript との連携が簡単になるようです。
 </p>
 <p>
-nilable の式の評価結果が nil でない場合、その後の式を実行し、
-nilable の式の評価結果が nil の場合、その後の式を実行せずにその式の結果を nil とします。
+しかし、現時点で最新の tinygo v0.22.0 では
+LuneScript で利用するパッケージの対応がされていないため、
+tinygo を利用できません。
 </p>
 <p>
-なおリストにアクセスする場合は <code>$[</code> 、 関数呼び出しする場合は <code>$(</code> となります。
-</p>
-<p>
-次に例を示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Test {
-   pub let val:List&lt;int&gt;;
-   pub fn func():int {
-      return 100;
-   }
-}
-fn sub( test:Test! ) {
-   print( test$.val$[1], test$.func$() );
-}
-sub( new Test( [ 1, 2 ] ) ); // 1 100
-sub( nil ); // nil nil</code></pre>
-</div>
-<p>
-上記の例では、 <code class="verbatim">sub()</code> 関数内で Test クラスの val リストと、func に
-nil 条件演算子を利用してアクセスしています。
-これにより、 unwrap せずにアクセスすることが出来ます。
-</p>
-<h2 id="headline-3">
-注意
-</h2>
-<p>
-nil 条件アクセスを使用すると、必ずその評価結果は nilable になります。
-</p>
-<p>
-次に例を示します。
-</p>
-<div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Test {
-   pub let val:int;
-}
-fn sub( test:Test! ) {
-   if! test$.val {
-      print( _exp + 1 );
-   }
-}
-sub( new Test( 10 ) ); // 11</code></pre>
-</div>
-<p>
-上記の場合、Test クラスの val は int です。
-</p>
-<p>
-上記の例の sub 関数では nilable 型の Test クラスのインスタンスに対し、
-<code>test$.val</code> でアクセスしています。
-この時 <code>test$.val</code> の評価結果は int ではなく int! となります。
-</p>
-<h2 id="headline-4">
-まとめ
-</h2>
-<p>
-nil 条件アクセスにより、 深いネストの unwrap が簡単に出来ます。
-</p>
-<p>
-次回は、 モジュール管理について説明します。
+以上。
 </p>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/generics/" title="19. generics 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 19. generics 編</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/import/" title="21. import/provide 編">Next - 21. import/provide 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/lua_runtime/" title="@.1.3 Go へトランスコンパイルした際の Lua ランタイム"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.1.3 Go へトランスコンパイルした際の Lua ランタイム</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/async/" title="@.2 安全な非同期処理">Next - @.2 安全な非同期処理 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -337,7 +399,7 @@ nil 条件アクセスにより、 深いネストの unwrap が簡単に出来�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
@@ -352,7 +414,7 @@ nil 条件アクセスにより、 深いネストの unwrap が簡単に出来�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>

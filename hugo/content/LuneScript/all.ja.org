@@ -11529,6 +11529,139 @@ func main() {
 	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))
 #+END_SRC
 -----
+* *LuneScript の WebAssembly 対応*
+:PROPERTIES:
+:CUSTOM_ID: go_wasm_ja
+:END:
+
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、
+次の 2 つあります。
+
+- LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす
+- LuneScript から go にトランスコンパイルし、その go コードを WebAssemly に変換する
+
+ここでは、 go から WebAssemly に変換する方法について説明します。
+
+** go から Web Assemly への変換
+
+go から WebAssemly への変換は、 go の機能を利用します。
+
+go で WebAssembly を利用する方法の基本的な流れは、
+次のオフィシャルドキュメントを参照してください。
+
+<https://github.com/golang/go/wiki/WebAssembly>
+
+ここでは、 LuneScript 特有の話をします。
+
+*** Lua のランタイムは gopherlua を利用する
+
+LuneScript のコードを go のアプリに変換するには、 Lua のランタイムが必要になります。
+
+LuneScript は、Lua のランタイムとして次の 2 つをサポートしています。
+
+- オフィシャルな Lua ランタイム
+- gopherlua
+
+ここで、「オフィシャルな Lua ランタイム」は WebAssembly では利用できないため、
+gopherlua を利用することになります。
+
+よって、 go から WebAssembly に変換する場合のコマンドは以下のように
+=-tags gopherlua= を指定することになります。
+
+: $ GOOS=js GOARCH=wasm go build -tags gopherlua -o main.wasm
+
+*** JavaScript と LuneScript 間の連携動作
+
+JavaScript と LuneScript 間の連携動作は、main() が実行されている間可能です。
+
+逆に言えば、 JavaScript から非同期に LuneScript と連携動作させるには、
+LuneScript の処理を終わらさずに待たせる必要があります。
+
+この待ち処理を実現するには、次の 2 つの方法があります。
+
+- go 外部モジュールで処理する
+- __AsyncItem を利用する  
+
+以下で説明します。
+
+**** go 外部モジュールで処理する
+
+- go の channel を生成して、その channel からデータの読み出しを行なう。
+- この処理を go の外部モジュールとして定義し、 LuneScript の module 宣言等で、
+  そのモジュールを実行する。
+  
+**** __AsyncItem を利用する    
+
+- LuneScript の __AsyncItem インタフェースを利用し、 pipe を作成し、その pipe からデータ読み出しを行なう。
+- __AsyncItem のインタフェースを extend した独自のクラスを定義し、
+  そのクラスから pipe を作成する。
+- この pipe の put, get メソッドを利用する。
+- 次のサンプルの loop() が待ち処理で、 notify() が pipe へのデータ書き込み処理です。
+- この notify() を利用することで、JavaScript から非同期のメッセージを受信できます。
+
+#+BEGIN_SRC lns
+pub class AsyncItem extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+let queue:__pipe<AsyncItem>! = AsyncItem._createPipe( 0 );
+
+fn loop() {
+  while! queue {
+    while true {
+       let! item = queue.get() {
+          break;
+       };
+       print( item.$val );
+    }
+  }
+}
+pub fn notify( val:str ) {
+   when! queue {
+      queue.put( new AsyncItem( val ) );
+   }
+}
+#+END_SRC
+
+
+*** LuneScript 内の非同期処理
+
+現状の WebAssembly では、
+LuneScript 内の非同期処理は次が指定された時と同じ動きになります。
+
+: GOMAXPROCS=1
+
+つまり、いずれかの処理が動作している間は、他の処理は動きません。
+
+__asyncLock や pipe の待ちなどのタイミングで処理が切り替わります。
+
+__asyncLock や pipe 以外で、いずれかの処理がブロックすると、
+そのブロックを抜けるまでは全体の処理が止まります。
+
+
+
+** tinygo
+
+go から WebAssembly に変換する方法には、
+オフィシャルな go を使う方法と、tinygo を使う方法があります。
+
+tinygo を利用した方が、
+WebAssembly のサイズや JavaScript との連携が簡単になるようです。
+
+しかし、現時点で最新の tinygo v0.22.0 では
+LuneScript で利用するパッケージの対応がされていないため、
+tinygo を利用できません。
+
+
+
+以上。
+
+-----
 * *lnstags によるタグジャンプ (ソースコードタグシステム) *
 :PROPERTIES:
 :CUSTOM_ID: lnstags_ja

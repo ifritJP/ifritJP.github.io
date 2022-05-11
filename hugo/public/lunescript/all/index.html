@@ -39,7 +39,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス トランスコンパイラ LuneScript で Lua の開発をもっと楽に!">
 
-<meta itemprop="wordCount" content="104856">
+<meta itemprop="wordCount" content="105991">
 
 
 
@@ -15760,13 +15760,221 @@ Go からアクセスできるように C パッケージ内に展開される�
 </span><span class="cp">	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))</span></code></pre></div>
 </div>
 <hr>
+<h2 id="go_wasm_ja">
+<strong>LuneScript の WebAssembly 対応</strong>
+</h2>
+<p>
+LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、
+次の 2 つあります。
+</p>
+<ul>
+<li>
+<p>
+LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす
+</p>
+</li>
+<li>
+<p>
+LuneScript から go にトランスコンパイルし、その go コードを WebAssemly に変換する
+</p>
+</li>
+</ul>
+<p>
+ここでは、 go から WebAssemly に変換する方法について説明します。
+</p>
+<h3 id="headline-414">
+go から Web Assemly への変換
+</h3>
+<p>
+go から WebAssemly への変換は、 go の機能を利用します。
+</p>
+<p>
+go で WebAssembly を利用する方法の基本的な流れは、
+次のオフィシャルドキュメントを参照してください。
+</p>
+<p>
+&lt;<a href="https://github.com/golang/go/wiki/WebAssembly">https://github.com/golang/go/wiki/WebAssembly</a>&gt;
+</p>
+<p>
+ここでは、 LuneScript 特有の話をします。
+</p>
+<h4 id="headline-415">
+Lua のランタイムは gopherlua を利用する
+</h4>
+<p>
+LuneScript のコードを go のアプリに変換するには、 Lua のランタイムが必要になります。
+</p>
+<p>
+LuneScript は、Lua のランタイムとして次の 2 つをサポートしています。
+</p>
+<ul>
+<li>
+<p>
+オフィシャルな Lua ランタイム
+</p>
+</li>
+<li>
+<p>
+gopherlua
+</p>
+</li>
+</ul>
+<p>
+ここで、「オフィシャルな Lua ランタイム」は WebAssembly では利用できないため、
+gopherlua を利用することになります。
+</p>
+<p>
+よって、 go から WebAssembly に変換する場合のコマンドは以下のように
+<code class="verbatim">-tags gopherlua</code> を指定することになります。
+</p>
+<pre class="example">
+$ GOOS=js GOARCH=wasm go build -tags gopherlua -o main.wasm
+</pre>
+<h4 id="headline-416">
+JavaScript と LuneScript 間の連携動作
+</h4>
+<p>
+JavaScript と LuneScript 間の連携動作は、main() が実行されている間可能です。
+</p>
+<p>
+逆に言えば、 JavaScript から非同期に LuneScript と連携動作させるには、
+LuneScript の処理を終わらさずに待たせる必要があります。
+</p>
+<p>
+この待ち処理を実現するには、次の 2 つの方法があります。
+</p>
+<ul>
+<li>
+<p>
+go 外部モジュールで処理する
+</p>
+</li>
+<li>
+<p>
+__AsyncItem を利用する  
+</p>
+</li>
+</ul>
+<p>
+以下で説明します。
+</p>
+<h5 id="headline-417">
+go 外部モジュールで処理する
+</h5>
+<ul>
+<li>
+<p>
+go の channel を生成して、その channel からデータの読み出しを行なう。
+</p>
+</li>
+<li>
+<p>
+この処理を go の外部モジュールとして定義し、 LuneScript の module 宣言等で、
+そのモジュールを実行する。
+</p>
+</li>
+</ul>
+<h5 id="headline-418">
+__AsyncItem を利用する    
+</h5>
+<ul>
+<li>
+<p>
+LuneScript の __AsyncItem インタフェースを利用し、 pipe を作成し、その pipe からデータ読み出しを行なう。
+</p>
+</li>
+<li>
+<p>
+__AsyncItem のインタフェースを extend した独自のクラスを定義し、
+そのクラスから pipe を作成する。
+</p>
+</li>
+<li>
+<p>
+この pipe の put, get メソッドを利用する。
+</p>
+</li>
+<li>
+<p>
+次のサンプルの loop() が待ち処理で、 notify() が pipe へのデータ書き込み処理です。
+</p>
+</li>
+<li>
+<p>
+この notify() を利用することで、JavaScript から非同期のメッセージを受信できます。
+</p>
+</li>
+</ul>
+<div class="src src-lns">
+<pre><code class="language-lns" data-lang="lns">pub class AsyncItem extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+let queue:__pipe&lt;AsyncItem&gt;! = AsyncItem._createPipe( 0 );
+
+fn loop() {
+  while! queue {
+    while true {
+       let! item = queue.get() {
+          break;
+       };
+       print( item.$val );
+    }
+  }
+}
+pub fn notify( val:str ) {
+   when! queue {
+      queue.put( new AsyncItem( val ) );
+   }
+}</code></pre>
+</div>
+<h4 id="headline-419">
+LuneScript 内の非同期処理
+</h4>
+<p>
+現状の WebAssembly では、
+LuneScript 内の非同期処理は次が指定された時と同じ動きになります。
+</p>
+<pre class="example">
+GOMAXPROCS=1
+</pre>
+<p>
+つまり、いずれかの処理が動作している間は、他の処理は動きません。
+</p>
+<p>
+__asyncLock や pipe の待ちなどのタイミングで処理が切り替わります。
+</p>
+<p>
+__asyncLock や pipe 以外で、いずれかの処理がブロックすると、
+そのブロックを抜けるまでは全体の処理が止まります。
+</p>
+<h3 id="headline-420">
+tinygo
+</h3>
+<p>
+go から WebAssembly に変換する方法には、
+オフィシャルな go を使う方法と、tinygo を使う方法があります。
+</p>
+<p>
+tinygo を利用した方が、
+WebAssembly のサイズや JavaScript との連携が簡単になるようです。
+</p>
+<p>
+しかし、現時点で最新の tinygo v0.22.0 では
+LuneScript で利用するパッケージの対応がされていないため、
+tinygo を利用できません。
+</p>
+<p>
+以上。
+</p>
+<hr>
 <h2 id="lnstags_ja">
 *lnstags によるタグジャンプ (ソースコードタグシステム) *
 </h2>
 <p>
 LuneScript は、タグジャンプ (ソースコードタグシステム)に対応している。
 </p>
-<h3 id="headline-414">
+<h3 id="headline-422">
 タグジャンプ (ソースコードタグシステム) とは
 </h3>
 <p>
@@ -15782,7 +15990,7 @@ LuneScript は、タグジャンプ (ソースコードタグシステム)に対
 <p>
 シンボル(クラス、関数、変数 etc..)の <strong>参照位置</strong>
 </p>
-<h4 id="headline-415">
+<h4 id="headline-423">
 例
 </h4>
 </li>
@@ -15825,7 +16033,7 @@ Bar クラスの func メソッドの参照位置をリストするには、
 <p>
 lnstags コマンドの使用方法についての詳細は後述する。
 </p>
-<h3 id="headline-416">
+<h3 id="headline-424">
 lnstags の特徴
 </h3>
 <p>
@@ -15864,7 +16072,7 @@ lnstags では、コールされる可能性のあるメソッドを全てリス
 </ul>
 </li>
 </ul>
-<h3 id="headline-417">
+<h3 id="headline-425">
 使い方
 </h3>
 <p>
@@ -15873,7 +16081,7 @@ lnstags は、次の URL で公開している。
 <p>
 &lt;<a href="https://github.com/ifritJP/lnstags">https://github.com/ifritJP/lnstags</a>&gt;
 </p>
-<h4 id="headline-418">
+<h4 id="headline-426">
 ビルド方法
 </h4>
 <p>
@@ -15894,7 +16102,7 @@ go install を利用する
 <p>
 通常は go install で問題ありません。  
 </p>
-<h5 id="headline-419">
+<h5 id="headline-427">
 go install 
 </h5>
 <p>
@@ -15903,7 +16111,7 @@ go install
 <pre class="example">
 go install -tags gopherlua github.com/ifritJP/lnstags@latest
 </pre>
-<h5 id="headline-420">
+<h5 id="headline-428">
 go でビルドする。
 </h5>
 <div class="src src-txt">
@@ -15914,7 +16122,7 @@ $ make build ONLY_GO=y</code></pre></div>
 <p>
 上記で lnstags/lnstags が生成されます。
 </p>
-<h4 id="headline-421">
+<h4 id="headline-429">
 ソースコードの解析
 </h4>
 <p>
@@ -15969,7 +16177,7 @@ lnstags は、指定された lns ファイルから import されているモ�
 <p>
 ソースコードの解析結果は、 <strong>lnstags.sqlite3 ファイル</strong> に登録する。
 </p>
-<h4 id="headline-422">
+<h4 id="headline-430">
 DB の更新
 </h4>
 <p>
@@ -15994,7 +16202,7 @@ DB を更新するには、 <strong>次のいずれか</strong> を実行する�
 <pre class="example">
 $ lctags update
 </pre>
-<h5 id="headline-423">
+<h5 id="headline-431">
 lctags update
 </h5>
 <p>
@@ -16010,7 +16218,7 @@ DB に登録されている lns のソースファルイリストを元に、
 <code class="verbatim">lctags update</code> ではなく、
 <code class="verbatim">lctags build</code> を使用しなければならない。
 </p>
-<h4 id="headline-424">
+<h4 id="headline-432">
 問い合わせ
 </h4>
 <p>
@@ -16034,7 +16242,7 @@ inq-at
 <p>
 suffix
 </p>
-<h5 id="headline-425">
+<h5 id="headline-433">
 inq
 </h5>
 </li>
@@ -16080,7 +16288,7 @@ Foo クラスの func メソッドのシンボル名は次になる。
 <p>
 このコマンド <code class="verbatim">lnstags inq def</code> の <strong>def</strong> は、 <strong>定義場所</strong> の問い合わせを指定する。
 </p>
-<h5 id="headline-426">
+<h5 id="headline-434">
 問い合わせモード
 </h5>
 <p>
@@ -16108,7 +16316,7 @@ Foo クラスの func メソッドのシンボル名は次になる。
 </tr>
 </tbody>
 </table>
-<h5 id="headline-427">
+<h5 id="headline-435">
 inq-at
 </h5>
 <p>
@@ -16159,7 +16367,7 @@ bar.func();</code></pre>
 <p>
 また、指定の lns ファイルの AST を解析するため、時間がかかる。
 </p>
-<h5 id="headline-428">
+<h5 id="headline-436">
 suffix
 </h5>
 <p>
@@ -16174,7 +16382,7 @@ suffix はシンボル名の後方一致で完全限定名のリストを取得�
 @mini.Foo.func
 @mini.Bar.func</code></pre></div>
 </div>
-<h3 id="headline-429">
+<h3 id="headline-437">
 emacs から利用する場合
 </h3>
 <p>
@@ -16222,7 +16430,7 @@ M-t, M-r, M-s については、完全限定名を得るために suffix 問い�
 なお、M-t, M-r, M-s にプレフィックス C-u を付けることで、
 カーソル位置の inq-at 問い合わせを行なう。
 </p>
-<h3 id="headline-430">
+<h3 id="headline-438">
 解析時間
 </h3>
 <p>
@@ -16275,7 +16483,7 @@ DSP のような処理をさせなければ、
 私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
 よく使う言語の１つである。
 </p>
-<h3 id="headline-432">
+<h3 id="headline-440">
 Lua のトランスコンパイラ LuneScript を開発した理由
 </h3>
 <p>
@@ -16352,7 +16560,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 <p>
 以降で、それぞれについて説明する。
 </p>
-<h4 id="headline-433">
+<h4 id="headline-441">
 楽して安全に書きたい
 </h4>
 <p>
@@ -16405,7 +16613,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 <p>
 これが、私が LuneScript を開発する一番の理由だ。
 </p>
-<h4 id="headline-434">
+<h4 id="headline-442">
 動的型付け言語特有の問題
 </h4>
 <p>
@@ -16423,7 +16631,7 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 動的型付け言語を利用した場合に、
 問題となり易いことを挙げている。
 </p>
-<h5 id="headline-435">
+<h5 id="headline-443">
 静的なエラーチェックが出来ない
 </h5>
 <p>
@@ -16483,7 +16691,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 まぁ、もっと違うパラダイムなのかもしれないが。
 </p>
-<h5 id="headline-436">
+<h5 id="headline-444">
 他人のコードの内容を把握し難い
 </h5>
 <p>
@@ -16527,7 +16735,7 @@ parse したそのままの文字列データを渡してしまう等、
 <p>
 なんども言うが私は楽をしたいのだ。
 </p>
-<h5 id="headline-437">
+<h5 id="headline-445">
 メンテナンスや機能追加、リファクタリングのリスクが大きい
 </h5>
 <p>
@@ -16589,7 +16797,7 @@ parse したそのままの文字列データを渡してしまう等、
 LuneScript 開発中、何度も設計変更を行ったが、
 もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。
 </p>
-<h5 id="headline-438">
+<h5 id="headline-446">
 コーディング時の補完がイケてない
 </h5>
 <p>
@@ -16618,7 +16826,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 <a href="#completion">#completion</a>
 </p>
-<h5 id="headline-439">
+<h5 id="headline-447">
 テーブル内のフィールドアクセス制御が出来ない
 </h5>
 <p>
@@ -16662,7 +16870,7 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <p>
 問題なのはそういった制御がなく、全てアクセス可能になってしまっていることである。
 </p>
-<h4 id="headline-440">
+<h4 id="headline-448">
 Luaの機能に不満がある
 </h4>
 <p>
@@ -16674,7 +16882,7 @@ Lua はコンパクトでパワフルな言語であるが、
 素の Lua ではサポートされていない機能をサポートすることも
 目的の一つに開発している。
 </p>
-<h5 id="headline-441">
+<h5 id="headline-449">
 nil安全でない
 </h5>
 <p>
@@ -16727,7 +16935,7 @@ nil を取り得ない 非 nilable を別の型として管理することで、
 多階層の nilable データに楽にアクセスするための nil 条件演算子をサポートすることで、
 nil エラーの対応を楽にかつ安全に対応できるようにしている。
 </p>
-<h5 id="headline-442">
+<h5 id="headline-450">
 マクロがない
 </h5>
 <p>
@@ -16765,7 +16973,7 @@ LuneScript では、実装が簡単で、かつ使用する側の学習に負担
 LuneScript のセルフホスティングでもマクロを使用しているが、
 やはりマクロはプログラム言語には無くてはならないものだと改めて感じている。
 </p>
-<h4 id="headline-443">
+<h4 id="headline-451">
 Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
 </h4>
 <p>
@@ -16779,7 +16987,7 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 他にも組込みを意識した言語はいくつかあるが、
 組込みという条件で見た場合、Lua を越える言語を私は知らない。
 </p>
-<h4 id="headline-444">
+<h4 id="headline-452">
 既に数多くのシステムで Lua を利用している
 </h4>
 <p>
@@ -16792,7 +17000,7 @@ Lua を組み込んでいるシステムは多く存在する。
 <p>
 ちょっと気にいらないからといって、変えられるものではない。
 </p>
-<h3 id="headline-445">
+<h3 id="headline-453">
 最後に
 </h3>
 <p>
@@ -16818,7 +17026,7 @@ Lua には LuneScript があることも検討材料にして欲しい。
 LuneScript 入門のアドベントカレンダー最後の記事は、
 これまでとは趣向を変えてトランスコンパイラ開発そのものについて扱っていきます。
 </p>
-<h3 id="headline-447">
+<h3 id="headline-455">
 トランスコンパイラ開発をすゝめる理由
 </h3>
 <p>
@@ -16857,7 +17065,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 <p>
 以降では、上記の各項目を説明していきます。
 </p>
-<h4 id="headline-448">
+<h4 id="headline-456">
 現状に対する不満を建設的に解決できる
 </h4>
 <p>
@@ -16934,7 +17142,7 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 アイデアをソフトウェアで実現出来る能力を持っているからこそ
 「ソフトウェアエンジニア」ではないでしょうか？
 </p>
-<h5 id="headline-449">
+<h5 id="headline-457">
 「コンパイラ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -16996,7 +17204,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 <p>
 最終的にコンパイラを開発するのが、効率の良い方法と言えるでしょう。
 </p>
-<h5 id="headline-450">
+<h5 id="headline-458">
 「インタプリタ」ではなく「トランスコンパイラ」である理由
 </h5>
 <p>
@@ -17025,7 +17233,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 今は実用的なインタプリタ型の言語(スクリプト言語)が世の中にいくつもあります。
 わざわざ自前で作る必要はないでしょう。
 </p>
-<h5 id="headline-451">
+<h5 id="headline-459">
 出力結果が分かり易い
 </h5>
 <p>
@@ -17084,7 +17292,7 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 一方トランスコンパイラは、
 ライセンスと変換後のコードを調べれば良いだけです。
 </p>
-<h4 id="headline-452">
+<h4 id="headline-460">
 トレンドの技術を確認できる
 </h4>
 <p>
@@ -17139,7 +17347,7 @@ C 言語しか知らないからいつも通りに C 言語で書くことは、
 このように、イマドキの言語の特徴の理解を深めるためにも
 トランスコンパイラの開発は経験として良いものだと言えます。
 </p>
-<h4 id="headline-453">
+<h4 id="headline-461">
 コーディングルールを矯正できる  
 </h4>
 <p>
@@ -17183,7 +17391,7 @@ Python では「インデントが揃っていないとブロックとして扱�
 新しい言語を開発する際は、新しい機能を取り入れるだけでなく、
 普段のコーディングルールを見直し、言語レベルで対応できないか検討するべきだと思います。
 </p>
-<h3 id="headline-454">
+<h3 id="headline-462">
 最後に
 </h3>
 <p>
@@ -17277,7 +17485,7 @@ Syntax エラーチェック機能
 <p>
 subfile を認識した検索
 </p>
-<h3 id="headline-456">
+<h3 id="headline-464">
 コード補完機能
 </h3>
 </li>
@@ -17343,7 +17551,7 @@ test のフィールドの補完が次のように行なえます。
 この当たり前の機能をしっかりとコンパイラ自体が提供しているというのは、
 意外に少なかったりします。
 </p>
-<h3 id="headline-457">
+<h3 id="headline-465">
 カーソル位置の型情報確認
 </h3>
 <p>
@@ -17372,7 +17580,7 @@ foreach val, key in { &#34;abc&#34;: 1, &#34;xyz&#34;: 10 } {
 確認したいシンボルにカーソルを移動し、 C-c I を実行することで、
 そのシンボルの型情報を確認できます。
 </p>
-<h3 id="headline-458">
+<h3 id="headline-466">
 Syntax エラーチェック機能
 </h3>
 <p>
@@ -17407,7 +17615,7 @@ let map = { &#34;a&#34;: 1, &#34;b&#34;:2 };</code></pre>
 <p>
 このような、ちょっと見過しがちなエラーもエディタ上で簡単に確認できます。
 </p>
-<h3 id="headline-459">
+<h3 id="headline-467">
 subfile を認識した検索
 </h3>
 <p>
@@ -17439,7 +17647,7 @@ owner.lns, sub1.lns, sub2.lns, sub3.lns の 4 つのファイルを
 sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検索。
 … この処理を自動で行ないます。
 </p>
-<h3 id="headline-460">
+<h3 id="headline-468">
 設定
 </h3>
 <p>
@@ -17496,7 +17704,7 @@ auto-complete
 LuneScript の flymake, auto-complete 対応は、メンテナンスしていません。
 flycheck, company-mode の使用を推奨します。
 </p>
-<h3 id="headline-461">
+<h3 id="headline-469">
 プロジェクト
 </h3>
 <p>
@@ -17517,7 +17725,7 @@ LuneScript は、モジュールパスをプロジェクトからの相対パス
 <div class="highlight"><pre class="chroma"><code class="language-js" data-lang="js"><span class="p">{}</span>
 </code></pre></div>
 </div>
-<h4 id="headline-462">
+<h4 id="headline-470">
 モジュールのパス
 </h4>
 <p>
@@ -17528,7 +17736,7 @@ proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 にな�
 <div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">proj/lune.js
 proj/foo/bar/module1.lsn</code></pre></div>
 </div>
-<h3 id="headline-463">
+<h3 id="headline-471">
 最後に
 </h3>
 <p>
@@ -17605,7 +17813,7 @@ LuneScript の全ての処理が、ブラウザ上で動作しています。
 LuneScript の全ての処理をブラウザ上で動作させているため、
 スマホなどでは初回実行に時間が掛ります。
 </p>
-<h3 id="headline-465">
+<h3 id="headline-473">
 技術解説
 </h3>
 <p>
@@ -17648,7 +17856,7 @@ LuneScript コンパイラのロードは、そこそこの時間がかかりま
 サーバ側に負荷は掛りません。
 サーバに必要な機能は、静的コンテンツのホスティングだけです。
 </p>
-<h4 id="headline-466">
+<h4 id="headline-474">
 LuneScript の fengari 対応
 </h4>
 <p>
@@ -17671,7 +17879,7 @@ LuneScript では、処理の簡単化と確実性を取って <code class="verb
 現状、オプションを指定していない場合は <code class="verbatim">pairs()</code> を利用していますが、
 将来はデフォルト状態を逆にすることも検討しています。
 </p>
-<h3 id="headline-467">
+<h3 id="headline-475">
 リファレンスのサンプルコード実行
 </h3>
 <p>
@@ -17686,7 +17894,7 @@ ifritJP.github.io/LuneScript-webFront/contents/lunescript-front.js
 <p>
 <code class="verbatim">lnsFront.setup()</code>, <code class="verbatim">lnsFront.compile()</code> 関数を実行するだけです。
 </p>
-<h4 id="headline-468">
+<h4 id="headline-476">
 lnsFront.setup()
 </h4>
 <p>
@@ -17757,7 +17965,7 @@ ID を発行して紐付けます。そして、その ID が戻り値となり�
 LuneScript のコードを入力する textarea が複数ある場合、
 <code class="verbatim">lnsFront.setup()</code> をそれぞれで実行します。
 </p>
-<h5 id="headline-469">
+<h5 id="headline-477">
 lnsFront.setup() の注意
 </h5>
 <p>
@@ -17769,7 +17977,7 @@ executeId で登録したボタンをクリックするか、
 <code class="verbatim">lnsFront.compile()</code> を実行することで、
 登録されている textarea 内の LuneScript のコードを実行します。
 </p>
-<h4 id="headline-470">
+<h4 id="headline-478">
 <code class="verbatim">lnsFront.compile()</code>
 </h4>
 <p>
@@ -17867,7 +18075,7 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
 今後、独自言語を開発しようと考えている方のテスト設計検討に、
 少しでも役にたてれば幸いです。
 </p>
-<h4 id="headline-472">
+<h4 id="headline-480">
 コンパイラは関数
 </h4>
 <p>
@@ -17910,7 +18118,7 @@ Clang は LLVM-IR に変換し、 LLVM が各種コードに変換
 <p>
 日頃作成している関数の UNIT TEST と考え方は全く同じです。
 </p>
-<h4 id="headline-473">
+<h4 id="headline-481">
 コンパイラのテスト
 </h4>
 <p>
@@ -18085,7 +18293,7 @@ result A と result D が同一であることを確認
 セルフホスティングに必要な機能を優先的に実現し、
 出来るだけ早い段階でセルフホスティングに移行することをオススメします。
 </p>
-<h3 id="headline-474">
+<h3 id="headline-482">
 それでもバグは残る
 </h3>
 <p>
@@ -18125,7 +18333,7 @@ result A と result D が同一であることを確認
 再度同じ「穴」が開いた時に検出できるように対応することが
 テストでは重要だと考えます。
 </p>
-<h3 id="headline-475">
+<h3 id="headline-483">
 最後に
 </h3>
 <p>
@@ -18210,7 +18418,7 @@ result A と result D が同一であることを確認
 <p>
 <strong>これは、検討中の情報です。 現在は利用できません。</strong>
 </p>
-<h3 id="headline-477">
+<h3 id="headline-485">
 Nilable 型
 </h3>
 <p>
@@ -18260,7 +18468,7 @@ unwrap 処理が必須となってしまい面倒です。
 <p>
 そこで、 Nilable 型を利用します。
 </p>
-<h4 id="headline-478">
+<h4 id="headline-486">
 Nilable 型とは
 </h4>
 <p>
@@ -18413,6 +18621,7 @@ Java で言うところの int に対する Integer クラスと思ってくだ�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
