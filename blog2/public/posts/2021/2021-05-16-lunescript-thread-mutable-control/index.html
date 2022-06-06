@@ -21,11 +21,11 @@
     
     
     <meta name="description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的な非同期処理を提供している。 今回は、こ" />
-    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <meta name="generator" content="Hugo 0.100.1 with theme pure" />
     <title>LuneScript のスレッドにおける mutable 制御 - hoge blog</title>
     
     
-    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
 
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
@@ -37,17 +37,14 @@
     <meta property="og:title" content="LuneScript のスレッドにおける mutable 制御" />
 <meta property="og:description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的な非同期処理を提供している。 今回は、こ" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-16-lunescript-thread-mutable-control/" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-16-lunescript-thread-mutable-control/" /><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-05-16T00:00:00+00:00" />
 <meta property="article:modified_time" content="2021-05-16T00:00:00+00:00" />
+
 <meta itemprop="name" content="LuneScript のスレッドにおける mutable 制御">
-<meta itemprop="description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的な非同期処理を提供している。 今回は、こ">
-<meta itemprop="datePublished" content="2021-05-16T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2021-05-16T00:00:00&#43;00:00" />
+<meta itemprop="description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的な非同期処理を提供している。 今回は、こ"><meta itemprop="datePublished" content="2021-05-16T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2021-05-16T00:00:00+00:00" />
 <meta itemprop="wordCount" content="2295">
-
-
-
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="LuneScript のスレッドにおける mutable 制御"/>
 <meta name="twitter:description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的な非同期処理を提供している。 今回は、こ"/>
@@ -218,6 +215,16 @@
             <li>
                 <div class="item-inner">
                     <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-06-01-wstcplink/" class="title">WebSocket client と TCP client の中継ツールを作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-06-01 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-06-01</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
                         <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-04-30-raspi-backup/" class="title">Raspberry pi イメージのバックアップ</a>
                     </p>
                     <p class="item-date">
@@ -252,16 +259,6 @@
                     </p>
                     <p class="item-date">
                         <time datetime="2022-01-16 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-16</time>
-                    </p>
-                </div>
-            </li>
-            <li>
-                <div class="item-inner">
-                    <p class="item-title">
-                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/" class="title">Hardware Keyboard Remapper(OS に依存しないキーボードのキー入れ替え)を作った</a>
-                    </p>
-                    <p class="item-date">
-                        <time datetime="2022-01-10 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-10</time>
                     </p>
                 </div>
             </li>
@@ -313,332 +310,220 @@
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
       
 <p>
-LuneScript は golang へのトランスコンパイルをサポートしている。
-</p>
+LuneScript は golang へのトランスコンパイルをサポートしている。</p>
 <p>
-golang 対応の付加機能として、LuneScript には限定的な非同期処理を提供している。
-</p>
+golang 対応の付加機能として、LuneScript には限定的な非同期処理を提供している。</p>
 <p>
-今回は、この「限定」を緩和する方法を検討する。
-</p>
+今回は、この「限定」を緩和する方法を検討する。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 非同期処理を「限定」する理由
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-非同期処理を限定する主な理由は、非同期処理を安全に実行するためだ。
-</p>
+非同期処理を限定する主な理由は、非同期処理を安全に実行するためだ。</p>
 <p>
-では、非同期処理のなにが危険なのかといえば、データアクセスの競合だ。
-</p>
+では、非同期処理のなにが危険なのかといえば、データアクセスの競合だ。</p>
 <p>
 Rust では、データアクセスの競合が発生しないように、
-言語の syntax で論理的に競合を排除する方法を採用している。
-</p>
+言語の syntax で論理的に競合を排除する方法を採用している。</p>
 <p>
-LuneScript も、同じように言語の syntax で論理的に排除できるように目指したい。
-</p>
+LuneScript も、同じように言語の syntax で論理的に排除できるように目指したい。</p>
 <p>
 ただ、 Rust の syntax は、
 データアクセスの競合排除と、
 メモリアロケーションコントロールを行なう上では非常に有用ではあるが、
-プログラミングのコストが高いのも事実だ。
-</p>
+プログラミングのコストが高いのも事実だ。</p>
 <p>
 LuneScript の目的は、楽をして安全に開発することなので、
 安全性とのトレードオフで、もう少しコストの低い方法で実現したい。
 特に LuneScript はメモリアロケーションコントロールは gc に任せているので、
-Rust ほどの厳密な syntax は不要なので、その分の簡易化はすべきだ。
-</p>
+Rust ほどの厳密な syntax は不要なので、その分の簡易化はすべきだ。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
 非同期処理を安全に実現する方法
 </h2>
+<div id="outline-text-headline-2" class="outline-text-2">
 <p>
 非同期処理を安全に実現するには、
 あるデータ A に対し、
-非同期に mutable なアクセスが行なわれないことが保証できれば良い。
-</p>
+非同期に mutable なアクセスが行なわれないことが保証できれば良い。</p>
 <p>
-言い換えれば、 immutable なアクセスだけであれば安全である。
-</p>
+言い換えれば、 immutable なアクセスだけであれば安全である。</p>
 <p>
 LuneScript には、メソッドの mut 宣言による mutable 制御がある。
 これは、immutable な型のオブジェクトから、
 mut 宣言されたメソッドのコールを禁止するものである。
 mut 宣言されたメソッドは、
-オブジェクトのメンバーを変更することを宣言するものである。
-</p>
+オブジェクトのメンバーを変更することを宣言するものである。</p>
 <p>
 つまり、非同期処理に渡す引数を immutable 型のオブジェクトに限定し、
 どこからもそのオブジェクトの mutable メソッドをコールしないようにすれば、
 安全に非同期処理が実現できるように考えられる。
-しかし、これを実現するのもそう簡単ではない。
-</p>
+しかし、これを実現するのもそう簡単ではない。</p>
 <p>
-その原因は次にある。
-</p>
+その原因は次にある。</p>
 <ul>
-<li>
-<p>
-あるオブジェクトを、複数の mutable 型の変数に代入できる
-</p>
-</li>
-<li>
-<p>
-メソッドの mutable 制御だけでは対処できないケースがある
-</p>
-</li>
+<li>あるオブジェクトを、複数の mutable 型の変数に代入できる</li>
+<li>メソッドの mutable 制御だけでは対処できないケースがある</li>
 </ul>
+<div id="outline-container-headline-3" class="outline-3">
 <h3 id="headline-3">
 複数の mutable 型の変数に代入できる
 </h3>
+<div id="outline-text-headline-3" class="outline-text-3">
 <p>
 LuneScript では、
 あるクラスのオブジェクトを、
 複数の mutable 型の変数に代入することが出来る。
 これにより、あるオブジェクトが意図していない所で mutable 型の変数に代入され、
 その変数を通して mut 宣言されたメソッドがコールされ、
-非同期処理に影響を及ぼす可能性がある。
-</p>
+非同期処理に影響を及ぼす可能性がある。</p>
 <p>
 これを防止するのがまさに Rust が採用する所有権制御である。
 ただ前述しているように、
-これはコストが大きいので LuneScript では採用したくない。
-</p>
+これはコストが大きいので LuneScript では採用したくない。</p>
 <p>
-これに関しては、制限として割り切る方向で考えている。
-</p>
+これに関しては、制限として割り切る方向で考えている。</p>
 <p>
 ただ、完全に割り切ってユーザに管理を丸投げするのではなく、
-なんらかの設計の手助けになる情報を提供するツールを別途検討する。
-</p>
+なんらかの設計の手助けになる情報を提供するツールを別途検討する。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
 <h3 id="headline-4">
 メソッドの mutable 制御だけでは対処できないケース
 </h3>
+<div id="outline-text-headline-4" class="outline-text-3">
 <p>
-メソッドの mut 宣言だけでは、以下のケースにおいて危険である。
-</p>
+メソッドの mut 宣言だけでは、以下のケースにおいて危険である。</p>
 <ul>
-<li>
-<p>
-allmut なメンバを変更するメソッドは mut 宣言が不要なため、
-mut 宣言していなくても、実質的に mutable な動作をするケースがある。
-</p>
-</li>
-<li>
-<p>
-モジュールの公開関数からモジュール内の大域変数の変更が可能であり、
-かつ関数には mut 宣言がないため安全かどうかの区別できない
-</p>
-</li>
-<li>
-<p>
-form の実行において、そのフォームが mutable な処理かどうか区別できない。
-</p>
-</li>
+<li>allmut なメンバを変更するメソッドは mut 宣言が不要なため、
+mut 宣言していなくても、実質的に mutable な動作をするケースがある。</li>
+<li>モジュールの公開関数からモジュール内の大域変数の変更が可能であり、
+かつ関数には mut 宣言がないため安全かどうかの区別できない</li>
+<li>form の実行において、そのフォームが mutable な処理かどうか区別できない。</li>
 </ul>
-<p>
-LuneScript では、これらについて論理的に対応する方法を考える。
-</p>
+<p>LuneScript では、これらについて論理的に対応する方法を考える。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
 <h2 id="headline-5">
 非同期処理の実現方法
 </h2>
+<div id="outline-text-headline-5" class="outline-text-2">
 <p>
 go へのトランスコンパイル時は非同期処理をサポートするが、
-一方 Lua へトランスコンパイル時は非同期処理をサポートしない。
-</p>
+一方 Lua へトランスコンパイル時は非同期処理をサポートしない。</p>
 <p>
 つまり、非同期処理として書いたものを、
-同期処理として動かしても矛盾のない書き方をする必要がある。
-</p>
+同期処理として動かしても矛盾のない書き方をする必要がある。</p>
 <p>
 これに関しては、非同期処理をサポートしない場合は
-「非同期処理を開始する API」実行時に、同期処理として実行することで対応する。
-</p>
+「非同期処理を開始する API」実行時に、同期処理として実行することで対応する。</p>
+<div id="outline-container-headline-6" class="outline-3">
 <h3 id="headline-6">
 非同期処理インタフェースの実装
 </h3>
+<div id="outline-text-headline-6" class="outline-text-3">
 <p>
-<strong>ここの情報は検討中</strong>
-</p>
+<strong>ここの情報は検討中</strong></p>
 <p>
 非同期処理は、クラスのメソッドを非同期で処理することで実現する。
-このクラスは、__Runner インタフェースを実装する必要がある。
-</p>
+このクラスは、__Runner インタフェースを実装する必要がある。</p>
 <p>
-また、__Runner インタフェースを実装するクラスは、以下を制限する。
-</p>
+また、__Runner インタフェースを実装するクラスは、以下を制限する。</p>
 <ul>
 <li>
-<p>
-引数は、全て immutable 型のオブジェクトでなければならない。
-これにより、そのクラス内から競合する mutable アクセスがないことを保証する。
-</p>
+<p>引数は、全て immutable 型のオブジェクトでなければならない。
+これにより、そのクラス内から競合する mutable アクセスがないことを保証する。</p>
 <ul>
-<li>
-<p>
-__init() メソッド
-</p>
-</li>
-<li>
-<p>
-pub メソッド
-</p>
-</li>
-<li>
-<p>
-ただし、引数のオブジェクトのクラスのメンバが全て immutable 型の場合は、
-その引数自体は immutable でなくても良い。
-</p>
-</li>
-<li>
-<p>
-引数の型が型パラメータの場合、条件を満しているとして処理する。
-</p>
-</li>
+<li>__init() メソッド</li>
+<li>pub メソッド</li>
+<li>ただし、引数のオブジェクトのクラスのメンバが全て immutable 型の場合は、
+その引数自体は immutable でなくても良い。</li>
+<li>引数の型が型パラメータの場合、条件を満しているとして処理する。</li>
 </ul>
 </li>
 <li>
-<p>
-メソッドからコールする外部モジュールの関数、メソッドは、次の条件を満さなければならない
-</p>
+<p>メソッドからコールする外部モジュールの関数、メソッドは、次の条件を満さなければならない</p>
 <ul>
-<li>
-<p>
-大域変数、あるいはクロージャの変数に影響を与えてはならない。
-</p>
-</li>
-<li>
-<p>
-allmut への更新がない。
-</p>
-</li>
+<li>大域変数、あるいはクロージャの変数に影響を与えてはならない。</li>
+<li>allmut への更新がない。</li>
 </ul>
 </li>
 </ul>
-<p>
-上記制限は、
+<p>上記制限は、
 __Runner インタフェースを実装するクラスの super クラス、
-sub クラスも同様に制限される。
-</p>
+sub クラスも同様に制限される。</p>
 <p>
-上記制限を満すかどうかを確認するため、以下の制御を追加する。
-</p>
+上記制限を満すかどうかを確認するため、以下の制御を追加する。</p>
 <ul>
 <li>
-<p>
-__async 宣言を追加する。
-</p>
+<p>__async 宣言を追加する。</p>
 <ul>
 <li>
-<p>
-__async 宣言された関数、メソッドは以下の制限に従う。
-</p>
+<p>__async 宣言された関数、メソッドは以下の制限に従う。</p>
 <ul>
-<li>
-<p>
-mutable 型を格納する大域変数、あるいはクロージャの変数にアクセスしない。
-</p>
-</li>
-<li>
-<p>
-allmut 型のシンボルの参照がない
-</p>
-</li>
-<li>
-<p>
-__noasync な関数をコールしてはならない。
-</p>
-</li>
+<li>mutable 型を格納する大域変数、あるいはクロージャの変数にアクセスしない。</li>
+<li>allmut 型のシンボルの参照がない</li>
+<li>__noasync な関数をコールしてはならない。</li>
 </ul>
 </li>
 </ul>
 </li>
 <li>
-<p>
-_lune_control に default_async_func を追加する。
-</p>
+<p>_lune_control に default_async_func を追加する。</p>
 <ul>
-<li>
-<p>
-default_async_func が宣言されたモジュールの関数は、
-デフォルトで __async 宣言が付加される。
-</p>
-</li>
-<li>
-<p>
-__async でない関数は、 __noasync 宣言する必要がある。
-</p>
-</li>
-<li>
-<p>
-メソッドは対象外
-</p>
-</li>
+<li>default_async_func が宣言されたモジュールの関数は、
+デフォルトで __async 宣言が付加される。</li>
+<li>__async でない関数は、 __noasync 宣言する必要がある。</li>
+<li>メソッドは対象外</li>
 </ul>
 </li>
 <li>
-<p>
-_lune_control に control_default_async_all を追加する。
-</p>
+<p>_lune_control に control_default_async_all を追加する。</p>
 <ul>
-<li>
-<p>
-default_async_func が宣言されたモジュールの関数は、
-全ての関数、メソッドにおいて、async 宣言がデフォルトで付加される。
-</p>
-</li>
+<li>default_async_func が宣言されたモジュールの関数は、
+全ての関数、メソッドにおいて、async 宣言がデフォルトで付加される。</li>
 </ul>
 </li>
 </ul>
 <ul>
 <li>
-<p>
-__noasync 宣言を追加する。
-</p>
+<p>__noasync 宣言を追加する。</p>
 <ul>
-<li>
-<p>
-__async 宣言とは逆の働きをする。
-</p>
-</li>
-<li>
-<p>
-default_async_func が宣言されていないモジュールの関数は、
-デフォルトで __noasync が付加される。
-</p>
-</li>
+<li>__async 宣言とは逆の働きをする。</li>
+<li>default_async_func が宣言されていないモジュールの関数は、
+デフォルトで __noasync が付加される。</li>
 </ul>
 </li>
 </ul>
 <ul>
 <li>
-<p>
-_lune_control に default_async_this_class を追加する
-</p>
+<p>_lune_control に default_async_this_class を追加する</p>
 <ul>
-<li>
-<p>
-クラスの body 先頭に default_async_this_class を宣言することで、
-そのクラス内は control_default_async_all と同じ効果が得られる。
-</p>
-</li>
+<li>クラスの body 先頭に default_async_this_class を宣言することで、
+そのクラス内は control_default_async_all と同じ効果が得られる。</li>
 </ul>
 </li>
 <li>
-<p>
-_lune_control に default_noasync_this_class を追加する
-</p>
+<p>_lune_control に default_noasync_this_class を追加する</p>
 <ul>
-<li>
-<p>
-クラスの body 先頭に default_async_this_class を宣言することで、
+<li>クラスの body 先頭に default_async_this_class を宣言することで、
 そのクラス内は control_default_async_all とは逆に、
-デフォルトが __noasync 宣言になる。
-</p>
-</li>
+デフォルトが __noasync 宣言になる。</li>
 </ul>
 </li>
 </ul>
+</div>
+</div>
+</div>
+</div>
 
     </div>
     <div class="article-footer">
@@ -701,8 +586,8 @@ _lune_control に default_noasync_this_class を追加する
     window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
 
-<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
-<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.a2959bb9e3b3c9e8aa6e358e6bb7090585dcf6831387b734c9459b13f23b1834.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.29680208905b16ba17da3c502ae2847f8396e8a4a95bec73e9a0981ed3746b23.js"></script>
 
 <script>
     (function (window) {
@@ -720,7 +605,7 @@ _lune_control に default_noasync_this_class を追加する
         window.INSIGHT_CONFIG = INSIGHT_CONFIG;
     })(window);
 </script>
-<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.bd9ece370823766409517a6402191cfc0f35dd406ecd994a5ba78e40fea79c37c67a579ebc6bf2f1101d2bf15c5e50fa4f04aec9abea19edeb112813034367af.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
 <script>
     tocbot.init({

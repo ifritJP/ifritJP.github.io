@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        LuneScript の型の Mutable 制御を追加 - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="現在、 LuneScript のメンバの型の Mutable 制御には以下がある。 mutable (デフォルト) immutable (&amp;amp;) allmut これだと、どうも使い勝手が悪いケースがある。 immutable なインスタンスを生成する場合" />
+    <meta name="generator" content="Hugo 0.100.1 with theme pure" />
+    <title>LuneScript の型の Mutable 制御を追加 - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="LuneScript の型の Mutable 制御を追加" />
+<meta property="og:description" content="現在、 LuneScript のメンバの型の Mutable 制御には以下がある。 mutable (デフォルト) immutable (&amp;) allmut これだと、どうも使い勝手が悪いケースがある。 immutable なインスタンスを生成する場合" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/drafts/2021-05-28-add-mutable-control/" /><meta property="article:section" content="drafts" />
+<meta property="article:published_time" content="2021-05-28T00:00:00+00:00" />
+<meta property="article:modified_time" content="2021-05-28T00:00:00+00:00" />
+
+<meta itemprop="name" content="LuneScript の型の Mutable 制御を追加">
+<meta itemprop="description" content="現在、 LuneScript のメンバの型の Mutable 制御には以下がある。 mutable (デフォルト) immutable (&amp;) allmut これだと、どうも使い勝手が悪いケースがある。 immutable なインスタンスを生成する場合"><meta itemprop="datePublished" content="2021-05-28T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2021-05-28T00:00:00+00:00" />
+<meta itemprop="wordCount" content="1273">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LuneScript の型の Mutable 制御を追加"/>
+<meta name="twitter:description" content="現在、 LuneScript のメンバの型の Mutable 制御には以下がある。 mutable (デフォルト) immutable (&amp;) allmut これだと、どうも使い勝手が悪いケースがある。 immutable なインスタンスを生成する場合"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-06-01-wstcplink/" class="title">WebSocket client と TCP client の中継ツールを作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-06-01 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-06-01</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-04-30-raspi-backup/" class="title">Raspberry pi イメージのバックアップ</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-04-30 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-04-30</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-23-m5stack-btstack/" class="title">M5stack(ESP32) で Bluetooth(btstack) の機能を利用する際の注意点</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-02-23 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-02-23</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-02-22-bt-keyboard-remapper/" class="title">OS に依存しない Bluetooth キーボードのキー入れ替え (M5stack版)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-02-22 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-02-22</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-16-keyboard-key-scan-code/" class="title">HID Keyboard の Key スキャンコード</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-01-16 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-16</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/drafts/2021-05-28-add-mutable-control/"
+    >LuneScript の型の Mutable 制御を追加</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/drafts/2021-05-28-add-mutable-control/" class="article-date">
+  <time datetime="2021-05-28 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-28</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/drafts/2021-05-28-add-mutable-control/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1273</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">3 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+現在、 LuneScript のメンバの型の Mutable 制御には以下がある。</p>
+<ul>
+<li>mutable (デフォルト)</li>
+<li>immutable (&amp;)</li>
+<li>allmut  </li>
+</ul>
+<p>これだと、どうも使い勝手が悪いケースがある。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+immutable なインスタンスを生成する場合
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+下記のような Value クラスをメンバにもつ Test クラスを考える。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">class Value {
+   let mut val:int {pub};
+   local fn add() mut {
+      self.val = self.val + 1;
+   }
+}
+class Test {
+   let val:Value;
+   fn add() mut {
+      self.val.add();
+   }
+   fn get() : int {
+      return self.val.$val;
+   }
+}
+let mut value1 = new Value(1);
+let test1:Test = new Test( value1 ); // ここは成功
+let value2 = new Value(2);
+let test2:Test = new Test( value2 ); // ここはエラー
+let value3 = new Value(3);
+let test3:&amp;Test = new Test( value3 ); // ここはエラー</code></pre>
+</div>
+<p>
+ここで、 Test クラスのメンバ val は Value の mutable 型である。
+よって、 Test クラスのインスタンスを生成するには、
+以下のように mutable 型の Value を指定する必要がある。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let mut value1 = new Value(1);
+let test1 = new Test( value1 ); // ここは成功</code></pre>
+</div>
+<p>
+以下のように immutable 型の Value を指定するとエラーになる。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let value2 = new Value(2);
+let test2:Test = new Test( value2 ); // ここはエラー</code></pre>
+</div>
+<p>
+これは当然の結果である。</p>
+<p>
+なぜなら Test.add() は、メンバ val の mut メソッドをコールしているため、
+Test の メンバ val は mutable でなければならない。
+よって、 imuttable な Value を指定した場合はエラーになる。</p>
+<p>
+しかし、次のケースを考えたらどうだろうか？</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let value3 = new Value(3);
+let test3:&amp;Test = new Test( value3 ); // ここはエラー</code></pre>
+</div>
+<p>
+test3 は &amp;Test 型である。
+この場合のメンバ val は immutable であるため、
+immutable な Value を指定しても論理的に問題ない。</p>
+<p>
+であれば、 <code class="verbatim">let test3:&amp;Test = new Test( value3 );</code> を
+許可すべきなんじゃないだろうか？</p>
+<p>
+ただし、単純に <code class="verbatim">new Test( value3 )</code> を成功にしてしまうと、
+<code class="verbatim">let test2:Test = new Test( value2 );</code> と区別ができないので、
+そこは対処が必要である。</p>
+<p>
+immutable なクラスのインスタンスを生成する場合、次の点に注意が必要である。</p>
+<ul>
+<li>allmut 型のメンバを持つ場合</li>
+<li>コンストラクタ内で、 そのメンバの mut メソッドをコールしている場合  </li>
+</ul>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+allmut 型のメンバを持つ場合
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+allmut は、クラスのインスタンスが immutable であっても、
+mutable として扱うことが出来る例外ケースである。</p>
+<p>
+当然この場合は、クラスのインスタンスを immutable として生成するケースであっても、
+メンバは mutable でなければならない。</p>
+<p>
+具体的には、以下の hoge3 はエラーとなる。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">class Value {
+   let mut val:int {pub};
+   local fn add() mut {
+      self.val = self.val + 1;
+   }
+}
+class Hoge {
+   let val: allmut Value;
+   fn add() {
+      self.val.add();
+   }
+   fn get() : int {
+      return self.val.$val;
+   }
+}
+let mut value1 = new Value(1);
+let hoge1:Hoge = new Hoge( value1 ); // ここは成功
+let value2 = new Value(2);
+let hoge2:Hoge = new Hoge( value2 ); // ここはエラー
+let value3 = new Value(3);
+let hoge3:&amp;Hoge = new Hoge( value3 ); // ここはエラー</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+コンストラクタ内で、そのメンバの mut メソッドをコールしている場合  
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+以下のような Hoge クラスを考える。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">class Value {
+   let mut val:int {pub};
+   local fn add() mut {
+      self.val = self.val + 1;
+   }
+}
+class Hoge {
+   let val: Value;
+   pub fn __init( val:Value ) {
+       val.add();
+       self.val = val;
+   }
+}</code></pre>
+</div>
+<p>
+ここで、 Hoge クラスのコンストラクタで <code class="verbatim">val.add();</code> を実行している。
+これは val が mutable であることが前提にあるため、
+この場合は val が immutable の場合はエラーにしなければならない。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+実現方法
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+コンストラクタの引数の型に dep を追加する。</p>
+<p>
+dep は、生成するクラスのインスタンスが
+mutable 用のインスタンスの場合 mutable として働き、
+immutable 用のインスタンスの場合 &amp; (immutable) として働く。</p>
+<p>
+メンバの宣言には、 dep は追加しないで現状のままとする。</p>
+<p>
+new 演算子については、 <code class="verbatim">new &amp;Test</code> のように、
+クラス名の前に <code class="verbatim">&amp;</code> が付加された場合は immutable のインスタンスを生成する。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">class Value {
+   let mut val:int {pub};
+   local fn add() mut {
+      self.val = self.val + 1;
+   }
+}
+class Hoge {
+   let val: Value;
+   pub fn __init( val:dep Value ) {
+      self.val = val;
+   }
+   fn add() {
+      self.val.add();
+   }
+   fn get() : int {
+      return self.val.$val;
+   }
+}
+let mut value1 = new Value(1);
+let hoge1:Hoge = new Hoge( value1 ); // ここは成功
+let value2 = new Value(2);
+let hoge2:Hoge = new Hoge( value2 ); // ここはエラー
+let value3 = new Value(3);
+let hoge3:&amp;Hoge = new &amp;Hoge( value3 ); // ここは成功</code></pre>
+</div>
+</div>
+</div>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-26-lunescript-plan/" title="LuneScript のこれからの予定"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            <li class="next">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-06-04-lunescript-selfhost-para/"
+                    title="LuneScript のセルフホストのマルチスレッド化 (トランスコンパイル時間を 1412 パーセント改善)"><span>&nbsp;&nbsp;</span><i
+                        class="icon icon-angle-right" aria-hidden="true"></i></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2022
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.a2959bb9e3b3c9e8aa6e358e6bb7090585dcf6831387b734c9459b13f23b1834.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.29680208905b16ba17da3c502ae2847f8396e8a4a95bec73e9a0981ed3746b23.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.bd9ece370823766409517a6402191cfc0f35dd406ecd994a5ba78e40fea79c37c67a579ebc6bf2f1101d2bf15c5e50fa4f04aec9abea19edeb112813034367af.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+  </body>
+</html>

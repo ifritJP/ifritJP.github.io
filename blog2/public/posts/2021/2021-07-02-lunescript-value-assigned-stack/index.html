@@ -21,11 +21,11 @@
     
     
     <meta name="description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り" />
-    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <meta name="generator" content="Hugo 0.100.1 with theme pure" />
     <title>LuneScript のトランスコンパイル高速化 (スタック割り当て) - hoge blog</title>
     
     
-    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
 
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
@@ -37,17 +37,14 @@
     <meta property="og:title" content="LuneScript のトランスコンパイル高速化 (スタック割り当て)" />
 <meta property="og:description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-07-02-lunescript-value-assigned-stack/" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-07-02-lunescript-value-assigned-stack/" /><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-07-02T00:00:00+00:00" />
 <meta property="article:modified_time" content="2021-07-02T00:00:00+00:00" />
+
 <meta itemprop="name" content="LuneScript のトランスコンパイル高速化 (スタック割り当て)">
-<meta itemprop="description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り">
-<meta itemprop="datePublished" content="2021-07-02T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2021-07-02T00:00:00&#43;00:00" />
+<meta itemprop="description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り"><meta itemprop="datePublished" content="2021-07-02T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2021-07-02T00:00:00+00:00" />
 <meta itemprop="wordCount" content="1175">
-
-
-
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="LuneScript のトランスコンパイル高速化 (スタック割り当て)"/>
 <meta name="twitter:description" content="今回の記事は、 先日検討した LuneScript のクラスのオブジェクトを スタックに割り当てて高速化できるかどうか？の検討結果です。 結果 今回の検討結果は以下の通り"/>
@@ -218,6 +215,16 @@
             <li>
                 <div class="item-inner">
                     <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-06-01-wstcplink/" class="title">WebSocket client と TCP client の中継ツールを作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-06-01 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-06-01</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
                         <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-04-30-raspi-backup/" class="title">Raspberry pi イメージのバックアップ</a>
                     </p>
                     <p class="item-date">
@@ -252,16 +259,6 @@
                     </p>
                     <p class="item-date">
                         <time datetime="2022-01-16 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-16</time>
-                    </p>
-                </div>
-            </li>
-            <li>
-                <div class="item-inner">
-                    <p class="item-title">
-                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/" class="title">Hardware Keyboard Remapper(OS に依存しないキーボードのキー入れ替え)を作った</a>
-                    </p>
-                    <p class="item-date">
-                        <time datetime="2022-01-10 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-10</time>
                     </p>
                 </div>
             </li>
@@ -315,168 +312,119 @@
 <p>
 今回の記事は、
 先日検討した LuneScript のクラスのオブジェクトを
-スタックに割り当てて高速化できるかどうか？の検討結果です。
-</p>
+スタックに割り当てて高速化できるかどうか？の検討結果です。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 結果
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-今回の検討結果は以下の通りです。
-</p>
+今回の検討結果は以下の通りです。</p>
 <p>
 <strong>「スタック割り当て自体は有効ですが、</strong>
-<strong>スタック割り当てから escape されないように設計しないと効果を得られません。」</strong>
-</p>
+<strong>スタック割り当てから escape されないように設計しないと効果を得られません。」</strong></p>
 <p>
-なんだか当たり前な検討結果ですが、そうなんだから仕方がない。
-</p>
+なんだか当たり前な検討結果ですが、そうなんだから仕方がない。</p>
 <p>
-では、なぜそのような結果になったかを説明していきます。
-</p>
+では、なぜそのような結果になったかを説明していきます。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
 検討内容
 </h2>
+<div id="outline-text-headline-2" class="outline-text-2">
 <p>
 LuneScript でオブジェクトをスタック割り当てするには、
-そのオブジェクトのクラスは次の条件を全て満す必要があります。
-</p>
+そのオブジェクトのクラスは次の条件を全て満す必要があります。</p>
 <ul>
-<li>
-<p>
-全てのメンバが immutable
-</p>
-</li>
-<li>
-<p>
-Super クラスがない
-</p>
-</li>
-<li>
-<p>
-Sub クラスがない  
-</p>
-</li>
+<li>全てのメンバが immutable</li>
+<li>Super クラスがない</li>
+<li>Sub クラスがない  </li>
 </ul>
-<p>
-この条件にマッチし、なおかつ生成数の多いクラスは以下になりました。
-</p>
+<p>この条件にマッチし、なおかつ生成数の多いクラスは以下になりました。</p>
 <ul>
 <li>
-<p>
-Positon
-</p>
+<p>Positon</p>
 <ul>
-<li>
-<p>
-トークンの位置情報
-</p>
-</li>
+<li>トークンの位置情報</li>
 </ul>
 </li>
 <li>
+<p>Token</p>
+<ul>
+<li>Parse したトークン情報</li>
+</ul>
+</li>
+</ul>
+<p>go の pprof 機能の解析によると、
+この 2 つの合計は、生成している全オブジェクト数の 5% ほどになります。</p>
 <p>
-Token
-</p>
+このクラスをスタック割り当てに変更してみたところ以下の結果になりました。</p>
 <ul>
 <li>
-<p>
-Parse したトークン情報
-</p>
-</li>
-</ul>
-</li>
-</ul>
-<p>
-go の pprof 機能の解析によると、
-この 2 つの合計は、生成している全オブジェクト数の 5% ほどになります。
-</p>
-<p>
-このクラスをスタック割り当てに変更してみたところ以下の結果になりました。
-</p>
+<p>Positon をスタック割り当てに変更</p>
 <ul>
+<li>トランスコンパイル時間が 1% 程度 <strong>改善</strong></li>
+</ul>
+</li>
 <li>
-<p>
-Positon をスタック割り当てに変更
-</p>
+<p>Token をスタック割り当てに変更</p>
 <ul>
-<li>
-<p>
-トランスコンパイル時間が 1% 程度 <strong>改善</strong>
-</p>
-</li>
-</ul>
-</li>
-<li>
-<p>
-Token をスタック割り当てに変更
-</p>
-<ul>
-<li>
-<p>
-トランスコンパイル時間が 10% 程度 <strong>悪化</strong>
-</p>
-</li>
+<li>トランスコンパイル時間が 10% 程度 <strong>悪化</strong></li>
 </ul>
 </li>
 </ul>
-<p>
-この通り、クラスによって結果が異なりました。
-</p>
+<p>この通り、クラスによって結果が異なりました。</p>
 <p>
 先日の記事で書いたように、オブジェクトをスタック割り当てする場合、
-そのオブジェクトを最後までスタック割り当てで扱わないと逆に効率が悪くなります。
-</p>
+そのオブジェクトを最後までスタック割り当てで扱わないと逆に効率が悪くなります。</p>
 <p>
 では、何故スタック割り当てで扱わないケースがあるのかと言うと、
-LuneScript には nilable があるからです。
-</p>
+LuneScript には nilable があるからです。</p>
 <p>
 nilable を表現するために、 go の interface{} を利用しています。
-そして、スタック割り当てのオブジェクトを interface{} に変換すると、 escape されます。
-</p>
+そして、スタック割り当てのオブジェクトを interface{} に変換すると、 escape されます。</p>
 <p>
 このようなケースを改善するには、異常値の表現に nilable は使わずに、
 特別な値を定義する必要があります。
-あるいは Rust の Option 型のような型を用意する必要があります。
-</p>
+あるいは Rust の Option 型のような型を用意する必要があります。</p>
 <p>
 また、 List や Map などの collection 型は interface{} として値を保持します。
 そして stem 型も interface{} として保持します。
 つまり、collection 型, stem 型で管理することが前提の場合、
-スタック割り当て化は逆効果です。
-</p>
+スタック割り当て化は逆効果です。</p>
 <p>
 ただ、collection 型を使えないのは流石にハードルが高いので、
-スタック割り当てのまま collection 型を使えるように改善したいと考えています。
-</p>
+スタック割り当てのまま collection 型を使えるように改善したいと考えています。</p>
 <p>
-ということで結論は以下になります。
-</p>
+ということで結論は以下になります。</p>
 <p>
 <strong>スタック割り当て自体は有効ですが、</strong>
-<strong>スタック割り当てから escape されないように設計しないと効果を得られません。</strong>
-</p>
+<strong>スタック割り当てから escape されないように設計しないと効果を得られません。</strong></p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
 今後の予定
 </h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <p>
 今の段階(6827a64)で、
 セルフホストのトランスコンパイルの内部処理時間は 0.9 秒弱まで短縮できていますが、
-time コマンドの計測結果では 1.1 秒前半です。
-</p>
+time コマンドの計測結果では 1.1 秒前半です。</p>
 <p>
 この原因の一つに、
 collection 型で interface{} を利用していることが挙げられるので改善したいところです。
-しかし、これを改善するには go 側の slice, map の generics 対応が必要になります。
-</p>
+しかし、これを改善するには go 側の slice, map の generics 対応が必要になります。</p>
 <p>
 よって、go 側の slice, map の generics 対応を持ってから、
-collection 型の改善が出来るように対応を検討します。
-</p>
+collection 型の改善が出来るように対応を検討します。</p>
 <p>
 それまでは、
-大きな改善は見込めなさそうなので LuneScript の高速化対応を一旦中断します。
-</p>
+大きな改善は見込めなさそうなので LuneScript の高速化対応を一旦中断します。</p>
+</div>
+</div>
 
     </div>
     <div class="article-footer">
@@ -539,8 +487,8 @@ collection 型の改善が出来るように対応を検討します。
     window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
 
-<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
-<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.a2959bb9e3b3c9e8aa6e358e6bb7090585dcf6831387b734c9459b13f23b1834.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.29680208905b16ba17da3c502ae2847f8396e8a4a95bec73e9a0981ed3746b23.js"></script>
 
 <script>
     (function (window) {
@@ -558,7 +506,7 @@ collection 型の改善が出来るように対応を検討します。
         window.INSIGHT_CONFIG = INSIGHT_CONFIG;
     })(window);
 </script>
-<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.bd9ece370823766409517a6402191cfc0f35dd406ecd994a5ba78e40fea79c37c67a579ebc6bf2f1101d2bf15c5e50fa4f04aec9abea19edeb112813034367af.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
 <script>
     tocbot.init({

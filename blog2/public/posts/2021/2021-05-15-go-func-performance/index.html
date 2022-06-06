@@ -21,11 +21,11 @@
     
     
     <meta name="description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的なスレッド機能を提供している。 「限定的" />
-    <meta name="generator" content="Hugo 0.68.3 with theme pure" />
+    <meta name="generator" content="Hugo 0.100.1 with theme pure" />
     <title>Go の関数パフォーマンス - hoge blog</title>
     
     
-    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.7dc20efbc53647d41aa9ddea0c48e59300223d084e66ea0cbe7c30bd88903acc.css">
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
 
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
@@ -37,17 +37,14 @@
     <meta property="og:title" content="Go の関数パフォーマンス" />
 <meta property="og:description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的なスレッド機能を提供している。 「限定的" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-15-go-func-performance/" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-15-go-func-performance/" /><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2021-05-15T00:00:00+00:00" />
 <meta property="article:modified_time" content="2021-05-15T00:00:00+00:00" />
+
 <meta itemprop="name" content="Go の関数パフォーマンス">
-<meta itemprop="description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的なスレッド機能を提供している。 「限定的">
-<meta itemprop="datePublished" content="2021-05-15T00:00:00&#43;00:00" />
-<meta itemprop="dateModified" content="2021-05-15T00:00:00&#43;00:00" />
+<meta itemprop="description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的なスレッド機能を提供している。 「限定的"><meta itemprop="datePublished" content="2021-05-15T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2021-05-15T00:00:00+00:00" />
 <meta itemprop="wordCount" content="1164">
-
-
-
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Go の関数パフォーマンス"/>
 <meta name="twitter:description" content="LuneScript は golang へのトランスコンパイルをサポートしている。 golang 対応の付加機能として、LuneScript には限定的なスレッド機能を提供している。 「限定的"/>
@@ -218,6 +215,16 @@
             <li>
                 <div class="item-inner">
                     <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-06-01-wstcplink/" class="title">WebSocket client と TCP client の中継ツールを作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-06-01 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-06-01</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
                         <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-04-30-raspi-backup/" class="title">Raspberry pi イメージのバックアップ</a>
                     </p>
                     <p class="item-date">
@@ -252,16 +259,6 @@
                     </p>
                     <p class="item-date">
                         <time datetime="2022-01-16 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-16</time>
-                    </p>
-                </div>
-            </li>
-            <li>
-                <div class="item-inner">
-                    <p class="item-title">
-                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-01-10-hw-keyboard-remapper/" class="title">Hardware Keyboard Remapper(OS に依存しないキーボードのキー入れ替え)を作った</a>
-                    </p>
-                    <p class="item-date">
-                        <time datetime="2022-01-10 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-10</time>
                     </p>
                 </div>
             </li>
@@ -313,147 +310,120 @@
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
       
 <p>
-LuneScript は golang へのトランスコンパイルをサポートしている。
-</p>
+LuneScript は golang へのトランスコンパイルをサポートしている。</p>
 <p>
-golang 対応の付加機能として、LuneScript には限定的なスレッド機能を提供している。
-</p>
+golang 対応の付加機能として、LuneScript には限定的なスレッド機能を提供している。</p>
 <p>
 「限定的」の大きな理由の一つとして、
-golang 向け LuneScript ランタイムのマルチスレッド対応問題がある。
-</p>
+golang 向け LuneScript ランタイムのマルチスレッド対応問題がある。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 golang 向け LuneScript ランタイム
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
 golang 向け LuneScript ランタイムは、幾つか機能を持っている。
-その機能の中には、次のものを含む。
-</p>
+その機能の中には、次のものを含む。</p>
 <ul>
-<li>
-<p>
-and or 演算子の処理を実現するためのスタック。
-</p>
-</li>
-<li>
-<p>
-lua ランタイム制御。  
-</p>
-</li>
+<li>and or 演算子の処理を実現するためのスタック。</li>
+<li>lua ランタイム制御。  </li>
 </ul>
-<p>
-LuneScript は元々 Lua 向けのトランスコンパイラであり、
+<p>LuneScript は元々 Lua 向けのトランスコンパイラであり、
 Lua はシングルスレッドの言語である。
 そのため、 LuneScript の上記ランタイムもシングルスレッドを
-想定した構成になっているため、そのままではマルチスレッドで利用できない。
-</p>
+想定した構成になっているため、そのままではマルチスレッドで利用できない。</p>
 <p>
 シングルスレッド限定で良ければ、
-マルチスレッドを考慮した作りに比べて簡単になるし、その分高速にもなる。
-</p>
+マルチスレッドを考慮した作りに比べて簡単になるし、その分高速にもなる。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 マルチスレッド対応
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
 LuneScript ランタイムをマルチスレッド対応する際には、
-次の 2 つの方法が考えられる。
-</p>
+次の 2 つの方法が考えられる。</p>
 <ul>
-<li>
-<p>
-ランタイムの複数インスタンス化
-</p>
-</li>
-<li>
-<p>
-ランタイムの排他制御
-</p>
+<li>ランタイムの複数インスタンス化</li>
+<li>ランタイムの排他制御</li>
+</ul>
+<div id="outline-container-headline-3" class="outline-4">
 <h4 id="headline-3">
 ランタイムの複数インスタンス化
 </h4>
-</li>
-</ul>
+<div id="outline-text-headline-3" class="outline-text-4">
 <p>
 スレッド毎にランタイムをインスタンス化して管理する場合、
-どのランタイムがどのスレッドのものかを管理する必要がある。
-</p>
+どのランタイムがどのスレッドのものかを管理する必要がある。</p>
 <p>
 一方で、golang には go-routine の識別 ID がない。
 つまり、 <strong>「必要な時に識別 ID からランタイムを取得する」</strong> ということが
-出来ないことになる。
-</p>
+出来ないことになる。</p>
 <p>
 cgo を利用すれば、
 go-routine が動作している pthread ID を取得することは可能だが、
 golang のタスクスケジューリングでは、
 ある go-routine を実行する pthread が常に固定されている訳ではない。
-つまり動的に取得した pthread ID は、 go-routine の ID にはならない。
-</p>
+つまり動的に取得した pthread ID は、 go-routine の ID にはならない。</p>
 <p>
 ということは、 LuneScript ランタイム情報にアクセスするためには、
-全ての関数にランタイム情報を渡していく必要がある。
-</p>
+全ての関数にランタイム情報を渡していく必要がある。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-4">
 <h4 id="headline-4">
 ランタイムの排他制御
 </h4>
+<div id="outline-text-headline-4" class="outline-text-4">
 <p>
 ランタイムの複数インスタンス化には、
 全ての関数パラメータにランタイム情報の追加が必要になる。
 これは、全ての関数でオーバーヘッドが追加になり、
-当然プログラム全体がその分遅くなる。
-</p>
+当然プログラム全体がその分遅くなる。</p>
 <p>
 そこで、ランタイムは複数インスタンス化せずに、
-アクセスが必要な時だけ排他を掛けるケースを考える。
-</p>
+アクセスが必要な時だけ排他を掛けるケースを考える。</p>
 <p>
-排他には次のケースがある。
-</p>
+排他には次のケースがある。</p>
 <ul>
-<li>
-<p>
-mutex を使う
-</p>
-</li>
-<li>
-<p>
-channel を使う
-</p>
-</li>
+<li>mutex を使う</li>
+<li>channel を使う</li>
 </ul>
-<p>
-今回は両方検証する。
-</p>
+<p>今回は両方検証する。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
 <h2 id="headline-5">
 パファーマンス
 </h2>
+<div id="outline-text-headline-5" class="outline-text-2">
 <p>
 golang の簡単なプログラムで、
 複数インスタンス化したケースと、ランタイムの排他制御を実施したケースの
-パフォーマンスを測ってみた。
-</p>
+パフォーマンスを測ってみた。</p>
 <p>
 なお、実際に複数インスタンス化する訳ではなく、
 関数に引数を追加するケースと、
-排他制御を追加するケースとで、パフォーマンスを測っている。
-</p>
+排他制御を追加するケースとで、パフォーマンスを測っている。</p>
 <p>
-結果以下となった。
-</p>
+結果以下となった。</p>
 <pre class="example">
 引数に追加 &lt;&lt;&lt;&lt; mutex &lt;&lt; channel
 </pre>
 <p>
-「引数に追加」が一番負荷が少なく、「channel」が一番負荷が高かった。
-</p>
+「引数に追加」が一番負荷が少なく、「channel」が一番負荷が高かった。</p>
 <p>
 ただ「mutex」や「channel」の場合は、
 必要な箇所だけに制御を追加すれば良いということを考えると、
-「mutex」で対応するのが一番良いのかもしれない。
-</p>
+「mutex」で対応するのが一番良いのかもしれない。</p>
 <p>
-LuneScript のマルチスレッド対応は、「引数に追加」でいこうと思う。 
-</p>
+LuneScript のマルチスレッド対応は、「引数に追加」でいこうと思う。 </p>
+</div>
+</div>
 
     </div>
     <div class="article-footer">
@@ -516,8 +486,8 @@ LuneScript のマルチスレッド対応は、「引数に追加」でいこう
     window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
 </script>
 
-<script src="https://ifritjp.github.io/blog2/public/js/application.min.bdeb64b910570b6c41badc6a05b7afb0c8ad9efd8525de3c7257d59e786326a3.js"></script>
-<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.51ff8c7317566f82259170fa36e09c4493adc9b9378b427a01ad3f017ebac7dd.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.a2959bb9e3b3c9e8aa6e358e6bb7090585dcf6831387b734c9459b13f23b1834.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.29680208905b16ba17da3c502ae2847f8396e8a4a95bec73e9a0981ed3746b23.js"></script>
 
 <script>
     (function (window) {
@@ -535,7 +505,7 @@ LuneScript のマルチスレッド対応は、「引数に追加」でいこう
         window.INSIGHT_CONFIG = INSIGHT_CONFIG;
     })(window);
 </script>
-<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.a343cd9a5a7698336b28ef3a7c16a3a1b1d2d5fb17dc8ed04022bbe08cc5459073a15bdafa3a8a58cdd56080784bdd69fa70b1ae8597565c799c57ed00f0e120.js" defer></script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.bd9ece370823766409517a6402191cfc0f35dd406ecd994a5ba78e40fea79c37c67a579ebc6bf2f1101d2bf15c5e50fa4f04aec9abea19edeb112813034367af.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
 <script>
     tocbot.init({
