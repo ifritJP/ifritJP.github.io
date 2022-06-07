@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>27. 遅延ロード 編 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/lazyloading/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="27. 遅延ロード 編" />
 <meta property="og:description" content="ある程度の規模のプロジェクトでは、複数のモジュールを import することになります。 そして import したモジュール内でまた別のモジュールを import しています。 スクリ" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/lazyloading/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/lazyloading/" /><meta property="article:section" content="LuneScript" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="27. 遅延ロード 編"/>
 <meta name="twitter:description" content="ある程度の規模のプロジェクトでは、複数のモジュールを import することになります。 そして import したモジュール内でまた別のモジュールを import しています。 スクリ"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="ある程度の規模のプロジェクトでは、複数のモジュールを import することになります。 そして import したモジュール内でまた別のモジュールを import しています。 スクリ">
 
 <meta itemprop="wordCount" content="2283">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -66,22 +66,19 @@
 
 <p>
 ある程度の規模のプロジェクトでは、複数のモジュールを import することになります。
-そして import したモジュール内でまた別のモジュールを import しています。
-</p>
+そして import したモジュール内でまた別のモジュールを import しています。</p>
 <p>
 スクリプト言語における import は、動的なロード処理を意味します。
 あるスクリプトを起動すると、
 そのスクリプトが利用している全てのモジュールのロード処理が行なわれた後に、
-ようやくスクリプトのメイン処理が動き出します。
-</p>
+ようやくスクリプトのメイン処理が動き出します。</p>
 <p>
 例えば、次の図に示すような import の関係があった場合、
 メインの mod モジュールの処理が行なわれるのは、
 関連する全てのモジュールのロードが終ってから
-mod モジュールの処理が行なわれます。
-</p>
+mod モジュールの処理が行なわれます。</p>
 <div class="src src-dot">
-<pre><code class="language-dot" data-lang="dot">digraph G {
+<pre tabindex="0"><code class="language-dot" data-lang="dot">digraph G {
 rankdir = TB;
 mod -&gt; funcA
 mod -&gt; funcB
@@ -101,111 +98,99 @@ funcC -&gt; subC_3
 }</code></pre>
 </div>
 <p>
-<img src="../lazy.svg" alt="../lazy.svg" title="../lazy.svg" />
-</p>
+<img src="../lazy.svg" alt="../lazy.svg" title="../lazy.svg" /></p>
 <p>
-しかし、 import したモジュールを全て常に使うとは限りません。
-</p>
+しかし、 import したモジュールを全て常に使うとは限りません。</p>
 <p>
-例えば、上記の図が 3 つの機能(funcA,funcB,funcC)を提供するプログラムとして考えます。
-</p>
+例えば、上記の図が 3 つの機能(funcA,funcB,funcC)を提供するプログラムとして考えます。</p>
 <p>
 このプログラムの 3 つの内の一つを選択して実行するような場合、
-選択されなかった残りの 2 つの機能は使われません。
-</p>
+選択されなかった残りの 2 つの機能は使われません。</p>
 <p>
 import は、モジュールが使われるかどうかに関係なく、
 モジュールをロードします。
 つまり、実際には使わないモジュールのロード処理に掛る時間や、
-ロードしたデータを格納しておくメモリ領域は無駄になることになります。
-</p>
+ロードしたデータを格納しておくメモリ領域は無駄になることになります。</p>
 <p>
 上記の図で説明すると、
 funcA が選択された場合 funcB, subB_1 〜 subB_3、
-func_C, subC_1 〜 subC_3 が無駄になります。
-</p>
+func_C, subC_1 〜 subC_3 が無駄になります。</p>
 <p>
 プロジェクトの規模が小さい場合、
 この無駄を気にする必要はほとんどありません。
 しかし、プロジェクトの規模が大きくなった場合、
-この無駄を無視できなくなってきます。
-</p>
+この無駄を無視できなくなってきます。</p>
 <p>
 例えば一つのモジュールのロード処理に必要な時間が 0.01 秒だったとしても、
-100 個のモジュールがあれば 1 秒かかります。
-</p>
+100 個のモジュールがあれば 1 秒かかります。</p>
 <p>
 プログラムが常駐するのであれば、ロード処理は一度きりなので、
 多少起動時間がかかっても我慢できますが、
 常駐せずにリクエスト毎に起動しなければならない場合、
-この無駄なロード処理は無視できなくなります。
-</p>
+この無駄なロード処理は無視できなくなります。</p>
 <p>
-このロード処理の無駄を無くすのが遅延ロードです。
-</p>
+このロード処理の無駄を無くすのが遅延ロードです。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 遅延ロード
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
 遅延ロードは、起動時に関連する全てのモジュールをロードするのではなく、
-モジュールが必要になったタイミングでロードする処理方式です。
-</p>
+モジュールが必要になったタイミングでロードする処理方式です。</p>
 <p>
 上記の図で説明すると、
 funcA が選択された場合、
 アクセスされない funcB, subB_1 〜 subB_3、
-func_C, subC_1 〜 subC_3 はロードされません。
-</p>
+func_C, subC_1 〜 subC_3 はロードされません。</p>
 <p>
 これにより、ロード処理の時間、
-ロードしたデータを格納しておくメモリ領域を無駄にしません。
-</p>
+ロードしたデータを格納しておくメモリ領域を無駄にしません。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 遅延ロードの実現方法
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
 遅延ロードは、モジュールにアクセスしたタイミングでロード済みかどうかを判断し、
 ロードしていなければロードし、
-ロードしていればロード済みのデータを利用します。
-</p>
+ロードしていればロード済みのデータを利用します。</p>
 <p>
 一方通常のロードは、
-起動時(import したタイミング)に数珠繋ぎで全てのモジュールをロードします。
-</p>
+起動時(import したタイミング)に数珠繋ぎで全てのモジュールをロードします。</p>
 <p>
 つまり、遅延ロードでは、通常のロードと比べて判定処理が入るので
 その分のオーバーヘッドがあります。
 もちろんオーバーヘッドは非常に少ないです。
 しかし、オーバーヘッドが掛るのは事実であるので、
-非常にクリティカルなケースでは性能劣化が発生することも考えられます。
-</p>
+非常にクリティカルなケースでは性能劣化が発生することも考えられます。</p>
 <p>
-遅延ロードを利用する場合、このようなケースの考慮が必要です。
-</p>
+遅延ロードを利用する場合、このようなケースの考慮が必要です。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
 <h3 id="headline-3">
 遅延ロードの影響
 </h3>
+<div id="outline-text-headline-3" class="outline-text-3">
 <p>
-前述している通り、遅延ロードには僅かなオーバーヘッドがあります。
-</p>
+前述している通り、遅延ロードには僅かなオーバーヘッドがあります。</p>
 <p>
-しかし、それが影響することはほとんどないでしょう。
-</p>
+しかし、それが影響することはほとんどないでしょう。</p>
 <p>
-それよりも影響する可能性が高いと考えられるのが、実行順序の違いです。
-</p>
+それよりも影響する可能性が高いと考えられるのが、実行順序の違いです。</p>
+<div id="outline-container-headline-4" class="outline-4">
 <h4 id="headline-4">
 ロード方式の違いによる実行順序の影響
 </h4>
+<div id="outline-text-headline-4" class="outline-text-4">
 <p>
 モジュールのトップスコープに書いた処理は、
-そのモジュールがロードされた時に実行されます。
-</p>
+そのモジュールがロードされた時に実行されます。</p>
 <p>
-例えば次のようなモジュールがあった場合、
-</p>
+例えば次のようなモジュールがあった場合、</p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
 print( &#34;hoge&#34; );
 fn func() {
     print( &#34;foo&#34; );
@@ -213,120 +198,84 @@ fn func() {
 </div>
 <p>
 このモジュールがロードされたタイミングで hoge が出力されます。
-一方で、 <code class="verbatim">func()</code> はロードされただけでは実行されないので foo は出力されません。
-</p>
+一方で、 <code class="verbatim">func()</code> はロードされただけでは実行されないので foo は出力されません。</p>
 <p>
-そして、このモジュールを import する次のモジュールがある場合、
-</p>
+そして、このモジュールを import する次のモジュールがある場合、</p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
 import Hoge;
 
 print( &#34;bar&#34; );
 Hoge.func();</code></pre>
 </div>
 <p>
-通常ロードの場合、次の出力が行なわれます。
-</p>
+通常ロードの場合、次の出力が行なわれます。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">hoge
-bar
-foo</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">hoge
+</span></span><span class="line"><span class="cl">bar
+</span></span><span class="line"><span class="cl">foo</span></span></code></pre></div>
 </div>
 <p>
-一方で遅延ロードの場合、次の出力が行なわれます。
-</p>
+一方で遅延ロードの場合、次の出力が行なわれます。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">bar
-hoge
-foo</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">bar
+</span></span><span class="line"><span class="cl">hoge
+</span></span><span class="line"><span class="cl">foo</span></span></code></pre></div>
 </div>
 <p>
 出力結果を比較すると、
-<strong>bar と hoge の出力順番</strong> が入れ替わっています。
-</p>
+<strong>bar と hoge の出力順番</strong> が入れ替わっています。</p>
 <p>
 なぜこのようなことが起るかというと、
-通常ロードでは
-</p>
+通常ロードでは</p>
 <ul>
-<li>
-<p>
-import したタイミングでサブモジュール Hoge がロードされ、
-</p>
-</li>
-<li>
-<p>
-そのタイミングで <code class="verbatim">print( &#34;hoge&#34; )</code> が実行され、
-</p>
-</li>
-<li>
-<p>
-サブモジュール Hoge のロード終了後に <code class="verbatim">print( &#34;bar&#34; )</code> が実行される。
-</p>
-</li>
+<li>import したタイミングでサブモジュール Hoge がロードされ、</li>
+<li>そのタイミングで <code class="verbatim">print( &#34;hoge&#34; )</code> が実行され、</li>
+<li>サブモジュール Hoge のロード終了後に <code class="verbatim">print( &#34;bar&#34; )</code> が実行される。</li>
 </ul>
-<p>
-一方で遅延ロードでは、
-通常ロードでは import したタイミングでサブモジュール Hoge がロードされず、
-</p>
+<p>一方で遅延ロードでは、
+通常ロードでは import したタイミングでサブモジュール Hoge がロードされず、</p>
 <ul>
-<li>
-<p>
-最初に <code class="verbatim">print( &#34;hoge&#34; )</code> が実行され、
-</p>
-</li>
-<li>
-<p>
-次の <code class="verbatim">Hoge.func()</code> を実行する直前に、
-サブモジュール Hoge がロードされ、
-</p>
-</li>
-<li>
-<p>
-<code class="verbatim">print( &#34;hoge&#34; )</code> が処理される。
-</p>
-</li>
+<li>最初に <code class="verbatim">print( &#34;hoge&#34; )</code> が実行され、</li>
+<li>次の <code class="verbatim">Hoge.func()</code> を実行する直前に、
+サブモジュール Hoge がロードされ、</li>
+<li><code class="verbatim">print( &#34;hoge&#34; )</code> が処理される。</li>
 </ul>
-<p>
-通常ロードと遅延ロードには、このような違いが起る。
-</p>
+<p>通常ロードと遅延ロードには、このような違いが起る。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-4">
 <h4 id="headline-5">
 ロード方式の違いによる global の影響
 </h4>
+<div id="outline-text-headline-5" class="outline-text-4">
 <p>
-LuneScript のアクセス制御には pub/pro/pri/local の他に、global があります。
-</p>
+LuneScript のアクセス制御には pub/pro/pri/local の他に、global があります。</p>
 <p>
 global の詳細については他の記事を参照していただくとして、
-global はモジュールをロードしたタイミングで登録されます。
-</p>
+global はモジュールをロードしたタイミングで登録されます。</p>
 <p>
-つまり、遅延ロードの影響で <strong>global のデータが登録されるタイミングがズレます。</strong>
-</p>
+つまり、遅延ロードの影響で <strong>global のデータが登録されるタイミングがズレます。</strong></p>
 <p>
-global を使うケースは少ないと思いますが、注意してください。
-</p>
+global を使うケースは少ないと思いますが、注意してください。</p>
 <p>
-<strong>global は、既存の Lua コードとの互換を必要するケースにのみの利用を推奨。</strong>
-</p>
+<strong>global は、既存の Lua コードとの互換を必要するケースにのみの利用を推奨。</strong></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
 <h2 id="headline-6">
 使用方法
 </h2>
+<div id="outline-text-headline-6" class="outline-text-2">
 <p>
-遅延ロードは次の命令で利用できます。
-</p>
+遅延ロードは次の命令で利用できます。</p>
 <ul>
-<li>
-<p>
-import
-</p>
-</li>
-<li>
-<p>
-module
-</p>
-</li>
+<li>import</li>
+<li>module</li>
 </ul>
 <table>
 <thead>
@@ -373,28 +322,25 @@ module
 </tbody>
 </table>
 <p>
-例えば以下のようにすることで、 Sub モジュールは遅延ロードされます。
-</p>
+例えば以下のようにすることで、 Sub モジュールは遅延ロードされます。</p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
 import.l Sub;</code></pre>
 </div>
 <p>
-import, module はコンパイルオプション依存です。
-</p>
+import, module はコンパイルオプション依存です。</p>
 <p>
-コンパイルオプションに次を指定した場合、
-</p>
+コンパイルオプションに次を指定した場合、</p>
 <pre class="example">
 --default-lazy
 </pre>
 <p>
-import, module は遅延ロードになります。
-</p>
+import, module は遅延ロードになります。</p>
 <p>
 なお、import.d, module.d を指定した場合は、
-<code class="verbatim">--default-lazy</code> を指定している時も通常ロードになります。
-</p>
+<code class="verbatim">--default-lazy</code> を指定している時も通常ロードになります。</p>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/subfile/" title="26. subfile 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 26. subfile 編</a>
@@ -410,17 +356,17 @@ import, module は遅延ロードになります。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -429,8 +375,8 @@ import, module は遅延ロードになります。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -448,16 +394,16 @@ import, module は遅延ロードになります。
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -501,6 +447,13 @@ import, module は遅延ロードになります。
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -538,13 +491,6 @@ import, module は遅延ロードになります。
 <li class="active"><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

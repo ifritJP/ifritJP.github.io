@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>誤ってパーティションテーブル (LBA 0) を消して(0クリアして)しまった場合の対処 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/singleboard/recover-image/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="誤ってパーティションテーブル (LBA 0) を消して(0クリアして)しまった場合の対処" />
 <meta property="og:description" content="raspberry pi のイメージを PC でバックアップしたとき、 SD CARD のパーティションテーブル(LBA 0)を消してしまった。 もちろん意図して消した訳ではない。 むしろ" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/recover-image/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/recover-image/" /><meta property="article:section" content="singleboard" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="誤ってパーティションテーブル (LBA 0) を消して(0クリアして)しまった場合の対処"/>
 <meta name="twitter:description" content="raspberry pi のイメージを PC でバックアップしたとき、 SD CARD のパーティションテーブル(LBA 0)を消してしまった。 もちろん意図して消した訳ではない。 むしろ"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="raspberry pi のイメージを PC でバックアップしたとき、 SD CARD のパーティションテーブル(LBA 0)を消してしまった。 もちろん意図して消した訳ではない。 むしろ">
 
 <meta itemprop="wordCount" content="1302">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -66,98 +66,71 @@
 
 <p>
 raspberry pi のイメージを PC でバックアップしたとき、
-SD CARD のパーティションテーブル(LBA 0)を消してしまった。
-</p>
+SD CARD のパーティションテーブル(LBA 0)を消してしまった。</p>
 <p>
 もちろん意図して消した訳ではない。
 むしろ、消していることに気が付かずに、
 SD CARD を raspberry pi に戻して再起動させた時に起動しなくなっていて、
-意味が分からずかなり焦った。
-</p>
+意味が分からずかなり焦った。</p>
 <p>
 起動しない原因がパーティションテーブルを消していたことだと気付くのに、
-かなりの時間を要した。
-</p>
+かなりの時間を要した。</p>
 <p>
-そんな訳で、パーティションテーブルを復旧させる方法を説明する。
-</p>
+そんな訳で、パーティションテーブルを復旧させる方法を説明する。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 パーティションテーブル復旧方法
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-パーティションテーブル復旧方法の手順は次の通り。
-</p>
+パーティションテーブル復旧方法の手順は次の通り。</p>
 <ul>
-<li>
-<p>
-物理パーティションの場所を特定する
-</p>
-</li>
-<li>
-<p>
-マウントして中身を確認する
-</p>
-</li>
-<li>
-<p>
-PARTUUID を復旧する
-</p>
-</li>
-<li>
-<p>
-fsck する  
-</p>
-</li>
+<li>物理パーティションの場所を特定する</li>
+<li>マウントして中身を確認する</li>
+<li>PARTUUID を復旧する</li>
+<li>fsck する  </li>
 </ul>
-<p>
-以降、それぞれの対応手順を説明する。
-</p>
+<p>以降、それぞれの対応手順を説明する。</p>
 <p>
 復旧処理中にデータを壊してしまう可能性があるため、
-以降では <strong>バックアップを取ったイメージファイルに対して処理</strong> を行なうものとする。
-</p>
+以降では <strong>バックアップを取ったイメージファイルに対して処理</strong> を行なうものとする。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 物理パーティションの場所を特定する
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
 パーティションテーブルの主な役割は、
-物理パーティションの場所を示すことである。
-</p>
+物理パーティションの場所を示すことである。</p>
 <p>
-つまり、物理パーティションがどこにあるのかを調べなければならない。
-</p>
+つまり、物理パーティションがどこにあるのかを調べなければならない。</p>
 <p>
-この作業を行なってくれるツールとして testdisk がある。
-</p>
+この作業を行なってくれるツールとして testdisk がある。</p>
 <p>
-testdisk に関しては、次の URL を参考にすること。
-</p>
+testdisk に関しては、次の URL を参考にすること。</p>
 <p>
-https://www.atmarkit.co.jp/flinux/rensai/linuxtips/991testdisk.html
-</p>
+https://www.atmarkit.co.jp/flinux/rensai/linuxtips/991testdisk.html</p>
 <p>
 上記 URL の手順と違うのは、
 起動する際のコマンドオプションとして
-以下のようにバックアップファイル名を指定する。
-</p>
+以下のようにバックアップファイル名を指定する。</p>
 <pre class="example">
 $ sudo testdisk /log /backupfile.img
 </pre>
 <p>
-<strong>testdisk で物理パーティションが見つからなかった場合は、次の方法を試す。</strong>
-</p>
+<strong>testdisk で物理パーティションが見つからなかった場合は、次の方法を試す。</strong></p>
+<div id="outline-container-headline-3" class="outline-4">
 <h4 id="headline-3">
 testdisk で物理パーティションを見つけられなかった場合
 </h4>
+<div id="outline-text-headline-3" class="outline-text-4">
 <p>
-raspberry pi をインストールする際に使用した元のイメージファイルに対し fdisk する。
-</p>
+raspberry pi をインストールする際に使用した元のイメージファイルに対し fdisk する。</p>
 <pre class="example">
 $ fdisk /org_image.img
 </pre>
 <p>
-パーティション情報を確認する。
-</p>
+パーティション情報を確認する。</p>
 <pre class="example">
 Command (m for help): p
 Disk org_image.img: 1.75 GiB, 1858076672 bytes, 3629056 sectors
@@ -172,49 +145,51 @@ org_image.img1        8192  532479  524288  256M  c W95
 org_image.img2      532480 3629055 3096576  1.5G 83 Linu
 </pre>
 <p>
-このパーティション情報を元に、バックアップファイルのパーティション情報を設定する。
-</p>
+このパーティション情報を元に、バックアップファイルのパーティション情報を設定する。</p>
 <pre class="example">
 $ fdisk /backupfile.img
 </pre>
 <p>
 ただし、パーティション 2 の End 位置は、オリジナルと異なる。
-基本的に End 位置は、最大サイズになるように設定しておけば良い。
-</p>
+基本的に End 位置は、最大サイズになるように設定しておけば良い。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
 <h3 id="headline-4">
 マウント
 </h3>
+<div id="outline-text-headline-4" class="outline-text-3">
 <p>
-パーティションが見付かったら、そのパーティションをマウントする。
-</p>
+パーティションが見付かったら、そのパーティションをマウントする。</p>
 <p>
-マウントする場合、次のコマンドを実行する。
-</p>
+マウントする場合、次のコマンドを実行する。</p>
 <pre class="example">
 $ sudo mkdir -p /mnt/recovery
 $ sudo mount -o loop,offset=272629760 /backupfile.img /mnt/recovery
 </pre>
 <p>
-ここで offset には、パーティションの開始セクタ番号 x 512 を指定する。
-</p>
+ここで offset には、パーティションの開始セクタ番号 x 512 を指定する。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
 <h3 id="headline-5">
 PARTUUID を復旧する
 </h3>
+<div id="outline-text-headline-5" class="outline-text-3">
 <p>
 物理パーティションの情報が復旧できても、
-PARTUUID が復旧できていないと、ブートできない。
-</p>
+PARTUUID が復旧できていないと、ブートできない。</p>
 <p>
-そこで、 fstab に記載されている PARTUUID を確認する。
-</p>
+そこで、 fstab に記載されている PARTUUID を確認する。</p>
 <pre class="example">
 $ cat /mnt/recovery/etc/fstab 
 PARTUUID=3729482f-01  /boot           vfat    defaults          0       2
 PARTUUID=3729482f-02  /               ext4    defaults,noatime  0       1
 </pre>
 <p>
-この 3729482f を PARTUUID に設定する。
-</p>
+この 3729482f を PARTUUID に設定する。</p>
 <pre class="example">
 $ fdisk /backupfile.img 
 
@@ -233,15 +208,17 @@ Expert command (m for help): r
 
 Command (m for help): w
 </pre>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
 <h3 id="headline-6">
 fsck
 </h3>
+<div id="outline-text-headline-6" class="outline-text-3">
 <p>
-念のため fsck を掛けてファイルが壊れていないか確認する。
-</p>
+念のため fsck を掛けてファイルが壊れていないか確認する。</p>
 <p>
-マウントされていると fsck を掛けられないので解除する。
-</p>
+マウントされていると fsck を掛けられないので解除する。</p>
 <pre class="example">
 $ df
 Filesystem      1K-blocks       Used Available Use% Mounted on
@@ -249,30 +226,33 @@ Filesystem      1K-blocks       Used Available Use% Mounted on
 $ sudo umount /dev/loop0
 </pre>
 <p>
-次に loop デバイスにイメージを設定。
-</p>
+次に loop デバイスにイメージを設定。</p>
 <pre class="example">
 $ sudo losetup /dev/loop0 --offset 272629760 /backupfile.img
 </pre>
 <p>
-そして loop デバイスを fsck。
-</p>
+そして loop デバイスを fsck。</p>
 <pre class="example">
 $ sudo fsck -a /dev/loop0
 </pre>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
 <h3 id="headline-7">
 バックアップファイルを SD カードに書き戻す
 </h3>
+<div id="outline-text-headline-7" class="outline-text-3">
 <p>
 以上で、バックアップファイル内のパーティションテーブルの復旧が出来たので、
-SDカードにバックアップファイルを書き戻す。
-</p>
+SDカードにバックアップファイルを書き戻す。</p>
 <p>
-なお、 fsck で問題が出ていなかった場合、LBA 0 だけ書き戻せば良い。
-</p>
+なお、 fsck で問題が出ていなかった場合、LBA 0 だけ書き戻せば良い。</p>
 <p>
-以上。
-</p>
+以上。</p>
+</div>
+</div>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/singleboard/usb-gadget/" title="USB Gadget 機能を利用して Raspberry Pi を HID Keyboard と RNDIS の複合デバイスにする"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - USB Gadget 機能を利用して Raspberry Pi を HID Keyboard と RNDIS の複合デバイスにする</a>
@@ -288,17 +268,17 @@ SDカードにバックアップファイルを書き戻す。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -307,8 +287,8 @@ SDカードにバックアップファイルを書き戻す。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -326,16 +306,16 @@ SDカードにバックアップファイルを書き戻す。
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -379,6 +359,13 @@ SDカードにバックアップファイルを書き戻す。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -416,13 +403,6 @@ SDカードにバックアップファイルを書き戻す。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/singleboard/raspios64-point/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,33 +17,33 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法" />
 <meta property="og:description" content="8GB 版 Raspberry Pi を購入したので、 せっかく 8GB を使うなら 32bit よりも 64bit 版の方が良いだろうと軽い気持で 64bit 版 Raspberry Pi OS をインストールしたものの、何故かエラーが発生し" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/raspios64-point/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/raspios64-point/" /><meta property="article:section" content="singleboard" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法"/>
 <meta name="twitter:description" content="8GB 版 Raspberry Pi を購入したので、 せっかく 8GB を使うなら 32bit よりも 64bit 版の方が良いだろうと軽い気持で 64bit 版 Raspberry Pi OS をインストールしたものの、何故かエラーが発生し"/>
 <meta itemprop="name" content="64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法">
 <meta itemprop="description" content="8GB 版 Raspberry Pi を購入したので、 せっかく 8GB を使うなら 32bit よりも 64bit 版の方が良いだろうと軽い気持で 64bit 版 Raspberry Pi OS をインストールしたものの、何故かエラーが発生し">
 
-<meta itemprop="wordCount" content="2966">
+<meta itemprop="wordCount" content="2967">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -68,213 +68,128 @@
 8GB 版 Raspberry Pi を購入したので、
 せっかく 8GB を使うなら 32bit よりも 64bit 版の方が良いだろうと軽い気持で 64bit 版
 Raspberry Pi OS をインストールしたものの、何故かエラーが発生して動かない、
-ということがあったので、その事例と対応方法をまとめておく。
-</p>
+ということがあったので、その事例と対応方法をまとめておく。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 デバイスドライバの ioctl が ENOTTY エラーする
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-Linux のデバイスは、 /dev 以下のデバイスファイルを介して扱います。
-</p>
+Linux のデバイスは、 /dev 以下のデバイスファイルを介して扱います。</p>
 <p>
-ファイルなので、デバイスドライバへのアクセスは次の 4 つの API が基本です。
-</p>
+ファイルなので、デバイスドライバへのアクセスは次の 4 つの API が基本です。</p>
 <ul>
-<li>
-<p>
-open
-</p>
-</li>
-<li>
-<p>
-read
-</p>
-</li>
-<li>
-<p>
-write
-</p>
-</li>
-<li>
-<p>
-close
-</p>
-</li>
+<li>open</li>
+<li>read</li>
+<li>write</li>
+<li>close</li>
 </ul>
+<p>これら API は、ファイルアクセスの基本 API でもあるので説明の必要はないでしょう。  </p>
 <p>
-これら API は、ファイルアクセスの基本 API でもあるので説明の必要はないでしょう。  
-</p>
-<p>
-そして、上記の 4 つに加えて次の API が代表的です。
-</p>
+そして、上記の 4 つに加えて次の API が代表的です。</p>
 <ul>
-<li>
-<p>
-ioctl  
-</p>
-</li>
+<li>ioctl  </li>
 </ul>
+<p>今回この ioctl で ENOTTY エラーが発生しました。</p>
 <p>
-今回この ioctl で ENOTTY エラーが発生しました。
-</p>
+この ENOTTY エラーが何なのか？以下の URL によると、</p>
 <p>
-この ENOTTY エラーが何なのか？以下の URL によると、
-</p>
-<p>
-&lt;<a href="https://linuxjm.osdn.jp/html/LDP_man-pages/man2/ioctl.2.html">https://linuxjm.osdn.jp/html/LDP_man-pages/man2/ioctl.2.html</a>&gt;
-</p>
+&lt;<a href="https://linuxjm.osdn.jp/html/LDP_man-pages/man2/ioctl.2.html">https://linuxjm.osdn.jp/html/LDP_man-pages/man2/ioctl.2.html</a>&gt;</p>
 <ul>
 <li>
-<p>
-ENOTTY
-</p>
+<p>ENOTTY</p>
 <ul>
-<li>
-<p>
-fd がキャラクター型のスペシャルデバイスを参照していない。 
-</p>
-</li>
+<li>fd がキャラクター型のスペシャルデバイスを参照していない。 </li>
 </ul>
 </li>
 <li>
-<p>
-ENOTTY
-</p>
+<p>ENOTTY</p>
 <ul>
-<li>
-<p>
-指定されたリクエストはディスクリプター fd が参照する種類のオブジェクトには適用することができない。 
-</p>
-</li>
+<li>指定されたリクエストはディスクリプター fd が参照する種類のオブジェクトには適用することができない。 </li>
 </ul>
 </li>
 </ul>
+<p>なるほど分からん。。</p>
 <p>
-なるほど分からん。。
-</p>
-<p>
-まぁ、 ENOTTY エラーの説明はこの際放っておいて、何故このエラーが発生するかを説明します。
-</p>
+まぁ、 ENOTTY エラーの説明はこの際放っておいて、何故このエラーが発生するかを説明します。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 ENOTTY エラーの原因
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
 これは 64bit カーネル環境で 32bit アプリを動かした場合に発生する現象です。
 32bit カーネルで 32bit アプリ、
-64bit カーネルで 64 bit アプリを動かした場合は発生しません。
-</p>
+64bit カーネルで 64 bit アプリを動かした場合は発生しません。</p>
 <p>
 つまり、カーネルとアプリとでアーキテクチャに不整合がある時だけ発生します。
-なお、 ioctl ではエラーが発生しますが、 open や read では発生しませんでした。
-</p>
+なお、 ioctl ではエラーが発生しますが、 open や read では発生しませんでした。</p>
 <p>
 では、なぜ ioctl で発生し、 open や read などでは発生しないかというと、
-ioctl のインタフェースの仕様によります。
-</p>
+ioctl のインタフェースの仕様によります。</p>
 <p>
-以下が ioctl のインタフェースです。
-</p>
+以下が ioctl のインタフェースです。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">ioctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">request</span><span class="p">,</span> <span class="p">...);</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">ioctl</span><span class="p">(</span><span class="kt">int</span> <span class="n">fd</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">long</span> <span class="n">request</span><span class="p">,</span> <span class="p">...);</span></span></span></code></pre></div>
 </div>
 <p>
-ここで各パラメータは、
-</p>
+ここで各パラメータは、</p>
 <ul>
-<li>
-<p>
-fd は、 open() で取得した fd です。
-</p>
-</li>
-<li>
-<p>
-request はデバイスドライバで定義する命令コードです。
-</p>
-</li>
-<li>
-<p>
-… は、その命令コードのパラメータです。
-</p>
-</li>
+<li>fd は、 open() で取得した fd です。</li>
+<li>request はデバイスドライバで定義する命令コードです。</li>
+<li>… は、その命令コードのパラメータです。</li>
 </ul>
-<p>
-これらパラメータはデバイスドライバ側で任意に決めるものですが、
-request 引数に関しては、linux/ioctl.h に次のマクロが用意されています。
-</p>
+<p>これらパラメータはデバイスドライバ側で任意に決めるものですが、
+request 引数に関しては、linux/ioctl.h に次のマクロが用意されています。</p>
 <ul>
-<li>
-<p>
-_IO(group,num)
-</p>
-</li>
-<li>
-<p>
-_IOW(group,num,type)
-</p>
-</li>
-<li>
-<p>
-_IOR(group,num,type)
-</p>
-</li>
-<li>
-<p>
-_IOWR(group,num,type)
-</p>
-</li>
+<li>_IO(group,num)</li>
+<li>_IOW(group,num,type)</li>
+<li>_IOR(group,num,type)</li>
+<li>_IOWR(group,num,type)</li>
 </ul>
-<p>
-ここで group と num は、命令コードの種別を示し、
-type はパラメータの型を示します。
-</p>
+<p>ここで group と num は、命令コードの種別を示し、
+type はパラメータの型を示します。</p>
 <p>
 例えば <code class="verbatim">_IOW( 1, 2, int )</code> のようにマクロを利用します。
 これによって、 group:1, num:2 の命令で、パラメータが int 長の命令を実行するための
 request が定義されます。
-さらに具体的には、次のように _IOW() を使って ioctl をコールします。
-</p>
+さらに具体的には、次のように _IOW() を使って ioctl をコールします。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="n">ioctl</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="n">_IOW</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kt">int</span> <span class="p">),</span> <span class="n">param</span> <span class="p">);</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">ioctl</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="n">_IOW</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kt">int</span> <span class="p">),</span> <span class="n">param</span> <span class="p">);</span></span></span></code></pre></div>
 </div>
 <p>
-ここで param は、 int 型のパラメータです。
-</p>
+ここで param は、 int 型のパラメータです。</p>
 <p>
 なお、 ioctl 等の命令はデバイスドライバにアクセスするアプリが利用する API です。
-一方でデバイスドライバ側は、それらに対応する処理を登録しています。
-</p>
+一方でデバイスドライバ側は、それらに対応する処理を登録しています。</p>
 <p>
 つまり、 ioctl に相当する処理がデバイスドライバ側に定義されていて、
-アプリ側が各 API をコールすると、デバイスドライバ側の関数が実行されます。
-</p>
+アプリ側が各 API をコールすると、デバイスドライバ側の関数が実行されます。</p>
 <p>
 ioctl の場合、
 _IOW() などのマクロから定義された request から、
 何の命令が要求されているのかを判断し、
 その要求に応じて付加されているパラメータを取得し、
-処理を実行します。
-</p>
+処理を実行します。</p>
 <p>
-具体的には、次のような処理がデバイスドライバには書かれています。
-</p>
+具体的には、次のような処理がデバイスドライバには書かれています。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">switch</span> <span class="p">(</span> <span class="n">request</span> <span class="p">)</span> <span class="p">{</span>
-   <span class="k">case</span> <span class="n">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
-      <span class="c1">// group:1, num:0 の処理
-</span><span class="c1"></span>      <span class="k">break</span><span class="p">;</span>
-   <span class="k">case</span> <span class="nf">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
-      <span class="c1">// group:1, num:1 の処理
-</span><span class="c1"></span>      <span class="k">break</span><span class="p">;</span>
-   <span class="k">case</span> <span class="nf">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
-      <span class="c1">// group:1, num:2 の処理
-</span><span class="c1"></span>      <span class="k">break</span><span class="p">;</span>
-   <span class="k">default</span><span class="o">:</span>
-      <span class="c1">// エラー処理
-</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">switch</span> <span class="p">(</span> <span class="n">request</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="n">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// group:1, num:0 の処理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="nf">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// group:1, num:1 の処理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="nf">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// group:1, num:2 の処理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">   <span class="k">default</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// エラー処理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-ここで問題となるのが、アーキテクチャ(ビット)の違いです。
-</p>
+ここで問題となるのが、アーキテクチャ(ビット)の違いです。</p>
 <pre class="example">
 _IOW( 1, 2, int* )
 </pre>
@@ -282,175 +197,136 @@ _IOW( 1, 2, int* )
 上記のように、パラメータが int* (int のポインタ) 型の場合、
 一般的に 32bit アーキテクチャでは、ポインタのサイズは 32bit。
 64bit アーキテクチャでは、ポインタ型は 64bitと、
-ポインタのサイズはアーキテクチャに依存します。
-</p>
+ポインタのサイズはアーキテクチャに依存します。</p>
 <p>
-<em>ポインタ以外にも、型のサイズが異なるケースがあります</em>
-</p>
+<em>ポインタ以外にも、型のサイズが異なるケースがあります</em></p>
 <p>
 つまりアーテクテチャによって、
-_IOW() などのマクロの結果が変ってくる、ということです。
-</p>
+_IOW() などのマクロの結果が変ってくる、ということです。</p>
 <p>
 この違いによって、
 アプリ側で <code class="verbatim">_IOW( 1, 2, int* )</code> とした結果と、
 ドライバ側で <code class="verbatim">_IOR( 1, 2, int* )</code> とした結果が異なってしまい、
-上記の switch-case 文で条件にマッチせずにエラー処理に落ちてしまいます。
-</p>
+上記の switch-case 文で条件にマッチせずにエラー処理に落ちてしまいます。</p>
 <p>
 ただ、この違いが問題になるのは、
-デバイスドライバとアプリのアーテクテチャ(ビット)が異なる場合だけです。
-</p>
+デバイスドライバとアプリのアーテクテチャ(ビット)が異なる場合だけです。</p>
 <p>
 デバイスドライバとアプリのアーテクテチャ(ビット)が同じであれば、
-_IOW() の結果に不整合は発生しません。
-</p>
+_IOW() の結果に不整合は発生しません。</p>
 <p>
 なお、ここまで説明しておいてなんですが、
-ENOTTY エラーになる原因は、これとは少し異なります。
-</p>
+ENOTTY エラーになる原因は、これとは少し異なります。</p>
 <p>
 そもそも 64 ビットカーネル環境で 32 ビットアプリを動かした場合、
 デバイスドライバの通常の ioctl 処理はコールされず、
 下位互換専用の ioctl 処理がコールされます。
 しかし、デバイスドライバに下位互換専用の ioctl 処理の定義自体がないと、
-ENOTTY になります。
-</p>
+ENOTTY になります。</p>
 <p>
 今回問題になったのは、
-デバイスドライバに下位互換専用の ioctl 処理の定義自体がなかったのが原因でした。
-</p>
+デバイスドライバに下位互換専用の ioctl 処理の定義自体がなかったのが原因でした。</p>
 <p>
 下位互換専用の ioctl 処理がなぜ必要かというと、
 アーキテクチャの違いを想定していないデバイスドライバがあった場合、
 下位互換専用ではない通常の ioctl を動かしてしまうと、
 どのような不具合が発生するか保証が出来ません。
 そこで、安全方向に振って下位互換専用の ioctl 処理の定義がない場合は ioctl を
-ENOTTY エラーに落すようにしていると考えられます。
-</p>
+ENOTTY エラーに落すようにしていると考えられます。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
 <h3 id="headline-3">
 エラーの対応方法
 </h3>
+<div id="outline-text-headline-3" class="outline-text-3">
 <p>
-このエラーの対応方法は次のいずれかです。
-</p>
+このエラーの対応方法は次のいずれかです。</p>
 <ul>
-<li>
-<p>
-アプリを 64 ビットでビルドする
-</p>
-</li>
-<li>
-<p>
-64ビット環境下のデバイスドライバを、 32bit ioctl 対応する。  
-</p>
-</li>
+<li>アプリを 64 ビットでビルドする</li>
+<li>64ビット環境下のデバイスドライバを、 32bit ioctl 対応する。  </li>
 </ul>
+<p>アプリを 64 ビットでビルドして動かせればそれが最も簡単な対応方法ですが、
+現状の Raspberry Pi OS では 64ビットアプリのビルド &amp; 実行は簡単ではありません。</p>
 <p>
-アプリを 64 ビットでビルドして動かせればそれが最も簡単な対応方法ですが、
-現状の Raspberry Pi OS では 64ビットアプリのビルド &amp; 実行は簡単ではありません。
-</p>
-<p>
-そこで、ここではデバイスドライバを 32bit ioctl 対応します。
-</p>
+そこで、ここではデバイスドライバを 32bit ioctl 対応します。</p>
 <p>
 デバイスドライバを 32bit ioctl 対応するには、
-デバイスドライバのソース修正が必須です。
-</p>
+デバイスドライバのソース修正が必須です。</p>
 <p>
-まずは、デバイスドライバのソースを取得します。
-</p>
+まずは、デバイスドライバのソースを取得します。</p>
 <p>
 そして、デバイスドライバのソースから
-file_operations 構造体を定義している箇所を探します。
-</p>
+file_operations 構造体を定義している箇所を探します。</p>
 <p>
 ioctl をサポートするデバイスドライバの定義には、
-次のように ioctl を定義している箇所が必ずあります。
-</p>
+次のように ioctl を定義している箇所が必ずあります。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"> <span class="p">.</span><span class="n">unlocked_ioctl</span> <span class="o">=</span> <span class="n">driver_unlocked_ioctl</span><span class="p">,</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"> <span class="p">.</span><span class="n">unlocked_ioctl</span> <span class="o">=</span> <span class="n">driver_unlocked_ioctl</span><span class="p">,</span></span></span></code></pre></div>
 </div>
 <p>
-ここに、次の .compat_ioctl を追加します。
-</p>
+ここに、次の .compat_ioctl を追加します。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"> <span class="p">.</span><span class="n">unlocked_ioctl</span> <span class="o">=</span> <span class="n">driver_unlocked_ioctl</span><span class="p">,</span>
- <span class="p">.</span><span class="n">compat_ioctl</span> <span class="o">=</span> <span class="n">driver_compat_ioctl</span><span class="p">,</span> <span class="o">//</span> <span class="err">追加</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"> <span class="p">.</span><span class="n">unlocked_ioctl</span> <span class="o">=</span> <span class="n">driver_unlocked_ioctl</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"> <span class="p">.</span><span class="n">compat_ioctl</span> <span class="o">=</span> <span class="n">driver_compat_ioctl</span><span class="p">,</span> <span class="c1">// 追加
+</span></span></span></code></pre></div>
 </div>
 <p>
-この .compat_ioctl が、下位互換専用の ioctl です。
-</p>
+この .compat_ioctl が、下位互換専用の ioctl です。</p>
 <p>
 そして、driver_unlocked_ioctl の関数定義をコピーして、
-driver_compat_ioctl の関数定義を作成します。
-</p>
+driver_compat_ioctl の関数定義を作成します。</p>
 <p>
-このとき気をつけるのが、 ioctl() の request の処理です。
-</p>
+このとき気をつけるのが、 ioctl() の request の処理です。</p>
 <p>
 <code class="verbatim">_IOR( 1, 2, int* )</code> のようにそのままマクロを利用すると
 int* が 64bit 長になってしまうので、
-32bit 長になるように <code class="verbatim">int*</code> 部分を適宜書き換えが必要です。
-</p>
+32bit 長になるように <code class="verbatim">int*</code> 部分を適宜書き換えが必要です。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
 <h2 id="headline-4">
 BUS ERROR (SIGBUS)
 </h2>
+<div id="outline-text-headline-4" class="outline-text-2">
 <p>
-BUS ERROR は、アクセスしているアドレスに問題があることを示すエラーです。
-</p>
+BUS ERROR は、アクセスしているアドレスに問題があることを示すエラーです。</p>
 <p>
-https://www.wdic.org/w/TECH/SIGBUS
-</p>
+https://www.wdic.org/w/TECH/SIGBUS</p>
 <p>
-上記 URL の情報によると、次の 2 つのケースを表わします。
-</p>
+上記 URL の情報によると、次の 2 つのケースを表わします。</p>
 <ul>
-<li>
-<p>
-有効なメモリーアドレスだが、アクセス許可が無い領域にアクセスしようとした場合
-</p>
-</li>
-<li>
-<p>
-アドレス境界(ワード境界、ダブルワード境界など)を無視してアクセスしようとした場合 (アドレスエラー)
-</p>
-</li>
+<li>有効なメモリーアドレスだが、アクセス許可が無い領域にアクセスしようとした場合</li>
+<li>アドレス境界(ワード境界、ダブルワード境界など)を無視してアクセスしようとした場合 (アドレスエラー)</li>
 </ul>
+<p>今回問題になったのは、後者のケースです。</p>
 <p>
-今回問題になったのは、後者のケースです。
-</p>
-<p>
-これはどういうことかというと、次のようなケースで発生します。
-</p>
+これはどういうことかというと、次のようなケースで発生します。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
-</span><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
-</span><span class="cp"></span>
-<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">int32_t</span> <span class="n">buf</span><span class="p">[</span> <span class="mi">2</span> <span class="p">];</span>
-    <span class="n">int32_t</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="n">int32_t</span><span class="o">*</span><span class="p">)((</span><span class="n">int8_t</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
-    <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// error
-</span><span class="c1"></span>    <span class="n">printf</span><span class="p">(</span> <span class="s">&#34;%p: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pVal</span><span class="p">,</span> <span class="o">*</span><span class="n">pVal</span> <span class="p">);</span>
-    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdlib.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int32_t</span> <span class="n">buf</span><span class="p">[</span> <span class="mi">2</span> <span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int32_t</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int32_t</span><span class="o">*</span><span class="p">)((</span><span class="kt">int8_t</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// error
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">printf</span><span class="p">(</span> <span class="s">&#34;%p: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pVal</span><span class="p">,</span> <span class="o">*</span><span class="n">pVal</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-上記の <code>*pVal = 0;</code> でエラーが発生します。
-</p>
+上記の <code>*pVal = 0;</code> でエラーが発生します。</p>
 <p>
-ただし多くの環境で、上記のサンプルコードはエラーしません。
-</p>
+ただし多くの環境で、上記のサンプルコードはエラーしません。</p>
 <p>
 これは、アライメントされていない非境界整列へのアクセスがあった場合、
-エラーとせずに CPU 側で処理するように設定がされているからです。
-</p>
+エラーとせずに CPU 側で処理するように設定がされているからです。</p>
 <p>
-ARM では、これをエラーとするかどうかを制御する CPU の制御フラグがあります。
-</p>
+ARM では、これをエラーとするかどうかを制御する CPU の制御フラグがあります。</p>
 <p>
-raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの設定が異なるようです。
-</p>
+raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの設定が異なるようです。</p>
 <table>
 <thead>
 <tr>
@@ -471,14 +347,13 @@ raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの�
 </table>
 <p>
 なぜこのような違いがあるかネットで調べてみましたが、
-そのものズバリな回答はありませんでした。
-</p>
+そのものズバリな回答はありませんでした。</p>
 <p>
-ただ、ネットで調べた情報から推測すると以下が考えられます。
-</p>
+ただ、ネットで調べた情報から推測すると以下が考えられます。</p>
 <p>
-非境界整列へのアクセスが
-</p>
+非境界整列へのアクセスが</p>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/singleboard/" title="Singleboards"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Singleboards</a>
@@ -494,17 +369,17 @@ raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの�
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -513,8 +388,8 @@ raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの�
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -532,16 +407,16 @@ raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの�
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -585,6 +460,13 @@ raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの�
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -622,13 +504,6 @@ raspberry pi OS の 32bit, 64bit 版の違いによって、このフラグの�
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

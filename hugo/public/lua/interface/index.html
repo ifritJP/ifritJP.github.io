@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>C インタフェース編 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lua/interface/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="C インタフェース編" />
 <meta property="og:description" content="これは、C/C&#43;&#43; 言語のプログラマがこれだけ読めば Lua と C のインタフェースを問題なく書けるようになることを目的にしたドキュメントです。 最低限、" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lua/interface/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lua/interface/" /><meta property="article:section" content="Lua" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="C インタフェース編"/>
 <meta name="twitter:description" content="これは、C/C&#43;&#43; 言語のプログラマがこれだけ読めば Lua と C のインタフェースを問題なく書けるようになることを目的にしたドキュメントです。 最低限、"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="これは、C/C&#43;&#43; 言語のプログラマがこれだけ読めば Lua と C のインタフェースを問題なく書けるようになることを目的にしたドキュメントです。 最低限、">
 
 <meta itemprop="wordCount" content="5295">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -65,139 +65,87 @@
 <main><h1>C インタフェース編</h1>
 
 <p>
-これは、C/C++ 言語のプログラマがこれだけ読めば Lua と C のインタフェースを問題なく書けるようになることを目的にしたドキュメントです。
-</p>
+これは、C/C++ 言語のプログラマがこれだけ読めば Lua と C のインタフェースを問題なく書けるようになることを目的にしたドキュメントです。</p>
 <p>
-最低限、次の記事の内容を全て理解していることが前提です。
-</p>
+最低限、次の記事の内容を全て理解していることが前提です。</p>
 <p>
-<a href="../">リファレンス</a>
-</p>
+<a href="../">リファレンス</a></p>
 <p>
-Lua 5.2, 5.3 をターゲットにしています。
-</p>
+Lua 5.2, 5.3 をターゲットにしています。</p>
 <p>
 このドキュメントは次の情報を元に作成しています。
-Lua で利用できる標準ライブラリの詳細は、次の公式 URL を参照してください。
-</p>
+Lua で利用できる標準ライブラリの詳細は、次の公式 URL を参照してください。</p>
 <ul>
-<li>
-<p>
-<a href="http://www.lua.org/manual/5.3/manual.html">http://www.lua.org/manual/5.3/manual.html</a>
-</p>
-</li>
-<li>
-<p>
-<a href="http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html">http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html</a>
-</p>
-</li>
+<li><a href="http://www.lua.org/manual/5.3/manual.html">http://www.lua.org/manual/5.3/manual.html</a></li>
+<li><a href="http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html">http://milkpot.sakura.ne.jp/lua/lua53_manual_ja.html</a></li>
 </ul>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 Lua VM と C 
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-Lua と C のインタフェースを書くには、Lua VM の動作を理解する必要があります。
-</p>
+Lua と C のインタフェースを書くには、Lua VM の動作を理解する必要があります。</p>
 <p>
-Lua VM は C とのインタフェースをスタックマシンで実装しています、ここでは最低限必要の知識のみ説明します。
-</p>
+Lua VM は C とのインタフェースをスタックマシンで実装しています、ここでは最低限必要の知識のみ説明します。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 スタックのインデックス
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
 前述した通り、Lua VM の C とのインタフェースはスタックマシンです。
 スタックマシンのスタックに格納されているデータにアクセスすることで、Lua 側のデータにアクセスできます。
 スタック内の特定のデータにアクセスするには、そのデータが格納されているスタックのインデックスを指定する必要があります。
-Lua のスタックのインデックスは次の規則で指定します。
-</p>
+Lua のスタックのインデックスは次の規則で指定します。</p>
 <ul>
 <li>
-<p>
-スタックトップは -1 で示します。
-</p>
+<p>スタックトップは -1 で示します。</p>
 <ul>
+<li>-2, -3 は、それぞれスタックトップの 1 個下、2 個下を示します。</li>
 <li>
-<p>
--2, -3 は、それぞれスタックトップの 1 個下、2 個下を示します。
-</p>
-</li>
-<li>
-<p>
-負のインデックスはスタックトップを -1 とした場合の相対になります。
-</p>
+<p>負のインデックスはスタックトップを -1 とした場合の相対になります。</p>
 <ul>
-<li>
-<p>
-スタックの状態によって指す場所が変わることを意識する必要があります。
-</p>
-</li>
-<li>
-<p>
-ただしスタックマシンでは、多くの場合相対位置で考えた方が動きが把握しやすいので、負のインデックス指定があると便利です。
-</p>
-</li>
+<li>スタックの状態によって指す場所が変わることを意識する必要があります。</li>
+<li>ただしスタックマシンでは、多くの場合相対位置で考えた方が動きが把握しやすいので、負のインデックス指定があると便利です。</li>
 </ul>
 </li>
 </ul>
 </li>
 <li>
-<p>
-スタックの底は 1 で示します。
-</p>
+<p>スタックの底は 1 で示します。</p>
 <ul>
-<li>
-<p>
-2, 3 は、それぞれ底から 1 個上、2 個上を示します。
-</p>
-</li>
-<li>
-<p>
-スタックの底とは、Lua から C の関数がコールされた時の Lua から渡された第一引数が格納されている場所になります。
-</p>
-</li>
+<li>2, 3 は、それぞれ底から 1 個上、2 個上を示します。</li>
+<li>スタックの底とは、Lua から C の関数がコールされた時の Lua から渡された第一引数が格納されている場所になります。</li>
 </ul>
 </li>
 </ul>
-<p>
-スタックは、 <code>LUA_MINSTACK</code> 個分のスロットを保証しています。
+<p>スタックは、 <code>LUA_MINSTACK</code> 個分のスロットを保証しています。
 逆にいうと <code>LUA_MINSTACK</code> を越えるスタックが使用できることを保証していません。
-<code>lua_checkstack()</code> を使うことで、スロットを増やすことができます。
-</p>
+<code>lua_checkstack()</code> を使うことで、スロットを増やすことができます。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
 <h3 id="headline-3">
 Lua VM の関数コール
 </h3>
+<div id="outline-text-headline-3" class="outline-text-3">
 <p>
-Lua VM の関数コールは次の手順で行なわれます。
-</p>
+Lua VM の関数コールは次の手順で行なわれます。</p>
 <p>
-例として、次の関数のコール処理について説明します。
-</p>
+例として、次の関数のコール処理について説明します。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span> <span class="p">)</span>
-  <span class="kr">return</span> <span class="n">arg1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">arg2</span> <span class="o">+</span> <span class="mi">2</span>
-<span class="kr">end</span>
-<span class="kd">local</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span> <span class="p">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">return</span> <span class="n">arg1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">arg2</span> <span class="o">+</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span> <span class="p">)</span></span></span></code></pre></div>
 </div>
 <ul>
-<li>
-<p>
-func() 関数をスタックに Push
-</p>
-</li>
-<li>
-<p>
-引数 10, 20を スタックに Push
-</p>
-</li>
-<li>
-<p>
-func を実行する
-</p>
-</li>
+<li>func() 関数をスタックに Push</li>
+<li>引数 10, 20を スタックに Push</li>
+<li>func を実行する</li>
 </ul>
-<p>
-このとき、func () 関数からスタックを見ると次のようになります。
-</p>
+<p>このとき、func () 関数からスタックを見ると次のようになります。</p>
 <table>
 <thead>
 <tr>
@@ -218,15 +166,12 @@ func を実行する
 </table>
 <p>
 インデックス 1 に 第 1 引数、インデックス 2 に 第 2 引数が格納されています。
-インデックスをマイナス値で指定する場合は、それぞれ -2, -1 です。
-</p>
+インデックスをマイナス値で指定する場合は、それぞれ -2, -1 です。</p>
 <p>
 func() は、インデックス 1、インデックス 2 から第 1 引数、インデックス 2 に 第 2 引数を取得し、それぞれ + 1, + 2 します。
-その後、計算結果 11, 22 をスタックに Push します。
-</p>
+その後、計算結果 11, 22 をスタックに Push します。</p>
 <p>
-このときのスタックは次のようになります。
-</p>
+このときのスタックは次のようになります。</p>
 <table>
 <thead>
 <tr>
@@ -254,367 +199,273 @@ func() は、インデックス 1、インデックス 2 から第 1 引数、�
 </tbody>
 </table>
 <p>
-Lua は、引数の次のインデックス 3 以降の値を戻り値として処理し、処理後にスタックを解放します。
-</p>
+Lua は、引数の次のインデックス 3 以降の値を戻り値として処理し、処理後にスタックを解放します。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
 <h3 id="headline-4">
 Lua VM と C のインタフェース
 </h3>
+<div id="outline-text-headline-4" class="outline-text-3">
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="n">func</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">func</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span></span></span></code></pre></div>
 </div>
 <p>
 <strong>Lua VM から C の関数をコールする場合、C のインタフェースは必ず上記の型である必要があります。</strong>
-C の関数名は任意です。
-</p>
+C の関数名は任意です。</p>
 <p>
 ここで <code>lua_State</code> は、Lua VM の状態を管理する構造体です。
-C の関数は、 <code>lua_State</code> 構造体へのポインタを Lua から提供されている C 関数の引数に渡すことで、Lua VM にアクセスできます。
-</p>
+C の関数は、 <code>lua_State</code> 構造体へのポインタを Lua から提供されている C 関数の引数に渡すことで、Lua VM にアクセスできます。</p>
 <p>
 <strong>また、Lua VM に関数の戻り値を返す場合は、Lua VM のスタックに値を Push する必要があります。</strong>
 <strong>この C 関数の戻り値は int 型のデータですが、この値はスタックに Push した値の個数を示すものです。</strong>
-Lua に返すデータそのものではないことに注意してください。
-</p>
+Lua に返すデータそのものではないことに注意してください。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
 <h2 id="headline-5">
 Lua から C の関数をコールする
 </h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<div id="outline-container-headline-6" class="outline-3">
 <h3 id="headline-6">
 モジュールの検索
 </h3>
+<div id="outline-text-headline-6" class="outline-text-3">
 <p>
-Lua は require( modname ) で外部モジュールの機能を取り込んで、利用することができます。
-</p>
+Lua は require( modname ) で外部モジュールの機能を取り込んで、利用することができます。</p>
 <p>
-ここで require は指定された外部モジュールを検索する際、次のように処理を行ないます。
-</p>
+ここで require は指定された外部モジュールを検索する際、次のように処理を行ないます。</p>
 <ul>
 <li>
-<p>
-次のローダーを使って、 modname のロードを試みます。
-</p>
+<p>次のローダーを使って、 modname のロードを試みます。</p>
 <ul>
-<li>
-<p>
-preload
-</p>
-</li>
-<li>
-<p>
-Lua
-</p>
-</li>
-<li>
-<p>
-C
-</p>
-</li>
+<li>preload</li>
+<li>Lua</li>
+<li>C</li>
 </ul>
 </li>
 <li>
-<p>
-この ローダーに modname を渡し、そのモジュール名に合致するモジュールをロードさせます。
-</p>
+<p>この ローダーに modname を渡し、そのモジュール名に合致するモジュールをロードさせます。</p>
 <ul>
 <li>
-<p>
-preload
-</p>
+<p>preload</p>
 <ul>
 <li>
-<p>
-package.preload[ modname ] の値を参照し、値が関数であった場合その関数を返します。
-</p>
+<p>package.preload[ modname ] の値を参照し、値が関数であった場合その関数を返します。</p>
 <ul>
-<li>
-<p>
-package.preload を編集しても、ローダーの変更はできません。
-</p>
-</li>
-<li>
-<p>
-Lua から参照できるように提供されています。
-</p>
-</li>
+<li>package.preload を編集しても、ローダーの変更はできません。</li>
+<li>Lua から参照できるように提供されています。</li>
 </ul>
 </li>
 </ul>
 </li>
 <li>
-<p>
-lua
-</p>
+<p>lua</p>
 <ul>
-<li>
-<p>
-package.path に格納されているパスを利用して Lua スクリプトを loadfile します。
-</p>
-</li>
+<li>package.path に格納されているパスを利用して Lua スクリプトを loadfile します。</li>
 </ul>
 </li>
 <li>
-<p>
-C
-</p>
+<p>C</p>
 <ul>
-<li>
-<p>
-package.path に格納されているパスを利用して C モジュールをロードします。
-</p>
-</li>
-<li>
-<p>
-見つかったモジュールから関数名が &#34;<code>luaopen_%s</code>&#34;, modname の関数をロードします。
-</p>
-</li>
-<li>
-<p>
-C モジュール関数のロード方法は OS や Lua をホストしている環境によって異なります。
-</p>
-</li>
+<li>package.path に格納されているパスを利用して C モジュールをロードします。</li>
+<li>見つかったモジュールから関数名が &#34;<code>luaopen_%s</code>&#34;, modname の関数をロードします。</li>
+<li>C モジュール関数のロード方法は OS や Lua をホストしている環境によって異なります。</li>
 </ul>
 </li>
 </ul>
 </li>
-<li>
-<p>
-上記処理を preload, lua, C の順に行ない、modname モジュールがロードできるまで繰り返します。
-</p>
-</li>
-<li>
-<p>
-ロードした関数に対し、 modname を渡して実行します。
-</p>
-</li>
-<li>
-<p>
-実行結果を require の戻り値とします。
-</p>
-</li>
+<li>上記処理を preload, lua, C の順に行ない、modname モジュールがロードできるまで繰り返します。</li>
+<li>ロードした関数に対し、 modname を渡して実行します。</li>
+<li>実行結果を require の戻り値とします。</li>
 </ul>
-<p>
-C の関数は、上記で示すように preload, Lua の次に検索されロードされます。
-</p>
+<p>C の関数は、上記で示すように preload, Lua の次に検索されロードされます。</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
 <h3 id="headline-7">
 require からコールされる C 関数
 </h3>
+<div id="outline-text-headline-7" class="outline-text-3">
 <p>
 上記で示した様に、関数名が &#34;<code>luaopen_%s</code>&#34;, modname 関数がロードされコールされます。
-例えば require( &#39;hoge&#39; ) とした場合 hoge モジュールの <code>luaopen_hoge()</code> がロードされ実行されます。
-</p>
+例えば require( &#39;hoge&#39; ) とした場合 hoge モジュールの <code>luaopen_hoge()</code> がロードされ実行されます。</p>
 <p>
-ここで、 <code>luaopen_hoge()</code> も、上記で説明した通り次の型で定義する必要があります。
-</p>
+ここで、 <code>luaopen_hoge()</code> も、上記で説明した通り次の型で定義する必要があります。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="n">luaopen_hoge</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">luaopen_hoge</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span></span></span></code></pre></div>
 </div>
 <p>
-この関数が Lua VM のスタックに Push した値が、 require の戻り値になります。
-</p>
+この関数が Lua VM のスタックに Push した値が、 require の戻り値になります。</p>
 <p>
-例えば、フィールド(func1,func2)に関数を格納するテーブルを Push することで、Lua の標準ライブラリのように複数の関数を提供することができます。
-</p>
+例えば、フィールド(func1,func2)に関数を格納するテーブルを Push することで、Lua の標準ライブラリのように複数の関数を提供することができます。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">lib</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s1">&#39;module&#39;</span> <span class="p">)</span>
-<span class="n">lib.func1</span><span class="p">()</span>
-<span class="n">lib.func2</span><span class="p">()</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">lib</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span> <span class="s1">&#39;module&#39;</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">lib.func1</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">lib.func2</span><span class="p">()</span></span></span></code></pre></div>
 </div>
+<div id="outline-container-headline-8" class="outline-4">
 <h4 id="headline-8">
 関数をフィールドに持つテーブルを返す
 </h4>
+<div id="outline-text-headline-8" class="outline-text-4">
 <p>
-関数をフィールドに持つテーブルを返すには、次のように処理します。
-</p>
+関数をフィールドに持つテーブルを返すには、次のように処理します。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="nf">lib_func1</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
-<span class="k">static</span> <span class="kt">int</span> <span class="nf">lib_func2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
-<span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">lib</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="p">{</span><span class="s">&#34;func1&#34;</span><span class="p">,</span> <span class="n">lib_func1</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;func2&#34;</span><span class="p">,</span> <span class="n">lib_func2</span><span class="p">},</span>
-  <span class="p">{</span><span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="kt">int</span> <span class="n">luaopen_hoge</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="n">luaL_newlib</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">lib</span> <span class="p">);</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">lib_func1</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">lib_func2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">lib</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;func1&#34;</span><span class="p">,</span> <span class="n">lib_func1</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;func2&#34;</span><span class="p">,</span> <span class="n">lib_func2</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">luaopen_hoge</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_newlib</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">lib</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 ここで、 <code>luaL_newlib()</code> は引数で与えた <code>luaL_Reg</code> 配列の関数をフィールドに持つテーブルを生成しスタックを Push します。
 <code>luaL_Reg</code> は、Lua 側の関数名と C 側の関数の紐付けます。
-<code>luaL_Reg</code> 配列は、{NULL, NULL} で終端する必要があります。
-</p>
+<code>luaL_Reg</code> 配列は、{NULL, NULL} で終端する必要があります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
 <h3 id="headline-9">
 引数取得と戻り値設定
 </h3>
+<div id="outline-text-headline-9" class="outline-text-3">
 <p>
 前述した通り Lua の関数コールは、引数をスタックに Push してから関数を実行します。
-また、関数の戻り値はスタックに Push します。
-</p>
+また、関数の戻り値はスタックに Push します。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span> <span class="p">)</span>
-  <span class="kr">return</span> <span class="n">arg1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">arg2</span> <span class="o">+</span> <span class="mi">2</span>
-<span class="kr">end</span>
-<span class="kd">local</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span> <span class="p">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">arg1</span><span class="p">,</span> <span class="n">arg2</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="kr">return</span> <span class="n">arg1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">arg2</span> <span class="o">+</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">value1</span><span class="p">,</span> <span class="n">value2</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span> <span class="p">)</span></span></span></code></pre></div>
 </div>
 <p>
-例えば上記の Lua の func 関数を C で書く場合、次のようになります。
-</p>
+例えば上記の Lua の func 関数を C で書く場合、次のようになります。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="nf">lib_func</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="kt">int</span> <span class="n">arg1</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span> <span class="c1">// 引数 1 の取得
-</span><span class="c1"></span>  <span class="kt">int</span> <span class="n">arg2</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">2</span> <span class="p">);</span> <span class="c1">// 引数 2 の取得
-</span><span class="c1"></span>  <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">arg1</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">);</span> <span class="c1">// 戻り値 1 設定
-</span><span class="c1"></span>  <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">arg2</span> <span class="o">+</span> <span class="mi">2</span> <span class="p">);</span> <span class="c1">// 戻り値 2 設定
-</span><span class="c1"></span>  <span class="k">return</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">// 戻り値 2 個
-</span><span class="c1"></span><span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">lib_func</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">arg1</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span> <span class="c1">// 引数 1 の取得
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="kt">int</span> <span class="n">arg2</span> <span class="o">=</span> <span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">2</span> <span class="p">);</span> <span class="c1">// 引数 2 の取得
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">arg1</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">);</span> <span class="c1">// 戻り値 1 設定
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">arg2</span> <span class="o">+</span> <span class="mi">2</span> <span class="p">);</span> <span class="c1">// 戻り値 2 設定
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="k">return</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">// 戻り値 2 個
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-引数の取得、戻り値の設定は、値の型毎にアクセス関数が提供されています。
-</p>
+引数の取得、戻り値の設定は、値の型毎にアクセス関数が提供されています。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
 <h2 id="headline-10">
 ユーザデータ
 </h2>
+<div id="outline-text-headline-10" class="outline-text-2">
 <p>
-C から Lua へ値を返すには、Lua が扱える次のいずれかの値に変換する必要があります。
-</p>
+C から Lua へ値を返すには、Lua が扱える次のいずれかの値に変換する必要があります。</p>
 <ul>
-<li>
-<p>
-nil
-</p>
-</li>
-<li>
-<p>
-ブーリアン
-</p>
-</li>
-<li>
-<p>
-数値
-</p>
-</li>
-<li>
-<p>
-文字列
-</p>
-</li>
-<li>
-<p>
-関数
-</p>
-</li>
-<li>
-<p>
-ユーザーデータ
-</p>
-</li>
-<li>
-<p>
-スレッド
-</p>
-</li>
-<li>
-<p>
-テーブル 
-</p>
-</li>
+<li>nil</li>
+<li>ブーリアン</li>
+<li>数値</li>
+<li>文字列</li>
+<li>関数</li>
+<li>ユーザーデータ</li>
+<li>スレッド</li>
+<li>テーブル </li>
 </ul>
-<p>
-では、ここで一つ質問です。
-Lua の io.open() は file オブジェクトを返しますが、file オブジェクトの型は上記のどれになるでしょうか？
-</p>
+<p>では、ここで一つ質問です。
+Lua の io.open() は file オブジェクトを返しますが、file オブジェクトの型は上記のどれになるでしょうか？</p>
 <p>
 答はユーザデータです。
-技術的にはテーブルでも実現不可能ではありませんが、ユーザデータで実装されています。
-</p>
+技術的にはテーブルでも実現不可能ではありませんが、ユーザデータで実装されています。</p>
 <p>
-Lua は private や protected などの概念がありませんが、ユーザデータを利用することで Lua からは直にアクセスさせたくないデータを実現できます。
-</p>
+Lua は private や protected などの概念がありませんが、ユーザデータを利用することで Lua からは直にアクセスさせたくないデータを実現できます。</p>
+<div id="outline-container-headline-11" class="outline-3">
 <h3 id="headline-11">
 ユーザデータの生成方法
 </h3>
+<div id="outline-text-headline-11" class="outline-text-3">
 <p>
 ユーザデータは Lua から生成することはできません。
-必ず C で生成する必要があります。
-</p>
+必ず C で生成する必要があります。</p>
 <p>
-C でユーザデータを生成するには、次の関数を実行します。
-</p>
+C でユーザデータを生成するには、次の関数を実行します。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="o">*</span> <span class="nf">lua_newuserdata</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">size</span> <span class="p">);</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="o">*</span> <span class="nf">lua_newuserdata</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span><span class="p">,</span> <span class="n">size_t</span> <span class="n">size</span> <span class="p">);</span></span></span></code></pre></div>
 </div>
 <p>
 使い方は malloc() と似ています。
-ただし、malloc() は free() で解放するのに対し、 <code>lua_newuserdata()</code> で生成した領域は GC によって解放されます。
-</p>
+ただし、malloc() は free() で解放するのに対し、 <code>lua_newuserdata()</code> で生成した領域は GC によって解放されます。</p>
 <p>
-なお <code>lua_newuserdata()</code> は、ユーザデータを生成しスタックに Push します。
-</p>
+なお <code>lua_newuserdata()</code> は、ユーザデータを生成しスタックに Push します。</p>
 <p>
 Lua は、C から受け取ったユーザデータ内に何が格納されているかアクセスする関数を標準では提供していません。
-ユーザデータにアクセスする関数を、ユーザデータを生成した C 側で用意する必要があります。
-</p>
+ユーザデータにアクセスする関数を、ユーザデータを生成した C 側で用意する必要があります。</p>
 <p>
-例えば Lua の file オブジェクトは、ファイルハンドルのユーザデータにアクセスするための <code>file:read()</code> や <code>file:close()</code> などのメソッドを提供しています。
-</p>
+例えば Lua の file オブジェクトは、ファイルハンドルのユーザデータにアクセスするための <code>file:read()</code> や <code>file:close()</code> などのメソッドを提供しています。</p>
 <p>
-なお、ユーザデータはメタデータを設定することが出来ます。
-</p>
+なお、ユーザデータはメタデータを設定することが出来ます。</p>
 <p>
-Lua の file オブジェクトは、メタデータを利用して <code>file:read()</code> や <code>file:close()</code> などのメソッドを提供しています。
-</p>
+Lua の file オブジェクトは、メタデータを利用して <code>file:read()</code> や <code>file:close()</code> などのメソッドを提供しています。</p>
 <p>
-ユーザデータにメタデータを設定することによって、C 側のデータを Lua からオブジェクト指向でアクセスすることが出来ます。
-</p>
+ユーザデータにメタデータを設定することによって、C 側のデータを Lua からオブジェクト指向でアクセスすることが出来ます。</p>
+</div>
+</div>
+<div id="outline-container-headline-12" class="outline-3">
 <h3 id="headline-12">
 ユーザデータのサンプル
 </h3>
+<div id="outline-text-headline-12" class="outline-text-3">
 <p>
-Lua の file オブジェクトの実装方法を参考に、ユーザデータの使用方法を説明していきます。
-</p>
+Lua の file オブジェクトの実装方法を参考に、ユーザデータの使用方法を説明していきます。</p>
 <p>
-Lua の file オブジェクトのユーザデータは、次の構造体を生成しています。
-</p>
+Lua の file オブジェクトのユーザデータは、次の構造体を生成しています。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">luaL_Stream</span> <span class="p">{</span>
-  <span class="n">FILE</span> <span class="o">*</span><span class="n">f</span><span class="p">;</span>
-  <span class="n">lua_CFunction</span> <span class="n">closef</span><span class="p">;</span>
-<span class="p">}</span> <span class="n">luaL_Stream</span><span class="p">;</span>
-<span class="k">typedef</span> <span class="n">luaL_Stream</span> <span class="n">LStream</span><span class="p">;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">luaL_Stream</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">FILE</span> <span class="o">*</span><span class="n">f</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_CFunction</span> <span class="n">closef</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">luaL_Stream</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">typedef</span> <span class="n">luaL_Stream</span> <span class="n">LStream</span><span class="p">;</span></span></span></code></pre></div>
 </div>
 <p>
 ここで f は、アクセス対象のファイルハンドルです。
 closef は、 <code>file:close()</code> 時に実行する関数ポインタです。
-io.open(), io.popen() で <code>file:close()</code> 処理が異なるため、関数ポインタで切り替えられるようにしています。
-</p>
+io.open(), io.popen() で <code>file:close()</code> 処理が異なるため、関数ポインタで切り替えられるようにしています。</p>
 <p>
-この構造体のユーザデータを生成し、メタデータを設定します。
-</p>
+この構造体のユーザデータを生成し、メタデータを設定します。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="n">LStream</span> <span class="o">*</span><span class="nf">newprefile</span> <span class="p">(</span><span class="n">lua_State</span> <span class="o">*</span><span class="n">L</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">LStream</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">LStream</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_newuserdata</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">LStream</span><span class="p">));</span>
-  <span class="n">p</span><span class="o">-&gt;</span><span class="n">closef</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-  <span class="n">luaL_setmetatable</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">LUA_FILEHANDLE</span><span class="p">);</span>
-  <span class="k">return</span> <span class="n">p</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="n">LStream</span> <span class="o">*</span><span class="nf">newprefile</span> <span class="p">(</span><span class="n">lua_State</span> <span class="o">*</span><span class="n">L</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">LStream</span> <span class="o">*</span><span class="n">p</span> <span class="o">=</span> <span class="p">(</span><span class="n">LStream</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_newuserdata</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">LStream</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">  <span class="n">p</span><span class="o">-&gt;</span><span class="n">closef</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_setmetatable</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">LUA_FILEHANDLE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">p</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-ここで <code>luaL_setmetatable(L, LUA_FILEHANDLE)</code> は、スタックトップのデータにメタテーブル <code>LUA_FILEHANDLE</code> をセットします。
-</p>
+ここで <code>luaL_setmetatable(L, LUA_FILEHANDLE)</code> は、スタックトップのデータにメタテーブル <code>LUA_FILEHANDLE</code> をセットします。</p>
 <p>
-ちなみに <code>LUA_FILEHANDLE</code> は文字列 &#34;FILE*&#34; です。
-</p>
+ちなみに <code>LUA_FILEHANDLE</code> は文字列 &#34;FILE*&#34; です。</p>
 <p>
-メタテーブル <code>LUA_FILEHANDLE</code> は、次のように事前に生成しておきます。
-</p>
+メタテーブル <code>LUA_FILEHANDLE</code> は、次のように事前に生成しておきます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">void</span> <span class="nf">createmeta</span> <span class="p">(</span><span class="n">lua_State</span> <span class="o">*</span><span class="n">L</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">luaL_newmetatable</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">LUA_FILEHANDLE</span><span class="p">);</span>
-  <span class="n">lua_pushvalue</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
-  <span class="n">lua_setfield</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#34;__index&#34;</span><span class="p">);</span>
-  <span class="n">luaL_setfuncs</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">flib</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-  <span class="n">lua_pop</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">void</span> <span class="nf">createmeta</span> <span class="p">(</span><span class="n">lua_State</span> <span class="o">*</span><span class="n">L</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_newmetatable</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">LUA_FILEHANDLE</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushvalue</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_setfield</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="s">&#34;__index&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_setfuncs</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="n">flib</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pop</span><span class="p">(</span><span class="n">L</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 まず <code>luaL_newmetatable(L, LUA_FILEHANDLE)</code> で空のメタテーブル <code>LUA_FILEHANDLE</code> を生成します。
@@ -622,269 +473,193 @@ io.open(), io.popen() で <code>file:close()</code> 処理が異なるため、�
 これは LStream ユーザデータから、このメタテーブルで定義している関数にアクセスできるようにするためです。
 具体的に言うと <code>file:close()</code> を実現できるようにしています。
 次に <code>luaL_setfuncs(L, flib, 0)</code> で、このメタテーブルのフィールドにメソッドを定義します。
-ここで flib は、次のように定義されています。
-</p>
+ここで flib は、次のように定義されています。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">flib</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="p">{</span><span class="s">&#34;close&#34;</span><span class="p">,</span> <span class="n">io_close</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;flush&#34;</span><span class="p">,</span> <span class="n">f_flush</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;lines&#34;</span><span class="p">,</span> <span class="n">f_lines</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;read&#34;</span><span class="p">,</span> <span class="n">f_read</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;seek&#34;</span><span class="p">,</span> <span class="n">f_seek</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;setvbuf&#34;</span><span class="p">,</span> <span class="n">f_setvbuf</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;write&#34;</span><span class="p">,</span> <span class="n">f_write</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;__gc&#34;</span><span class="p">,</span> <span class="n">f_gc</span><span class="p">},</span>
-  <span class="p">{</span><span class="s">&#34;__tostring&#34;</span><span class="p">,</span> <span class="n">f_tostring</span><span class="p">},</span>
-  <span class="p">{</span><span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">}</span>
-<span class="p">};</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="k">const</span> <span class="n">luaL_Reg</span> <span class="n">flib</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;close&#34;</span><span class="p">,</span> <span class="n">io_close</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;flush&#34;</span><span class="p">,</span> <span class="n">f_flush</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;lines&#34;</span><span class="p">,</span> <span class="n">f_lines</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;read&#34;</span><span class="p">,</span> <span class="n">f_read</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;seek&#34;</span><span class="p">,</span> <span class="n">f_seek</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;setvbuf&#34;</span><span class="p">,</span> <span class="n">f_setvbuf</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;write&#34;</span><span class="p">,</span> <span class="n">f_write</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;__gc&#34;</span><span class="p">,</span> <span class="n">f_gc</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="s">&#34;__tostring&#34;</span><span class="p">,</span> <span class="n">f_tostring</span><span class="p">},</span>
+</span></span><span class="line"><span class="cl">  <span class="p">{</span><span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span></span></span></code></pre></div>
 </div>
 <p>
-最後の <code>luaL_pop()</code> は、スタックを元の状態に戻すために実行しています。
-</p>
+最後の <code>luaL_pop()</code> は、スタックを元の状態に戻すために実行しています。</p>
 <p>
 なお、 上記 flib で重要なものがあります。
-それは <code>__gc</code> です。
-</p>
+それは <code>__gc</code> です。</p>
 <p>
-<code>__gc</code> は、 GC によって値を解放する前に呼び出されます。
-</p>
+<code>__gc</code> は、 GC によって値を解放する前に呼び出されます。</p>
 <p>
 file オブジェクトの場合は、 <code>f_gc()</code> で close 処理を行なっています。
-これにより、ファイルの close 漏れを防止しています。
-</p>
+これにより、ファイルの close 漏れを防止しています。</p>
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-3">
 <h3 id="headline-13">
 ユーザデータの種類
 </h3>
+<div id="outline-text-headline-13" class="outline-text-3">
 <p>
-ユーザデータには、次の 2 種類あります。
-</p>
+ユーザデータには、次の 2 種類あります。</p>
 <ul>
 <li>
-<p>
-フルユーザデータ
-</p>
+<p>フルユーザデータ</p>
 <ul>
-<li>
-<p>
-<code>luaL_newmetatable()</code> で生成するユーザデータ
-</p>
-</li>
+<li><code>luaL_newmetatable()</code> で生成するユーザデータ</li>
 </ul>
 </li>
 <li>
-<p>
-ライトユーザデータ
-</p>
+<p>ライトユーザデータ</p>
 <ul>
-<li>
-<p>
-<code>lua_pushlightuserdata()</code> で Push するユーザデータ
-</p>
-</li>
+<li><code>lua_pushlightuserdata()</code> で Push するユーザデータ</li>
 </ul>
 </li>
 </ul>
+<p>フルユーザデータにはメタテーブルを設定できますが、
+ライトユーザデータにはメタテーブルを設定できません。</p>
 <p>
-フルユーザデータにはメタテーブルを設定できますが、
-ライトユーザデータにはメタテーブルを設定できません。
-</p>
+また、ライトユーザデータは GC の対象になりません。</p>
 <p>
-また、ライトユーザデータは GC の対象になりません。
-</p>
-<p>
-これらの特徴から、ライトユーザデータは Lua がリソース管理しないデータで、フルユーザデータは Lua がリソース管理するデータであると言えるます。
-</p>
+これらの特徴から、ライトユーザデータは Lua がリソース管理しないデータで、フルユーザデータは Lua がリソース管理するデータであると言えるます。</p>
 <p>
 なお、上記 2 種類のユーザデータは Lua 内部では異なるタイプとして扱いますが、
-Lua スクリプトからは同じ &#34;userdata&#34; 型として扱われます。
-</p>
+Lua スクリプトからは同じ &#34;userdata&#34; 型として扱われます。</p>
 <p>
-C からは、上記 2 種類のユーザデータを別々の型として扱えますが、型名を取得する関数 <code>lua_typename()</code> はどちらも同じ &#34;userdata&#34; になります。
-</p>
+C からは、上記 2 種類のユーザデータを別々の型として扱えますが、型名を取得する関数 <code>lua_typename()</code> はどちらも同じ &#34;userdata&#34; になります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-14" class="outline-2">
 <h2 id="headline-14">
 C から Lua の関数をコールする
 </h2>
+<div id="outline-text-headline-14" class="outline-text-2">
 <p>
 前述している通り、関数コールはスタック操作をしています。
-これと同じことを C から行なえば良いだけです。
-</p>
+これと同じことを C から行なえば良いだけです。</p>
 <p>
-具体的には次の手順になります。
-</p>
+具体的には次の手順になります。</p>
 <ul>
-<li>
-<p>
-関数オブジェクトを Push
-</p>
-</li>
-<li>
-<p>
-引数を Push
-</p>
-</li>
-<li>
-<p>
-関数を実行
-</p>
-</li>
+<li>関数オブジェクトを Push</li>
+<li>引数を Push</li>
+<li>関数を実行</li>
 </ul>
-<p>
-例えば print( &#34;a&#34; ) を C からコールする場合は、次のようになります。
-</p>
+<p>例えば print( &#34;a&#34; ) を C からコールする場合は、次のようになります。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c">  <span class="n">lua_getglobal</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;print&#34;</span> <span class="p">);</span>
-  <span class="n">lua_pushstring</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;a&#34;</span> <span class="p">);</span>
-  <span class="n">lua_call</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span> <span class="p">);</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">  <span class="n">lua_getglobal</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;print&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushstring</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;a&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_call</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span> <span class="p">);</span></span></span></code></pre></div>
 </div>
 <p>
 ここで <code>lua_getglobal( pLua, &#34;print&#34; )</code> は、グローバル変数 print に格納されている値を Push します。
 <code>lua_pushstring( pLua, &#34;a&#34; )</code> は、文字列 &#34;a&#34; を Push します。
 最後に <code>lua_call( pLua, 1, 0 )</code> で、 print( &#34;a&#34; ) を実行します。
 ここで 第２引数は print 関数に渡す引数の数を指定し、第３引数は print 関数の戻り値の数を指定します。
-第３引数が  <code>LUA_MULTRET</code> の場合、関数の戻り値の数を制限しません。
-</p>
+第３引数が  <code>LUA_MULTRET</code> の場合、関数の戻り値の数を制限しません。</p>
 <p>
-基本はこれだけです。
-</p>
+基本はこれだけです。</p>
 <p>
-発展形として、 <code>lua_call()</code> のバリエーションがあります。
-</p>
+発展形として、 <code>lua_call()</code> のバリエーションがあります。</p>
 <ul>
 <li>
-<p>
-<code>lua_callk()</code>
-</p>
+<p><code>lua_callk()</code></p>
 <ul>
-<li>
-<p>
-コールした関数内で yield を実行する場合、この関数を使用します。
-</p>
-</li>
+<li>コールした関数内で yield を実行する場合、この関数を使用します。</li>
 </ul>
 </li>
 <li>
-<p>
-<code>lua_pcall()</code>
-</p>
+<p><code>lua_pcall()</code></p>
 <ul>
-<li>
-<p>
-コールした関数内でエラーが発生した場合、それをキャッチします。
-</p>
-</li>
-<li>
-<p>
-エラーしたかどうかは戻り値に返します。
-</p>
-</li>
-<li>
-<p>
-<code>lua_call()</code> は、コールした関数内でエラーが発生した場合キャッチしません。
-</p>
-</li>
+<li>コールした関数内でエラーが発生した場合、それをキャッチします。</li>
+<li>エラーしたかどうかは戻り値に返します。</li>
+<li><code>lua_call()</code> は、コールした関数内でエラーが発生した場合キャッチしません。</li>
 </ul>
 </li>
 <li>
-<p>
-<code>lua_pcallk()</code>
-</p>
+<p><code>lua_pcallk()</code></p>
 <ul>
-<li>
-<p>
-コールした関数内で yield を実行できるようにした <code>lua_pcall()</code> と等価です。
-</p>
-</li>
+<li>コールした関数内で yield を実行できるようにした <code>lua_pcall()</code> と等価です。</li>
 </ul>
 </li>
 </ul>
+</div>
+</div>
+<div id="outline-container-headline-15" class="outline-2">
 <h2 id="headline-15">
 注意点
 </h2>
+<div id="outline-text-headline-15" class="outline-text-2">
 <p>
-C インタフェースを作成する上で注意すべき点を挙げます。   
-</p>
+C インタフェースを作成する上で注意すべき点を挙げます。   </p>
+<div id="outline-container-headline-16" class="outline-3">
 <h3 id="headline-16">
 <code>lua_tolstring()</code> の ver 5.2 と 5.3 の差分
 </h3>
+<div id="outline-text-headline-16" class="outline-text-3">
 <ul>
 <li>
-<p>
-ver 5.2    
-</p>
+<p>ver 5.2    </p>
 <ul>
-<li>
-<p>
-指定インデックスの値(文字列か数値)を文字列に変換した結果を返します。
-</p>
-</li>
-<li>
-<p>
-このとき、指定インデックスに格納されている値そのものを文字列に変換した値に書き換えます。
-</p>
-</li>
+<li>指定インデックスの値(文字列か数値)を文字列に変換した結果を返します。</li>
+<li>このとき、指定インデックスに格納されている値そのものを文字列に変換した値に書き換えます。</li>
 </ul>
 </li>
 <li>
-<p>
-ver 5.3
-</p>
+<p>ver 5.3</p>
 <ul>
-<li>
-<p>
-指定インデックスの値(文字列か数値)を文字列に変換した結果を返します。
-</p>
-</li>
-<li>
-<p>
-このとき、変換した結果をスタックに push します。
-</p>
-</li>
-<li>
-<p>
-このとき、指定インデックスに格納されている値は元のままです。
-</p>
-</li>
+<li>指定インデックスの値(文字列か数値)を文字列に変換した結果を返します。</li>
+<li>このとき、変換した結果をスタックに push します。</li>
+<li>このとき、指定インデックスに格納されている値は元のままです。</li>
 </ul>
 </li>
 </ul>
-<p>
-ver 5.2 の仕様は、かなり危険な動作なので仕様変換するのも分からなくはないですが、
-かなり厄介な仕様変更です。
-</p>
+<p>ver 5.2 の仕様は、かなり危険な動作なので仕様変換するのも分からなくはないですが、
+かなり厄介な仕様変更です。</p>
+</div>
+</div>
+<div id="outline-container-headline-17" class="outline-3">
 <h3 id="headline-17">
 <code>lua_next()</code> 中のキーに対する <code>lua_tolstring()</code>
 </h3>
+<div id="outline-text-headline-17" class="outline-text-3">
 <p>
 リファレンスにも記載がありますが、
 <code>lua_next()</code> 中のキーに対する <code>lua_tolstring()</code> は危険です。
 ver 5.2 では、値が数値だった場合その値そのものを文字列に変換してしまいます。
 <code>lua_next()</code> では、キーを次の列挙の情報に利用するので、
-文字列に変換されてしまうとマトモに列挙することができなくなってしまいます。
-</p>
+文字列に変換されてしまうとマトモに列挙することができなくなってしまいます。</p>
+</div>
+</div>
+<div id="outline-container-headline-18" class="outline-3">
 <h3 id="headline-18">
 <code>luaL_Buffer</code> への add 処理
 </h3>
+<div id="outline-text-headline-18" class="outline-text-3">
 <p>
 <code>luaL_Buffer</code> への add 処理 ( <code>luaL_addstring</code> 等)は注意が必要です。
 add 処理で <code>luaL_Buffer</code> の内部バッファを拡張する場合、
 add 処理内でスタックにユーザデータを積みます。
 これにより、スタックが変更になります。
 <code>luaL_pushresult()</code> を実行すると、 add 処理で Push でしたユーザデータは Pop され、
-最終結果の文字列が Push されます。
-</p>
+最終結果の文字列が Push されます。</p>
 <p>
-このような処理であるため、例えば次のような処理を書くと、スタックの状態が保証されません。
-</p>
+このような処理であるため、例えば次のような処理を書くと、スタックの状態が保証されません。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c">  <span class="n">luaL_addstring</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">buffer</span><span class="p">,</span> <span class="s">&#34;a&#34;</span> <span class="p">);</span>
-  <span class="n">lua_pushstring</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;b&#34;</span> <span class="p">);</span>
-  <span class="n">luaL_addstring</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">buffer</span><span class="p">,</span> <span class="s">&#34;c&#34;</span> <span class="p">);</span>
-  <span class="n">lua_pushstring</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;d&#34;</span> <span class="p">);</span>
-  <span class="n">luaL_pushresult</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buffer</span> <span class="p">);</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">  <span class="n">luaL_addstring</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">buffer</span><span class="p">,</span> <span class="s">&#34;a&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushstring</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;b&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_addstring</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">buffer</span><span class="p">,</span> <span class="s">&#34;c&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushstring</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;d&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_pushresult</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">buffer</span> <span class="p">);</span></span></span></code></pre></div>
 </div>
 <p>
-上記処理を見ると、このときのスタックは次のようになることを期待していると思います。
-</p>
+上記処理を見ると、このときのスタックは次のようになることを期待していると思います。</p>
 <table>
 <thead>
 <tr>
@@ -908,12 +683,15 @@ add 処理内でスタックにユーザデータを積みます。
 </tbody>
 </table>
 <p>
-しかし、実際にはどうなるか保証されません。
-</p>
+しかし、実際にはどうなるか保証されません。</p>
+</div>
+</div>
+</div>
+</div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lua/" title="C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lua/detail/" title="C インタフェース詳細編">Next - C インタフェース詳細編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lua/detail/" title="C インタフェース詳細編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - C インタフェース詳細編</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lua/fengari/" title="fengari の使い方 (Lua を Web ブラウザで動かす方法)">Next - fengari の使い方 (Lua を Web ブラウザで動かす方法) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -925,17 +703,17 @@ add 処理内でスタックにユーザデータを積みます。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -944,8 +722,8 @@ add 処理内でスタックにユーザデータを積みます。
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
-<li class="active"><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -963,16 +741,16 @@ add 処理内でスタックにユーザデータを積みます。
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -1016,6 +794,13 @@ add 処理内でスタックにユーザデータを積みます。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -1053,13 +838,6 @@ add 処理内でスタックにユーザデータを積みます。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

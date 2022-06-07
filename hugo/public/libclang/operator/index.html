@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>libclang で演算子を特定する方法 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/libclang/operator/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="libclang で演算子を特定する方法" />
 <meta property="og:description" content="libclang とは libclang は clang の機能にアクセスするためのライブラリです。 libclang を利用することで C/C&#43;&#43; のソースコード解析などが出来ます。 libclang の CXCursor libclang で C/C&#43;&#43; のソースコードを解析" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/libclang/operator/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/libclang/operator/" /><meta property="article:section" content="libclang" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="libclang で演算子を特定する方法"/>
 <meta name="twitter:description" content="libclang とは libclang は clang の機能にアクセスするためのライブラリです。 libclang を利用することで C/C&#43;&#43; のソースコード解析などが出来ます。 libclang の CXCursor libclang で C/C&#43;&#43; のソースコードを解析"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="libclang とは libclang は clang の機能にアクセスするためのライブラリです。 libclang を利用することで C/C&#43;&#43; のソースコード解析などが出来ます。 libclang の CXCursor libclang で C/C&#43;&#43; のソースコードを解析">
 
 <meta itemprop="wordCount" content="1385">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -64,74 +64,68 @@
 <div class="content-container">
 <main><h1>libclang で演算子を特定する方法</h1>
 
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 libclang とは
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-libclang は clang の機能にアクセスするためのライブラリです。
-</p>
+libclang は clang の機能にアクセスするためのライブラリです。</p>
 <p>
-libclang を利用することで C/C++ のソースコード解析などが出来ます。
-</p>
+libclang を利用することで C/C++ のソースコード解析などが出来ます。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
 libclang の CXCursor 
 </h2>
+<div id="outline-text-headline-2" class="outline-text-2">
 <p>
 libclang で C/C++ のソースコードを解析すると、
-そのソースコードの AST (Abstract Syntax Tree) にアクセスできます。
-</p>
+そのソースコードの AST (Abstract Syntax Tree) にアクセスできます。</p>
 <p>
 この AST には CXCursor 構造体を通してアクセスします。
 AST にアクセスすることで、解析対象のソースコードにどのような関数が定義されていて、
 その関数内でどのような変数にアクセスしているかや、
-どのような関数をコールしているか、などを簡単に調べることができます。
-</p>
+どのような関数をコールしているか、などを簡単に調べることができます。</p>
 <p>
-しかし、残念ながらこの CXCursor からは、AST の一部の情報にアクセスできません。
-</p>
+しかし、残念ながらこの CXCursor からは、AST の一部の情報にアクセスできません。</p>
 <p>
-そのアクセス出来ない情報には、2項演算子、単項演算子が含まれます。
-</p>
+そのアクセス出来ない情報には、2項演算子、単項演算子が含まれます。</p>
 <p>
 CXCursor では 2項演算、単項演算をしているということは分かるのですが、
-具体的に何の演算(+,-,*,/ 等)をしているかが分かりません。
-</p>
+具体的に何の演算(+,-,*,/ 等)をしているかが分かりません。</p>
 <p>
 処理を解析するという用途で libclang を利用する場合、
-演算子が分からないのは致命的です。
-</p>
+演算子が分からないのは致命的です。</p>
 <p>
-<strong>特に = 演算かどうかが分からないのは致命的です。</strong>
-</p>
+<strong>特に = 演算かどうかが分からないのは致命的です。</strong></p>
 <p>
-そこで、ここでは libclang を使って 2 項演算子を特定する方法について説明します。
-</p>
+そこで、ここでは libclang を使って 2 項演算子を特定する方法について説明します。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
 libclang を使って 2 項演算子を特定する方法
 </h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <p>
-<strong>ここで紹介する方法では、マクロ内での演算は特定できません。</strong>  
-</p>
+<strong>ここで紹介する方法では、マクロ内での演算は特定できません。</strong>  </p>
 <p>
-AST は、その名の通り木構造になっていて、親子関係を持ちます。
-</p>
+AST は、その名の通り木構造になっていて、親子関係を持ちます。</p>
 <p>
-2項演算 1 / 2 は、AST では次のように表現されます。
-</p>
+2項演算 1 / 2 は、AST では次のように表現されます。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">2項演算: / +----- 数値リテラル: 1
-           |
-           +----- 数値リテラル: 2</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">2項演算: / +----- 数値リテラル: 1
+</span></span><span class="line"><span class="cl">           |
+</span></span><span class="line"><span class="cl">           +----- 数値リテラル: 2</span></span></code></pre></div>
 </div>
 <p>
-2項演算 / は、数値リテラルの 1 と 2 の子を持ちます。
-</p>
+2項演算 / は、数値リテラルの 1 と 2 の子を持ちます。</p>
 <p>
-AST のノードを管理するのが CXCursor です。
-</p>
+AST のノードを管理するのが CXCursor です。</p>
 <p>
-CXCursor は、ソースコード内での範囲情報を持ちます。
-</p>
+CXCursor は、ソースコード内での範囲情報を持ちます。</p>
 <table>
 <thead>
 <tr>
@@ -164,32 +158,26 @@ CXCursor は、ソースコード内での範囲情報を持ちます。
 </table>
 <p>
 ここで offset は、ファイルの先頭からの offset で、バイト数です。
-当然 TAB は 1 としてカウントしますし、日本語コメントはマルチバイトです。
-</p>
+当然 TAB は 1 としてカウントしますし、日本語コメントはマルチバイトです。</p>
 <p>
 範囲情報が分かれば、後は 2 項演算の領域から数値リテラル 1 と数値リテラル 2 の
 領域を除外した領域を計算すれば、そこに 2 項演算子があることが分かります。
-この場合、offset 2 - 5 の領域に演算子があります。具体的には &#34; / &#34; となります。
-</p>
+この場合、offset 2 - 5 の領域に演算子があります。具体的には &#34; / &#34; となります。</p>
 <p>
-なお、単項演算子も同じ考え方で取得可能です。
-</p>
+なお、単項演算子も同じ考え方で取得可能です。</p>
 <p>
-ただし、最初に記載したとおり、この方法ではマクロ内での演算は特定できません。
-</p>
+ただし、最初に記載したとおり、この方法ではマクロ内での演算は特定できません。</p>
 <p>
-例えば次のような場合、
-</p>
+例えば次のような場合、</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">#define DIV 1 / 2
-void sub()
-{
-  DIV;
-}</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">#define DIV 1 / 2
+</span></span><span class="line"><span class="cl">void sub()
+</span></span><span class="line"><span class="cl">{
+</span></span><span class="line"><span class="cl">  DIV;
+</span></span><span class="line"><span class="cl">}</span></span></code></pre></div>
 </div>
 <p>
-1 / 2 の CXCursor の範囲情報は次のようになります。
-</p>
+1 / 2 の CXCursor の範囲情報は次のようになります。</p>
 <table>
 <thead>
 <tr>
@@ -221,74 +209,60 @@ void sub()
 </tbody>
 </table>
 <p>
-ここで offset 34-37 は、 4 行目の DIV を指します。
-</p>
+ここで offset 34-37 は、 4 行目の DIV を指します。</p>
 <p>
-上記のように、範囲は全て同じ値になります。
-</p>
+上記のように、範囲は全て同じ値になります。</p>
 <p>
-CXCursor の範囲は、マクロ展開前のソースコードの範囲を示すためです。
-</p>
+CXCursor の範囲は、マクロ展開前のソースコードの範囲を示すためです。</p>
 <p>
-このため、この方法ではマクロ内での演算を特定することは不可能です。
-</p>
+このため、この方法ではマクロ内での演算を特定することは不可能です。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
 <h2 id="headline-4">
 パッチ
 </h2>
+<div id="outline-text-headline-4" class="outline-text-2">
 <p>
-2017/10 現在、 libclang から演算子情報を直接得る手段はありません。
-</p>
+2017/10 現在、 libclang から演算子情報を直接得る手段はありません。</p>
 <p>
 AST 自体は演算子情報を保持しているのですが、
-libclang には演算子情報にアクセスするためのインタフェースが用意されていないためです。
-</p>
+libclang には演算子情報にアクセスするためのインタフェースが用意されていないためです。</p>
 <p>
 どうしても演算子情報にアクセスする必要があれば、
 次の URL に示されているパッチをあてれば、
-アクセスするためのインタフェースが利用できるはずです。
-</p>
+アクセスするためのインタフェースが利用できるはずです。</p>
 <p>
-https://reviews.llvm.org/D10833
-</p>
+https://reviews.llvm.org/D10833</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
 <h2 id="headline-5">
 libclanglua
 </h2>
+<div id="outline-text-headline-5" class="outline-text-2">
 <p>
 <a href="https://github.com/ifritJP/libclanglua">libclanglua</a> では、
-ここで説明した方法で CXCursor から演算子を取得する API を提供しています。
-</p>
+ここで説明した方法で CXCursor から演算子を取得する API を提供しています。</p>
 <p>
-具体的には次の API です。
-</p>
+具体的には次の API です。</p>
 <ul>
 <li>
-<p>
-clang.getUnaryOperatorTxt( cursor )
-</p>
+<p>clang.getUnaryOperatorTxt( cursor )</p>
 <ul>
-<li>
-<p>
-指定 CXCursor の単項演算子文字列を取得
-</p>
-</li>
+<li>指定 CXCursor の単項演算子文字列を取得</li>
 </ul>
 </li>
 <li>
-<p>
-clang.getBinOperatorTxt( cursor )
-</p>
+<p>clang.getBinOperatorTxt( cursor )</p>
 <ul>
-<li>
-<p>
-指定 CXCursor の 2 項演算子文字列を取得
-</p>
-</li>
+<li>指定 CXCursor の 2 項演算子文字列を取得</li>
 </ul>
 </li>
 </ul>
-<p>
-指定した CXCursor がマクロ内の処理であった場合は nil を返します。
-</p>
+<p>指定した CXCursor がマクロ内の処理であった場合は nil を返します。</p>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/libclang/" title="Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)</a>
@@ -304,17 +278,17 @@ clang.getBinOperatorTxt( cursor )
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -323,8 +297,8 @@ clang.getBinOperatorTxt( cursor )
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -342,16 +316,16 @@ clang.getBinOperatorTxt( cursor )
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -395,6 +369,13 @@ clang.getBinOperatorTxt( cursor )
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -432,13 +413,6 @@ clang.getBinOperatorTxt( cursor )
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

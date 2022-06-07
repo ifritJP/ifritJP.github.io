@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Lua でやりがちなミス - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lua/anti-pattern/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,33 +17,33 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="Lua でやりがちなミス" />
 <meta property="og:description" content="Lua は少し癖のある言語なので、その癖を知らないとミスに繋がることがあります。 この記事では Lua のコードを組む際に、やってしまいがちなミスについて説" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lua/anti-pattern/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lua/anti-pattern/" /><meta property="article:section" content="Lua" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Lua でやりがちなミス"/>
 <meta name="twitter:description" content="Lua は少し癖のある言語なので、その癖を知らないとミスに繋がることがあります。 この記事では Lua のコードを組む際に、やってしまいがちなミスについて説"/>
 <meta itemprop="name" content="Lua でやりがちなミス">
 <meta itemprop="description" content="Lua は少し癖のある言語なので、その癖を知らないとミスに繋がることがあります。 この記事では Lua のコードを組む際に、やってしまいがちなミスについて説">
 
-<meta itemprop="wordCount" content="2436">
+<meta itemprop="wordCount" content="2445">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -65,345 +65,351 @@
 <main><h1>Lua でやりがちなミス</h1>
 
 <p>
-Lua は少し癖のある言語なので、その癖を知らないとミスに繋がることがあります。
-</p>
+Lua は少し癖のある言語なので、その癖を知らないとミスに繋がることがあります。</p>
 <p>
-この記事では Lua のコードを組む際に、やってしまいがちなミスについて説明します。
-</p>
+この記事では Lua のコードを組む際に、やってしまいがちなミスについて説明します。</p>
 <p>
 コードをテストすれば、すぐに検出できるレベルのものばかりですが、
-コーディング時に避けられるように知識として持っておくべきでしょう。
-</p>
+コーディング時に避けられるように知識として持っておくべきでしょう。</p>
 <p>
 また、 Lua のトランスコンパイラである LuneScript を使用した場合の
-解決方法も一緒に紹介します。
-</p>
+解決方法も一緒に紹介します。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 シーケンスでないテーブルの要素数を # 演算子を使って取得する
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">data1</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">data1</span><span class="p">[</span> <span class="s2">&#34;key1&#34;</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">data1</span><span class="p">[</span> <span class="s2">&#34;key2&#34;</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="n">data1</span><span class="p">[</span> <span class="s2">&#34;key3&#34;</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
-<span class="kd">local</span> <span class="n">data2</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">data2</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">data2</span><span class="p">[</span> <span class="mi">2</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="n">data2</span><span class="p">[</span> <span class="mi">3</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
-<span class="n">print</span><span class="p">(</span> <span class="o">#</span><span class="n">data1</span><span class="p">,</span> <span class="o">#</span><span class="n">data2</span> <span class="p">)</span>  <span class="c1">-- 0 3</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">data1</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl"><span class="n">data1</span><span class="p">[</span> <span class="s2">&#34;key1&#34;</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="n">data1</span><span class="p">[</span> <span class="s2">&#34;key2&#34;</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="n">data1</span><span class="p">[</span> <span class="s2">&#34;key3&#34;</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+</span></span><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">data2</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl"><span class="n">data2</span><span class="p">[</span> <span class="mi">1</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="n">data2</span><span class="p">[</span> <span class="mi">2</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="n">data2</span><span class="p">[</span> <span class="mi">3</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+</span></span><span class="line"><span class="cl"><span class="n">print</span><span class="p">(</span> <span class="o">#</span><span class="n">data1</span><span class="p">,</span> <span class="o">#</span><span class="n">data2</span> <span class="p">)</span>  <span class="c1">-- 0 3</span></span></span></code></pre></div>
 </div>
 <p>
-上記サンプルの <code>print( #data1, #data2 )</code> は、 0 3 を出力します。
-</p>
+上記サンプルの <code>print( #data1, #data2 )</code> は、 0 3 を出力します。</p>
 <p>
-Lua は、リスト構造をテーブルで管理します。
-</p>
+Lua は、リスト構造をテーブルで管理します。</p>
 <p>
 Lua のテーブルは、
-要素にアクセスするインデックスとして、数値以外を利用することができます。
-</p>
+要素にアクセスするインデックスとして、数値以外を利用することができます。</p>
 <p>
 テーブルのインデックスが、連続した自然数であるテーブルを <strong>シーケンス</strong> といい、
-<code>#</code> 演算子は <strong>シーケンス</strong> の長さを返します。
-</p>
+<code>#</code> 演算子は <strong>シーケンス</strong> の長さを返します。</p>
 <p>
 上記サンプルの data1, data2 の要素数は両方とも 3 ですが、
 data2 はシーケンスであるため #data2 は 3 となります。
-一方、data1 はシーケンスではないため #data1 は 0 となります。
-</p>
+一方、data1 はシーケンスではないため #data1 は 0 となります。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
 LuneScript では、 List と Map を別の型として扱い、
 <code>#</code> 演算子が利用できるのは List に対してのみです。
-Map に対して # 演算子を使用するとコンパイルエラーとなります。
-</p>
+Map に対して # 演算子を使用するとコンパイルエラーとなります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
 table.insert() で nil を追加する
 </h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">list</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">table.insert</span><span class="p">(</span> <span class="n">list</span><span class="p">,</span> <span class="mi">1</span> <span class="p">)</span>
-<span class="n">table.insert</span><span class="p">(</span> <span class="n">list</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">)</span>
-<span class="n">table.insert</span><span class="p">(</span> <span class="n">list</span><span class="p">,</span> <span class="mi">3</span> <span class="p">)</span>
-<span class="n">print</span><span class="p">(</span> <span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 2</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">list</span> <span class="o">=</span> <span class="p">{}</span>
+</span></span><span class="line"><span class="cl"><span class="n">table.insert</span><span class="p">(</span> <span class="n">list</span><span class="p">,</span> <span class="mi">1</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">table.insert</span><span class="p">(</span> <span class="n">list</span><span class="p">,</span> <span class="kc">nil</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">table.insert</span><span class="p">(</span> <span class="n">list</span><span class="p">,</span> <span class="mi">3</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">print</span><span class="p">(</span> <span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 2</span></span></span></code></pre></div>
 </div>
 <p>
 上記サンプルは、
 リスト list に対して insert() を 3 回実行しているにもかかわらず、
-</p>
+#list は 2 になります。</p>
 <p>
 Lua のテーブルは、キーと値を紐付けて管理します。
-このキーと値は nil 以外である必要があります。
-</p>
+このキーと値は nil 以外である必要があります。</p>
 <p>
 上記サンプルでは、 list テーブルに対して値 1, nil, 3 を順次追加していますが、
-テーブルに nil は保持できず、結果的に <code>{1,3}</code> となるため #list は 2 となります。
-</p>
+テーブルに nil は保持できず、結果的に <code>{1,3}</code> となるため #list は 2 となります。</p>
+<div id="outline-container-headline-4" class="outline-3">
 <h3 id="headline-4">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-4" class="outline-text-3">
 <p>
 LuneScript では、 List に対して nil(nilable) を insert() すると、
-コンパイルエラーになります。
-</p>
+コンパイルエラーになります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
 <h2 id="headline-5">
 nil を含むリストに対して table.remove() する。
 </h2>
+<div id="outline-text-headline-5" class="outline-text-2">
 <p>
 Lua のテーブルは nil を保持できないと書きましたが、
-次のリストを表現することができます。
-</p>
+次のリストを表現することができます。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">list</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">3</span> <span class="p">}</span>
-<span class="n">print</span><span class="p">(</span> <span class="n">list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 1 nil 3 3</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">list</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">3</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="n">print</span><span class="p">(</span> <span class="n">list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 1 nil 3 3</span></span></span></code></pre></div>
 </div>
 <p>
 どういうことかというと、 Lua のテーブルは nil を保持できませんが、
-一見 nil が入っているかのように見えるテーブルが作れるということです。
-</p>
+一見 nil が入っているかのように見えるテーブルが作れるということです。</p>
 <p>
-では、このリストに対して table.remove() したらどうなるでしょうか？
-</p>
+では、このリストに対して table.remove() したらどうなるでしょうか？</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="n">list</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">3</span> <span class="p">}</span>
-<span class="n">print</span><span class="p">(</span> <span class="n">list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 1 nil 3 3</span>
-<span class="n">table.remove</span><span class="p">(</span> <span class="n">list</span> <span class="p">)</span>
-<span class="n">print</span><span class="p">(</span> <span class="n">list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 1 nil nil 1</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">list</span> <span class="o">=</span> <span class="p">{</span> <span class="mi">1</span><span class="p">,</span> <span class="kc">nil</span><span class="p">,</span> <span class="mi">3</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="n">print</span><span class="p">(</span> <span class="n">list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 1 nil 3 3</span>
+</span></span><span class="line"><span class="cl"><span class="n">table.remove</span><span class="p">(</span> <span class="n">list</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">print</span><span class="p">(</span> <span class="n">list</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span><span class="n">list</span><span class="p">[</span><span class="mi">3</span><span class="p">],</span><span class="o">#</span><span class="n">list</span> <span class="p">)</span> <span class="c1">-- 1 nil nil 1</span></span></span></code></pre></div>
 </div>
 <p>
-table.remove() 後の <code>#list</code> は 1 になります。
-</p>
+table.remove() 後の <code>#list</code> は 1 になります。</p>
 <p>
 このように、長さ 3 のテーブルから要素を一つ削除すると、長さ 1 になる、
-という奇妙な動作となります。
-</p>
+という奇妙な動作となります。</p>
 <p>
-Lua のテーブルの仕様上しかたがないですが、かなり特殊な動作といえます。
-</p>
+Lua のテーブルの仕様上しかたがないですが、かなり特殊な動作といえます。</p>
+<div id="outline-container-headline-6" class="outline-3">
 <h3 id="headline-6">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-6" class="outline-text-3">
 <p>
 nil(nilable) の値を保持可能な List に対し remove() した場合、
-コンパイル時に warning となります。
-</p>
+コンパイル時に warning となります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
 <h2 id="headline-7">
 local の付け忘れ
 </h2>
+<div id="outline-text-headline-7" class="outline-text-2">
 <p>
 Lua のシンボルは、デフォルトでグローバルとして扱われます。
-スコープを限定したローカルなシンボルを定義するには、  <code>local</code> 宣言が必要です。
-</p>
+スコープを限定したローカルなシンボルを定義するには、  <code>local</code> 宣言が必要です。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">val1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-<span class="kd">local</span> <span class="n">val2</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="n">val1</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kd">local</span> <span class="n">val2</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span></span></span></code></pre></div>
 </div>
 <p>
-上記の val1 はグローバルで、 val2 はローカルとなります。
-</p>
+上記の val1 はグローバルで、 val2 はローカルとなります。</p>
 <p>
-関数定義も同様に、ローカルな関数にするには local 宣言が必要です。
-</p>
+関数定義も同様に、ローカルな関数にするには local 宣言が必要です。</p>
 <p>
-この local 宣言は、ついつい忘れてしまいがちです。
-</p>
+この local 宣言は、ついつい忘れてしまいがちです。</p>
 <p>
 luacheck コマンドを導入することで、
-global なシンボル定義している箇所を確認することができます。
-</p>
+global なシンボル定義している箇所を確認することができます。</p>
+<div id="outline-container-headline-8" class="outline-3">
 <h3 id="headline-8">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-8" class="outline-text-3">
 <p>
-LuneScript では、シンボルはデフォルトでローカルとなります。
-</p>
+LuneScript では、シンボルはデフォルトでローカルとなります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-2">
 <h2 id="headline-9">
 / 演算の結果をそのまま使用する
 </h2>
+<div id="outline-text-headline-9" class="outline-text-2">
 <p>
-Lua の数値は原則実数です。
-</p>
+Lua の数値は原則実数です。</p>
 <p>
-よって、 4/3 は 1.33333 となります。
-</p>
+よって、 4/3 は 1.33333 となります。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="n">print</span><span class="p">(</span> <span class="mi">4</span><span class="o">/</span><span class="mi">3</span> <span class="p">)</span>   <span class="c1">-- 1.333333</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="n">print</span><span class="p">(</span> <span class="mi">4</span><span class="o">/</span><span class="mi">3</span> <span class="p">)</span>   <span class="c1">-- 1.333333</span></span></span></code></pre></div>
 </div>
 <p>
 整数と実数をわけて管理する言語に慣れていると、
-ついつい 4/3 は 1 になることを期待してしまいます。
-</p>
+ついつい 4/3 は 1 になることを期待してしまいます。</p>
 <p>
-Lua で 4 ÷ 3 の結果を 1 とするには、次の対応が必要です。
-</p>
+Lua で 4 ÷ 3 の結果を 1 とするには、次の対応が必要です。</p>
 <ul>
-<li>
-<p>
-Lua5.3 は、整数の除算用の <code>//</code> を使用する
-</p>
-</li>
-<li>
-<p>
-Lua5.2 は、math.floor() を使用する
-</p>
+<li>Lua5.3 は、整数の除算用の <code>//</code> を使用する</li>
+<li>Lua5.2 は、math.floor() を使用する</li>
+</ul>
+<div id="outline-container-headline-10" class="outline-3">
 <h3 id="headline-10">
 LuneScript の場合
 </h3>
-</li>
-</ul>
+<div id="outline-text-headline-10" class="outline-text-3">
 <p>
-LuneScript では int と real が型として存在します。
-</p>
+LuneScript では int と real が型として存在します。</p>
 <p>
-よって 4/3 は 1 で、 4/3.0 は 1.33333 となります。
-</p>
+よって 4/3 は 1 で、 4/3.0 は 1.33333 となります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-2">
 <h2 id="headline-11">
 return 抜け
 </h2>
+<div id="outline-text-headline-11" class="outline-text-2">
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
-   <span class="kr">if</span> <span class="n">val</span> <span class="kr">then</span>
-      <span class="kr">return</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">1</span>
-   <span class="kr">end</span>
-<span class="kr">end</span>
-<span class="n">print</span><span class="p">(</span> <span class="n">func</span><span class="p">(),</span> <span class="n">func</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span> <span class="c1">-- nil 2</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="kr">if</span> <span class="n">val</span> <span class="kr">then</span>
+</span></span><span class="line"><span class="cl">      <span class="kr">return</span> <span class="n">val</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">   <span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="n">print</span><span class="p">(</span> <span class="n">func</span><span class="p">(),</span> <span class="n">func</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">)</span> <span class="c1">-- nil 2</span></span></span></code></pre></div>
 </div>
 <p>
 Lua の関数は return で戻り値を指定します。
-return が実行されない関数の戻り値は nil になります。
-</p>
+return が実行されない関数の戻り値は nil になります。</p>
 <p>
 上記サンプルの func() は、
 引数 val に nil 以外が指定されている場合 return で戻り値を指定していますが、
-val が nil だった場合 return がありません。
-</p>
+val が nil だった場合 return がありません。</p>
 <p>
 これが意図した仕様ならば良いですが、
-return が抜けている可能性があります。
-</p>
+return が抜けている可能性があります。</p>
 <p>
-もしも意図していない抜けであったとしても、 Lua はそれを検出できません。
-</p>
+もしも意図していない抜けであったとしても、 Lua はそれを検出できません。</p>
+<div id="outline-container-headline-12" class="outline-3">
 <h3 id="headline-12">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-12" class="outline-text-3">
 <p>
-LuneScript では、 値を返す関数に return がない場合はコンパイルエラーとなります。
-</p>
+LuneScript では、 値を返す関数に return がない場合はコンパイルエラーとなります。</p>
 <p>
-他にも型由来のエラーは、 LuneScript ではコンパイルエラーとなります。
-</p>
+他にも型由来のエラーは、 LuneScript ではコンパイルエラーとなります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-2">
 <h2 id="headline-13">
 nil 安全
 </h2>
+<div id="outline-text-headline-13" class="outline-text-2">
 <p>
-Lua は nil 安全な言語ではありません。
-</p>
+Lua は nil 安全な言語ではありません。</p>
+<div id="outline-container-headline-14" class="outline-3">
 <h3 id="headline-14">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-14" class="outline-text-3">
 <p>
-LuneScript は nil 安全です。
-</p>
+LuneScript は nil 安全です。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-15" class="outline-2">
 <h2 id="headline-15">
 意図せずに多値の関数戻り値を使用してしまう
 </h2>
+<div id="outline-text-headline-15" class="outline-text-2">
 <p>
 次の func1() と func2() は、同じ引数 &#34;abcb&#34; を与えているのに異なる結果を出力します。
-func1() と func2() で何が違うか分かるでしょうか？
-</p>
+func1() と func2() で何が違うか分かるでしょうか？</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func1</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
-   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
-<span class="kr">end</span>
-<span class="kd">local</span> <span class="kr">function</span> <span class="nf">func2</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
-   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="p">(</span><span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">))</span> <span class="p">)</span> <span class="p">)</span>
-<span class="kr">end</span>
-<span class="n">func1</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 66</span>
-<span class="n">func2</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 97</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func1</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
+</span></span><span class="line"><span class="cl">   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">)</span> <span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func2</span><span class="p">(</span> <span class="n">txt</span> <span class="p">)</span> 
+</span></span><span class="line"><span class="cl">   <span class="n">print</span><span class="p">(</span> <span class="n">string.byte</span><span class="p">(</span> <span class="p">(</span><span class="n">txt</span><span class="p">:</span><span class="n">gsub</span><span class="p">(</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;B&#34;</span> <span class="p">))</span> <span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="n">func1</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 66</span>
+</span></span><span class="line"><span class="cl"><span class="n">func2</span><span class="p">(</span> <span class="s2">&#34;abcb&#34;</span> <span class="p">)</span> <span class="c1">-- 97</span></span></span></code></pre></div>
 </div>
 <p>
 答は、 func1() は string.byte に <code>txt:gsub( &#34;b&#34;, &#34;B&#34; )</code> の
 戻り値そのままを渡しているのに対し、
-func2() は <code>()</code> を括った <code>(txt:gsub( &#34;b&#34;, &#34;B&#34; ))</code> を渡しています。
-</p>
+func2() は <code>()</code> を括った <code>(txt:gsub( &#34;b&#34;, &#34;B&#34; ))</code> を渡しています。</p>
 <p>
 Lua の関数の戻り値が多値だった場合、第一の戻り値だけを引数に渡しているつもりが、
-多値の戻り値を引数に渡してしまう可能性があります。
-</p>
+多値の戻り値を引数に渡してしまう可能性があります。</p>
 <p>
-これにより、意図しない動作になってしまうことがあります。
-</p>
+これにより、意図しない動作になってしまうことがあります。</p>
+<div id="outline-container-headline-16" class="outline-3">
 <h3 id="headline-16">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-16" class="outline-text-3">
 <p>
-LuneScript では、多値の戻り値を使用する場合は、明示が必要です。
-</p>
+LuneScript では、多値の戻り値を使用する場合は、明示が必要です。</p>
 <p>
-明示しない場合は warning になります。
-</p>
+明示しない場合は warning になります。</p>
 <p>
-詳しくは次を参考に。
-</p>
+詳しくは次を参考に。</p>
 <p>
-<a href="../../lunescript/multipleretval">../../lunescript/multipleretval</a>
-</p>
+<a href="../../lunescript/multipleretval">../../lunescript/multipleretval</a></p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-17" class="outline-2">
 <h2 id="headline-17">
 and or を利用した三項演算
 </h2>
+<div id="outline-text-headline-17" class="outline-text-2">
 <p>
 Lua には三項演算子はなく、
-その代わりとして次のような and or を利用したテクニックが良く紹介されています。
-</p>
+その代わりとして次のような and or を利用したテクニックが良く紹介されています。</p>
 <p>
-  <code>EXP and VAL1 or VAL2</code>
-</p>
+  <code>EXP and VAL1 or VAL2</code></p>
 <p>
-これは EXP が真の時に VAL1 となり、偽の時に VAL2 となります。
-</p>
+これは EXP が真の時に VAL1 となり、偽の時に VAL2 となります。</p>
 <p>
-例えば次の場合、 <code>func(1)</code> は <code>1 nil</code> を出力し、  <code>func(2)</code> は <code>nil 1</code> を出力します。
-</p>
+例えば次の場合、 <code>func(1)</code> は <code>1 nil</code> を出力し、  <code>func(2)</code> は <code>nil 1</code> を出力します。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
-   <span class="n">print</span><span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="mi">1</span> <span class="ow">or</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="mi">1</span> <span class="ow">or</span> <span class="kc">nil</span> <span class="p">)</span>
-<span class="kr">end</span>
-<span class="n">func</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="c1">-- 1 nil</span>
-<span class="n">func</span><span class="p">(</span> <span class="mi">2</span> <span class="p">)</span> <span class="c1">-- nil 1</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="n">print</span><span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="mi">1</span> <span class="ow">or</span> <span class="kc">nil</span><span class="p">,</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="mi">1</span> <span class="ow">or</span> <span class="kc">nil</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="n">func</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="c1">-- 1 nil</span>
+</span></span><span class="line"><span class="cl"><span class="n">func</span><span class="p">(</span> <span class="mi">2</span> <span class="p">)</span> <span class="c1">-- nil 1</span></span></span></code></pre></div>
 </div>
 <p>
 and or を利用したテクニックの場合、
-VAL1 が偽 ( nil あるいは false ) となると、期待する動作になりません。
-</p>
+VAL1 が偽 ( nil あるいは false ) となると、期待する動作になりません。</p>
 <p>
-上記 func() の VAL1, VAL2 の関係を置き換えた場合、次のようになります。
-</p>
+上記 func() の VAL1, VAL2 の関係を置き換えた場合、次のようになります。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
-   <span class="n">print</span><span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="kc">nil</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">,</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="kc">nil</span> <span class="ow">or</span> <span class="mi">1</span> <span class="p">)</span>
-<span class="kr">end</span>
-<span class="n">func</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="c1">-- 1 1</span>
-<span class="n">func</span><span class="p">(</span> <span class="mi">2</span> <span class="p">)</span> <span class="c1">-- 1 1</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="n">print</span><span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="kc">nil</span> <span class="ow">or</span> <span class="mi">1</span><span class="p">,</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="kc">nil</span> <span class="ow">or</span> <span class="mi">1</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span>
+</span></span><span class="line"><span class="cl"><span class="n">func</span><span class="p">(</span> <span class="mi">1</span> <span class="p">)</span> <span class="c1">-- 1 1</span>
+</span></span><span class="line"><span class="cl"><span class="n">func</span><span class="p">(</span> <span class="mi">2</span> <span class="p">)</span> <span class="c1">-- 1 1</span></span></span></code></pre></div>
 </div>
 <p>
-この場合、 <code>func(1)</code> , <code>func(2)</code> ともに <code>1 1</code> を出力します。
-</p>
+この場合、 <code>func(1)</code> , <code>func(2)</code> ともに <code>1 1</code> を出力します。</p>
 <p>
 and or の仕様としては正しい動作ですが、
-and or を三項演算子として使用した場合は異なる結果になります。
-</p>
+and or を三項演算子として使用した場合は異なる結果になります。</p>
+<div id="outline-container-headline-18" class="outline-3">
 <h3 id="headline-18">
 LuneScript の場合
 </h3>
+<div id="outline-text-headline-18" class="outline-text-3">
 <p>
-これについては LuneScript も同じです。
-</p>
+これについては LuneScript も同じです。</p>
 <p>
-そのうち三項演算子を実装しようかな。。
-</p>
+そのうち三項演算子を実装しようかな。。</p>
+</div>
+</div>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lua/lua5.4/" title="Lua 5.4 の主な変更点"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Lua 5.4 の主な変更点</a>
@@ -419,17 +425,17 @@ LuneScript の場合
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -438,8 +444,8 @@ LuneScript の場合
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class="active"><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -457,16 +463,16 @@ LuneScript の場合
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -510,6 +516,13 @@ LuneScript の場合
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -547,13 +560,6 @@ LuneScript の場合
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

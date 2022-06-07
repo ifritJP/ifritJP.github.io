@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>@ .1.3 Lua runtime when transcompiled to Go - tech</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,33 +17,39 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="@ .1.3 Lua runtime when transcompiled to Go" />
+<meta property="og:description" content="LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.
+This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.
+To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/" /><meta property="article:section" content="LuneScript" />
+
+<meta property="og:site_name" content="tech" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="@ .1.3 Lua runtime when transcompiled to Go"/>
+<meta name="twitter:description" content="LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.
+This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.
+To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally."/>
+<meta itemprop="name" content="@ .1.3 Lua runtime when transcompiled to Go">
+<meta itemprop="description" content="LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.
+This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.
+To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally.">
+
+<meta itemprop="wordCount" content="546">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
+
+  gtag('config', 'G-4708B8S6ES');
 </script>
-<style>
-:root {}
-</style>
-<meta property="og:title" content="@ .1.3 Lua runtime when transcompiled to Go" />
-<meta property="og:description" content="LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.  This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.  To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally." />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/" />
-<meta property="og:site_name" content="tech" />
-<meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="@ .1.3 Lua runtime when transcompiled to Go"/>
-<meta name="twitter:description" content="LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.  This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.  To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally."/>
-<meta itemprop="name" content="@ .1.3 Lua runtime when transcompiled to Go">
-<meta itemprop="description" content="LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.  This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.  To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally.">
-
-<meta itemprop="wordCount" content="546">
-
-
-
-<meta itemprop="keywords" content="" /></head>
+</head>
 <body><div class="container"><header>
 <h1>tech</h1>
 
@@ -65,134 +71,85 @@
 <main><h1>@ .1.3 Lua runtime when transcompiled to Go</h1>
 
 <p>
-LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.
-</p>
+LuneScript is a project that started development as a Lua transcompiler. And to take advantage of Lua&#39;s assets, LuneScript also supports working with Lua.</p>
 <p>
-This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.
-</p>
+This behavior of linking LuneScript and Lua is also available when transcompiled to go. In other words, Go and Lua work together.</p>
 <p>
-To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally.
-</p>
+To achieve this, we need a link between the Go and Native lua runtimes. Even if you do not use the Lua linkage operation in the LuaScript code, you cannot separate the link of the Lua runtime because it uses the Lua runtime function internally.</p>
 <p>
-The cooperation between LuneScript and Lua is an important function due to the nature of Lua&#39;s transcompiler. On the other hand, if you think of LuneScript as a Go transcompiler, working with Lua isn&#39;t very important.
-</p>
+The cooperation between LuneScript and Lua is an important function due to the nature of Lua&#39;s transcompiler. On the other hand, if you think of LuneScript as a Go transcompiler, working with Lua isn&#39;t very important.</p>
 <p>
-In addition, the advantages of go are as follows.
-</p>
+In addition, the advantages of go are as follows.</p>
 <ul>
-<li>
-<p>
-It is possible to create a single file that operates independently without depending on the library of the execution environment.
-</p>
-</li>
-<li>
-<p>
-Supports cross-compilation to various environments
-</p>
-</li>
+<li>It is possible to create a single file that operates independently without depending on the library of the execution environment.</li>
+<li>Supports cross-compilation to various environments</li>
 </ul>
+<p>If you need to link the Lua runtime, you lose the above advantages.</p>
 <p>
-If you need to link the Lua runtime, you lose the above advantages.
-</p>
+The Lua runtime is environment-independent, but it&#39;s a big shackle to maintain the above advantages.</p>
 <p>
-The Lua runtime is environment-independent, but it&#39;s a big shackle to maintain the above advantages.
-</p>
-<p>
-Therefore, it is possible to execute transcompiled code without linking the Native Lua runtime.
-</p>
+Therefore, it is possible to execute transcompiled code without linking the Native Lua runtime.</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 Use of gopher-lua
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-gopher-lua is a Lua runtime implemented in go. Avoid linking with the Native Lua runtime by using gopher-lua.
-</p>
+gopher-lua is a Lua runtime implemented in go. Avoid linking with the Native Lua runtime by using gopher-lua.</p>
 <p>
-To use gopher-lua, specify -tags as an option during go build.
-</p>
+To use gopher-lua, specify -tags as an option during go build.</p>
 <pre class="example">
 go build -tags gopherlua
 </pre>
 <p>
-Specifying this option switches the Lua runtime from Native Lua to gopher-lua.
-</p>
+Specifying this option switches the Lua runtime from Native Lua to gopher-lua.</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 Precautions for gopher-lua
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
-When using gopher-lua, the Lua runtime specification is limited by the gopher-lua specification.
-</p>
+When using gopher-lua, the Lua runtime specification is limited by the gopher-lua specification.</p>
 <p>
-Specific examples are given below.
-</p>
+Specific examples are given below.</p>
 <ul>
-<li>
-<p>
-lua version is 5.1
-</p>
-</li>
-<li>
-<p>
-Some APIs such as string.dump are not available
-</p>
-</li>
-<li>
-<p>
-Non-pure Lua libraries such as luasocket are not available
-</p>
-</li>
-<li>
-<p>
-Slower than Native Lua
-</p>
-</li>
+<li>lua version is 5.1</li>
+<li>Some APIs such as string.dump are not available</li>
+<li>Non-pure Lua libraries such as luasocket are not available</li>
+<li>Slower than Native Lua</li>
 </ul>
-<p>
-If you&#39;re not using LuneScript and Lua integration, you don&#39;t have to worry about it, but you should be aware that there are differences between Native Lua and gopher-lua.
-</p>
+<p>If you&#39;re not using LuneScript and Lua integration, you don&#39;t have to worry about it, but you should be aware that there are differences between Native Lua and gopher-lua.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
 Other Lua runtimes
 </h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <p>
-There are several types of Lua runtimes implemented in go.
-</p>
+There are several types of Lua runtimes implemented in go.</p>
 <p>
-The following are typical examples.
-</p>
+The following are typical examples.</p>
 <ul>
-<li>
-<p>
-<a href="https://github.com/yuin/gopher-lua">https://github.com/yuin/gopher-lua</a>
-</p>
-</li>
-<li>
-<p>
-<a href="https://github.com/Azure/golua">https://github.com/Azure/golua</a>
-</p>
-</li>
-<li>
-<p>
-<a href="https://github.com/Shopify/go-lua">https://github.com/Shopify/go-lua</a>  
-</p>
-</li>
+<li><a href="https://github.com/yuin/gopher-lua">https://github.com/yuin/gopher-lua</a></li>
+<li><a href="https://github.com/Azure/golua">https://github.com/Azure/golua</a></li>
+<li><a href="https://github.com/Shopify/go-lua">https://github.com/Shopify/go-lua</a>  </li>
 </ul>
+<p>yuin / gopher-lua is the implementation used this time. The only implementation that was able to execute LuneScript&#39;s self-hosted Lua code, as a typical example.</p>
 <p>
-yuin / gopher-lua is the implementation used this time. The only implementation that was able to execute LuneScript&#39;s self-hosted Lua code, as a typical example.
-</p>
+Azure / golua seems to be a project launched by Microsoft. I expected it to be based on lua5.3, but it didn&#39;t do what I expected it to do (I can&#39;t parse Lua). Since the repository of github is Archived, future development cannot be expected.</p>
 <p>
-Azure / golua seems to be a project launched by Microsoft. I expected it to be based on lua5.3, but it didn&#39;t do what I expected it to do (I can&#39;t parse Lua). Since the repository of github is Archived, future development cannot be expected.
-</p>
+Shopify / go-lua is based on lua5.2. A simple Lua script works, but I couldn&#39;t load lua, which self-hosts LuneScript. For this reason, it was expected that there would be a compatibility problem, so this time we decided not to adopt it in LuneScript.</p>
 <p>
-Shopify / go-lua is based on lua5.2. A simple Lua script works, but I couldn&#39;t load lua, which self-hosts LuneScript. For this reason, it was expected that there would be a compatibility problem, so this time we decided not to adopt it in LuneScript.
-</p>
+I&#39;ve tried several Lua implementations with go, but it&#39;s a shame that few Lua implementations support a level of compatibility that allows LuneScript to run.</p>
 <p>
-I&#39;ve tried several Lua implementations with go, but it&#39;s a shame that few Lua implementations support a level of compatibility that allows LuneScript to run.
-</p>
+If I implement Lua in the future, I thought that it could be used as a test case to check the compatibility of Lua by checking whether LuneScript works.</p>
 <p>
-If I implement Lua in the future, I thought that it could be used as a test case to check the compatibility of Lua by checking whether LuneScript works.
-</p>
-<p>
-However, if it doesn&#39;t work, it&#39;s not easy to know what caused it to not work, so it&#39;s not realistic considering that it&#39;s not easy to use as a test case.
-</p>
+However, if it doesn&#39;t work, it&#39;s not easy to know what caused it to not work, so it&#39;s not realistic considering that it&#39;s not easy to use as a test case.</p>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/go/" title="@ .1 Transcompile to Go language"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @ .1 Transcompile to Go language</a>
@@ -209,6 +166,12 @@ However, if it doesn&#39;t work, it&#39;s not easy to know what caused it to not
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/"></a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Value</a></li>
@@ -244,12 +207,6 @@ However, if it doesn&#39;t work, it&#39;s not easy to know what caused it to not
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Delayed loading</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects that use LuneScript</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">@ .1 Transcompile to Go language</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">@ .1.3 Lua runtime when transcompiled to Go</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">@ .2 Safe asynchronous processing</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">@ .2.1 Asynchronous processing O (past information)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">@ 1.2 Package when transcompiling to Go language</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">@ 3. Collaboration with Lua</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A. Let&#39;s have more fun in an exciting development environment</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jump by lnstags (source code tag system)</a></li>

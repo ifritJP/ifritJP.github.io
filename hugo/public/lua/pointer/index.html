@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>ポインタ編 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lua/pointer/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="ポインタ編" />
 <meta property="og:description" content="これは、 C/C&#43;&#43; のポインタを C-Lua 間で受け渡しする際の実装方法を説明するものです。 簡単に結論を先に言うと、 luaL_newmetatable() と lua_setmetatable() をちゃんと使おうということです。 C/C&#43;&#43; のポ" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lua/pointer/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lua/pointer/" /><meta property="article:section" content="Lua" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="ポインタ編"/>
 <meta name="twitter:description" content="これは、 C/C&#43;&#43; のポインタを C-Lua 間で受け渡しする際の実装方法を説明するものです。 簡単に結論を先に言うと、 luaL_newmetatable() と lua_setmetatable() をちゃんと使おうということです。 C/C&#43;&#43; のポ"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="これは、 C/C&#43;&#43; のポインタを C-Lua 間で受け渡しする際の実装方法を説明するものです。 簡単に結論を先に言うと、 luaL_newmetatable() と lua_setmetatable() をちゃんと使おうということです。 C/C&#43;&#43; のポ">
 
 <meta itemprop="wordCount" content="3537">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -65,162 +65,130 @@
 <main><h1>ポインタ編</h1>
 
 <p>
-  これは、 C/C++ のポインタを C-Lua 間で受け渡しする際の実装方法を説明するものです。
-</p>
+  これは、 C/C++ のポインタを C-Lua 間で受け渡しする際の実装方法を説明するものです。</p>
 <p>
   簡単に結論を先に言うと、
-  <code>luaL_newmetatable()</code> と <code>lua_setmetatable()</code> をちゃんと使おうということです。
-</p>
+  <code>luaL_newmetatable()</code> と <code>lua_setmetatable()</code> をちゃんと使おうということです。</p>
 <p>
-  C/C++ のポインタを C-Lua 間で受け渡しする処理として、次の例を挙げます。
-</p>
+  C/C++ のポインタを C-Lua 間で受け渡しする処理として、次の例を挙げます。</p>
 <p>
-  下記の C プログラムで記述した処理があったとき、
-</p>
+  下記の C プログラムで記述した処理があったとき、</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="k">const</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="nf">getPointer</span><span class="p">()</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="o">&amp;</span><span class="n">s_val</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="n">getPointer</span><span class="p">();</span>
-  <span class="n">processPointer</span><span class="p">(</span> <span class="n">pVal</span> <span class="p">);</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">const</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="nf">getPointer</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="o">&amp;</span><span class="n">s_val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="n">getPointer</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer</span><span class="p">(</span> <span class="n">pVal</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 上記の getPointer()、 processPointer() を C で書き、
-func() の処理を Lua で書く時のこと考えます。
-</p>
+func() の処理を Lua で書く時のこと考えます。</p>
 <p>
-ここで Lua の処理は、次のように書くとします。
-</p>
+ここで Lua の処理は、次のように書くとします。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
-  <span class="kd">local</span> <span class="n">val</span> <span class="o">=</span> <span class="n">getPointer</span><span class="p">()</span>
-  <span class="n">processPointer</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
-<span class="kr">end</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="kd">local</span> <span class="n">val</span> <span class="o">=</span> <span class="n">getPointer</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span></span></span></code></pre></div>
 </div>
 <p>
 まず基本として、C の関数から Lua にデータを返す場合、 <code>lua_push</code> 系の関数を利用します。
 一方 Lua からデータを取得する場合、 <code>lua_to</code> 系の関数、あるいは <code>luaL_check</code> 系の関数を利用します。
-<code>luaL_check</code> 系は、アクセスしたデータの型が、所定の型でない場合に Lua のエラーになる関数です。
-</p>
+<code>luaL_check</code> 系は、アクセスしたデータの型が、所定の型でない場合に Lua のエラーになる関数です。</p>
 <p>
-ポインタを扱う場合に、これら関数をどのように使うべきかを説明します。
-</p>
+ポインタを扱う場合に、これら関数をどのように使うべきかを説明します。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 やってはいけない方法
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
 まずは、C と Lua 間でポインタを受け渡しする方法として、
-やってはいけない実現方法について説明します。
-</p>
+やってはいけない実現方法について説明します。</p>
 <p>
-推奨する方法を知りたい方はこの章を読み飛ばしてください。
-</p>
+推奨する方法を知りたい方はこの章を読み飛ばしてください。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 やってはいけない方法-1. <code>lua_Integer</code>, <code>lua_Unsigned</code>, <code>lua_Number</code> 系の API を利用する
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
-<code>lua_to</code>, <code>luaL_check</code> 系の関数には <code>lua_Integer</code>, <code>lua_Unsigned</code>, <code>lua_Number</code> 用の API があります。
-</p>
+<code>lua_to</code>, <code>luaL_check</code> 系の関数には <code>lua_Integer</code>, <code>lua_Unsigned</code>, <code>lua_Number</code> 用の API があります。</p>
 <p>
 <code>lua_Integer</code> は符号付き整数で、 <code>lua_Unsigned</code> は符号なし整数、 <code>lua_Number</code> は実数です。
-(Lua のコンフィルレーションによって異なる)
-</p>
+(Lua のコンフィルレーションによって異なる)</p>
 <p>
 これらの関数を利用すると、getPointer()、 processPointer() は次のように書けます。
 (Lua への関数登録は省きます。)
-ここでは <code>lua_Integer</code> 向けの API を利用しています。
-</p>
+ここでは <code>lua_Integer</code> 向けの API を利用しています。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-<span class="p">{</span>
-  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-C のポインタを扱う際にこれらの API を利用するには、次の問題があります。
-</p>
+C のポインタを扱う際にこれらの API を利用するには、次の問題があります。</p>
 <ul>
-<li>
-<p>
-環境依存になる
-</p>
-</li>
-<li>
-<p>
-メモリ破壊の可能性がある
-</p>
+<li>環境依存になる</li>
+<li>メモリ破壊の可能性がある</li>
+</ul>
+<div id="outline-container-headline-3" class="outline-4">
 <h4 id="headline-3">
 環境依存になる
 </h4>
-</li>
-</ul>
+<div id="outline-text-headline-3" class="outline-text-4">
 <p>
 <code>lua_Integer</code> 、 <code>lua_Number</code> はそれぞれ、整数、実数を扱うためのデータ型です。
-そもそもポインタを扱うデータ型ではありません。
-</p>
+そもそもポインタを扱うデータ型ではありません。</p>
 <p>
 組込みプログラムなどでは、ポインタ型と整数型の相互のキャストを行なうことは良くあります。
-しかし、Lua とのインタフェースでは、すべきでありません。
-</p>
+しかし、Lua とのインタフェースでは、すべきでありません。</p>
 <p>
-なぜならば、互換性を保てない可能性があるためです。
-</p>
+なぜならば、互換性を保てない可能性があるためです。</p>
 <p>
 例えばポインタを <code>lua_Number</code> で扱うことを考えると、
 64bit 処理系では <code>lua_Number</code> がデフォルトで利用する double が
-誤差なく保持できる整数の範囲では、64bit のアドレス空間を表現できません。
-</p>
+誤差なく保持できる整数の範囲では、64bit のアドレス空間を表現できません。</p>
 <p>
 32bit 処理系では、32bit のアドレス空間を double (64bit) で誤差なく表現できますが、
-次のように <code>lua_Number</code> と <code>lua_Integer</code> を混在させてしまうと不整合が発生します。
-</p>
+次のように <code>lua_Number</code> と <code>lua_Integer</code> を混在させてしまうと不整合が発生します。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="n">lua_pushnumber</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-<span class="p">{</span>
-  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushnumber</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkinteger</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <ul>
-<li>
-<p>
-getPointer() 内で、 <code>lua_pushnumber()</code> を使ってポインタを Lua に渡す
-</p>
-</li>
-<li>
-<p>
-processPointer() 内で、 <code>luaL_checkinteger()</code> を使ってポインタを取得する
-</p>
-</li>
+<li>getPointer() 内で、 <code>lua_pushnumber()</code> を使ってポインタを Lua に渡す</li>
+<li>processPointer() 内で、 <code>luaL_checkinteger()</code> を使ってポインタを取得する</li>
 </ul>
+<p>この処理で問題になるのは、アドレスが 0x80000000 以上になるケースです。</p>
 <p>
-この処理で問題になるのは、アドレスが 0x80000000 以上になるケースです。
-</p>
-<p>
-順に追って説明すると、
-</p>
+順に追って説明すると、</p>
 <p>
 0x80000000 を <code>lua_pushnumber()</code> に渡すと、 
 0x80000000 は double で保持可能な範囲であるため、そのまま保持されます。
@@ -231,234 +199,219 @@ processPointer() 内で、 <code>luaL_checkinteger()</code> を使ってポイ�
 <code>luaL_checkinteger()</code> は error となります。
 なお、Lua 5.3 以降では error となりますが、
 Lua 5.2 以前ではこの変換は未定義の動作になり、
-結果的に processPointer() は不定なアドレスにアクセスします。
-</p>
+結果的に processPointer() は不定なアドレスにアクセスします。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-4">
 <h4 id="headline-4">
 メモリ破壊の可能性について
 </h4>
+<div id="outline-text-headline-4" class="outline-text-4">
 <p>
 次のように getPointer() から取得したアドレスを
-processPointer() に渡したのであれば問題ありません。
-</p>
+processPointer() に渡したのであれば問題ありません。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
-  <span class="kd">local</span> <span class="n">val</span> <span class="o">=</span> <span class="n">getPointer</span><span class="p">()</span>
-  <span class="n">processPointer</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
-<span class="kr">end</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="kd">local</span> <span class="n">val</span> <span class="o">=</span> <span class="n">getPointer</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer</span><span class="p">(</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span></span></span></code></pre></div>
 </div>
 <p>
 しかし、 processPointer() に渡す値が getPointer() から取得した値でなかった場合は、
 processPointer() は不正なアドレスにアクセスすることになります。
-これにより、メモリ破壊が発生します。
-</p>
+これにより、メモリ破壊が発生します。</p>
 <p>
-例えば、次のように Lua で書けば、メモリ破壊が発生してしまいます。
-</p>
+例えば、次のように Lua で書けば、メモリ破壊が発生してしまいます。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
-  <span class="n">processPointer</span><span class="p">(</span> <span class="mi">0</span> <span class="p">)</span>
-<span class="kr">end</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer</span><span class="p">(</span> <span class="mi">0</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span></span></span></code></pre></div>
 </div>
 <p>
 これは、Lua-C 間に限ったことではなく、
 C-C 間であっても processPointer() の引数に不正な値を設定した場合は、
-メモリ破壊になります。
-</p>
+メモリ破壊になります。</p>
 <p>
 ただ、C-C 間で同じ問題が起るからといって、
-Lua-C 間で起っても良いという訳ではありません。
-</p>
+Lua-C 間で起っても良いという訳ではありません。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
 <h3 id="headline-5">
 やってはいけない方法-2. ライトユーザデータ系の API を利用する
 </h3>
+<div id="outline-text-headline-5" class="outline-text-3">
 <p>
 ライトユーザデータ系の API を利用すると、
 getPointer()、 processPointer() は次のように書けます。
-(Lua への関数登録は省きます。)
-</p>
+(Lua への関数登録は省きます。)</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="n">lua_pushlightuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-<span class="p">{</span>
-  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_touserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushlightuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_touserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 特定の条件下では、ポインタを扱う際にライトユーザデータを利用しても問題になりません。
-しかし、その条件を満たさないことが多いのでライトユーザデータを利用すべきではありません。
-</p>
+しかし、その条件を満たさないことが多いのでライトユーザデータを利用すべきではありません。</p>
 <p>
 その条件とは、「C-Lua 間で扱うポインタ型が 1 種類であること」です。
-2種類以上になった場合は、ポインタをライトユーザデータで扱うべきではありません。
-</p>
+2種類以上になった場合は、ポインタをライトユーザデータで扱うべきではありません。</p>
 <p>
-その理由は、次の問題のためです。
-</p>
+その理由は、次の問題のためです。</p>
 <ul>
-<li>
-<p>
-メモリ破壊の可能性がある
-</p>
-</li>
+<li>メモリ破壊の可能性がある</li>
 </ul>
-<p>
-1種類であれば、「ユーザデータ = 固定のポインタ型」であることが保証されるので、
-ユーザデータであることさえ確認できればメモリが破壊されることはありません。
-</p>
+<p>1種類であれば、「ユーザデータ = 固定のポインタ型」であることが保証されるので、
+ユーザデータであることさえ確認できればメモリが破壊されることはありません。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="n">lua_pushlightuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-<span class="p">{</span>
-  <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_touserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="k">static</span> <span class="kt">char</span> <span class="n">s_val2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">int</span> <span class="n">getPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="n">lua_pushlightuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val2</span> <span class="p">);</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="n">processPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-<span class="p">{</span>
-  <span class="kt">char</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_touserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushlightuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_touserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">char</span> <span class="n">s_val2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">getPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_pushlightuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">s_val2</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">processPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">char</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">lua_touserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 上記のように 2 種類(int *, char *)のポインタを扱う場合でも、
-Lua 側で次のように処理すれば何の問題も起りません。
-</p>
+Lua 側で次のように処理すれば何の問題も起りません。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
-  <span class="n">processPointer</span><span class="p">(</span> <span class="n">getPointer</span><span class="p">()</span> <span class="p">)</span>
-  <span class="n">processPointer2</span><span class="p">(</span> <span class="n">getPointer2</span><span class="p">()</span> <span class="p">)</span>
-<span class="kr">end</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer</span><span class="p">(</span> <span class="n">getPointer</span><span class="p">()</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer2</span><span class="p">(</span> <span class="n">getPointer2</span><span class="p">()</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span></span></span></code></pre></div>
 </div>
 <p>
-しかし、次のようにしてしまった場合、メモリ破壊が発生します。
-</p>
+しかし、次のようにしてしまった場合、メモリ破壊が発生します。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
-  <span class="n">processPointer</span><span class="p">(</span> <span class="n">getPointer2</span><span class="p">()</span> <span class="p">)</span>
-<span class="kr">end</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer</span><span class="p">(</span> <span class="n">getPointer2</span><span class="p">()</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span></span></span></code></pre></div>
 </div>
 <p>
 processPointer() は、与えられたライトユーザデータを int * として扱いますが、
 getPointer2() は char * のポインタを示すライトユーザデータを返します。
-これにより、char のメモリ領域を越えて int でアクセスするため、メモリ破壊が発生します。
-</p>
+これにより、char のメモリ領域を越えて int でアクセスするため、メモリ破壊が発生します。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
 <h2 id="headline-6">
 推奨する方法
 </h2>
+<div id="outline-text-headline-6" class="outline-text-2">
 <p>
-Lua では、C 側で確保したメモリ領域を、ユーザデータとして扱うことができます。
-</p>
+Lua では、C 側で確保したメモリ領域を、ユーザデータとして扱うことができます。</p>
 <p>
-ただし、Lua が提供する専用の alloc 関数で確保したメモリ領域である必要があります。
-</p>
+ただし、Lua が提供する専用の alloc 関数で確保したメモリ領域である必要があります。</p>
+<div id="outline-container-headline-7" class="outline-3">
 <h3 id="headline-7">
 推奨する方法-1. 基本
 </h3>
+<div id="outline-text-headline-7" class="outline-text-3">
 <p>
 ユーザデータ系の API を利用すると、
 getPointer()、 processPointer() は次のように書けます。
-(Lua への関数登録は省きます。)
-</p>
+(Lua への関数登録は省きます。)</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="kt">int</span> <span class="o">**</span> <span class="n">ppVal</span> <span class="o">=</span> <span class="n">lua_newuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">)</span> <span class="p">);</span>
-  <span class="n">luaL_newmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;INTP&#34;</span> <span class="p">);</span>
-  <span class="n">lua_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">ppVal</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">s_val</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-<span class="p">{</span>
-  <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkudata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;INTP&#34;</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="k">static</span> <span class="kt">char</span> <span class="n">s_val2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="kt">int</span> <span class="n">getPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="kt">int</span> <span class="o">**</span> <span class="n">ppVal</span> <span class="o">=</span> <span class="n">lua_newuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">s_val2</span> <span class="p">)</span> <span class="p">);</span>
-  <span class="n">luaL_newmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;CHARP&#34;</span> <span class="p">);</span>
-  <span class="n">lua_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">ppVal</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">s_val2</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="n">processPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
-<span class="p">{</span>
-  <span class="kt">char</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkudata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;CHARP&#34;</span> <span class="p">);</span>
-  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="n">s_val</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">getPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="o">**</span> <span class="n">ppVal</span> <span class="o">=</span> <span class="n">lua_newuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">s_val</span> <span class="p">)</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_newmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;INTP&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">ppVal</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">s_val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">processPointer</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkudata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;INTP&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">char</span> <span class="n">s_val2</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">getPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="o">**</span> <span class="n">ppVal</span> <span class="o">=</span> <span class="n">lua_newuserdata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">s_val2</span> <span class="p">)</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">luaL_newmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="s">&#34;CHARP&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="n">lua_setmetatable</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">ppVal</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">s_val2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">processPointer2</span><span class="p">(</span> <span class="n">lua_State</span> <span class="o">*</span> <span class="n">pLua</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">char</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">luaL_checkudata</span><span class="p">(</span> <span class="n">pLua</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&#34;CHARP&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="o">*</span><span class="n">pVal</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 ユーザデータとして扱うメモリを確保するには、
 <code>lua_newuserdata( lua_State *L, size_t size )</code> 関数を使用します。
-この関数を使用することで、そのポインタをユーザデータとして扱えます。
-</p>
+この関数を使用することで、そのポインタをユーザデータとして扱えます。</p>
 <p>
-<code>lua_newuserdata()</code> には、確保するメモリのサイズを指定します。
-</p>
+<code>lua_newuserdata()</code> には、確保するメモリのサイズを指定します。</p>
 <p>
 これでユーザデータとして使用できますが、
-これだけだとライトユーザデータと変わりません。
-</p>
+これだけだとライトユーザデータと変わりません。</p>
 <p>
-そこで、ユーザデータにメタテーブルを設定します。
-</p>
+そこで、ユーザデータにメタテーブルを設定します。</p>
 <p>
 Lua スクリプト内では、テーブルオブジェクトに対してのみメタテーブルを設定できますが、
 C 言語からはユーザデータに対してもメタテーブルを設定できます。
-なお、ライトユーザデータにはメタテーブルを設定できません。
-</p>
+なお、ライトユーザデータにはメタテーブルを設定できません。</p>
 <p>
 メタテーブルは、 <code>luaL_newmetatable( lua_State *L, const char *tname )</code> で生成します。
 tname には、メタテーブル名を指定します。
-本来 <code>luaL_newmetatable()</code> は、Lua VM に対して 1 度だけ実行するだけで大丈夫です。
-</p>
+本来 <code>luaL_newmetatable()</code> は、Lua VM に対して 1 度だけ実行するだけで大丈夫です。</p>
 <p>
 上記 getPointer() では、 <code>lua_newuserdata()</code> で確保したユーザデータにポインタを格納し、
 <code>luaL_newmetatable()</code> で &#34;INTP&#34; の名前のメタテーブルを生成して、
-<code>lua_setmetatable()</code> でユーザデータにメタテーブルを設定しています。
-</p>
+<code>lua_setmetatable()</code> でユーザデータにメタテーブルを設定しています。</p>
 <p>
 ユーザデータは <code>luaL_checkudata()</code> が利用でき、
 この API で指定のユーザデータが指定のメタテーブルを持つユーザデータかどうかを
-判定できます。
-</p>
+判定できます。</p>
 <p>
 ポインタの型毎に設定するメタデータを切り替えることで、
-想定とは異なるユーザデータが与えられた時の不正動作を回避できます。
-</p>
+想定とは異なるユーザデータが与えられた時の不正動作を回避できます。</p>
 <div class="src src-lua">
-<div class="highlight"><pre class="chroma"><code class="language-lua" data-lang="lua"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
-  <span class="n">processPointer</span><span class="p">(</span> <span class="n">getPointer2</span><span class="p">()</span> <span class="p">)</span>
-<span class="kr">end</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lua" data-lang="lua"><span class="line"><span class="cl"><span class="kd">local</span> <span class="kr">function</span> <span class="nf">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="n">processPointer</span><span class="p">(</span> <span class="n">getPointer2</span><span class="p">()</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kr">end</span></span></span></code></pre></div>
 </div>
 <p>
 たとえば、 Lua で上記のような処理を書いたときも、
-不正な動作ではなく確実に error として弾くことができます。
-</p>
+不正な動作ではなく確実に error として弾くことができます。</p>
 <p>
 なお、C-Lua 間で扱うポインタ型が多い場合、
 <code>lua_setmetatable()</code>, <code>luaL_checkudata()</code> のオーバーヘッドが大きくなるため、
-この方法は効率が悪くなる可能性があります。
-</p>
+この方法は効率が悪くなる可能性があります。</p>
 <p>
 その場合、ポインタ型ごとにメタデータを切り替えるのではなく、
 下記のような構造体を宣言し、
@@ -467,24 +420,26 @@ tname には、メタテーブル名を指定します。
 構造体の type メンバにやり取りするポインタの型を設定し、
 <code>luaL_checkudata()</code> の後に type が想定する値であることを検証することで、
 <code>lua_setmetatable()</code>, <code>luaL_checkudata()</code> のオーバーヘッドを下げて
-目的の処理を実現できます。
-</p>
+目的の処理を実現できます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">enum</span> <span class="p">{</span>
-  <span class="n">pointer_type_int</span><span class="p">,</span>
-  <span class="n">pointer_type_char</span><span class="p">,</span>
-<span class="p">}</span> <span class="n">pointer_type_t</span><span class="p">;</span>
-<span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
-  <span class="n">pointer_type_t</span> <span class="n">type</span><span class="p">;</span>
-  <span class="kt">void</span> <span class="o">*</span> <span class="n">pVal</span><span class="p">;</span>
-<span class="p">}</span> <span class="n">val_t</span><span class="p">;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">enum</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pointer_type_int</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pointer_type_char</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">pointer_type_t</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pointer_type_t</span> <span class="n">type</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">void</span> <span class="o">*</span> <span class="n">pVal</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">val_t</span><span class="p">;</span></span></span></code></pre></div>
 </div>
 <p>
 「やってはいけない方法」で紹介した方法でも環境によっては動いてしまうので、
 環境が変ったときに解析困難な不具合になったります。
 基本的な内容ですが、公式リファレンスや Web の入門サンプルを流し読みした程度だと見落してしまうので、
-気をつけるべき内容です。
-</p>
+気をつけるべき内容です。</p>
+</div>
+</div>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lua/anti-pattern/" title="Lua でやりがちなミス"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Lua でやりがちなミス</a>
@@ -500,17 +455,17 @@ tname には、メタテーブル名を指定します。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -519,8 +474,8 @@ tname には、メタテーブル名を指定します。
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -538,16 +493,16 @@ tname には、メタテーブル名を指定します。
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -591,6 +546,13 @@ tname には、メタテーブル名を指定します。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -628,13 +590,6 @@ tname には、メタテーブル名を指定します。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

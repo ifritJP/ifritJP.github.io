@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編) - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lctags/subroutine/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)" />
 <meta property="og:description" content="コーディングしていると、関数が肥大化していくことが良くあります。 関数の肥大化は、メンテナンス性や可読性が落ちる原因になるため、 リファクタリン" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lctags/subroutine/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lctags/subroutine/" /><meta property="article:section" content="lctags" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)"/>
 <meta name="twitter:description" content="コーディングしていると、関数が肥大化していくことが良くあります。 関数の肥大化は、メンテナンス性や可読性が落ちる原因になるため、 リファクタリン"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="コーディングしていると、関数が肥大化していくことが良くあります。 関数の肥大化は、メンテナンス性や可読性が落ちる原因になるため、 リファクタリン">
 
 <meta itemprop="wordCount" content="3114">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -65,440 +65,426 @@
 <main><h1>lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</h1>
 
 <p>
-コーディングしていると、関数が肥大化していくことが良くあります。
-</p>
+コーディングしていると、関数が肥大化していくことが良くあります。</p>
 <p>
 関数の肥大化は、メンテナンス性や可読性が落ちる原因になるため、
-リファクタリングで関数内の処理を分割するサブルーチン化作業が必要です。
-</p>
+リファクタリングで関数内の処理を分割するサブルーチン化作業が必要です。</p>
 <p>
 サブルーチン化作業はほとんど機械的に出来ますが、
-分割する関数の前後処理に気をつけないと、バグってしまうこともあります。
-</p>
+分割する関数の前後処理に気をつけないと、バグってしまうこともあります。</p>
 <p>
-lctags は、そんなサブルーチン化作業をサポートします。
-</p>
+lctags は、そんなサブルーチン化作業をサポートします。</p>
 <p>
-lctags 全般の紹介は次を参照してください。
-</p>
+lctags 全般の紹介は次を参照してください。</p>
 <ul>
-<li>
-<p>
-C/C++ ソースコードタグシステム lctags の紹介
-</p>
-</li>
+<li>C/C++ ソースコードタグシステム lctags の紹介</li>
 </ul>
-<p>
-<a href="../">../</a>
-</p>
+<p><a href="../">../</a></p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 事前準備
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
 lctags のサブルーチン化処理は、ブロック文 {} を対象としています。
 よってブロックでない処理をサブルーチン化する場合は、事前にブロック化しておく必要があります。
-ブロック化は単に {} で括るだけです。
-</p>
+ブロック化は単に {} で括るだけです。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
 使用方法
 </h2>
+<div id="outline-text-headline-2" class="outline-text-2">
 <p>
 emacs でソースファイルを開き、サブルーチン化したいブロックの先頭にカーソルを合せ、
-次を実行します。
-</p>
+次を実行します。</p>
 <p>
-  M-x lctags-split-it
-</p>
+  M-x lctags-split-it</p>
 <p>
-あるいは C-c l でメニューを開いて、 r s でも可能です。  
-</p>
+あるいは C-c l でメニューを開いて、 r s でも可能です。  </p>
 <p>
 これにより、ブロック内の処理を解析してサブルーチンを生成し、
 新しいバッファに生成したサブルーチンと、そのサブルーチンをコールするコードが
-表示されます。
-</p>
+表示されます。</p>
 <p>
-後は、この表示されたコードに置き換えればサブルーチン化作業が完了します。
-</p>
+後は、この表示されたコードに置き換えればサブルーチン化作業が完了します。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
 デモ
 </h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <p>
-次のリンクは、lctags を使って emacs から C 言語の関数をサブルーチン化する操作のデモ動画です。
-</p>
+次のリンクは、lctags を使って emacs から C 言語の関数をサブルーチン化する操作のデモ動画です。</p>
 <p>
-<a href="https://youtu.be/_9xPcL5VNVM">https://youtu.be/_9xPcL5VNVM</a>
-</p>
+<a href="https://youtu.be/_9xPcL5VNVM">https://youtu.be/_9xPcL5VNVM</a></p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
 <h2 id="headline-4">
 チュートリアル
 </h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<div id="outline-container-headline-5" class="outline-3">
 <h3 id="headline-5">
 準備
 </h3>
+<div id="outline-text-headline-5" class="outline-text-3">
 <p>
-lctags の DB を作成し、次の内容のソースコードを登録しておきます。
-</p>
+lctags の DB を作成し、次の内容のソースコードを登録しておきます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-<span class="p">}</span> <span class="n">type_t</span><span class="p">;</span>
-<span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-        <span class="n">typ</span><span class="p">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
-        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">type_t</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">typ</span><span class="p">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
 <h3 id="headline-6">
 サブルーチン化
 </h3>
+<div id="outline-text-headline-6" class="outline-text-3">
 <p>
-上記ソースコードを開き、 <code>if ( val == 0 ) {</code> の &#34;{&#34; の箇所にカーソルを合せます。
-</p>
+上記ソースコードを開き、 <code>if ( val == 0 ) {</code> の &#34;{&#34; の箇所にカーソルを合せます。</p>
 <p>
 ここで C-c l と入力し、lctags メニューを開きます。
-lctags メニューでは、 refactoring の &#39;r&#39; を押し、さらに subroutine の &#39;s&#39; を押します。
-</p>
+lctags メニューでは、 refactoring の &#39;r&#39; を押し、さらに subroutine の &#39;s&#39; を押します。</p>
 <p>
-これにより、対象ブロックの解析とサブルーチンの生成が行なわれ、次の内容のバッファが開かれます。
-</p>
+これにより、対象ブロックの解析とサブルーチンの生成が行なわれ、次の内容のバッファが開かれます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cm">/* please edit &#39;x&#39; or &#39;o&#39; and symbol and order of following items,
-</span><span class="cm">    and push C-c C-c to update.
-</span><span class="cm">    format:
-</span><span class="cm">       :[xor]:argName:orgName
-</span><span class="cm">     x is to pass value.
-</span><span class="cm">     o is to pass address of value.
-</span><span class="cm">     r is to pass value and to return directly.
-</span><span class="cm">----------------
-</span><span class="cm">:o:indirect-return
-</span><span class="cm">:o:pTyp:typ
-</span><span class="cm">:o:pVal:val
-</span><span class="cm">----------------
-</span><span class="cm">*/</span>
-<span class="c1">//======= call ======
-</span><span class="c1"></span><span class="p">{</span>
-  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-<span class="c1">//======= sub routine ======
-</span><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">);</span>
-  <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/* please edit &#39;x&#39; or &#39;o&#39; and symbol and order of following items,
+</span></span></span><span class="line"><span class="cl"><span class="cm">    and push C-c C-c to update.
+</span></span></span><span class="line"><span class="cl"><span class="cm">    format:
+</span></span></span><span class="line"><span class="cl"><span class="cm">       :[xor]:argName:orgName
+</span></span></span><span class="line"><span class="cl"><span class="cm">     x is to pass value.
+</span></span></span><span class="line"><span class="cl"><span class="cm">     o is to pass address of value.
+</span></span></span><span class="line"><span class="cl"><span class="cm">     r is to pass value and to return directly.
+</span></span></span><span class="line"><span class="cl"><span class="cm">----------------
+</span></span></span><span class="line"><span class="cl"><span class="cm">:o:indirect-return
+</span></span></span><span class="line"><span class="cl"><span class="cm">:o:pTyp:typ
+</span></span></span><span class="line"><span class="cl"><span class="cm">:o:pVal:val
+</span></span></span><span class="line"><span class="cl"><span class="cm">----------------
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//======= call ======
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 <code>=== sub routin ===</code> 以降は、サブルーチン化した処理です。
-この処理をソースコードにコピーします。
-</p>
+この処理をソースコードにコピーします。</p>
 <p>
 <code>=== call ===</code> 以降は、サブルーチン化した関数を呼び出す処理です。
-この処理を、 &#34;if ( val == 0 ) {&#34; の &#34;{&#34; の箇所に置き換えます。
-</p>
+この処理を、 &#34;if ( val == 0 ) {&#34; の &#34;{&#34; の箇所に置き換えます。</p>
 <p>
-置き換えると次のようになります。
-</p>
+置き換えると次のようになります。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">);</span>
-  <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-       <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-       <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
-          <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
-       <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">       <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">       <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">       <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-これでサブルーチン化は完成です。
-</p>
+これでサブルーチン化は完成です。</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
 <h3 id="headline-7">
 生成するサブルーチンの説明
 </h3>
+<div id="outline-text-headline-7" class="outline-text-3">
 <p>
 念のためサブルーチン化後の処理について説明しておくと、
 <code>func6__sub()</code> は戻り値が int 型の関数です。
 戻り値が 0 以外の時は、サブルーチンの呼び出し側を return で終了させます。
-その際、戻り値は <code>funcRet__</code> に格納されています。
-</p>
+その際、戻り値は <code>funcRet__</code> に格納されています。</p>
 <p>
-また、上記処理を良く見ると、サブルーチンに渡している val が気になるのではないかと思います。
-</p>
+また、上記処理を良く見ると、サブルーチンに渡している val が気になるのではないかと思います。</p>
 <p>
-サブルーチン化した処理では、 val を値渡しではなく、アドレス渡しにしています。
-</p>
+サブルーチン化した処理では、 val を値渡しではなく、アドレス渡しにしています。</p>
 <p>
-これは何故かというと、処理内で val に対して代入を行なっているためです。
-</p>
+これは何故かというと、処理内で val に対して代入を行なっているためです。</p>
 <p>
 例えば、 func6() の処理が、
-次のように <code>if</code> のブロック処理を抜けた後に val を return するような処理だった場合、
-</p>
+次のように <code>if</code> のブロック処理を抜けた後に val を return するような処理だった場合、</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
-        <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-        <span class="n">typ</span><span class="p">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">val</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="n">typ</span><span class="p">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-<code>if</code> のブロックをサブルーチン化する場合は、 val をアドレス渡しする必要があります。
-</p>
+<code>if</code> のブロックをサブルーチン化する場合は、 val をアドレス渡しする必要があります。</p>
 <p>
 ただ、今回の場合はブロックの後に val を参照していないので、
-本来は val は値渡しでも問題ありません。
-</p>
+本来は val は値渡しでも問題ありません。</p>
 <p>
-それにもかかわらず val をアドレス渡ししています。
-</p>
+それにもかかわらず val をアドレス渡ししています。</p>
 <p>
-これは、サブルーチン化の処理を安全方向に振るためです。
-</p>
+これは、サブルーチン化の処理を安全方向に振るためです。</p>
 <p>
 将来、この func6() 関数をさらに変更して、
 <code>if</code> ブロックの後に val を参照するかもしれません。
 また、サブルーチン化した <code>func6__sub()</code> 処理を変更して、
-戻り値が 0 になることもあるかもしれません。
-</p>
+戻り値が 0 になることもあるかもしれません。</p>
 <p>
-そのような場合に備えて、アドレス渡しにしています。
-</p>
+そのような場合に備えて、アドレス渡しにしています。</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
 <h3 id="headline-8">
 値渡しの制御
 </h3>
+<div id="outline-text-headline-8" class="outline-text-3">
 <p>
-もしも、このアドレス渡しが気になる場合は、次の方法で値渡しにすることが可能です。
-</p>
+もしも、このアドレス渡しが気になる場合は、次の方法で値渡しにすることが可能です。</p>
 <p>
-生成されたバッファの上部に表示されている次の箇所を注目してください。
-</p>
+生成されたバッファの上部に表示されている次の箇所を注目してください。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">/* please edit &#39;x&#39; or &#39;o&#39; and symbol and order of following items,
-    and push C-c C-c to update.
-    format:
-       :[xor]:argName:orgName
-     x is to pass value.
-     o is to pass address of value.
-     r is to pass value and to return directly.
-----------------
-:o:indirect-return
-:o:pTyp:typ
-:o:pVal:val
-----------------
-*/</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">/* please edit &#39;x&#39; or &#39;o&#39; and symbol and order of following items,
+</span></span><span class="line"><span class="cl">    and push C-c C-c to update.
+</span></span><span class="line"><span class="cl">    format:
+</span></span><span class="line"><span class="cl">       :[xor]:argName:orgName
+</span></span><span class="line"><span class="cl">     x is to pass value.
+</span></span><span class="line"><span class="cl">     o is to pass address of value.
+</span></span><span class="line"><span class="cl">     r is to pass value and to return directly.
+</span></span><span class="line"><span class="cl">----------------
+</span></span><span class="line"><span class="cl">:o:indirect-return
+</span></span><span class="line"><span class="cl">:o:pTyp:typ
+</span></span><span class="line"><span class="cl">:o:pVal:val
+</span></span><span class="line"><span class="cl">----------------
+</span></span><span class="line"><span class="cl">*/</span></span></code></pre></div>
 </div>
 <p>
 この <code>:o:pVal:val</code> を <code>:x:pVal:val</code> に編集し C-c C-c すると、
-val が値渡しになったサブルーチンコードが生成されます。
-</p>
+val が値渡しになったサブルーチンコードが生成されます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="p">{</span>
-  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-<span class="c1">//======= sub routine ======
-</span><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pVal</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="n">pVal</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="n">pVal</span><span class="p">;</span>
-  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="n">pVal</span><span class="p">;</span>
-  <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pVal</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pVal</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="n">pVal</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="n">pVal</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
 <h3 id="headline-9">
 引数名の変更
 </h3>
+<div id="outline-text-headline-9" class="outline-text-3">
 <p>
 サブルーチン化したブロックの引数名は、元の変数と同じ名前になります。
-この変数名を違う名前に変更できます。
-</p>
+この変数名を違う名前に変更できます。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">/* please edit &#39;x&#39; or &#39;o&#39; and symbol and order of following items,
-    and push C-c C-c to update.
-    format:
-       :[xor]:argName:orgName
-     x is to pass value.
-     o is to pass address of value.
-     r is to pass value and to return directly.
-----------------
-:o:indirect-return
-:o:pTyp:typ
-:o:pVal:val
-----------------
-*/</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">/* please edit &#39;x&#39; or &#39;o&#39; and symbol and order of following items,
+</span></span><span class="line"><span class="cl">    and push C-c C-c to update.
+</span></span><span class="line"><span class="cl">    format:
+</span></span><span class="line"><span class="cl">       :[xor]:argName:orgName
+</span></span><span class="line"><span class="cl">     x is to pass value.
+</span></span><span class="line"><span class="cl">     o is to pass address of value.
+</span></span><span class="line"><span class="cl">     r is to pass value and to return directly.
+</span></span><span class="line"><span class="cl">----------------
+</span></span><span class="line"><span class="cl">:o:indirect-return
+</span></span><span class="line"><span class="cl">:o:pTyp:typ
+</span></span><span class="line"><span class="cl">:o:pVal:val
+</span></span><span class="line"><span class="cl">----------------
+</span></span><span class="line"><span class="cl">*/</span></span></code></pre></div>
 </div>
 <p>
 バッファ上部に出力されている <code>:o:pVal:val</code> の pVal の部分を変更し C-c C-c すると、
-引数が変更した名前になります。
-</p>
+引数が変更した名前になります。</p>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-3">
 <h3 id="headline-10">
 アドレス渡しの変数を戻り値に
 </h3>
+<div id="outline-text-headline-10" class="outline-text-3">
 <p>
 ブロック内で変更されている変数は、サブルーチン化の際にアドレス渡しの引数になります。
-この変数を戻り値とすることで、引数は値渡しに出来ます。
-</p>
+この変数を戻り値とすることで、引数は値渡しに出来ます。</p>
 <p>
 アドレス渡しの変数を戻り値にするには、 <code>:o:pVal:val</code> の o の部分を r とし、
-C-c C-c することで更新されます。
-</p>
+C-c C-c することで更新されます。</p>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-3">
 <h3 id="headline-11">
 return 文を持つブロック
 </h3>
+<div id="outline-text-headline-11" class="outline-text-3">
 <p>
 reutrn 文を持つブロックをサブルーチン化すると、
-その return 文は <code>return *pFuncRet__= 0, 1;</code> のようになります。
-</p>
+その return 文は <code>return *pFuncRet__= 0, 1;</code> のようになります。</p>
 <p>
-この return 文が気になる場合は、元ブロックの return 文の形にすることができます。
-</p>
+この return 文が気になる場合は、元ブロックの return 文の形にすることができます。</p>
 <p>
 元ブロックの return 文の形に変更するには、 <code>:o:indirect-return</code> の o の部分を x とし、
-C-c C-c することで更新されます。
-</p>
+C-c C-c することで更新されます。</p>
 <p>
-この場合、サブルーチンの呼び出し側は、戻り値から return するかどうかを判別する必要があります。
-</p>
+この場合、サブルーチンの呼び出し側は、戻り値から return するかどうかを判別する必要があります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-12" class="outline-2">
 <h2 id="headline-12">
 カスタマイズ
 </h2>
+<div id="outline-text-headline-12" class="outline-text-2">
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">int</span> <span class="nf">func7</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="kt">int</span> <span class="n">index</span><span class="p">;</span> 
-    <span class="k">for</span> <span class="p">(</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">index</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
-            <span class="k">continue</span><span class="p">;</span>
-        <span class="p">}</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">20</span> <span class="p">)</span> <span class="p">{</span>
-            <span class="k">break</span><span class="p">;</span>
-        <span class="p">}</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">30</span> <span class="p">)</span> <span class="p">{</span>
-            <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">func7</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">index</span><span class="p">;</span> 
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="p">(</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="mi">10</span><span class="p">;</span> <span class="n">index</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">continue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">20</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">break</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">30</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 上記ソースの for 文のブロックをサブルーチン化すると、
-次のようになります。
-</p>
+次のようになります。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cm">/* please edit &#39;x&#39; or &#39;o&#39; of following items,
-</span><span class="cm">    and push C-c C-c to update.
-</span><span class="cm">x: val
-</span><span class="cm">*/</span>
-<span class="c1">//======= call ======
-</span><span class="c1"></span><span class="p">{</span>
-  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="kt">int</span> <span class="n">result__</span> <span class="o">=</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span> <span class="p">}</span>
-  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">2</span> <span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;</span> <span class="p">}</span>
-  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">)</span> <span class="p">{</span> <span class="k">continue</span><span class="p">;</span> <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="c1">//======= sub routine ======
-</span><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="mi">3</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">20</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="mi">2</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">30</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/* please edit &#39;x&#39; or &#39;o&#39; of following items,
+</span></span></span><span class="line"><span class="cl"><span class="cm">    and push C-c C-c to update.
+</span></span></span><span class="line"><span class="cl"><span class="cm">x: val
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//======= call ======
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">result__</span> <span class="o">=</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">2</span> <span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">)</span> <span class="p">{</span> <span class="k">continue</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">3</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">20</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">30</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 ここで、 <code>func7__sub()</code> 内の return 3 や return、
-呼び出し側の <code>result__ == 1</code> や <code>result__ == 2</code> 等の即値が気になると思います。
-</p>
+呼び出し側の <code>result__ == 1</code> や <code>result__ == 2</code> 等の即値が気になると思います。</p>
 <p>
-C では、即値は使わず define や enum 等を宣言して使用するのが定石とされています。
-</p>
+C では、即値は使わず define や enum 等を宣言して使用するのが定石とされています。</p>
 <p>
-そこで、 lctags ではこの値をカスタマイズする方法を提供しています。
-</p>
+そこで、 lctags ではこの値をカスタマイズする方法を提供しています。</p>
 <p>
-emacs では、次のように lctags-sub-ret-type を設定するだけです。
-</p>
+emacs では、次のように lctags-sub-ret-type を設定するだけです。</p>
 <div class="src src-lisp">
-<div class="highlight"><pre class="chroma"><code class="language-lisp" data-lang="lisp"><span class="p">(</span><span class="k">setq</span> <span class="nv">lctags-sub-ret-type</span>
-      <span class="s">&#34;subMod_t/subModNone/subModReturn/subModBreak/subModContinue&#34;</span><span class="p">)</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-lisp" data-lang="lisp"><span class="line"><span class="cl"><span class="p">(</span><span class="k">setq</span> <span class="nv">lctags-sub-ret-type</span>
+</span></span><span class="line"><span class="cl">      <span class="s">&#34;subMod_t/subModNone/subModReturn/subModBreak/subModContinue&#34;</span><span class="p">)</span></span></span></code></pre></div>
 </div>
 <p>
-この設定をした際の上記処理のサブルーチン化結果は次の通りです。
-</p>
+この設定をした際の上記処理のサブルーチン化結果は次の通りです。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="cm">/* please edit &#39;x&#39; or &#39;o&#39; of following items,
-</span><span class="cm">    and push C-c C-c to update.
-</span><span class="cm">x: val
-</span><span class="cm">*/</span>
-<span class="c1">//======= call ======
-</span><span class="c1"></span><span class="p">{</span>
-  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="n">subMod_t</span> <span class="n">result__</span> <span class="o">=</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModReturn</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span> <span class="p">}</span>
-  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModBreak</span> <span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;</span> <span class="p">}</span>
-  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModContinue</span> <span class="p">)</span> <span class="p">{</span> <span class="k">continue</span><span class="p">;</span> <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="c1">//======= sub routine ======
-</span><span class="c1"></span><span class="k">static</span> <span class="n">subMod_t</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
-<span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">subModContinue</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">20</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">subModBreak</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">30</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">subModReturn</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="n">subModNone</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cm">/* please edit &#39;x&#39; or &#39;o&#39; of following items,
+</span></span></span><span class="line"><span class="cl"><span class="cm">    and push C-c C-c to update.
+</span></span></span><span class="line"><span class="cl"><span class="cm">x: val
+</span></span></span><span class="line"><span class="cl"><span class="cm">*/</span>
+</span></span><span class="line"><span class="cl"><span class="c1">//======= call ======
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">subMod_t</span> <span class="n">result__</span> <span class="o">=</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModReturn</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModBreak</span> <span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModContinue</span> <span class="p">)</span> <span class="p">{</span> <span class="k">continue</span><span class="p">;</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="n">subMod_t</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">subModContinue</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">20</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">subModBreak</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">30</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="o">*</span><span class="n">pFuncRet__</span><span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">subModReturn</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="k">return</span> <span class="n">subModNone</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-lctags-sub-ret-type は、次の書式で定義します。
-</p>
+lctags-sub-ret-type は、次の書式で定義します。</p>
 <p>
-&#34;type/val0/val1/val2/val3&#34;
-</p>
+&#34;type/val0/val1/val2/val3&#34;</p>
 <p>
 type は、サブルーチン化した関数の戻り値の型。
-上記の例では <code>func7_sub()</code> の int が該当します。
-</p>
+上記の例では <code>func7_sub()</code> の int が該当します。</p>
 <p>
-val0 〜 val3 は、戻り値の 0 〜 3 までの名前を指定します。
-</p>
+val0 〜 val3 は、戻り値の 0 〜 3 までの名前を指定します。</p>
 <p>
-それぞれの値は、以下の通りです。
-</p>
+それぞれの値は、以下の通りです。</p>
 <table>
 <thead>
 <tr>
@@ -525,42 +511,32 @@ val0 〜 val3 は、戻り値の 0 〜 3 までの名前を指定します。
 </tr>
 </tbody>
 </table>
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-2">
 <h2 id="headline-13">
 制限
 </h2>
+<div id="outline-text-headline-13" class="outline-text-2">
 <p>
-サブルーチン化対象のブロックが次の条件に当て嵌る場合、サブルーチン化できません。
-</p>
+サブルーチン化対象のブロックが次の条件に当て嵌る場合、サブルーチン化できません。</p>
 <ul>
-<li>
-<p>
-マクロを利用し、そのマクロ内で return している。
-</p>
-</li>
-<li>
-<p>
-アドレス渡しする変数を、マクロ内で使用している。
-</p>
-</li>
-<li>
-<p>
-goto 文を使用している。
-</p>
-</li>
+<li>マクロを利用し、そのマクロ内で return している。</li>
+<li>アドレス渡しする変数を、マクロ内で使用している。</li>
+<li>goto 文を使用している。</li>
 </ul>
-<p>
-また、マクロ内で 2 項演算子を利用していると、
+<p>また、マクロ内で 2 項演算子を利用していると、
 左にある変数はアドレスアクセスが必要なものだと判断します。
-これは、 lctags の制限というよりは libclang の制限からくるものです。
-</p>
+これは、 lctags の制限というよりは libclang の制限からくるものです。</p>
 <p>
 何故ならば、libclang ではマクロ内で 2 項演算子が行なわれている場合に、
-その演算子の種別を特定する手段がないためです。
-</p>
+その演算子の種別を特定する手段がないためです。</p>
+</div>
+</div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lctags/register/" title="lctags のプロジェクト簡易登録"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - lctags のプロジェクト簡易登録</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lctags/c-language/" title="lctags を開発している時に改めて感じた C 言語規格のイケてないところ">Next - lctags を開発している時に改めて感じた C 言語規格のイケてないところ <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lctags/c-language/" title="lctags を開発している時に改めて感じた C 言語規格のイケてないところ"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lctags/windows/" title="Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)">Next - Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -572,17 +548,17 @@ goto 文を使用している。
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -591,8 +567,8 @@ goto 文を使用している。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -610,16 +586,16 @@ goto 文を使用している。
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -663,6 +639,13 @@ goto 文を使用している。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -700,13 +683,6 @@ goto 文を使用している。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

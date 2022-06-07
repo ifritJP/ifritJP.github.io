@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>@.1.4 LuneScript の WebAssembly 対応 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/go_wasm/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="@.1.4 LuneScript の WebAssembly 対応" />
 <meta property="og:description" content="LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、 次の 2 つあります。 LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす LuneScript から go に" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/go_wasm/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/go_wasm/" /><meta property="article:section" content="LuneScript" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="@.1.4 LuneScript の WebAssembly 対応"/>
 <meta name="twitter:description" content="LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、 次の 2 つあります。 LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす LuneScript から go に"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、 次の 2 つあります。 LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす LuneScript から go に">
 
 <meta itemprop="wordCount" content="1130">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -66,148 +66,93 @@
 
 <p>
 LuneScript で作成したコードを Web ブラウザ上で動作させる方法には、
-次の 2 つあります。
-</p>
+次の 2 つあります。</p>
 <ul>
-<li>
-<p>
-LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす
-</p>
-</li>
-<li>
-<p>
-LuneScript から go にトランスコンパイルし、その go コードを WebAssemly に変換する
-</p>
-</li>
+<li>LuneScript から Lua にトランスコンパイルし、その Lua コードを fengari 等で動かす</li>
+<li>LuneScript から go にトランスコンパイルし、その go コードを WebAssemly に変換する</li>
 </ul>
-<p>
-ここでは、 go から WebAssemly に変換する方法について説明します。
-</p>
+<p>ここでは、 go から WebAssemly に変換する方法について説明します。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 go から Web Assemly への変換
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-go から WebAssemly への変換は、 go の機能を利用します。
-</p>
+go から WebAssemly への変換は、 go の機能を利用します。</p>
 <p>
 go で WebAssembly を利用する方法の基本的な流れは、
-次のオフィシャルドキュメントを参照してください。
-</p>
+次のオフィシャルドキュメントを参照してください。</p>
 <p>
-&lt;<a href="https://github.com/golang/go/wiki/WebAssembly">https://github.com/golang/go/wiki/WebAssembly</a>&gt;
-</p>
+&lt;<a href="https://github.com/golang/go/wiki/WebAssembly">https://github.com/golang/go/wiki/WebAssembly</a>&gt;</p>
 <p>
-ここでは、 LuneScript 特有の話をします。
-</p>
+ここでは、 LuneScript 特有の話をします。</p>
+<div id="outline-container-headline-2" class="outline-3">
 <h3 id="headline-2">
 Lua のランタイムは gopherlua を利用する
 </h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
-LuneScript のコードを go のアプリに変換するには、 Lua のランタイムが必要になります。
-</p>
+LuneScript のコードを go のアプリに変換するには、 Lua のランタイムが必要になります。</p>
 <p>
-LuneScript は、Lua のランタイムとして次の 2 つをサポートしています。
-</p>
+LuneScript は、Lua のランタイムとして次の 2 つをサポートしています。</p>
 <ul>
-<li>
-<p>
-オフィシャルな Lua ランタイム
-</p>
-</li>
-<li>
-<p>
-gopherlua
-</p>
-</li>
+<li>オフィシャルな Lua ランタイム</li>
+<li>gopherlua</li>
 </ul>
-<p>
-ここで、「オフィシャルな Lua ランタイム」は WebAssembly では利用できないため、
-gopherlua を利用することになります。
-</p>
+<p>ここで、「オフィシャルな Lua ランタイム」は WebAssembly では利用できないため、
+gopherlua を利用することになります。</p>
 <p>
 よって、 go から WebAssembly に変換する場合のコマンドは以下のように
-<code class="verbatim">-tags gopherlua</code> を指定することになります。
-</p>
+<code class="verbatim">-tags gopherlua</code> を指定することになります。</p>
 <pre class="example">
 $ GOOS=js GOARCH=wasm go build -tags gopherlua -o main.wasm
 </pre>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
 <h3 id="headline-3">
 JavaScript と LuneScript 間の連携動作
 </h3>
+<div id="outline-text-headline-3" class="outline-text-3">
 <p>
-JavaScript と LuneScript 間の連携動作は、main() が実行されている間可能です。
-</p>
+JavaScript と LuneScript 間の連携動作は、main() が実行されている間可能です。</p>
 <p>
 逆に言えば、 JavaScript から非同期に LuneScript と連携動作させるには、
-LuneScript の処理を終わらさずに待たせる必要があります。
-</p>
+LuneScript の処理を終わらさずに待たせる必要があります。</p>
 <p>
-この待ち処理を実現するには、次の 2 つの方法があります。
-</p>
+この待ち処理を実現するには、次の 2 つの方法があります。</p>
 <ul>
-<li>
-<p>
-go 外部モジュールで処理する
-</p>
-</li>
-<li>
-<p>
-__AsyncItem を利用する  
-</p>
-</li>
+<li>go 外部モジュールで処理する</li>
+<li>__AsyncItem を利用する  </li>
 </ul>
-<p>
-以下で説明します。
-</p>
+<p>以下で説明します。</p>
+<div id="outline-container-headline-4" class="outline-4">
 <h4 id="headline-4">
 go 外部モジュールで処理する
 </h4>
+<div id="outline-text-headline-4" class="outline-text-4">
 <ul>
-<li>
-<p>
-go の channel を生成して、その channel からデータの読み出しを行なう。
-</p>
-</li>
-<li>
-<p>
-この処理を go の外部モジュールとして定義し、 LuneScript の module 宣言等で、
-そのモジュールを実行する。
-</p>
-</li>
+<li>go の channel を生成して、その channel からデータの読み出しを行なう。</li>
+<li>この処理を go の外部モジュールとして定義し、 LuneScript の module 宣言等で、
+そのモジュールを実行する。</li>
 </ul>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-4">
 <h4 id="headline-5">
 __AsyncItem を利用する    
 </h4>
+<div id="outline-text-headline-5" class="outline-text-4">
 <ul>
-<li>
-<p>
-LuneScript の __AsyncItem インタフェースを利用し、 pipe を作成し、その pipe からデータ読み出しを行なう。
-</p>
-</li>
-<li>
-<p>
-__AsyncItem のインタフェースを extend した独自のクラスを定義し、
-そのクラスから pipe を作成する。
-</p>
-</li>
-<li>
-<p>
-この pipe の put, get メソッドを利用する。
-</p>
-</li>
-<li>
-<p>
-次のサンプルの loop() が待ち処理で、 notify() が pipe へのデータ書き込み処理です。
-</p>
-</li>
-<li>
-<p>
-この notify() を利用することで、JavaScript から非同期のメッセージを受信できます。
-</p>
-</li>
+<li>LuneScript の __AsyncItem インタフェースを利用し、 pipe を作成し、その pipe からデータ読み出しを行なう。</li>
+<li>__AsyncItem のインタフェースを extend した独自のクラスを定義し、
+そのクラスから pipe を作成する。</li>
+<li>この pipe の put, get メソッドを利用する。</li>
+<li>次のサンプルの loop() が待ち処理で、 notify() が pipe へのデータ書き込み処理です。</li>
+<li>この notify() を利用することで、JavaScript から非同期のメッセージを受信できます。</li>
 </ul>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">pub class AsyncItem extend (__AsyncItem,Mapping) {
+<pre tabindex="0"><code class="language-lns" data-lang="lns">pub class AsyncItem extend (__AsyncItem,Mapping) {
    let val:str {pub};
 }
 
@@ -229,45 +174,51 @@ pub fn notify( val:str ) {
    }
 }</code></pre>
 </div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
 <h3 id="headline-6">
 LuneScript 内の非同期処理
 </h3>
+<div id="outline-text-headline-6" class="outline-text-3">
 <p>
 現状の WebAssembly では、
-LuneScript 内の非同期処理は次が指定された時と同じ動きになります。
-</p>
+LuneScript 内の非同期処理は次が指定された時と同じ動きになります。</p>
 <pre class="example">
 GOMAXPROCS=1
 </pre>
 <p>
-つまり、いずれかの処理が動作している間は、他の処理は動きません。
-</p>
+つまり、いずれかの処理が動作している間は、他の処理は動きません。</p>
 <p>
-__asyncLock や pipe の待ちなどのタイミングで処理が切り替わります。
-</p>
+__asyncLock や pipe の待ちなどのタイミングで処理が切り替わります。</p>
 <p>
 __asyncLock や pipe 以外で、いずれかの処理がブロックすると、
-そのブロックを抜けるまでは全体の処理が止まります。
-</p>
+そのブロックを抜けるまでは全体の処理が止まります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
 <h2 id="headline-7">
 tinygo
 </h2>
+<div id="outline-text-headline-7" class="outline-text-2">
 <p>
 go から WebAssembly に変換する方法には、
-オフィシャルな go を使う方法と、tinygo を使う方法があります。
-</p>
+オフィシャルな go を使う方法と、tinygo を使う方法があります。</p>
 <p>
 tinygo を利用した方が、
-WebAssembly のサイズや JavaScript との連携が簡単になるようです。
-</p>
+WebAssembly のサイズや JavaScript との連携が簡単になるようです。</p>
 <p>
 しかし、現時点で最新の tinygo v0.22.0 では
 LuneScript で利用するパッケージの対応がされていないため、
-tinygo を利用できません。
-</p>
+tinygo を利用できません。</p>
 <p>
-以上。
-</p>
+以上。</p>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/lua_runtime/" title="@.1.3 Go へトランスコンパイルした際の Lua ランタイム"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.1.3 Go へトランスコンパイルした際の Lua ランタイム</a>
@@ -283,17 +234,17 @@ tinygo を利用できません。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -302,8 +253,8 @@ tinygo を利用できません。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -321,16 +272,16 @@ tinygo を利用できません。
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -374,6 +325,13 @@ tinygo を利用できません。
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -411,13 +369,6 @@ tinygo を利用できません。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

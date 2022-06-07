@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>lctags を開発している時に改めて感じた C 言語規格のイケてないところ - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lctags/c-language/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,33 +17,33 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="lctags を開発している時に改めて感じた C 言語規格のイケてないところ" />
 <meta property="og:description" content="まずは宣伝 lctags は libclang の AST 情報を利用した C/C&#43;&#43; 向けのソースコードタグシステムです。 ベース機能はソースコードタグシステムですが、 シンボル補完機能等のコー" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lctags/c-language/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lctags/c-language/" /><meta property="article:section" content="lctags" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="lctags を開発している時に改めて感じた C 言語規格のイケてないところ"/>
 <meta name="twitter:description" content="まずは宣伝 lctags は libclang の AST 情報を利用した C/C&#43;&#43; 向けのソースコードタグシステムです。 ベース機能はソースコードタグシステムですが、 シンボル補完機能等のコー"/>
 <meta itemprop="name" content="lctags を開発している時に改めて感じた C 言語規格のイケてないところ">
 <meta itemprop="description" content="まずは宣伝 lctags は libclang の AST 情報を利用した C/C&#43;&#43; 向けのソースコードタグシステムです。 ベース機能はソースコードタグシステムですが、 シンボル補完機能等のコー">
 
-<meta itemprop="wordCount" content="5799">
+<meta itemprop="wordCount" content="5902">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -64,207 +64,168 @@
 <div class="content-container">
 <main><h1>lctags を開発している時に改めて感じた C 言語規格のイケてないところ</h1>
 
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 まずは宣伝
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-lctags は libclang の AST 情報を利用した C/C++ 向けのソースコードタグシステムです。
-</p>
+lctags は libclang の AST 情報を利用した C/C++ 向けのソースコードタグシステムです。</p>
 <p>
 ベース機能はソースコードタグシステムですが、
-シンボル補完機能等のコーディングをサポートするさまざまな機能を提供しています。
-</p>
+シンボル補完機能等のコーディングをサポートするさまざまな機能を提供しています。</p>
 <p>
 lctags の詳細については、次を参考にしてください。
-特に emacs ユーザ向けの機能を色々と取り揃えております。
-</p>
+特に emacs ユーザ向けの機能を色々と取り揃えております。</p>
 <p>
-<a href="../">../</a>
-</p>
+<a href="../">../</a></p>
 <p>
-とまぁ lctags の宣伝はこの辺にして本題に。
-</p>
+とまぁ lctags の宣伝はこの辺にして本題に。</p>
 <p>
 lctags を開発している際に、
 C の言語規格で「イマイチ」と思った点がいくつかあったので、
-ネタとして書いておきます。
-</p>
+ネタとして書いておきます。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
 イケてないところ
 </h2>
+<div id="outline-text-headline-2" class="outline-text-2">
 <p>
 C 言語を扱っているエンジニアであれば
 C の言語規格に対して何かしら不満を持っているとは思いますが、
-ここではソースコードタグシステムの開発側からの視点で思うことを挙げます。
-</p>
+ここではソースコードタグシステムの開発側からの視点で思うことを挙げます。</p>
 <p>
-「イマイチ」と思った点は次のものです。
-</p>
+「イマイチ」と思った点は次のものです。</p>
 <ul>
-<li>
-</li>
-<li>
-<p>
-どこでも名前なし struct、 union、 enum が宣言出来る
-</p>
-</li>
-<li>
-<p>
-関数引数で新しい型宣言が出来る
-</p>
-</li>
-<li>
-<p>
-型の名前空間がモジュールで閉じている
-</p>
+<li>#include が自由過ぎる</li>
+<li>どこでも名前なし struct、 union、 enum が宣言出来る</li>
+<li>関数引数で新しい型宣言が出来る</li>
+<li>型の名前空間がモジュールで閉じている</li>
+</ul>
+<div id="outline-container-headline-3" class="outline-3">
 <h3 id="headline-3">
 #include が自由過ぎる
 </h3>
-</li>
-</ul>
+<div id="outline-text-headline-3" class="outline-text-3">
 <p>
 C 言語には無くてはならない #include ですが、
-規格があまりにも単純過ぎて、何でもアリになっています。
-</p>
+規格があまりにも単純過ぎて、何でもアリになっています。</p>
 <p>
-誰でも知っている #include の仕様ですが、念のため明記すると次の内容です。
-</p>
+誰でも知っている #include の仕様ですが、念のため明記すると次の内容です。</p>
 <p>
- <strong>「#include で指定されたファイルの内容をそのまま展開処理する」</strong>
-</p>
+ <strong>「#include で指定されたファイルの内容をそのまま展開処理する」</strong></p>
 <p>
-省略している部分もありますが、概ねこの認識で間違いありません。
-</p>
+省略している部分もありますが、概ねこの認識で間違いありません。</p>
 <p>
-この仕様は、大規模プログラムのコンパイルが遅い原因の一つにもなっています。
-</p>
+この仕様は、大規模プログラムのコンパイルが遅い原因の一つにもなっています。</p>
 <p>
 なお、#include の影響によるコンパイルの遅さに関しては、
 プリコンパイルによって一応の解決を得ています。
-しかし、プリコンパイルにもいくつかの制約があるため、根本解決とは言えません。
-</p>
+しかし、プリコンパイルにもいくつかの制約があるため、根本解決とは言えません。</p>
 <p>
+#include の仕様によってコンパイルに時間がかかるのは
 多くの人が経験していることだと思いますが、
-ここでは、ソースコードタグシステムを作成する上で問題となることを説明していきます。
-</p>
+ここでは、ソースコードタグシステムを作成する上で問題となることを説明していきます。</p>
+<div id="outline-container-headline-4" class="outline-4">
 <h4 id="headline-4">
 どこでも #include 出来る
 </h4>
+<div id="outline-text-headline-4" class="outline-text-4">
 <p>
 ソースコードタグシステムは、
-ソースコードを解析し、シンボルの宣言位置・参照位置を記録します。
-</p>
+ソースコードを解析し、シンボルの宣言位置・参照位置を記録します。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
-  <span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
-<span class="p">};</span>
-<span class="k">struct</span> <span class="n">TEST2</span> <span class="p">{</span>
-  <span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
-<span class="p">};</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">TEST2</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span></span></span></code></pre></div>
 </div>
 <p>
-例えば上記のようなコードでは、以下の情報を記録します。
-</p>
+例えば上記のようなコードでは、以下の情報を記録します。</p>
 <ul>
-<li>
-<p>
-1 行目に struct TEST の宣言
-</p>
-</li>
-<li>
-<p>
-2 行目に TEST::value の宣言
-</p>
-</li>
-<li>
-<p>
-4 行目に struct TEST2 の宣言
-</p>
-</li>
-<li>
-<p>
-5 行目に TEST2::value の宣言
-</p>
-</li>
+<li>1 行目に struct TEST の宣言</li>
+<li>2 行目に TEST::value の宣言</li>
+<li>4 行目に struct TEST2 の宣言</li>
+<li>5 行目に TEST2::value の宣言</li>
 </ul>
+<p>#include を使うと、上記コードは次のようにも書ます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="o">-----</span> <span class="n">field</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
-<span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
-<span class="o">-----</span> <span class="n">test</span><span class="p">.</span><span class="n">c</span> <span class="o">------</span>
-<span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
-<span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
-</span><span class="cp"></span><span class="p">};</span>
-<span class="k">struct</span> <span class="n">TEST2</span> <span class="p">{</span>
-<span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
-</span><span class="cp"></span><span class="p">};</span>
-
-<span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="k">struct</span> <span class="n">TEST</span> <span class="n">test</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="n">test</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="o">--------</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="o">-----</span> <span class="n">field</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">-----</span> <span class="n">test</span><span class="p">.</span><span class="n">c</span> <span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">TEST2</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="p">};</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="k">struct</span> <span class="n">TEST</span> <span class="n">test</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">test</span><span class="p">.</span><span class="n">value</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="o">--------</span></span></span></code></pre></div>
 </div>
 <p>
 この場合、 field.h の int value が、 TEST::value の宣言場所であり、
-TEST2::value の宣言場所でもあります。
-</p>
+TEST2::value の宣言場所でもあります。</p>
 <p>
 このとき、ソースコードタグシステムで test.value = 1 の test.value の宣言位置を
-問い合わせると、結果は field.h の 1 行目となります。
-</p>
+問い合わせると、結果は field.h の 1 行目となります。</p>
 <p>
-あなたはその結果を見て「なんのこっちゃ？」と思いませんか？
-</p>
+あなたはその結果を見て「なんのこっちゃ？」と思いませんか？</p>
 <p>
 確かに int value の宣言位置に間違いありませんが、
 他にどんなメンバがあるのかとか、他のメンバは何処で宣言されているのかとか、
-が全く分かりません。
-</p>
+が全く分かりません。</p>
 <p>
-これはまだ良い方で、次のような書き方も出来てしまいます。
-</p>
+これはまだ良い方で、次のような書き方も出来てしまいます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="o">-----</span> <span class="n">name1</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
-<span class="n">TEST</span>
-<span class="o">-----</span> <span class="n">name2</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
-<span class="n">TEST2</span>
-<span class="o">-----</span> <span class="n">field</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
-<span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
-<span class="o">-----</span> <span class="n">test</span><span class="p">.</span><span class="n">c</span> <span class="o">------</span>
-<span class="k">struct</span>
-<span class="cp">#include</span> <span class="cpf">&#34;name1.h&#34;</span><span class="cp">
-</span><span class="cp"></span><span class="p">{</span>
-<span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
-</span><span class="cp"></span><span class="p">}</span> <span class="n">test</span><span class="p">;</span>
-<span class="k">struct</span>
-<span class="cp">#include</span> <span class="cpf">&#34;name2.h&#34;</span><span class="cp">
-</span><span class="cp"></span><span class="p">{</span>
-<span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
-</span><span class="cp"></span><span class="p">}</span> <span class="n">test2</span><span class="p">;</span>
-<span class="o">--------</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="o">-----</span> <span class="n">name1</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="n">TEST</span>
+</span></span><span class="line"><span class="cl"><span class="o">-----</span> <span class="n">name2</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="n">TEST2</span>
+</span></span><span class="line"><span class="cl"><span class="o">-----</span> <span class="n">field</span><span class="p">.</span><span class="n">h</span> <span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="n">value</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">-----</span> <span class="n">test</span><span class="p">.</span><span class="n">c</span> <span class="o">------</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;name1.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="p">}</span> <span class="n">test</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">struct</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;name2.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&#34;field.h&#34;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="p">}</span> <span class="n">test2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="o">--------</span></span></span></code></pre></div>
 </div>
 <p>
 さらにやる気になれば、トークン単位で #include に分けられます。
-そうなると、どのシンボルがどこで定義されているかまともに表現できません。
-</p>
+そうなると、どのシンボルがどこで定義されているかまともに表現できません。</p>
 <p>
-もちろん、現実的にそんな書き方をする人はいないでしょうが、規格上出来てしまいます。
-</p>
+もちろん、現実的にそんな書き方をする人はいないでしょうが、規格上出来てしまいます。</p>
 <p>
 このようなことが出来てしまうため、
 インクルードファイルに更新がある場合、
-そのファイルを #include しているファイルの全ての情報を解析しなおす必要あります。
-</p>
+そのファイルを #include しているファイルの全ての情報を解析しなおす必要あります。</p>
 <p>
-その分だけソースコードタグシステムの解析時間を短縮できます。
-</p>
+#include に制限があれば、情報更新の範囲を狭くでき、
+その分だけソースコードタグシステムの解析時間を短縮できます。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-4">
 <h4 id="headline-5">
 インクルードファイル単体では完結しない
 </h4>
+<div id="outline-text-headline-5" class="outline-text-4">
 <p>
 これは普通にヘッダファイルを書いていても良くあることですが、
 ヘッダファイルが別のファイルで宣言しているシンボルを参照しているのに、
-そのファイルを #include していないことがあります。
-</p>
+そのファイルを #include していないことがあります。</p>
 <p>
 これの何が問題かというと、
 ヘッダファイルに宣言している構造体メンバの参照箇所を調べたい場合、
@@ -273,219 +234,191 @@ TEST2::value の宣言場所でもあります。
 なおかつ、必要なファイルを #include していないと、
 そのヘッダファイル単体では構文解析が正常に行なえず、
 構造体の宣言が分からないため参照箇所も調べられない、
-ということになります。
-</p>
+ということになります。</p>
 <p>
 ヘッダファイル単体で解析が出来る保証が無いため、
 lctags でヘッダファイルを解析する場合は
 そのファイルを #include しているソースファイルを解析して、
-得られた AST からヘッダファイルの該当箇所の宣言を調べるようにしています。
-</p>
+得られた AST からヘッダファイルの該当箇所の宣言を調べるようにしています。</p>
 <p>
 ソースファイルの解析が必要になるということは、
 そのソースファイルが #include している他のヘッダの解析まですることになり、
-その分の無駄な時間がかかることになります。
-</p>
+その分の無駄な時間がかかることになります。</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-4">
 <h4 id="headline-6">
 #include には制限を設けるべき
 </h4>
+<div id="outline-text-headline-6" class="outline-text-4">
 <p>
-以上のことから、#include には次の制約を持たせるべきだと思います。
-</p>
+以上のことから、#include には次の制約を持たせるべきだと思います。</p>
 <ul>
-<li>
-<p>
-<strong>「文の途中に #include を挟めない。」</strong>
-</p>
-</li>
-<li>
-<p>
-<strong>「ヘッダ単体で構文解析可能な状態でなければならない。」</strong>
-</p>
-</li>
+<li><strong>「文の途中に #include を挟めない。」</strong></li>
+<li><strong>「ヘッダ単体で構文解析可能な状態でなければならない。」</strong></li>
 </ul>
-<p>
-この制約を持たせることが出来れば、
-多くの無駄な解析を省くことができます。
-</p>
+<p>この制約を持たせることが出来れば、
+多くの無駄な解析を省くことができます。</p>
 <p>
 この制約を持たせた際に影響を受けるようなソースは、
-そもそも可読性やメンテナンス性に問題があることが予想できます。
-</p>
+そもそも可読性やメンテナンス性に問題があることが予想できます。</p>
 <p>
 この制約を持たせることで、
-そういった問題のあるコードを書けなくするという効果も期待できます。
-</p>
+そういった問題のあるコードを書けなくするという効果も期待できます。</p>
 <p>
 ただ、この制約を持たせると従来のソースコードとの互換性が無くなってしまうため、
-</p>
+#include そのものの仕様を変更することは難しいでしょう。</p>
 <p>
 それに、中途半端に規格を変更するくらいなら、
 単純にファイルを展開する今の仕様ではなく、
-イマドキの言語に良くあるメタ情報を import する方式に切り替えるべきでしょう。
-</p>
+イマドキの言語に良くあるメタ情報を import する方式に切り替えるべきでしょう。</p>
 <p>
 ですので現実的な解としては、
 例えばヘッダファイルの最初の行にコメントとして何らかのメタ情報を記載することで、
 そのヘッダファイルが制約を満しているかどうかを示し、
-そのメタ情報を認識してツール側で対処する、というのが妥当なところでしょう。
-</p>
+そのメタ情報を認識してツール側で対処する、というのが妥当なところでしょう。</p>
 <p>
-ただ、現状の #include の規格が技術的負債であるのは間違いないと思います。
-</p>
+ただ、現状の #include の規格が技術的負債であるのは間違いないと思います。</p>
 <p>
-C 言語規格の改版があるのであれば、検討項目に入れいただきたいところです。
-</p>
+C 言語規格の改版があるのであれば、検討項目に入れいただきたいところです。</p>
 <p>
 まぁそのような改版があったとしても、
 組込み向け CPU メーカー製コンパイラ(ARMは除く)では、
-その規格をサポートすることはないでしょうが。。
-</p>
+その規格をサポートすることはないでしょうが。。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
 <h3 id="headline-7">
 anonymos な struct、 union、 enum が宣言出来る
 </h3>
+<div id="outline-text-headline-7" class="outline-text-3">
 <p>
 これは言語規格の問題というよりは、
-ソースコードタグシステムで扱う際の問題です。
-</p>
+ソースコードタグシステムで扱う際の問題です。</p>
 <p>
-ソースコードタグシステムでは、宣言、参照箇所にタグを付けます。
-</p>
+ソースコードタグシステムでは、宣言、参照箇所にタグを付けます。</p>
 <p>
-タグは、シンボルを基にタグ付けしています。
-</p>
+タグは、シンボルを基にタグ付けしています。</p>
 <p>
 一方で、C の言語規格として struct、 union、 enum には名前を付ける必要がありません。
-いわゆる anonymos 構造体等です。
-</p>
+いわゆる anonymos 構造体等です。</p>
 <p>
-例えば次のような宣言が可能です。
-</p>
+例えば次のような宣言が可能です。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
-    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-<span class="p">}</span> <span class="n">test</span><span class="p">;</span>
-
-<span class="k">struct</span> <span class="p">{</span>
-    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-<span class="p">}</span> <span class="n">test0</span><span class="p">,</span> <span class="n">test1</span><span class="p">;</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">test</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="k">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">test0</span><span class="p">,</span> <span class="n">test1</span><span class="p">;</span></span></span></code></pre></div>
 </div>
 <p>
 最初の TEST 構造体は名前のある宣言で、
-2 つ目は名前のない構造体宣言です。
-</p>
+2 つ目は名前のない構造体宣言です。</p>
 <p>
 TEST 構造体は、 TEST シンボルを基にタグを付けることが出来ますが、
-anonymos 構造体は名前がないためシンボルを基にタグを付けることが出来ません。
-</p>
+anonymos 構造体は名前がないためシンボルを基にタグを付けることが出来ません。</p>
 <p>
 少し話が変わりますが、
 イマドキの多くの言語には、ラムダ式等の anonymos 関数(無名関数)があります。
 通常 anonymos 関数は、関数の引数に与えられるか、
-何らかの変数にセットして使われるため、そのスコープは限定されます。
-</p>
+何らかの変数にセットして使われるため、そのスコープは限定されます。</p>
 <p>
 一方 struct, union, enum のスコープは宣言場所に依存し、
 一番広い場合はグローバルです。
-グローバルにもかかわらず、名前がなくて良いんです。
-</p>
+グローバルにもかかわらず、名前がなくて良いんです。</p>
 <p>
 スコープがグローバルであることの何が問題かというと、
 ローカルであれば、ローカルでユニークのタグを付ければ良いのに対し、
-グローバルであれば、グローバルでユニークなタグを付けなければならないことです。
-</p>
+グローバルであれば、グローバルでユニークなタグを付けなければならないことです。</p>
 <p>
-これはなかなかのハードルです。
-</p>
+これはなかなかのハードルです。</p>
 <p>
 anonymos な struct 宣言を使うケースとしては、
 次のように struct を union で共用する場合や、
-struct 宣言内に struct 宣言を持つ場合に使うことが多いと思います。
-</p>
+struct 宣言内に struct 宣言を持つ場合に使うことが多いと思います。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">union</span> <span class="n">VAL</span> <span class="p">{</span>
-    <span class="k">struct</span> <span class="p">{</span>
-        <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-    <span class="p">}</span> <span class="n">INT</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="p">{</span>
-        <span class="kt">char</span> <span class="n">val</span><span class="p">;</span>
-    <span class="p">}</span> <span class="n">CHAR</span><span class="p">;</span>
-<span class="p">};</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">union</span> <span class="n">VAL</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="n">INT</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kt">char</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="n">CHAR</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span></span></span></code></pre></div>
 </div>
 <p>
 このように、anonymos な宣言が限られた名前空間内にあるのであれば、
 ユニーク性を保つタグを付けることもそれほど難しくないですが、
-グローバルな anonymos 宣言では、ユニーク性を保つタグを付けるのは難易度が高くなります。
-</p>
+グローバルな anonymos 宣言では、ユニーク性を保つタグを付けるのは難易度が高くなります。</p>
 <p>
 普通は、意図してグローバルな anonymos 宣言をすることはないでしょうが、
-それが出来てしまうのは問題があると思います。
-</p>
+それが出来てしまうのは問題があると思います。</p>
 <p>
 そもそもグローバルな struct, union, enum を使わなければならないケース、
-というものが思い付きません。
-</p>
+というものが思い付きません。</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
 <h3 id="headline-8">
 関数引数で新しい型宣言が出来る
 </h3>
+<div id="outline-text-headline-8" class="outline-text-3">
 <p>
-普通はやらないと思いますが、規格上は次のようなコードが書けてしまいます。
-</p>
+普通はやらないと思いますが、規格上は次のようなコードが書けてしまいます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="n">sub</span><span class="p">(</span> <span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span> <span class="p">}</span> <span class="o">*</span> <span class="n">test</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">test</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="n">func</span><span class="p">()</span>
-<span class="p">{</span>
-    <span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span> <span class="p">}</span> <span class="n">test</span><span class="p">;</span>
-    <span class="n">sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">test</span> <span class="p">);</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">sub</span><span class="p">(</span> <span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span> <span class="p">}</span> <span class="o">*</span> <span class="n">test</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">test</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span> <span class="p">}</span> <span class="n">test</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">test</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 上記のように関数の引数で構造体を宣言するのは極端な例ですが、
 次のように関数の引数で関数ポインタ型を宣言することは多くの方が利用していると思います。
-標準ライブラリの bsearch() もそうですしね。
-</p>
+標準ライブラリの bsearch() もそうですしね。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">sub2</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">pFunc</span><span class="p">)(</span><span class="kt">void</span><span class="p">)</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">pFunc</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="nf">func2</span><span class="p">()</span>
-<span class="p">{</span>
-    <span class="n">sub2</span><span class="p">(</span> <span class="n">func</span> <span class="p">);</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub2</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">pFunc</span><span class="p">)(</span><span class="kt">void</span><span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">pFunc</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func2</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sub2</span><span class="p">(</span> <span class="n">func</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 ソースコードタグシステムを開発していると、
 上記 1 番目の struct 宣言は当然として、2番目の関数ポインタの例に関しても、
-いかがなものかと思ってしまいます。
-</p>
+いかがなものかと思ってしまいます。</p>
 <p>
 なぜならば、引数の型宣言をタグ付け対象にすることを考えると、
-その宣言にどのようなタグを付けるべきか問題になるためです。
-</p>
+その宣言にどのようなタグを付けるべきか問題になるためです。</p>
 <p>
 たとえば、次のようなコードがあった場合、
-どちらも関数ポインタ(add, output)のインタフェース(引数、戻り値)は同じです。
-</p>
+どちらも関数ポインタ(add, output)のインタフェース(引数、戻り値)は同じです。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">exec</span><span class="p">(</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">add</span><span class="p">)(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">add</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
-<span class="p">}</span>
-
-<span class="kt">void</span> <span class="nf">dump</span><span class="p">(</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">output</span><span class="p">)(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">output</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">exec</span><span class="p">(</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">add</span><span class="p">)(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">add</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">dump</span><span class="p">(</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">output</span><span class="p">)(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">output</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
-しかし、処理内容を見れば add と output の処理内容は全く異なることが予想できます。
-</p>
+しかし、処理内容を見れば add と output の処理内容は全く異なることが予想できます。</p>
 <p>
 この時、 add と output に付けるべきタグを同じにすべきか？
 それとも異なるタグを付けるべきか？
@@ -493,55 +426,48 @@ struct 宣言内に struct 宣言を持つ場合に使うことが多いと思�
 まったく関連性がない関数ポインタのタグが同じになり、
 そのタグを検索したときにノイズだらけになってしまいます。
 一方、異なるタグにした場合、
-今度は同じタグになる宣言が無くなり、タグ付け自体の意味がなくなります。
-</p>
+今度は同じタグになる宣言が無くなり、タグ付け自体の意味がなくなります。</p>
 <p>
 有用なタグ付けをするにも、
 引数宣言では型宣言を禁止にし関数ポインタ等は typedef で定義したものだけに限る、
-とするべきだと考えています。
-</p>
+とするべきだと考えています。</p>
 <p>
 こうすることで引数の型に意味が付き、
 検索も typedef で定義した型名のタグで検索することで、
-意味のある検索ができます。
-</p>
+意味のある検索ができます。</p>
 <p>
 typedef 宣言するのが面倒だという意見もあると思います。
-私も全てにおいて typedef 宣言すべきだとは思っていません。
-</p>
+私も全てにおいて typedef 宣言すべきだとは思っていません。</p>
 <p>
 ではどのような場合に typedef 宣言すべきかと言うと、
-全く同じ用途の宣言が 2 つ以上出てくるような場合です。
-</p>
+全く同じ用途の宣言が 2 つ以上出てくるような場合です。</p>
 <p>
 例えば次のような場合は、
-引数の関数ポインタ型 callback は typedef 宣言するべきでしょう。
-</p>
+引数の関数ポインタ型 callback は typedef 宣言するべきでしょう。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">callback</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">callback</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 上記 callback は全く同じ用途の関数ポインタを示しています。
 この場合、 引数で関数ポインタ型を宣言するのではなく、
-次のように typedef 宣言するべきです。
-</p>
+次のように typedef 宣言するべきです。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="kt">void</span> <span class="nf">callback_t</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span>
-<span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="n">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">callback</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="n">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
-<span class="p">{</span>
-    <span class="n">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="kt">void</span> <span class="nf">callback_t</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="n">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">callback</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="n">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 こうすることで sub と func の引数 callback を見ただけで、
@@ -551,141 +477,127 @@ typedef 宣言するのが面倒だという意見もあると思います。
 それとも用途が同じものなのかが不明になります。
 また typedef しておくことで、
 将来 callback 関数ポインタの IF 変更が必要になった場合も、
-typedef を変更するだけで済みます。
-</p>
+typedef を変更するだけで済みます。</p>
 <p>
 もちろん sub と func の関数リファレンスに、
 callback がどのような用途なのかを明記すれば良い、という考え方もあると思いますが、
-リファレンスを見ずとも関数 IF だけ見れば分かる方がより良いことは間違いありません。
-</p>
+リファレンスを見ずとも関数 IF だけ見れば分かる方がより良いことは間違いありません。</p>
 <p>
 なお C 言語の場合、関数定義をするには一部例外を除いて
-prototype 宣言と定義を行なう必要があります。
-</p>
+prototype 宣言と定義を行なう必要があります。</p>
 <p>
 その関数の引数に関数ポインタ型があれば、
-当然 prototype 宣言と定義の 2 箇所に関数ポインタ宣言が出てきます。
-</p>
+当然 prototype 宣言と定義の 2 箇所に関数ポインタ宣言が出てきます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// prototype 宣言
-</span><span class="c1"></span><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">);</span>
-
-
-<span class="c1">// 関数定義
-</span><span class="c1"></span><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">);</span>
-<span class="p">{</span>
-    <span class="n">callback</span><span class="p">();</span>
-<span class="p">}</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// prototype 宣言
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// 関数定義
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="n">callback</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
 上記のように、関数ポインタ宣言が 2 箇所出ているため、
-これは typedef 宣言するべきです。
-</p>
+これは typedef 宣言するべきです。</p>
 <p>
-よって、一部例外を除いて typedef 宣言をするべきだと考えています。
-</p>
+よって、一部例外を除いて typedef 宣言をするべきだと考えています。</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
 <h3 id="headline-9">
 型の名前空間がモジュールで閉じている
 </h3>
+<div id="outline-text-headline-9" class="outline-text-3">
 <p>
-型の名前空間情報がモジュールで閉じてしまっています。
-</p>
+型の名前空間情報がモジュールで閉じてしまっています。</p>
 <p>
 例えば次のように typeA.h と typeB.h にそれぞれ
-struct TEST を定義することができます。
-</p>
+struct TEST を定義することができます。</p>
 <div class="src src-c">
-<div class="highlight"><pre class="chroma"><code class="language-c" data-lang="c"><span class="c1">// ----- typeA.h -------
-</span><span class="c1"></span><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
-  <span class="kt">int</span> <span class="n">valueA</span><span class="p">;</span>
-<span class="p">};</span>
-<span class="c1">// ----- typeB.h -------
-</span><span class="c1"></span><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
-  <span class="kt">int</span> <span class="n">valueB</span><span class="p">;</span>
-<span class="p">};</span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="c1">// ----- typeA.h -------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">valueA</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// ----- typeB.h -------
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">valueB</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">};</span></span></span></code></pre></div>
 </div>
 <p>
 typeA.h と typeB.h を同時に include すればコンパイルエラーになりますが、
-別ソースから include すれば正常にコンパイルできます。
-</p>
+別ソースから include すれば正常にコンパイルできます。</p>
 <p>
 これが出来てしまうのは C 言語では仕方がないことですが、
 これによって全く用途の異なる struct TEST に対して同じタグが付いてしまい、
-それだけノイズになります。
-</p>
+それだけノイズになります。</p>
 <p>
 C 言語でこのようなことが置きないようにするには、
 名前を付ける際に何らかの prefix や suffix を付ける必要があり、
-その分名前が長くなってしまいます。
-</p>
+その分名前が長くなってしまいます。</p>
 <p>
 C++ では名前空間を利用することができますが、
 これは prefix や suffix を付けることに対する代替手段であり、
-モジュール単位で型の名前空間が閉じてしまっていることには代わりません。
-</p>
+モジュール単位で型の名前空間が閉じてしまっていることには代わりません。</p>
 <p>
-つまり、異なるモジュールで同じ名前の型を定義することは可能です。
-</p>
+つまり、異なるモジュールで同じ名前の型を定義することは可能です。</p>
 <p>
-<em>異なるモジュールで同じ名前のメソッドを定義することは出来ませんが、型名やメンバ名は定義できます。</em>
-</p>
+<em>異なるモジュールで同じ名前のメソッドを定義することは出来ませんが、型名やメンバ名は定義できます。</em></p>
 <p>
 関数にグローバルとローカルがあるのと同じ様に、
 ソースコードタグシステムとしては、
 型に対してその型がグローバルかローカルなのかの情報が欲しいところです。
-そうすれば、その情報を基にタグを付けることができます。
-</p>
+そうすれば、その情報を基にタグを付けることができます。</p>
 <p>
 個人的には、ヘッダで定義している型はグローバルで、
 ソースファイル内で定義している型はローカルになると思います。
 一方で、入門書によっては prototype 宣言や構造体宣言は全てヘッダで定義する、
-ということが書かれているものもあったりします。
-</p>
+ということが書かれているものもあったりします。</p>
 <p>
 つまり、言語規格上にない限り、
 ソースコードタグシステムとしては全ての型情報をグローバルとして扱うか、
 ローカルとして扱うかのどちらかになってしまいます。
 そして、グローバルとして扱うとノイズが増え、
 ローカルとして扱うと検索でヒットしなくなってしまうジレンマで、
-どちらにするか決めかねるところです。
-</p>
+どちらにするか決めかねるところです。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
 <h2 id="headline-10">
 まとめ
 </h2>
+<div id="outline-text-headline-10" class="outline-text-2">
 <p>
 「プログラミング言語の仕様を理解するには、
-  その言語の簡易的なインタプリタを作れば良い」
-</p>
+  その言語の簡易的なインタプリタを作れば良い」</p>
 <p>
-これを今迄の持論としていました。
-</p>
+これを今迄の持論としていました。</p>
 <p>
 長年 C 言語を使ってきて C 言語のダメな書き方を知っていたつもりでしたが、
-ソースコードタグシステムを開発していると、改めて分ったことがありました。
-</p>
+ソースコードタグシステムを開発していると、改めて分ったことがありました。</p>
 <p>
-そこで、これからは
-</p>
+そこで、これからは</p>
 <p>
-「インタプリタだけでなくソースコードタグシステムを作るとさらに理解が深まる」
-</p>
+「インタプリタだけでなくソースコードタグシステムを作るとさらに理解が深まる」</p>
 <p>
-と考え直しました。
-</p>
+と考え直しました。</p>
 <p>
 簡易的なインタプリタや独自言語などを開発した経験は、多くの方があると思います。
-一方で、ソースコードタグシステムを開発した経験のある方は少ないのではないかと思います。
-</p>
+一方で、ソースコードタグシステムを開発した経験のある方は少ないのではないかと思います。</p>
 <p>
-皆さんも、今度ソースコードタグシステム開発にチャレンジしてみてはいかがでしょうか。
-</p>
+皆さんも、今度ソースコードタグシステム開発にチャレンジしてみてはいかがでしょうか。</p>
 <p>
-新たな発見があるかもしれませんよ？
-</p>
+新たな発見があるかもしれませんよ？</p>
+</div>
+</div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lctags/subroutine/" title="lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lctags/windows/" title="Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)">Next - Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lctags/register/" title="lctags のプロジェクト簡易登録"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - lctags のプロジェクト簡易登録</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lctags/subroutine/" title="lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)">Next - lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -697,17 +609,17 @@ C++ では名前空間を利用することができますが、
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class="active"><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -716,8 +628,8 @@ C++ では名前空間を利用することができますが、
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -735,16 +647,16 @@ C++ では名前空間を利用することができますが、
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -788,6 +700,13 @@ C++ では名前空間を利用することができますが、
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -825,13 +744,6 @@ C++ では名前空間を利用することができますが、
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

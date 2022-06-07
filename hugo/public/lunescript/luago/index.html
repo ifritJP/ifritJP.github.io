@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>@3. Lua と連携 編 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/luago/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="@3. Lua と連携 編" />
 <meta property="og:description" content="LuneScript は Lua のコードを実行できます。 この特徴は、 go 言語にトランスコンパイラした後も維持されますが、 幾つかの点で注意が必要です。 特に非同期処理と lua コ" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/luago/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/luago/" /><meta property="article:section" content="LuneScript" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="@3. Lua と連携 編"/>
 <meta name="twitter:description" content="LuneScript は Lua のコードを実行できます。 この特徴は、 go 言語にトランスコンパイラした後も維持されますが、 幾つかの点で注意が必要です。 特に非同期処理と lua コ"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="LuneScript は Lua のコードを実行できます。 この特徴は、 go 言語にトランスコンパイラした後も維持されますが、 幾つかの点で注意が必要です。 特に非同期処理と lua コ">
 
 <meta itemprop="wordCount" content="1365">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -65,161 +65,113 @@
 <main><h1>@3. Lua と連携 編</h1>
 
 <p>
-LuneScript は Lua のコードを実行できます。
-</p>
+LuneScript は Lua のコードを実行できます。</p>
 <p>
 この特徴は、 go 言語にトランスコンパイラした後も維持されますが、
-幾つかの点で注意が必要です。
-</p>
+幾つかの点で注意が必要です。</p>
 <p>
-特に非同期処理と lua コード実行の組み合わせには要注意です。
-</p>
+特に非同期処理と lua コード実行の組み合わせには要注意です。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 Luaval
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-既にリンク先で説明している通り、 lua で実行した結果は <strong>Luaval 型</strong> で管理します。
-</p>
+既にリンク先で説明している通り、 lua で実行した結果は <strong>Luaval 型</strong> で管理します。</p>
 <p>
-<a href="../lua">../lua</a>
-</p>
+<a href="../lua">../lua</a></p>
 <p>
-この Luaval 型のデータには、以下の制限がありあます。
-</p>
+この Luaval 型のデータには、以下の制限がありあます。</p>
 <p>
 <strong>ある Luaval 型のデータ dataA を取得する際に実行した Lua VM と、</strong>
 <strong>その dataA にアクセスする際に実行する Lua VM とは、</strong>
-<strong>同じ Lua VM でなければなりません。</strong>
-</p>
+<strong>同じ Lua VM でなければなりません。</strong></p>
 <p>
-この制限を満さない場合の動作は <strong>不定</strong> です。
-</p>
+この制限を満さない場合の動作は <strong>不定</strong> です。</p>
 <p>
 非同期処理で Luaval を扱わない場合は、
 利用される Lua VM は一つに限られるので、
-どの Lua VM が利用されるを意識する必要はありません。
-</p>
+どの Lua VM が利用されるを意識する必要はありません。</p>
 <p>
 なお、 <strong>「Luaval 型のデータへのアクセス」</strong> とは、
 変数間の代入は含まれません。
 つまり、次の <code>work = val</code> は <strong>「Luaval 型のデータへのアクセス」</strong> にはならないので、
-Lua VM を意識する必要はありません。
-</p>
+Lua VM を意識する必要はありません。</p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
 fn func( val:&amp;Luaval&lt;&amp;List&lt;int&gt;&gt; ) {
    let work = val;
 }</code></pre>
 </div>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
 Lua VM の種類
 </h2>
+<div id="outline-text-headline-2" class="outline-text-2">
 <p>
-Lua VM には次の 2 つの種類があります。
-</p>
+Lua VM には次の 2 つの種類があります。</p>
 <ul>
+<li>__noasync で実行する Lua VM</li>
 <li>
-<p>
-__noasync で実行する Lua VM
-</p>
-</li>
-<li>
-<p>
-__async で実行する Lua VM
-</p>
+<p>__async で実行する Lua VM</p>
 <ul>
-<li>
-<p>
-__async 用 Lua VM は、非同期スレッドごとに存在します
-</p>
-</li>
+<li>__async 用 Lua VM は、非同期スレッドごとに存在します</li>
 </ul>
 </li>
 </ul>
 <p>
-lua を実行する際、どの Lua VM にアクセスするか制御が必要です。
-</p>
+lua を実行する際、どの Lua VM にアクセスするか制御が必要です。</p>
 <p>
-この制御を行なうのが <strong>lua アクセスブロック</strong> です。
-</p>
+この制御を行なうのが <strong>lua アクセスブロック</strong> です。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
 lua アクセスブロック
 </h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <p>
 <strong>lua アクセスブロック</strong> には、以下の種類があります。
 また、アクセスする関数が __async なのか __noasync なのかによって、
-利用する <strong>lua アクセスブロック</strong> が異なります。
-</p>
+利用する <strong>lua アクセスブロック</strong> が異なります。</p>
 <ul>
 <li>
-<p>
-__luago
-</p>
+<p>__luago</p>
 <ul>
-<li>
-<p>
-__noasync の関数から lua にアクセスする際に利用する
-</p>
-</li>
-<li>
-<p>
-これは __noasync 用 Lua VM で lua にアクセスする。
-</p>
-</li>
+<li>__noasync の関数から lua にアクセスする際に利用する</li>
+<li>これは __noasync 用 Lua VM で lua にアクセスする。</li>
 </ul>
 </li>
 <li>
-<p>
-__luaLock
-</p>
+<p>__luaLock</p>
 <ul>
-<li>
-<p>
-__async の関数から lua にアクセスする際に利用する
-</p>
-</li>
-<li>
-<p>
-これは __asyncLock と __luago の組み合わせと等価です。
-</p>
-</li>
+<li>__async の関数から lua にアクセスする際に利用する</li>
+<li>これは __asyncLock と __luago の組み合わせと等価です。</li>
 </ul>
 </li>
 <li>
-<p>
-__luaDepend
-</p>
+<p>__luaDepend</p>
 <ul>
-<li>
-<p>
-__async の関数から lua にアクセスする際に利用する
-</p>
-</li>
-<li>
-<p>
-これは <strong>現在実行中のスレッドに紐付けられた Lua VM 用 lua でアクセスする。</strong>
-</p>
-</li>
-<li>
-<p>
-つまり、現在実行中のスレッドが __noasync であれば、__noasync 用 Lua VM でアクセスし、
-現在実行中のスレッドが __async であれば、__async 用 Lua VM でアクセスする。
-</p>
-</li>
+<li>__async の関数から lua にアクセスする際に利用する</li>
+<li>これは <strong>現在実行中のスレッドに紐付けられた Lua VM 用 lua でアクセスする。</strong></li>
+<li>つまり、現在実行中のスレッドが __noasync であれば、__noasync 用 Lua VM でアクセスし、
+現在実行中のスレッドが __async であれば、__async 用 Lua VM でアクセスする。</li>
 </ul>
 </li>
 </ul>
 <p>
-<strong>__luaDepend は、使用される Lua VM が実行時に決定されるため細心の注意が必要です。</strong>
-</p>
+<strong>__luaDepend は、使用される Lua VM が実行時に決定されるため細心の注意が必要です。</strong></p>
+<div id="outline-container-headline-4" class="outline-3">
 <h3 id="headline-4">
 サンプル
 </h3>
+<div id="outline-text-headline-4" class="outline-text-3">
 <p>
-以下は、 lua コードを実行するサンプルです。
-</p>
+以下は、 lua コードを実行するサンプルです。</p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: ok
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
 __luago {
    let code = ```
 return { val1 = 10, val2 = 20 }
@@ -238,47 +190,44 @@ return { val1 = 10, val2 = 20 }
 </div>
 <p>
 変数 code に代入した lua のコード <code class="verbatim">return { val1 = 10, val2 = 20 }</code> を実行し、
-その結果得られた Map を foreach で列挙して出力しています。
-</p>
+その結果得られた Map を foreach で列挙して出力しています。</p>
 <p>
-この先頭で、 __luago を宣言しています。
-</p>
+この先頭で、 __luago を宣言しています。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
 <h3 id="headline-5">
 lua アクセスブロックの使い分け
 </h3>
+<div id="outline-text-headline-5" class="outline-text-3">
 <p>
 前述している通り、非同期処理から Lua にアクセスするには、
-lua アクセスブロックの __luaLock と __luaDepend を使い分ける必要があります。
-</p>
+lua アクセスブロックの __luaLock と __luaDepend を使い分ける必要があります。</p>
 <p>
 しかし、よほど Lua の重い処理を非同期で実行しない限り、
-__luaDepend を使うべきではありません。
-</p>
+__luaDepend を使うべきではありません。</p>
 <p>
 __luaDepend を使わずに、 __luago と __luaLock に限定することで、
 Lua VM 内のロード処理を最低限にし、使用メモリを抑えられ、
-結果的に非同期で実行するよりも効率よく処理できることがあります。
-</p>
+結果的に非同期で実行するよりも効率よく処理できることがあります。</p>
 <p>
 また__luaDepend を使う場合、使用される lua VM に注意する必要があり、
-それを間違えると <strong>実行時に不定な結果</strong> になります。
-</p>
+それを間違えると <strong>実行時に不定な結果</strong> になります。</p>
 <p>
 __luaDepend を利用するには、
-非同期に処理を行なうメリットと、デメリットを良く考える必要があります。
-</p>
+非同期に処理を行なうメリットと、デメリットを良く考える必要があります。</p>
+<div id="outline-container-headline-6" class="outline-4">
 <h4 id="headline-6">
 __luaDepend を使った方が良いケース
 </h4>
+<div id="outline-text-headline-6" class="outline-text-4">
 <p>
-<code class="verbatim">string.gmatch()</code> は lua にアクセスするため lua アクセスブロックが必要です。
-</p>
+<code class="verbatim">string.gmatch()</code> は lua にアクセスするため lua アクセスブロックが必要です。</p>
 <p>
 この時、 <code class="verbatim">string.gmatch()</code> が扱う Luaval データは apply ブロック内に閉じるため、
-__luaDepend を使った方が効率良く安全に処理できます。
-</p>
+__luaDepend を使った方が効率良く安全に処理できます。</p>
 <div class="src src-lns">
-<pre><code class="language-lns" data-lang="lns">// @lnsFront: skip
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
    let mut list:List&lt;str&gt; = [];
    __luaDepend {
       apply token of string.gmatch( txt, pattern ) {
@@ -286,10 +235,16 @@ __luaDepend を使った方が効率良く安全に処理できます。
       }
    }</code></pre>
 </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/async_old/" title="@.2.1 非同期処理O(過去情報)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.2.1 非同期処理O(過去情報)</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/lnstags/" title="A. lnstags によるタグジャンプ (ソースコードタグシステム)">Next - A. lnstags によるタグジャンプ (ソースコードタグシステム) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/async_old/" title="@.2.1 非同期処理(過去情報)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - @.2.1 非同期処理(過去情報)</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/tutorial1/" title="00. はじめに">Next - 00. はじめに <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -301,17 +256,17 @@ __luaDepend を使った方が効率良く安全に処理できます。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -320,8 +275,8 @@ __luaDepend を使った方が効率良く安全に処理できます。
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -339,16 +294,16 @@ __luaDepend を使った方が効率良く安全に処理できます。
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -392,6 +347,13 @@ __luaDepend を使った方が効率良く安全に処理できます。
 <li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -429,13 +391,6 @@ __luaDepend を使った方が効率良く安全に処理できます。
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>

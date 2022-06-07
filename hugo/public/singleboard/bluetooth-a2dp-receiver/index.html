@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.68.3" />
+<meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -17,22 +17,16 @@
 <script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
 <script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=UA-120218599-2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'UA-120218599-2');
-</script>
-<style>
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
 <meta property="og:title" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説" />
 <meta property="og:description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html 2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。 2022/1 raspberry pi os bullseye を使用した時の補足を追加。 RaspberryPi で Bluetooth AUDIO (A2DP)" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/" /><meta property="article:section" content="singleboard" />
+
 <meta property="og:site_name" content="公開技術情報" />
+
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説"/>
 <meta name="twitter:description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html 2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。 2022/1 raspberry pi os bullseye を使用した時の補足を追加。 RaspberryPi で Bluetooth AUDIO (A2DP)"/>
@@ -40,10 +34,16 @@
 <meta itemprop="description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html 2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。 2022/1 raspberry pi os bullseye を使用した時の補足を追加。 RaspberryPi で Bluetooth AUDIO (A2DP)">
 
 <meta itemprop="wordCount" content="3341">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
 
-
-
-<meta itemprop="keywords" content="" /></head>
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
 <body><div class="container"><header>
 <h1>公開技術情報</h1>
 
@@ -65,552 +65,510 @@
 <main><h1>Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</h1>
 
 <p>
-<strong>2019/6 Bluetooth のファイル転送、PAN 設定について書きました。</strong>
-</p>
+<strong>2019/6 Bluetooth のファイル転送、PAN 設定について書きました。</strong></p>
 <ul>
-<li>
-<p>
-<a href="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html">https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html</a>
-</p>
-</li>
+<li><a href="https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html">https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html</a></li>
 </ul>
 <p>
-<strong>2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。</strong>
-</p>
+<strong>2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。</strong></p>
 <p>
-<strong>2022/1 raspberry pi os bullseye を使用した時の補足を追加。</strong>
-</p>
+<strong>2022/1 raspberry pi os bullseye を使用した時の補足を追加。</strong></p>
 <p>
 RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
 Web に載っていますが、幾つかハマったポイントがあったので、
-そのポイントを解説していきます。
-</p>
+そのポイントを解説していきます。</p>
 <p>
 設定内容は、apt でパッケージを入れてペアリングするだけですが、
 ペアリングして音声が再生出来るようになるまでに、
-いくつかハマるポイントがあります。
-</p>
+いくつかハマるポイントがあります。</p>
+<div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
 OS イメージ
 </h2>
+<div id="outline-text-headline-1" class="outline-text-2">
 <p>
-https://www.raspberrypi.org/software/operating-systems/
-</p>
+https://www.raspberrypi.org/software/operating-systems/</p>
 <p>
 RaspberryPi の OS イメージは、
 必ず <strong>Raspberry Pi OS</strong> を使用してください。
 Raspberry Pi OS であれば、
-Lite でも with desktop でも and recommended software でも OK です。
-</p>
+Lite でも with desktop でも and recommended software でも OK です。</p>
 <p>
-ちなみに今回使用したのは現時点で最新 2020-12-02 5.4 を使用しました。
-</p>
+ちなみに今回使用したのは現時点で最新 2020-12-02 5.4 を使用しました。</p>
 <p>
 <strong>2020/3 現在、 Raspbian Buster と RaspberryPi3 Model B の組み合わせだと、A2DP 再生時の音声ノイズを改善できません。</strong>
 Raspbian Stretch でも、バージョンが異なるとノイズを改善できない可能性があります。
 RaspberryPi3 Model B 以外でどうか、
-あるいは、RaspberryPi3 Model B の他の個体でどうかは確認できていません。
-</p>
+あるいは、RaspberryPi3 Model B の他の個体でどうかは確認できていません。</p>
 <p>
-なお、RaspberryPi3 の WiFi で脆弱性が確認されているようです。
-</p>
+なお、RaspberryPi3 の WiFi で脆弱性が確認されているようです。</p>
 <p>
-https://pc.watch.impress.co.jp/docs/news/1237645.html
-</p>
+https://pc.watch.impress.co.jp/docs/news/1237645.html</p>
 <p>
 この記事では、末尾で WiFi を無効化しているので影響はありませんが、
 もしも WiFi を有効化している場合は <strong>各自の自己責任</strong> のもと、
-注意して運用してください。
-</p>
+注意して運用してください。</p>
 <p>
-<strong>Raspberry pi 4 では、ノイズの問題はありません。</strong>
-</p>
+<strong>Raspberry pi 4 では、ノイズの問題はありません。</strong></p>
 <p>
-<strong>最新 OS イメージ +  Raspberry pi 3 でノイズが発生するかどうかは確認していません。</strong>
-</p>
+<strong>最新 OS イメージ +  Raspberry pi 3 でノイズが発生するかどうかは確認していません。</strong></p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
 sshd 有効化
 </h2>
+<div id="outline-text-headline-2" class="outline-text-2">
 <p>
-これは必須ではないですが ssh で作業した方が、なにかと便利なので設定しておきます。
-</p>
+これは必須ではないですが ssh で作業した方が、なにかと便利なので設定しておきます。</p>
 <p>
-OS イメージを書き込んだドライブ直下に、ファイル名 ssh で空ファイルを作成します。
-</p>
+OS イメージを書き込んだドライブ直下に、ファイル名 ssh で空ファイルを作成します。</p>
 <p>
-Raspbian から作業する場合は、次のコマンドと等価です。
-</p>
+Raspbian から作業する場合は、次のコマンドと等価です。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo touch /boot/ssh</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ sudo touch /boot/ssh</span></span></code></pre></div>
 </div>
 <p>
 Raspbian から作業するには、
 RaspberryPi に キーボードとディスプレイを接続する必要があるので、
-OS イメージ書き込み時にファイルを作成しておいた方が良いでしょう。
-</p>
+OS イメージ書き込み時にファイルを作成しておいた方が良いでしょう。</p>
 <p>
-これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。
-</p>
+これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。</p>
 <p>
-<strong>※デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。</strong>
-</p>
+<strong>※デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。</strong></p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
 apt パッケージ更新
 </h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <p>
-まずは apt パッケージを更新します。
-</p>
+まずは apt パッケージを更新します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo apt-get update
-$ sudo apt-get upgrade</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ sudo apt-get update
+</span></span><span class="line"><span class="cl">$ sudo apt-get upgrade</span></span></code></pre></div>
 </div>
 <p>
-これはお決まりのパターンなんで、特に理由がない限りやっておきます。
-</p>
+これはお決まりのパターンなんで、特に理由がない限りやっておきます。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
 <h2 id="headline-4">
 bluetooth 関連のパッケージ追加
 </h2>
+<div id="outline-text-headline-4" class="outline-text-2">
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo apt-get install bluez pulseaudio-module-bluetooth python-gobject python-gobject-2</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ sudo apt-get install bluez pulseaudio-module-bluetooth python-gobject python-gobject-2</span></span></code></pre></div>
 </div>
 <p>
-<strong>bullseye の場合 python-gobject python-gobject-2 は不要</strong>  
-</p>
+<strong>bullseye の場合 python-gobject python-gobject-2 は不要</strong>  </p>
 <p>
 このバージョンの OS イメージでは、
-bluez はインストール済みですが念のため指定しておきます。
-</p>
+bluez はインストール済みですが念のため指定しておきます。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
 <h2 id="headline-5">
 Bluetooth の設定
 </h2>
+<div id="outline-text-headline-5" class="outline-text-2">
 <p>
-次のコマンドを実行します。
-</p>
+次のコマンドを実行します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">pi@raspberrypi:~$ sudo bluetoothctl
-[NEW] Controller XX:XX:XX:XX:XX:XX raspberrypi [default]</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">pi@raspberrypi:~$ sudo bluetoothctl
+</span></span><span class="line"><span class="cl">[NEW] Controller XX:XX:XX:XX:XX:XX raspberrypi [default]</span></span></code></pre></div>
 </div>
 <p>
-ここで show を入力し、 Bluetooth の情報を確認します。
-</p>
+ここで show を入力し、 Bluetooth の情報を確認します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">show
-Controller XX:XX:XX:XX:XX:XX
-	Name: raspberrypi
-	Alias: raspberrypi
-	Class: 0x6c0000
-	Powered: yes
-	Discoverable: no
-	Pairable: yes
-	UUID: Headset AG                
-	UUID: Generic Attribute Profile 
-	UUID: A/V Remote Control        
-	UUID: Generic Access Profile    
-	UUID: PnP Information           
-	UUID: A/V Remote Control Target 
-	Discovering: no</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">show
+</span></span><span class="line"><span class="cl">Controller XX:XX:XX:XX:XX:XX
+</span></span><span class="line"><span class="cl">	Name: raspberrypi
+</span></span><span class="line"><span class="cl">	Alias: raspberrypi
+</span></span><span class="line"><span class="cl">	Class: 0x6c0000
+</span></span><span class="line"><span class="cl">	Powered: yes
+</span></span><span class="line"><span class="cl">	Discoverable: no
+</span></span><span class="line"><span class="cl">	Pairable: yes
+</span></span><span class="line"><span class="cl">	UUID: Headset AG                
+</span></span><span class="line"><span class="cl">	UUID: Generic Attribute Profile 
+</span></span><span class="line"><span class="cl">	UUID: A/V Remote Control        
+</span></span><span class="line"><span class="cl">	UUID: Generic Access Profile    
+</span></span><span class="line"><span class="cl">	UUID: PnP Information           
+</span></span><span class="line"><span class="cl">	UUID: A/V Remote Control Target 
+</span></span><span class="line"><span class="cl">	Discovering: no</span></span></code></pre></div>
 </div>
 <p>
-上記出力のようになると思います。
-</p>
+上記出力のようになると思います。</p>
 <p>
-この出力には、以下がないです。
-</p>
+この出力には、以下がないです。</p>
 <pre class="example">
 UUID: Audio Sink
 </pre>
 <p>
-これがないと A2DP で接続出来ません。
-</p>
+これがないと A2DP で接続出来ません。</p>
 <p>
 以下では、Audio Sink を出すための設定について説明します。
-Audio Sink がある場合は、ペアリングまで手順を飛ばしてください。
-</p>
+Audio Sink がある場合は、ペアリングまで手順を飛ばしてください。</p>
 <p>
-まずは、 bluetoothctl を抜けてから以下を実行します。
-</p>
+まずは、 bluetoothctl を抜けてから以下を実行します。</p>
 <pre class="example">
 sudo apt-get install pulseaudio-module-bluetooth
 </pre>
 <p>
-これはデフォルトで入っているはずですが、念のため実行しておきます。
-</p>
+これはデフォルトで入っているはずですが、念のため実行しておきます。</p>
 <p>
-インストール後に再起動が必要です。
-</p>
+インストール後に再起動が必要です。</p>
 <p>
-次に以下のコマンドを実行します。
-</p>
+次に以下のコマンドを実行します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ sudo pulseaudio -D
-$ sudo service bluetooth restart</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ sudo pulseaudio -D
+</span></span><span class="line"><span class="cl">$ sudo service bluetooth restart</span></span></code></pre></div>
 </div>
 <p>
-ここで、再度 bluetoothctl の show を実行すると、次のようになっているはずです。
-</p>
+ここで、再度 bluetoothctl の show を実行すると、次のようになっているはずです。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">[bluetooth]# show
-Controller XX:XX:XX:XX:XX:XX
-        Name: raspberrypi4
-        Alias: raspberrypi4
-        Class: 0x000c0000
-        Powered: yes
-        Discoverable: no
-        Pairable: yes
-        UUID: Headset AG                
-        UUID: Generic Attribute Profile 
-        UUID: A/V Remote Control        
-        UUID: Generic Access Profile    
-        UUID: PnP Information           
-        UUID: A/V Remote Control Target 
-        UUID: Audio Source              
-        UUID: Audio Sink                
-        UUID: Headset                   
-        Discovering: no</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">[bluetooth]# show
+</span></span><span class="line"><span class="cl">Controller XX:XX:XX:XX:XX:XX
+</span></span><span class="line"><span class="cl">        Name: raspberrypi4
+</span></span><span class="line"><span class="cl">        Alias: raspberrypi4
+</span></span><span class="line"><span class="cl">        Class: 0x000c0000
+</span></span><span class="line"><span class="cl">        Powered: yes
+</span></span><span class="line"><span class="cl">        Discoverable: no
+</span></span><span class="line"><span class="cl">        Pairable: yes
+</span></span><span class="line"><span class="cl">        UUID: Headset AG                
+</span></span><span class="line"><span class="cl">        UUID: Generic Attribute Profile 
+</span></span><span class="line"><span class="cl">        UUID: A/V Remote Control        
+</span></span><span class="line"><span class="cl">        UUID: Generic Access Profile    
+</span></span><span class="line"><span class="cl">        UUID: PnP Information           
+</span></span><span class="line"><span class="cl">        UUID: A/V Remote Control Target 
+</span></span><span class="line"><span class="cl">        UUID: Audio Source              
+</span></span><span class="line"><span class="cl">        UUID: Audio Sink                
+</span></span><span class="line"><span class="cl">        UUID: Headset                   
+</span></span><span class="line"><span class="cl">        Discovering: no</span></span></code></pre></div>
 </div>
 <p>
-これで Audio Sink が認識されたので、 A2DP が利用できます。
-</p>
+これで Audio Sink が認識されたので、 A2DP が利用できます。</p>
 <p>
-次はペアリングです。
-</p>
+次はペアリングです。</p>
+<div id="outline-container-headline-6" class="outline-3">
 <h3 id="headline-6">
 ペアリング方法
 </h3>
+<div id="outline-text-headline-6" class="outline-text-3">
 <p>
 Bluetooth を使用したことがあれば分かると思いますが、
-ペアリングは次のステップで行ないます。
-</p>
+ペアリングは次のステップで行ないます。</p>
 <ul>
-<li>
-<p>
-Bluetooth service 側のデバイスをペアリング登録状態にする
-</p>
-</li>
-<li>
-<p>
-Bluetooth client 側のデバイスで検索し、ペアリングする
-</p>
-</li>
-<li>
-<p>
-ペアリングを認証する
-</p>
-</li>
+<li>Bluetooth service 側のデバイスをペアリング登録状態にする</li>
+<li>Bluetooth client 側のデバイスで検索し、ペアリングする</li>
+<li>ペアリングを認証する</li>
 </ul>
-<p>
-以降では、ペアリングの登録と認証手順に分けて説明します。
-</p>
+<p>以降では、ペアリングの登録と認証手順に分けて説明します。</p>
+<div id="outline-container-headline-7" class="outline-4">
 <h4 id="headline-7">
 ペアリング登録
 </h4>
+<div id="outline-text-headline-7" class="outline-text-4">
 <p>
 ペアリングを行なうには、service 側をペアリング登録状態にします。
-具体的には show コマンドで表示される次の状態を変更する必要があります。
-</p>
+具体的には show コマンドで表示される次の状態を変更する必要があります。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">	Powered: yes
-	Discoverable: no
-	Pairable: yes</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">	Powered: yes
+</span></span><span class="line"><span class="cl">	Discoverable: no
+</span></span><span class="line"><span class="cl">	Pairable: yes</span></span></code></pre></div>
 </div>
 <p>
-それぞれの状態を設定するには、次のコマンドを使用します。
-</p>
+それぞれの状態を設定するには、次のコマンドを使用します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">  power &lt;on/off&gt;             Set controller power
-  pairable &lt;on/off&gt;          Set controller pairable mode
-  discoverable &lt;on/off&gt;      Set controller discoverable mode</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">  power &lt;on/off&gt;             Set controller power
+</span></span><span class="line"><span class="cl">  pairable &lt;on/off&gt;          Set controller pairable mode
+</span></span><span class="line"><span class="cl">  discoverable &lt;on/off&gt;      Set controller discoverable mode</span></span></code></pre></div>
 </div>
 <p>
 現状 discoverable だけ no になっているので、
-今回は discoverable on だけ実行します。
-</p>
+今回は discoverable on だけ実行します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">[bluetooth]# discoverable on</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">[bluetooth]# discoverable on</span></span></code></pre></div>
 </div>
 <p>
-念のため再度 show を実行し、次のようになっていることを確認します。
-</p>
+念のため再度 show を実行し、次のようになっていることを確認します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">	Powered: yes
-	Discoverable: yes
-	Pairable: yes</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">	Powered: yes
+</span></span><span class="line"><span class="cl">	Discoverable: yes
+</span></span><span class="line"><span class="cl">	Pairable: yes</span></span></code></pre></div>
 </div>
 <p>
-<strong>bullseye の場合、更に以下の実行が必要です。</strong>
-</p>
+<strong>bullseye の場合、更に以下の実行が必要です。</strong></p>
 <pre class="example">
 [bluetooth]# default-agent
 </pre>
 <p>
-この状態で、 client 側で検索し、ペアリングします。
-</p>
+この状態で、 client 側で検索し、ペアリングします。</p>
 <p>
 <strong>bullseye の場合、client 側でペアリングを開始すると、</strong>
 <strong>以下のメッセージが raspberrypi 側に出力されるので、</strong>
 <strong>?????? の部分が client 側に表示されている数字と同じか確認して、</strong>
-<strong>問題なければ yes を入力します。</strong>
-</p>
+<strong>問題なければ yes を入力します。</strong></p>
 <pre class="example">
 [agent] Confirm passkey ?????? (yes/no): yes
 </pre>
 <p>
 一定時間経過すると、 discoverable が自動で off になりますが、
 discoverable off で明示的に off にしてください。
-念のため show コマンドで discoverable の状態を確認します。
-</p>
+念のため show コマンドで discoverable の状態を確認します。</p>
 <p>
 discoverable が on の状態だと新規にペアリングを登録可能なので、
 そのままだとセキュリティ上問題になります。
-必ず discoverable が off になっていることを確認してください。
-</p>
+必ず discoverable が off になっていることを確認してください。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
 <h3 id="headline-8">
 ペアリングの認証
 </h3>
+<div id="outline-text-headline-8" class="outline-text-3">
 <p>
 <strong>bullseye の場合、この『ペアリングの認証』作業は不要です。</strong>
-<strong>というか、上記の Confirm passkey の確認が、『ペアリングの認証』になります。</strong>
-</p>
+<strong>というか、上記の Confirm passkey の確認が、『ペアリングの認証』になります。</strong></p>
 <p>
-ペアリングすると、次のように出力されます。
-</p>
+ペアリングすると、次のように出力されます。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">[CHG] Device XX:XX:XX:XX:XX:XX Connected: yes
-[CHG] Device XX:XX:XX:XX:XX:XX Connected: no</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">[CHG] Device XX:XX:XX:XX:XX:XX Connected: yes
+</span></span><span class="line"><span class="cl">[CHG] Device XX:XX:XX:XX:XX:XX Connected: no</span></span></code></pre></div>
 </div>
 <p>
-出力を見ると Connected が yes になった後に直ぐに no になっていることが分かります。
-</p>
+出力を見ると Connected が yes になった後に直ぐに no になっていることが分かります。</p>
 <p>
 これは、ペアリングが認証されていないため、
-接続を持続できずに切断していることを示します。
-</p>
+接続を持続できずに切断していることを示します。</p>
 <p>
-そこで、次のコマンドでペアリングを認証します。
-</p>
+そこで、次のコマンドでペアリングを認証します。</p>
 <pre class="example">
 [bluetooth]# trust XX:XX:XX:XX:XX:XX
 </pre>
 <p>
-これでペアリングが認証され次のように表示されます。
-</p>
+これでペアリングが認証され次のように表示されます。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">[CHG] Device XX:XX:XX:XX:XX:XX Trusted: yes
-Changing XX:XX:XX:XX:XX:XX trust succeeded</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">[CHG] Device XX:XX:XX:XX:XX:XX Trusted: yes
+</span></span><span class="line"><span class="cl">Changing XX:XX:XX:XX:XX:XX trust succeeded</span></span></code></pre></div>
 </div>
 <p>
-この状態で再度 client 側から接続すると、接続が維持されます。
-</p>
+この状態で再度 client 側から接続すると、接続が維持されます。</p>
 <p>
-以上でペアリング完了です。
-</p>
+以上でペアリング完了です。</p>
 <p>
-この状態になれば、リブート後も自動でペアリングされます。
-</p>
+この状態になれば、リブート後も自動でペアリングされます。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-2">
 <h2 id="headline-9">
 audio source の確認
 </h2>
+<div id="outline-text-headline-9" class="outline-text-2">
 <p>
-ペアリング完了した状態で、次のコマンドを実行してください。
-</p>
+ペアリング完了した状態で、次のコマンドを実行してください。</p>
 <p>
-$ pactl list sources short
-</p>
+$ pactl list sources short</p>
 <p>
-これで次のような出力がされます。
-</p>
+これで次のような出力がされます。</p>
 <pre class="example">
 0	lsa_output.platform-soc_audio.analog-stereo.monitor	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED
 </pre>
 <p>
 これは、 Audio のソース一覧を出力するコマンドです。
 A2DP で接続すると、このリストに次のような情報が出力されると、
- Web の解説ページには記載されていましたが、私の環境では表示されませんでした。
-</p>
+ Web の解説ページには記載されていましたが、私の環境では表示されませんでした。</p>
 <pre class="example">
 6	bluez_source.XX_XX_XX_XX_XX_XX.a2dp_source	module-bluez5-device.c	s16le 2ch 44100Hz	RUNNING
 </pre>
 <p>
 ここでは慌てず騒がず、
 client 側の Audio 出力設定を Bluetooth に切り替えて音楽を再生してから、
-再度上記コマンドを実行してください。
-</p>
+再度上記コマンドを実行してください。</p>
 <p>
 どうでしょうか？ 出力されましたか？ まだ、出力されない？
 その人は、 client が A2DP ではなく Headset で再生されていると思われます。
-client 側の設定で出力を A2DP に変更してください。
-</p>
+client 側の設定で出力を A2DP に変更してください。</p>
 <p>
-それでも駄目な場合、次のコマンドを実行してください。
-</p>
+それでも駄目な場合、次のコマンドを実行してください。</p>
 <pre class="example">
 $ sudo service bluetooth restart
 </pre>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
 <h2 id="headline-10">
 /etc/rc.local の編集
 </h2>
+<div id="outline-text-headline-10" class="outline-text-2">
 <p>
-<strong>bullseye の場合は不要。問題が発生する場合に設定してください。</strong>  
-</p>
+<strong>bullseye の場合は不要。問題が発生する場合に設定してください。</strong>  </p>
 <p>
 デフォルトの起動状態では Audio Sink が有効にならないので、
-Audio Sink を有効にするために /etc/rc.local に次の処理を追加します。
-</p>
+Audio Sink を有効にするために /etc/rc.local に次の処理を追加します。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">sleep 10 # 10 は環境によって変更する
-pulseaudio -D
-service bluetooth restart</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">sleep 10 # 10 は環境によって変更する
+</span></span><span class="line"><span class="cl">pulseaudio -D
+</span></span><span class="line"><span class="cl">service bluetooth restart</span></span></code></pre></div>
 </div>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-2">
 <h2 id="headline-11">
 pulseaudio 出力先変更
 </h2>
+<div id="outline-text-headline-11" class="outline-text-2">
 <p>
-pulseaudio の出力先は、次のコマンドで確認できます。
-</p>
+pulseaudio の出力先は、次のコマンドで確認できます。</p>
 <div class="src src-txt">
-<div class="highlight"><pre class="chroma"><code class="language-txt" data-lang="txt">$ pactl list sinks short
-0	alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	RUNNING
-1	alsa_output.platform-soc_audio.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED</code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ pactl list sinks short
+</span></span><span class="line"><span class="cl">0	alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	RUNNING
+</span></span><span class="line"><span class="cl">1	alsa_output.platform-soc_audio.analog-stereo	module-alsa-card.c	s16le 2ch 44100Hz	SUSPENDED</span></span></code></pre></div>
 </div>
 <p>
 デフォルトの出力先を変更する場合は、
-/etc/pulse/default.pa に出力先名を設定します。
-</p>
+/etc/pulse/default.pa に出力先名を設定します。</p>
 <pre class="example">
 set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
 </pre>
 <p>
-これでリブートすれば出力先が切り替わります。
-</p>
+これでリブートすれば出力先が切り替わります。</p>
 <p>
-一時的に出力先を変更する場合は、以下を実行します。
-</p>
+一時的に出力先を変更する場合は、以下を実行します。</p>
 <pre class="example">
 set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
 </pre>
+</div>
+</div>
+<div id="outline-container-headline-12" class="outline-2">
 <h2 id="headline-12">
 WiFi を無効化
 </h2>
+<div id="outline-text-headline-12" class="outline-text-2">
 <p>
 Bluetooth は WiFi と干渉します。
-RaspberryPi3 の WiFi を有効にしていると、干渉ノイズが入ります。
-</p>
+RaspberryPi3 の WiFi を有効にしていると、干渉ノイズが入ります。</p>
 <p>
-干渉ノイズが気になる場合は、WiFi を無効化します。
-</p>
+干渉ノイズが気になる場合は、WiFi を無効化します。</p>
 <p>
-WiFi 無効化は /boot/config.txt に次の設定を追加します。
-</p>
+WiFi 無効化は /boot/config.txt に次の設定を追加します。</p>
 <pre class="example">
 # WiFi off
 dtoverlay=pi3-disable-wifi
 </pre>
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-2">
 <h2 id="headline-13">
 /etc/pulse/daemon.conf の設定
 </h2>
+<div id="outline-text-headline-13" class="outline-text-2">
 <p>
-<strong>2018/5/29 追記</strong>
-</p>
+<strong>2018/5/29 追記</strong></p>
 <p>
-/etc/pulse/daemon.conf に追記し、リブートさせます。
-</p>
+/etc/pulse/daemon.conf に追記し、リブートさせます。</p>
 <pre class="example">
 resample-method = trivial
 </pre>
 <p>
-この設定をしないと、多くの場合にノイズが発生します。
-</p>
+この設定をしないと、多くの場合にノイズが発生します。</p>
+</div>
+</div>
+<div id="outline-container-headline-14" class="outline-2">
 <h2 id="headline-14">
 /etc/bluetooth/main.conf の設定
 </h2>
+<div id="outline-text-headline-14" class="outline-text-2">
 <p>
-<strong>2018/6/7 追記</strong>
-</p>
+<strong>2018/6/7 追記</strong></p>
 <p>
 Client によっては、ペアリングできないことがあります。
-その場合 /etc/bluetooth/main.conf に次を設定します。
-</p>
+その場合 /etc/bluetooth/main.conf に次を設定します。</p>
 <pre class="example">
 Class = 0x240404
 </pre>
 <p>
-Amazon Fire TV とペアリングする場合、この設定が必要でした。
-</p>
+Amazon Fire TV とペアリングする場合、この設定が必要でした。</p>
+</div>
+</div>
+<div id="outline-container-headline-15" class="outline-2">
 <h2 id="headline-15">
 ボリューム  (AVRCP Absolute Volume)
 </h2>
+<div id="outline-text-headline-15" class="outline-text-2">
 <p>
-client 側のボリュームを変更しても、音量が変わらない場合があります。
-</p>
+client 側のボリュームを変更しても、音量が変わらない場合があります。</p>
 <p>
-<em>私の環境では、ボリューム最小(ミュート)から 1 上げると最大の音量になる現象でした。</em>
-</p>
+<em>私の環境では、ボリューム最小(ミュート)から 1 上げると最大の音量になる現象でした。</em></p>
 <p>
 これは、 AVRCP Absolute Volume (絶対音量) というものが影響しているらしく、
-この設定をオフにする必要があります。
-</p>
+この設定をオフにする必要があります。</p>
 <p>
 なお、 pulseaudio ではこの問題を認識しているようなので、
-将来的にはこの問題はクリアになると思います。
-</p>
+将来的にはこの問題はクリアになると思います。</p>
 <p>
-https://gitlab.freedesktop.org/pulseaudio/pulseaudio/-/merge_requests/239
-</p>
+https://gitlab.freedesktop.org/pulseaudio/pulseaudio/-/merge_requests/239</p>
+<div id="outline-container-headline-16" class="outline-3">
 <h3 id="headline-16">
 windows
 </h3>
+<div id="outline-text-headline-16" class="outline-text-3">
 <p>
-次のレジストリに 1 をセットしてください。
-</p>
+次のレジストリに 1 をセットしてください。</p>
 <pre class="example">
 HKEY_LOCAL_MACHINE\SYSTEM\ControlSet001\Control\Bluetooth\Audio\AVRCP\CT の
 名前: DisableAbsoluteVolume
 値: 1  (DWORD)
 </pre>
 <p>
-※再起動が必要
-</p>
+※再起動が必要</p>
+</div>
+</div>
+<div id="outline-container-headline-17" class="outline-3">
 <h3 id="headline-17">
 android
 </h3>
+<div id="outline-text-headline-17" class="outline-text-3">
 <p>
-開発者オプションで絶対音量機能を off にしてください。
-</p>
+開発者オプションで絶対音量機能を off にしてください。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-18" class="outline-2">
 <h2 id="headline-18">
 「To install the screen reader press control alt spce」音声出力が定期的に出力される
 </h2>
+<div id="outline-text-headline-18" class="outline-text-2">
 <p>
-raspberry pi os bullseye にすると、次の英語の音声が数秒ごとに出力されます。
-</p>
+raspberry pi os bullseye にすると、次の英語の音声が数秒ごとに出力されます。</p>
 <pre class="example">
 To install the screen reader press control alt spce
 </pre>
 <p>
-以下を実行し Raspberry Pi を再起動すると、再生されなくなります。
-</p>
+以下を実行し Raspberry Pi を再起動すると、再生されなくなります。</p>
 <pre class="example">
 sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak 
 </pre>
+</div>
+</div>
+<div id="outline-container-headline-19" class="outline-2">
 <h2 id="headline-19">
 参考
 </h2>
+<div id="outline-text-headline-19" class="outline-text-2">
 <ul>
-<li>
-<p>
-<a href="https://www.raspberrypi.org/forums/viewtopic.php?t=68779">https://www.raspberrypi.org/forums/viewtopic.php?t=68779</a>
-</p>
-</li>
-<li>
-<p>
-<a href="https://qiita.com/yyano/items/802da53ad8a4a00d00e1">https://qiita.com/yyano/items/802da53ad8a4a00d00e1</a>  
-</p>
-</li>
-<li>
-<p>
-<a href="https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt">https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt</a>
-</p>
-</li>
+<li><a href="https://www.raspberrypi.org/forums/viewtopic.php?t=68779">https://www.raspberrypi.org/forums/viewtopic.php?t=68779</a></li>
+<li><a href="https://qiita.com/yyano/items/802da53ad8a4a00d00e1">https://qiita.com/yyano/items/802da53ad8a4a00d00e1</a>  </li>
+<li><a href="https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt">https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt</a></li>
 </ul>
+</div>
+</div>
 <div class="edit-meta">
 
 <br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/singleboard/build-kernel-module-64/" title="64bit 版 Raspberry Pi OS のカーネルモジュールのビルド環境設定"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 64bit 版 Raspberry Pi OS のカーネルモジュールのビルド環境設定</a>
@@ -626,17 +584,17 @@ sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
 </ul>
   
@@ -645,8 +603,8 @@ sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
-<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
@@ -664,16 +622,16 @@ sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak
   
 </li>
 
-<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
-  
-</li>
-
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Gos<span class="mark closed">+</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
 </ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
   
 </li>
 
@@ -717,6 +675,13 @@ sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak
 <li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
@@ -754,13 +719,6 @@ sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">@.1 Go 言語へのトランスコンパイル</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">@.1.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">@.1.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">@.1.4 LuneScript の WebAssembly 対応</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">@.2 安全な非同期処理</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">@.2.1 非同期処理O(過去情報)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">@3. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>
