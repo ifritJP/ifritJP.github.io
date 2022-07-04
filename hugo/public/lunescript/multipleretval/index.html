@@ -33,7 +33,7 @@
 <meta itemprop="name" content="10.2. 多値の戻り値">
 <meta itemprop="description" content="LuneScript は、多値の関数戻り値に対応しています。 例えば、次のように関数は複数の値を返せます。 // @lnsFront: ok fn func(): int,int { return 1, 2; } print( func() ); // 1 2 上記サンプルでは、 func() は">
 
-<meta itemprop="wordCount" content="1452">
+<meta itemprop="wordCount" content="1895">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -194,6 +194,55 @@ func2( func1()** );</code></pre>
 <p>
 上記 <code>func1()**</code> のように、関数コールの後に <code>**</code> を付加することで、
 その関数コールの多値を使用していることを明示します。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+多値戻り値を使用する際の仕様
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+上記で示す通り、多値を返す関数の実行結果をそのまま別の関数の引数に渡すことができます。</p>
+<p>
+但し、多値を返す関数の戻り値をそのまま多値として扱うには、
+関数の後に何も指定していない場合に限ります。</p>
+<p>
+これはどういうことかというと、
+以下のように多値の戻り値を返す関数 func1 の実行結果を print で出力する際、
+func1 の後に指定していると、 func1 の実行結果は先頭の値だけが処理されます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1(): int,int {
+   return 1, 2;
+}
+print( func1() );      // 1 2
+print( func1(), 10 );  // 1 10
+print( 0, func1() );  // 0 1 2</code></pre>
+</div>
+<p>
+上の例の場合、</p>
+<ul>
+<li><code class="verbatim">print( func1() )</code> は、多値の戻り値 <code class="verbatim">1 2</code> がそのまま処理される。</li>
+<li><code class="verbatim">print( func1(), 10 )</code> は、多値の戻り値の先頭の <code class="verbatim">10</code> が処理される。</li>
+<li><code class="verbatim">print( 0, func1() )</code> は、多値の戻り値 <code class="verbatim">1 2</code> がそのまま処理される。</li>
+</ul>
+<p>これは、 List のコンストラクタなどの場合も同様です。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func1(): int,int {
+   return 1, 2;
+}
+let list1 = [ func1() ]; // [1 2]
+let list2 = [ func1(), 10 ];  // [ 1 10]
+let list3 = [ 0, func1() ];  // [0 1 2]</code></pre>
+</div>
+<p>
+なお、次のように多値の関数呼び出しに <code class="verbatim">()</code> を付けた場合も、多値の戻り値の先頭だけを処理します。</p>
+<pre class="example">
+print( (func1()) );
+</pre>
+<p>
+これは、 LuneScript の仕様というよりは、 Lua の仕様にもとづく動作です。</p>
 </div>
 </div>
 <div class="edit-meta">
