@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>80.2 Go 言語へのトランスコンパイル時のパッケージ - 公開技術情報</title>
+<title>A. LuneScript の言語仕様でミスだったと思っているところ - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/go_package/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/regret/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -20,20 +20,20 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
-<meta property="og:title" content="80.2 Go 言語へのトランスコンパイル時のパッケージ" />
-<meta property="og:description" content="go でパッケージ管理されているモジュールを LuneScript から利用できます。 go のパッケージ管理概要 go は go.mod でパッケージを管理します。 この go.mod で管理されたパッケー" />
+<meta property="og:title" content="A. LuneScript の言語仕様でミスだったと思っているところ" />
+<meta property="og:description" content="LuneScript は、自分の中で初の本格的なプログラミング言語開発の経験でした。 自分なりにさまざまな言語を調べ、 できるだけ使い勝手の良い言語になるよう設計を" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/go_package/" /><meta property="article:section" content="LuneScript" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/regret/" /><meta property="article:section" content="LuneScript" />
 
 <meta property="og:site_name" content="公開技術情報" />
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="80.2 Go 言語へのトランスコンパイル時のパッケージ"/>
-<meta name="twitter:description" content="go でパッケージ管理されているモジュールを LuneScript から利用できます。 go のパッケージ管理概要 go は go.mod でパッケージを管理します。 この go.mod で管理されたパッケー"/>
-<meta itemprop="name" content="80.2 Go 言語へのトランスコンパイル時のパッケージ">
-<meta itemprop="description" content="go でパッケージ管理されているモジュールを LuneScript から利用できます。 go のパッケージ管理概要 go は go.mod でパッケージを管理します。 この go.mod で管理されたパッケー">
+<meta name="twitter:title" content="A. LuneScript の言語仕様でミスだったと思っているところ"/>
+<meta name="twitter:description" content="LuneScript は、自分の中で初の本格的なプログラミング言語開発の経験でした。 自分なりにさまざまな言語を調べ、 できるだけ使い勝手の良い言語になるよう設計を"/>
+<meta itemprop="name" content="A. LuneScript の言語仕様でミスだったと思っているところ">
+<meta itemprop="description" content="LuneScript は、自分の中で初の本格的なプログラミング言語開発の経験でした。 自分なりにさまざまな言語を調べ、 できるだけ使い勝手の良い言語になるよう設計を">
 
-<meta itemprop="wordCount" content="878">
+<meta itemprop="wordCount" content="1822">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -62,198 +62,158 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>80.2 Go 言語へのトランスコンパイル時のパッケージ</h1>
+<main><h1>A. LuneScript の言語仕様でミスだったと思っているところ</h1>
 
 <p>
-go でパッケージ管理されているモジュールを LuneScript から利用できます。</p>
+LuneScript は、自分の中で初の本格的なプログラミング言語開発の経験でした。</p>
+<p>
+自分なりにさまざまな言語を調べ、
+できるだけ使い勝手の良い言語になるよう設計をしてきましたが、
+それでも「ここは良くなかった」と思う点は幾つかあります。</p>
+<p>
+ここではそれらの点を挙げて、どうするべきだったかをまとめます。</p>
+<p>
+LuneScript はトランスコンパイラなので、一般的なプログラミング言語としての話だけでなく、
+トランスコンパイラ特有の話も挙げます。</p>
 <div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
-go のパッケージ管理概要
+基本的な記号(<code class="verbatim">?</code>)を、あまり重要でない機能に使ってしまった
 </h2>
 <div id="outline-text-headline-1" class="outline-text-2">
 <p>
-go は go.mod でパッケージを管理します。</p>
+LuneScript は、ある文字の文字コードを取得する際に、 <code class="verbatim">?</code> を使います。</p>
 <p>
-この go.mod で管理されたパッケージは、
-環境変数 GOPATH で指定されたローカルディレクトリにキャッシュされます。</p>
-<p>
-LuneScript は、このキャッシュされたモジュールを利用できます。</p>
-<p>
-github 上のパッケージを go で利用するには、次のように書きます。</p>
-<div class="src src-go">
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">import</span> <span class="s">&#34;github.com/ifritJP/lnshttpd&#34;</span></span></span></code></pre></div>
+例えば <code class="verbatim">a</code> の文字コード 0x61 を取得するには、以下のように書きます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let code = ?a; // (0x61)</code></pre>
 </div>
 <p>
-これと同じ感覚で、 LuneScript は go のモジュールにアクセスできます。</p>
+簡単に文字コードを取得できる、という意味では良いのですが、
+「文字コードを取得する」という制御が必要になるケースは、
+一般的なプログラミングにはほとんどありません。</p>
+<p>
+そのほとんど使用しないケースに <code class="verbatim">?</code> を使ってしまったため、
+別の言語機能に記号を紐付けたいときに <code class="verbatim">?</code> が使えなくなってしまいました。</p>
+<p>
+ASCII コードで利用可能な記号において、</p>
+<ul>
+<li>パッと見の認識しやすい文字</li>
+<li>キーボードからタイプしやすい文字</li>
+<li>他のプログラミング言語の基本的な制御で利用されていない文字</li>
+</ul>
+<p>上記の条件を全て満す記号は次しかありません。 (人によって多少増減すると思います)</p>
+<pre class="example">
+# $ ? \ &amp; @ !
+</pre>
+<p>
+この貴重な記号を、ほとんど使わない機能に割り当ててしまったのは大きな失敗でした。</p>
+<p>
+特に「 <code class="verbatim">?</code> の直後の文字のコードを取得する」という仕様では、
+<code>==</code> や <code>&gt;=</code> などの記号の組み合わせの中に <code class="verbatim">?</code> を含めて使用することも出来ません。</p>
+<p>
+Parse に影響するような仕様(immediate な文字列表現、数値表現、etc…) をプログラミング言語に取り込む際は、
+十分に注意が必要でした。</p>
 </div>
 </div>
 <div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
-import
+トランスコンパイル先の Lua に影響を受け過ぎた
 </h2>
 <div id="outline-text-headline-2" class="outline-text-2">
 <p>
-go のパッケージ内にある .lns ファイルを LuneScript で import するには、
-次のように書きます。</p>
-<div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-import go/github:com.ifritJP.lnshttpd.lnsservlet;</code></pre>
-</div>
+当初の LuneScript は、Lua 専用のトランスコンパイラでした。</p>
 <p>
-これは <a href="https://github.com/ifritJP/lnshttpd">https://github.com/ifritJP/lnshttpd</a> の lnsservlet.lns を
-import する時の例です。</p>
+当然 LuneScript の想定ユーザは、 Lua プログラマです。</p>
 <p>
-ここで、 <code class="verbatim">go/github:com.ifritJP.lnshttpd.lnsservlet</code> に注目します。</p>
+よって、LuneScript は Lua のプログラマが扱い易いように言語仕様を定義しています。</p>
 <p>
-<code class="verbatim">https://github.com/ifritJP/lnshttpd</code> と
-<code class="verbatim">go/github:com.ifritJP.lnshttpd.lnsservlet</code> を見比べればだいたい想像が付くと思いますが、
-go のパッケージを使用する場合、次の追加ルールがあります。</p>
+これには次のメリットがあります。</p>
 <ul>
-<li>先頭に <code class="verbatim">go/</code> を付加する</li>
-<li>github.com のように . が付く場合、 . の代わりに : を指定する</li>
+<li>LuneScript の学習コストが低い</li>
+<li>LuneScript で書いたコードを Lua へ変換する際に、
+多くの場合そのままの形で変換でき、変換後のコードを追い易い</li>
 </ul>
-<p>LuneScript は、上記形式のモジュールが指定された場合、
-通常の検索パスではなく、 go のパッケージパスからモジュールを検索します。</p>
-<p>
-具体的には、次の順番にファイルを検索します。</p>
+<p>しかし、次のものに関しては、Lua とは異なる仕様にするべきでした。</p>
 <ul>
-<li>vendor/github.com/ifritJP/lnshttpd/lnsservlet.lns </li>
-<li>${GOPATH}/pkg/mod/github.com/ifrit!j!p/lnshttpd@XXXXXXXXXXXXXXXXX/lnsservlet.lns</li>
+<li>List などのインデックスが 0 からではなく 1 から始まる</li>
+<li><code class="verbatim">~=</code> や <code class="verbatim">..</code> などの独特な演算子</li>
+<li>and or の演算結果</li>
+<li>多値返却の動作</li>
 </ul>
-<p>ここで、 <code class="verbatim">@XXXXXXXXXXXXXXXXX/lnsservlet.lns</code> の <code class="verbatim">XXXXXXXXXXXXXXXXX</code> の部分は、
-go.mod に記載されているモジュールの TAG 情報から取得します。
-つまり、事前に go mod tidy を実施しておく必要があります。</p>
+<p>
+この中で、最初の 2 個のインデックスと、 <code class="verbatim">~=</code> や <code class="verbatim">..</code> などの独特の演算子に関しては、
+他の一般的なプログラム言語との仕様が違うので使い分けしないとならない、
+という使い勝手の問題です。</p>
+<p>
+一方で、残りは Lua 以外へのトランスコンパイル処理を考えた時に処理が複雑になってしまう、
+という問題です。
+処理が複雑になることで、変換後のコードを追い難くなるのと、
+変換後のコードの実行時にオーバーヘッドが掛る、ということにつながります。</p>
+<p>
+トランスコンパイラとはいえ一つの独立したプログラム言語であるので、
+変換先の言語を意識し過ぎずに、自分が理想とする言語仕様を検討するべきでした。</p>
 </div>
 </div>
 <div id="outline-container-headline-3" class="outline-2">
 <h2 id="headline-3">
-module
+immutable のデフォルト
 </h2>
 <div id="outline-text-headline-3" class="outline-text-2">
 <p>
-go のモジュールを LuneScript から利用するには、 module 宣言が必要です。</p>
-<p>
-module 宣言は LuneScript から Lua モジュールを利用する際にも使用していますが、
-go モジュールを利用する場合、次の追加ルールがあります。</p>
-<ul>
-<li>go のモジュールを利用していることを module 宣言に追加する</li>
-</ul>
-<p>以下は github.com.ifritJP.lnshttpd の servlet.go を利用する際の宣言例です。</p>
+変数やメンバなどの型を宣言する際、 
+<code class="verbatim">&amp;</code> を型名の前に付けると immutable を示します。
+そして、 <code class="verbatim">&amp;</code> を付けずに型名だけの場合は mutable です。</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-module servlet require &#34;go/github:com.ifritJP.lnshttpd.servlet&#34; of &#34;&#34; {
-   pub static fn Start( listenPort:int,
-                        handlerList: &amp;List&lt;&amp;lnsservlet.HandlerInfo&gt;,
-                        hostingList:&amp;List&lt;&amp;lnsservlet.HostingInfo&gt; );
-}</code></pre>
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let val:&amp;List&lt;int&gt; = [ 1, 2 ];  // immutable list
+let val:List&lt;int&gt; = [ 1, 2 ];   // mutable list</code></pre>
 </div>
 <p>
-ここで <code class="verbatim">module servlet require &#34;go/github:com.ifritJP.lnshttpd.servlet&#34; of &#34;&#34;</code> の
-<code class="verbatim">of &#34;&#34;</code> は、利用するモジュールの種別を宣言しています。</p>
+一方で、変数宣言で型推論を使った初期化を行なうと、
+<code class="verbatim">mut</code> を変数名の前に付けるとその変数と型が mutable になります。
+そして、 <code class="verbatim">mut</code> を付けないと変数と型が immutable になります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let mut val = [ 1, 2 ];  // mutable list
+let val = [ 1, 2 ];   // immutable list</code></pre>
+</div>
 <p>
-指定可能な文字列は次の通りです。</p>
-<table>
-<thead>
-<tr>
-<th>文字列</th>
-<th>モジュールの言語</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>&#34;&#34;</td>
-<td>トランスコンパイル先言語と同じ</td>
-</tr>
-<tr>
-<td>&#34;Lua&#34;</td>
-<td>lua</td>
-</tr>
-<tr>
-<td>&#34;Go&#34;</td>
-<td>go</td>
-</tr>
-</tbody>
-</table>
-<div id="outline-container-headline-4" class="outline-3">
-<h3 id="headline-4">
-利用可能な言語
-</h3>
-<div id="outline-text-headline-4" class="outline-text-3">
+修飾子の有無によって型の mutable が変わるのですが、
+mut と &amp; とで mutable の動作が逆になってしまっています。</p>
 <p>
-トランスコンパイル先の言語と、
-module で利用可能な言語の組み合わせには制限があります。</p>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>go module</th>
-<th>lua module</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>go へトランスコンパイル</td>
-<td>可能</td>
-<td>可能</td>
-</tr>
-<tr>
-<td>lua へトランスコンパイル</td>
-<td><strong>不能</strong></td>
-<td>可能</td>
-</tr>
-</tbody>
-</table>
+これは、非常に紛らわしいです。</p>
+<p>
+何故こうなってしまったかというと、
+当初は Rust のような所有権制御を実現したかったんですが、
+所有権制御を実現する前にトランスコンパイラとして動かすことを優先したため、
+型の制御を中途半端なまま実装をしてしまい、
+その動作が今も残っている、という状況です。</p>
+<p>
+mutable 制御は、現状の仕様のまま残すしかないですが、
+所有権制御は何らかの形で実現したいと思っています。</p>
 </div>
 </div>
-<div id="outline-container-headline-5" class="outline-3">
-<h3 id="headline-5">
-型の互換性
-</h3>
-<div id="outline-text-headline-5" class="outline-text-3">
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+イマドキではない仕様
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
 <p>
-module 宣言で go モジュールを LuneScript から利用可能です。</p>
+LuneScript にはイマドキではない仕様がいくつかありますが、
+それらは敢えてそうしています。</p>
+<ul>
+<li>文の区切りに <code class="verbatim">;</code> が必要</li>
+<li>シンボルのアクセス制限</li>
+</ul>
 <p>
-しかし、型の互換性は制限されます。</p>
-<p>
-以下の型は LuneScript と go とで対になっています。</p>
-<table>
-<thead>
-<tr>
-<th>LuneScript の型</th>
-<th>go の型</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>int</td>
-<td>int</td>
-</tr>
-<tr>
-<td>real</td>
-<td>float64</td>
-</tr>
-<tr>
-<td>bool</td>
-<td>bool</td>
-</tr>
-<tr>
-<td>str</td>
-<td>string</td>
-</tr>
-<tr>
-<td>nilable</td>
-<td>interface{}</td>
-</tr>
-</tbody>
-</table>
-</div>
-</div>
+比較的新しい言語では <code class="verbatim">;</code> がない方が主流なような気がしますが、
+<code class="verbatim">;</code> があった方が確実に文が終っていることが、
+ぱっと見で、分かり易いと考えているので、あえて必須にしています。</p>
 </div>
 </div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/go/" title="80. Go 言語へのトランスコンパイル"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 80. Go 言語へのトランスコンパイル</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/lua_runtime/" title="80.3 Go へトランスコンパイルした際の Lua ランタイム">Next - 80.3 Go へトランスコンパイルした際の Lua ランタイム <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/reason/" title="A. Lua のトランスコンパイラ LuneScript を開発した理由"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - A. Lua のトランスコンパイラ LuneScript を開発した理由</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/onweb/" title="A. Web ブラウザ上で動作する LuneScript">Next - A. Web ブラウザ上で動作する LuneScript <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -394,7 +354,7 @@ module 宣言で go モジュールを LuneScript から利用可能です。</p
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">80. Go 言語へのトランスコンパイル</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/go_package/">80.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">80.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">80.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">80.4 LuneScript の WebAssembly 対応</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">81. 安全な非同期処理</a></li>
@@ -402,7 +362,7 @@ module 宣言で go モジュールを LuneScript から利用可能です。</p
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">82. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/regret/">A. LuneScript の言語仕様でミスだったと思っているところ</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/regret/">A. LuneScript の言語仕様でミスだったと思っているところ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
