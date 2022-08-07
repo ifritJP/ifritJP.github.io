@@ -39,7 +39,7 @@ io = {
 -- 引数で与えられた lnsCode から Lua コードに変換する
 local front = require( 'lune.base.front' )
 local Option = require( 'lune.base.Option' )
-local option = Option.Option.new()
+local option = Option.Option._new()
 option.scriptPath = "lnsweb.lns"
 option.useLuneModule = Option.getRuntimeModule()
 option.transCtrlInfo.validMultiPhaseTransUnit = false
