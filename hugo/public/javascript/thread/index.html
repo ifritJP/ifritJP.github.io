@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>JavaScript のスレッド(非同期処理) - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.100.1" />
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/javascript/thread/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="JavaScript のスレッド(非同期処理)" />
+<meta property="og:description" content="JavaScript は、高い応答性を保つために、多くの処理が非同期に処理されます。 一方で JavaScript のコードは、 明示的に worker を使わない限り全て 1 つのスレッドで処理されます" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/javascript/thread/" /><meta property="article:section" content="javascript" />
+
+<meta property="og:site_name" content="公開技術情報" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="JavaScript のスレッド(非同期処理)"/>
+<meta name="twitter:description" content="JavaScript は、高い応答性を保つために、多くの処理が非同期に処理されます。 一方で JavaScript のコードは、 明示的に worker を使わない限り全て 1 つのスレッドで処理されます"/>
+<meta itemprop="name" content="JavaScript のスレッド(非同期処理)">
+<meta itemprop="description" content="JavaScript は、高い応答性を保つために、多くの処理が非同期に処理されます。 一方で JavaScript のコードは、 明示的に worker を使わない限り全て 1 つのスレッドで処理されます">
+
+<meta itemprop="wordCount" content="4197">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/contents/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>JavaScript のスレッド(非同期処理)</h1>
+
+<p>
+JavaScript は、高い応答性を保つために、多くの処理が非同期に処理されます。</p>
+<p>
+一方で JavaScript のコードは、
+明示的に worker を使わない限り全て 1 つのスレッドで処理されます。</p>
+<p>
+ここでは、1 つのスレッドでどのように非同期処理を行なうのか、を説明します。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+スレッド
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+JavaScript のスレッドは、次の 3 種類に分けることができます。</p>
+<ul>
+<li>
+<p>メインスレッド</p>
+<ul>
+<li>基本的な JavaScript を実行するスレッドです。</li>
+<li><strong>DOM のアクセスは、メインスレッドで行わなければなりません。</strong></li>
+<li>特に意識しない限りは、メインスレッドで実行されます。</li>
+</ul>
+</li>
+<li>
+<p>Worker スレッド</p>
+<ul>
+<li>バックグラウンドで実行したい処理がある場合、メインスレッドからから明示的に実行されるスレッドです。</li>
+</ul>
+</li>
+<li>
+<p>組込みスレッド</p>
+<ul>
+<li>コンテンツのダウンロードや、タイマーなどの JavaScript に組込まれている機能を実行するスレッドです。</li>
+</ul>
+</li>
+</ul>
+<p>
+このスレッドの内、 <strong>JavaScript のコードが実行できるのは、</strong>
+<strong>メインスレッドと Worker スレッドです。</strong></p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+スレッドの仕様
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+JavaScript のスレッドは、
+一般的なスレッドとは異なり、 <strong>スレッド間でのメモリの共有が限定的</strong> です。</p>
+<p>
+具体的には、以下が <strong>出来ません。</strong></p>
+<ul>
+<li>スレッド間で同じ変数を参照する</li>
+<li>スレッド間で同じ変数を変更する</li>
+</ul>
+<p>これによって、マルチスレッドでよくあるデータの不整合による不具合、
+というものは本質的に発生しません。</p>
+<p>
+なお、全く共有が出来ないという訳ではなく、限定的にアクセスが可能になっています。</p>
+<p>
+スレッド間のメモリの限定的なアクセスについては後述します。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+シングルスレッド
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+JavaScript で開発を行なう場合、さまざまなイベントを処理します。</p>
+<p>
+例えば以下のようなケースが挙げられます。</p>
+<ul>
+<li>クリックイベントのコールバック処理</li>
+<li>タイマーイベントのコールバック処理</li>
+<li>XMLHttpRequest, fetch のコールバック処理</li>
+<li>etc…</li>
+</ul>
+<p>これら全て、コールバックを登録する処理と、
+コールバックを実行する処理は、同じスレッドで実行されます。</p>
+<p>
+具体的には、次のコードで示す onload イベントを実行するスレッドと、
+onclickイベントを処理するスレッドは同じになります。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="nb">window</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kd">let</span> <span class="nx">element</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span> <span class="s2">&#34;hoge&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">element</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">alert</span><span class="p">(</span> <span class="s2">&#34;hello&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+タイマーイベントのコールバックや、 
+XMLHttpRequest, fetch のコールバックも同じです。</p>
+<p>
+複数のスレッドが同時に動いているように感じますが、
+<strong>JavaScript のコードが動くのは 1 つのスレッドです。</strong></p>
+<p>
+なお、これは 1 つのタブに閉じた話で、
+<strong>タブが複数ある場合は、 「1 x タブの個数」の独立したスレッドがあります。</strong></p>
+<p>
+ここで注意するのは、
+「JavaScript のコードを動かす 1 つのスレッド」とは別に、
+タイマーのカウントや、XMLHttpRequest のアクセスを行なうスレッドが
+存在することです。
+そしてこれが、「組込みスレッド」です。</p>
+<p>
+JavaScript のコードを実行するスレッド (メインスレッド、worker スレッド)と、
+組込みスレッドの関係は大まかに次のようになります。</p>
+<ul>
+<li>JavaScript のコードから、「組込みスレッド」に対して処理を依頼</li>
+<li>組込みスレッドは依頼された処理を行なう</li>
+<li>組込みスレッドの処理が終了したら、イベントを処理依頼元のスレッドに通知する</li>
+<li>処理依頼元のスレッドは、イベントを受け、
+イベントに予め登録されているコールバックを実行する</li>
+</ul>
+<p>
+このように、
+<strong>「組込みスレッドから通知されたイベントを受信し、</strong>
+<strong>そのイベントに予め登録されているコールバックを実行する」</strong>
+処理が必要になります。</p>
+<p>
+しかし、この処理って JavaScript 上には書きませんよね？
+JavaScript には、「あるイベント」と「そのイベントに対する処理」を書くだけです。</p>
+<p>
+つまり JavaScript のコード上には現れませんが、
+JavaScript には「イベント待ち」が隠れています。</p>
+<div class="src src-dot">
+<pre tabindex="0"><code class="language-dot" data-lang="dot">digraph G {
+rankdir = LR;
+
+builtin_thread [shape = parallelogram;label = &#34;組込みスレッド&#34;]
+
+event_loop [label = &#34;イベント待ち[隠れている]&#34;];
+
+subgraph cluster_B {
+label = &#34;ユーザのJavaScript&#34;;
+
+on_event1 [label = &#34;onload&#34;];
+on_event2 [label = &#34;onclick&#34;];
+on_event3 [label = &#34;onmessage&#34;];
+edge [style=plain]
+event_loop -&gt; on_event1
+event_loop -&gt; on_event2
+event_loop -&gt; on_event3
+on_event1 -&gt; end
+on_event2 -&gt; end
+on_event3 -&gt; end
+end -&gt; event_loop
+}
+
+end [label=&#34;&#34;];
+
+{rank = max; end}
+{rank = min; event_loop; builtin_thread}
+
+edge [style=dashed]
+builtin_thread -&gt; event_loop [label=&#34;イベント通知&#34;]
+
+}</code></pre>
+</div>
+<div class="center-block" style="text-align: center; margin-left: auto; margin-right: auto;">
+<p><img src="../javascript_thread_event_loop.svg" alt="../javascript_thread_event_loop.svg" title="../javascript_thread_event_loop.svg" /></p>
+</div>
+<p>
+ここで、先程のサンプルをもう一度見てみます。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="nb">window</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="kd">let</span> <span class="nx">element</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span> <span class="s2">&#34;hoge&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">element</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">alert</span><span class="p">(</span> <span class="s2">&#34;hello&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+このサンプルは、次のように処理されます。</p>
+<ul>
+<li>「イベント待ち」から onload() が実行され、処理終了後「イベント待ち」に戻る。</li>
+<li>「イベント待ち」から onclick() が実行され、処理終了後「イベント待ち」に戻る。</li>
+</ul>
+<p>ここで重要なことは次の 2 点です。</p>
+<ul>
+<li><strong>必ず「イベント待ち」に戻る</strong></li>
+<li><strong>同じスレッドで実行される</strong></li>
+</ul>
+<p>これは、 JavaScript で開発を行なううえで、 
+<strong>非常に基本的で重要なこと</strong> なのでしっかり理解してください。</p>
+<p>
+JavaScript のコードは、必ず「イベント待ち」に戻ります。</p>
+<p>
+<strong>スレッドの処理がこの「イベント待ち」状態にある時</strong> に、
+何かイベントが発生すると、即座にそのイベントを処理することが出来ます。</p>
+<p>
+<strong>逆にスレッドの処理がこの「イベント待ち」状態にない場合</strong>
+(他の処理を行なっている場合)、
+何かイベントが発生しても、そのイベントを処理することが出来ません。
+例えば、「クリックしても反応がない」などがそれです。</p>
+<p>
+応答性の高い Web ページを作成するには、
+<strong>常に「イベント待ち」状態にしておくことが重要</strong> です。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+async/await
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+前述した通り JavaScript では、
+出来るだけ「イベント待ち」状態にしておくことが重要です。</p>
+<p>
+そのためには、「処理が終わるのを待って処理結果を得る」、
+という動作を統一的なインタフェースで扱えるようにすると、
+コードがシンプルになります。</p>
+<p>
+これを実現するのが async/await です。</p>
+<p>
+まず、次の処理を見てください。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="kd">function</span> <span class="nx">hoge</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">fetch</span><span class="p">(</span> <span class="s2">&#34;/hoge.json&#34;</span> <span class="p">).</span><span class="nx">then</span><span class="p">(</span> 
+</span></span><span class="line"><span class="cl">       <span class="nx">response</span> <span class="p">=&gt;</span> <span class="nx">response</span><span class="p">.</span><span class="nx">json</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">           <span class="nx">jsonObj</span> <span class="p">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="nx">jsonObj</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">       <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">function</span> <span class="nx">sub</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">hoge</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+この処理は、 <code class="verbatim">/hoge.json</code> から JSON 文字列をダウンロードし、
+JSON デコードした結果を console に出力するプログラムです。</p>
+<p>
+ここで <code class="verbatim">then()</code> というメソッドが、 2 回登場しています。
+この <code class="verbatim">then()</code> は、 処理が終った時のコールバックを登録するメソッドです。</p>
+<p>
+この処理の動きを説明すると、次になります。</p>
+<ul>
+<li>fetch に &#34;/hoge.json&#34; のダウンロード処理の要求と、
+ダウンロード成功時のコールバックを登録して、 hoge() 呼び出し元 sub() に戻る。</li>
+<li>
+<p>&#34;/hoge.json&#34; のダウンロード成功後、
+登録しておいたコールバックが「イベント待ち」から実行される。</p>
+<ul>
+<li>ここで、ダウンロード結果を JSON 変換要求と、JSON 変換成功時のコールバックが登録され、
+「イベント待ち」に戻る。</li>
+</ul>
+</li>
+<li>
+<p>JSON 変換成功後、
+登録しておいたコールバックが「イベント待ち」から実行される。</p>
+<ul>
+<li>ここで、変換した JSON オブジェクトを console.log で出力する。</li>
+</ul>
+</li>
+</ul>
+<p>このように、
+「依頼した処理が終ったら次の処理の依頼を行なう」というケースは
+プログラムに良くあるケースです。</p>
+<p>
+上記の場合は 2 回のケースですが、これが複数の処理を連続して行なう場合、
+<code class="verbatim">then()</code> のコールバック処理が複数回ネストされ、非常に理解し難いコードになってしまいます。</p>
+<p>
+これをシンプルに書けるようにしたのが async/await です。</p>
+<p>
+上記処理を async/await を使って書くと、次になります。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="kr">async</span> <span class="kd">function</span> <span class="nx">async_hoge</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kd">let</span> <span class="nx">response</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">fetch</span><span class="p">(</span> <span class="s2">&#34;/hoge.json&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="kr">await</span> <span class="nx">response</span><span class="p">.</span><span class="nx">json</span><span class="p">()</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">function</span> <span class="nx">sub</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">async_hoge</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+ここで注意するべきことは、
+<code class="verbatim">.then()</code> を使ったケースと、
+async/await を使ったケースとで、実行結果は全く変わらない、ということです。</p>
+<p>
+async/await を使うと、まるで同期処理が行なわれているようですが、
+実際には非同期処理が行なわれます。
+あくまでも、 <code class="verbatim">then()</code> をつかったコールバックの登録を、
+このように await で書ける、というものです。</p>
+<p>
+なお、 この <code class="verbatim">then()</code> メソッドは Promise オブジェクトのメソッドです。
+つまり、上記 fetch() や、response.json() の戻り値は Promise オブジェクトです。
+await は Promise オブジェクトに対して処理を行ないます。</p>
+<p>
+また、 await は Promise オブジェクトに対して使用した時の動作については、
+次のリンクを参照してください。</p>
+<p>
+&lt;<a href="https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/await">https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/await</a>&gt;</p>
+<p>
+ここで await を使う際の注意です。</p>
+<p>
+<strong>await を利用できるのは async 宣言した関数内だけです。</strong></p>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+await の動作
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+await は <code class="verbatim">then()</code> 呼び出しの処理を簡単化したものです。</p>
+<p>
+では、次の処理はどの様な console 出力を行なうか分かりますか？</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">    <span class="kr">async</span> <span class="kd">function</span> <span class="nx">test</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">function</span> <span class="nx">busyWait</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="kd">let</span> <span class="nx">prev</span> <span class="o">=</span> <span class="p">(</span><span class="k">new</span> <span class="nb">Date</span><span class="p">()).</span><span class="nx">getTime</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">            <span class="k">while</span> <span class="p">(</span> <span class="p">(</span><span class="k">new</span> <span class="nb">Date</span><span class="p">()).</span><span class="nx">getTime</span><span class="p">()</span> <span class="o">-</span> <span class="nx">prev</span> <span class="o">&lt;</span> <span class="mi">1000</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">setTimeout</span><span class="p">(()</span> <span class="p">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&#34;AA&#34;</span><span class="p">),</span> <span class="mi">100</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">busyWait</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&#34;BB&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">let</span> <span class="nx">promise</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Promise</span><span class="p">(</span> <span class="p">(</span><span class="nx">resolve</span><span class="p">,</span> <span class="nx">reject</span> <span class="p">)</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">setTimeout</span><span class="p">(</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span> <span class="nx">resolve</span><span class="p">(</span><span class="s2">&#34;CC&#34;</span><span class="p">);</span> <span class="p">},</span> <span class="mi">500</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span> <span class="p">)</span> <span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&#34;DD&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">let</span> <span class="nx">result</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">promise</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="nx">result</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">busyWait</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&#34;EE&#34;</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">test</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&#34;FF&#34;</span><span class="p">);</span></span></span></code></pre></div>
+</div>
+<p>
+正解は次です。</p>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">BB
+</span></span><span class="line"><span class="cl">DD
+</span></span><span class="line"><span class="cl">FF
+</span></span><span class="line"><span class="cl">AA
+</span></span><span class="line"><span class="cl">CC
+</span></span><span class="line"><span class="cl">EE</span></span></code></pre></div>
+</div>
+<p>
+この理由を説明します。</p>
+<ul>
+<li>まず、最初に <code class="verbatim">setTimeout(() =&gt; console.log(&#34;AA&#34;), 100);</code> によって、
+100 ミリ秒後に AA を出力するようにタイマーをセットします。</li>
+<li>次に、 <code class="verbatim">busyWait()</code> します。 この関数は 1 秒間単純にループします。</li>
+<li>ここで、 <strong>AA を出力する 100 ミリ秒タイマーは経過しています。</strong>
+<strong>しかし、 AA は出力されません。</strong></li>
+<li>そして、 <code class="verbatim">busyWait()</code> が終わって <code class="verbatim">console.log(&#34;BB&#34;);</code> によって、 BB が出力されます。</li>
+<li>なぜ AA が出力されずに BB が出力されるか？ それは、 <strong>タイマーイベントの処理は、</strong>
+<strong>「イベント待ち」に戻ってから実行されるものだからです。</strong></li>
+<li>次に <code class="verbatim">let promise = new Promise( (resolve, reject ) =&gt; {</code> 処理があります。
+これは、500 ミリタイマーをセットする Promise オブジェクトを生成しています。</li>
+<li>次の <code class="verbatim">console.log(&#34;DD&#34;);</code> によって、 DD が出力されます。
+この時点でも AA は出力されません。</li>
+<li>次の <code class="verbatim">await promise;</code> は、 promise オブジェクトの終了を待ちます。</li>
+<li><strong>この await の時に、一旦 test() 関数の処理が中断されて処理が抜けます。</strong>
+これによって、この test() 関数呼び出し元に戻ります。</li>
+<li>そして、 <code class="verbatim">console.log(&#34;FF&#34;);</code> によって FF が出力されます。</li>
+<li>ここで、一旦全ての処理が終わり、「イベント待ち」に戻ります。</li>
+<li><strong>「イベント待ち」に戻ったことで、 AA を出力するタイマーイベントが処理</strong> され、
+AA が出力されます。</li>
+<li>そして、 500 ミリタイマーイベントも同様に処理されます。
+ここで 500 ミリタイマーは、 promise に処理結果 &#34;CC&#34; をセットします。</li>
+<li><strong><code class="verbatim">await promise</code> は、promise の処理(500ミリタイマー)が終わり、かつ、</strong>
+<strong>「イベント待ち」になったことを契機に動き出します。</strong>
+これによって、 <code class="verbatim">result</code> に CC が格納されます。</li>
+<li>次に <code class="verbatim">console.log( result );</code> によって、 CC が出力されます。</li>
+<li>次に <code class="verbatim">busyWait();</code> が入ります。</li>
+<li>そして最後に <code class="verbatim">console.log(&#34;EE&#34;);</code> で EE が出力されます。</li>
+</ul>
+<p>以上が Promise/async/await の動作です。</p>
+<p>
+大まかな流れを図示すると次の通りです。</p>
+<div class="src src-dot">
+<pre tabindex="0"><code class="language-dot" data-lang="dot">digraph G {
+rankdir = LR;
+
+builtin_thread [shape = parallelogram;label = &#34;組込みスレッド&#34;]
+
+event_loop [label = &#34;イベント待ち[隠れている]&#34;];
+
+subgraph cluster_B {
+label = &#34;ユーザのJavaScript&#34;;
+
+on_event1 [label = &#34;BB, DD, FF&#34;];
+on_event2 [label = &#34;AA&#34;];
+on_event3 [label = &#34;CC&#34;];
+on_event4 [label = &#34;EE&#34;];
+edge [style=plain]
+event_loop -&gt; on_event1
+event_loop -&gt; on_event2 [label=&#34;100ミリタイマー&#34;]
+event_loop -&gt; on_event3 [label=&#34;500ミリタイマー&#34;]
+event_loop -&gt; on_event4 [label=&#34;promise 処理終了&#34;]
+on_event1 -&gt; end
+on_event2 -&gt; end
+on_event3 -&gt; end
+on_event4 -&gt; end
+end -&gt; event_loop
+}
+
+end [label=&#34;&#34;];
+
+{rank = max; end}
+{rank = min; event_loop; builtin_thread}
+
+edge [style=dashed]
+builtin_thread -&gt; event_loop [label=&#34;イベント通知&#34;]
+
+}</code></pre>
+</div>
+<div class="center-block" style="text-align: center; margin-left: auto; margin-right: auto;">
+<p><img src="../javascript_thread_event_loop2.svg" alt="../javascript_thread_event_loop2.svg" title="../javascript_thread_event_loop2.svg" /></p>
+</div>
+<p>
+重要なのは、次の 2 つです。</p>
+<ul>
+<li><strong>await は、一時的に実行中の async 関数の処理を中断し、 async 関数の処理を戻す</strong></li>
+<li><strong>await は、 Promise の処理が終了し、「イベント待ち」になると動きだす</strong></li>
+</ul>
+<p>ここからも、 await が <code class="verbatim">then()</code> と等価であることが分かります。</p>
+<p>
+なお、上記の <code class="verbatim">test()</code> 呼び出しの際、 
+<strong><code class="verbatim">await test()</code> にした場合</strong> の出力結果は以下です。</p>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">BB
+</span></span><span class="line"><span class="cl">DD
+</span></span><span class="line"><span class="cl">AA
+</span></span><span class="line"><span class="cl">CC
+</span></span><span class="line"><span class="cl">EE
+</span></span><span class="line"><span class="cl">FF</span></span></code></pre></div>
+</div>
+<p>
+<code class="verbatim">await test()</code> にしたことで、 test() の実行を待つため、
+FF の出力が test() 実行後になります。</p>
+</div>
+</div>
+</div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/javascript/d3force/" title="D3.js V4 forceSimulation のノード動的更新(追加・削除)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - D3.js V4 forceSimulation のノード動的更新(追加・削除)</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/libclang/" title="Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)">Next - Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/simple-httpd/">emacs 簡易 HTTPD 化パケージ simple-httpd.el</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/emacs/company-mode/">自作言語 (LuneScript) の emacs company-mode backend 設定</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/javascript/thread/">JavaScript のスレッド(非同期処理)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/libclang/">Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/operator/">libclang で演算子を特定する方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/ast/">libclang の AST(Abstract Syntax Tree)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/raspios64-point/">64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/build-kernel-module-64/">64bit 版 Raspberry Pi OS のカーネルモジュールのビルド環境設定</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/usb-gadget/">USB Gadget 機能を利用して Raspberry Pi を HID Keyboard と RNDIS の複合デバイスにする</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/recover-image/">誤ってパーティションテーブル (LBA 0) を消して(0クリアして)しまった場合の対処</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">03. Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">04. 値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">04.2. Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">05. enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">06. match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">07. 変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">08. 一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">09. 繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">10. 関数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">10.2. 多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/closure/">10.5. クロージャ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua/">22.2. Lua と連携 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">80. Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">80.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">80.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">80.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">81. 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">81.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">82. Lua と連携 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/regret/">A. LuneScript の言語仕様でミスだったと思っているところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_study/">Z. Go 言語へのトランスコンパイル (検討段階)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
