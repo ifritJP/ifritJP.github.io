@@ -1,1 +1,0 @@
-../LuneScript/lunescript-main-1.rockspec

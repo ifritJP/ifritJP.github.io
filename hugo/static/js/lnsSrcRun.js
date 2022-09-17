@@ -47,7 +47,9 @@
             initialized = true;
             var script = document.createElement( "script" );
             script.type = "text/javascript";
-            script.src = "https://ifritjp.github.io/LuneScript-webFront/contents/lunescript-front.js";
+            //script.src = "https://ifritjp.github.io/LuneScript-webFront/contents/lunescript-front.js";
+            script.src = "https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/lunescript-front.js";
+            
             script.addEventListener( "load", function() {
                 openFront();
             });
