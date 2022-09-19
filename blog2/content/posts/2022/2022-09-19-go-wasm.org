@@ -1,0 +1,268 @@
+#+TITLE: Golang の WASM (Golang から JavaScript の呼び出し, JavaScript から Golang の呼び出し)
+#+DATE: 2022-09-19
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: LuneScript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+LuneScript Web Frontは今迄 fengari を利用していましたが、
+golang の wasm で動かせるようにサポートしました。
+
+その際に golang の wasm の利用方法について調べたことをまとめておきます。
+
+* golang の wasm
+
+基本的なことは以下の公式ドキュメントをみてください。
+
+<https://github.com/golang/go/wiki/WebAssembly>
+
+最低限のステップをまとめると、以下の手順になります。
+
+- 以下の環境変数を指定して WASM 化したいプロジェクトをビルドします。
+  - これで main.wasm に WASM 化したコードが出力されます。
+
+: $ GOOS=js GOARCH=wasm go build -o main.wasm
+
+- 以下の wasm_exec.js をコピーします。
+
+: $ cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" .
+
+- html で wasm_exec.js をロードし、以下を JS で実行されます。
+
+#+BEGIN_SRC js
+  const go = new Go();
+  WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
+      go.run(result.instance);
+  });
+#+END_SRC
+
+以上のステップで、 =go.run(result.instance);= のタイミングで go の main が実行されます。
+
+** os.Args の引数
+
+golang のモジュールへの引数は os.Args で処理します。
+
+JavaScript から golang のモジュールを実行する際の引数を指定するには、
+以下のように =go.run()= する前に argv 変数にリストをセットします。
+
+#+BEGIN_SRC js
+go.argv = [ "a", "b", "c" ];
+go.run(result.instance);
+#+END_SRC
+
+これで、 golang 側の os.Args には [ "a", "b", "c" ] が格納されて実行されます。
+
+ただし、 この go.argv の説明が go のドキュメントに記載がないため、
+将来使えなくなる可能性があります。
+
+
+** 注意点
+
+ここで注意点として、以下が挙げられます。
+
+- 再度 main を実行する場合は、 JS の =new Go()= から実行しなおします。
+- goroutine は、同時には動作しません。
+  - ~GOMAXPROCS=1~ を指定した時と同じ動作になります。
+
+
+* Golang から JavaScript へのアクセス
+
+golang の wasm は、 main を実行するだけです。
+
+これだけでは、 折角 wasm 化した golang のモジュールを有効に使えません。
+
+有効に利用するには、 Golang と JavaScript を互いに連携させる必要があります。
+
+この連携をするための仕組みとして、
+ *go には "syscall/js" パッケージが提供されています。*
+
+
+このパッケージには、主に以下が提供されています。
+
+- golang のデータと JavaScript との相互データ変換処理
+- golang から JavaScript の関数コール処理
+
+例えば、 golang から JavaScript のグローバル変数 hoge に 1 をセットするには、
+以下を実行します。
+
+: js.Global().Set("hoge", 1)
+
+"syscall/js" パッケージでは、
+JavaScript 側のオブジェクトは *全て Value 型* でアクセスします。
+
+例えば、上記の =js.Global()= は JavaScript のグローバルスコープを返しますが、
+この時の戻り値は Value 型です。
+
+この Value 型は JavaScript のオブジェクトを管理し、
+Value 型のメソッドを通して、
+値の設定や取得、 JavaScript の関数の実行などができます。
+
+例えば、以下を golang で実行すると、
+JavaScript の =console.log( 'hoge' )= が実行されます。
+
+: js.Global().Get("console").Get("log").Invoke("hoge")
+
+上記で示した通り、JavaScript の関数の実行は Invoke() です。
+この関数の戻り値も Value 型です。
+これは、Invoke() で実行した JavaScript の関数の戻り値を管理しています。
+この Value のメソッドの Bool(), Int(), String() などを利用することで、
+Value 型で管理している値を取得できます。
+
+* JavaScript から Golang の関数の呼び出し
+
+=go.run(result.instance);= は、 golang の =main()= 関数を実行します。
+
+しかし、これでは Go の任意の関数を実行することができません。
+
+Go の任意の関数を実行するには、
+JavaScript 側に golang の関数オブジェクトを渡す必要があります。
+
+JavaScript 側に golang の関数オブジェクトを渡す方法としては、
+次の 2 つがあります。
+
+- =Value.Set()= 関数を利用し、
+  JavaScript の任意のオブジェクトに golang の関数オブジェクトを Set する。
+- golang から JavaScript の関数を実行する際、
+  その関数の引数として golang の関数オブジェクトを渡す。
+
+ここでは、 =Value.Set()= を利用する方法について例を挙げて説明します。
+
+** JavaScript から実行する golang の関数宣言
+
+JavaScript から実行可能な golang の関数は、次の型でなければなりません。
+
+#+BEGIN_SRC go
+func jsFunc(this js.Value, args []js.Value) interface{} {
+}
+#+END_SRC
+
+ここで args は、JavaScript からこの関数を実行する際に指定した引数の情報です。
+Value 型のスライスなので、実際に処理する際は String() 等のメソッドを利用し、
+golang の型に変換して処理を行ないます。
+なお、関数名は何でも良いです。
+関数名のない関数オブジェクトでも可能です。
+
+
+戻り値は =interface{}= です。
+*int, bool, string などは、そのまま返すことが出来ます。*
+*また、スライスや map もそのまま返せます。*
+
+** Value.Set() を使って、 golang 関数の登録
+
+JavaScript から実行可能な関数として宣言した関数を、
+=Value.Set()= を使って JavaScript 側に登録します。
+
+: js.Global().Set("_hoge", js.FuncOf( jsFunc ))
+
+ここで =js.FuncOf()= は、 golang の関数オブジェクトを Value 型に変換する API です。
+
+これにより、 JavaScript 側で以下を実行すると golang の関数が実行できます。
+
+: _hoge()
+
+
+** 注意点
+
+ここで注意点です。
+
+golang の wasm のモジュールは、
+*golang の =main()= 関数を実行している間だけ有効です。*
+
+これがどういうことかというと、
+上記のステップで JavaScript の =_hoge= に、
+golang の =jsFunc()= 関数を登録しましたが、
+この =_hoge= を実行できるのは、
+=main()= を実行している間だけです。
+
+例えば、以下のように =main()= で処理していると、
+
+#+BEGIN_SRC go
+func main() {
+    js.Global().Set("_hoge", js.FuncOf( jsFunc ))
+}
+#+END_SRC
+
+JavaScript 側で =jsFunc()= を実行する際には main() が終っているため、
+=_hoge()= を実行できない、ということです。
+
+ではどうすれば良いかというと、
+次のようにチャンネルの読み込みを入れて、
+=main()= を終了しないようにします。
+
+#+BEGIN_SRC go
+func jsFunc(this js.Value, args []js.Value) interface{} {
+}
+func main() {
+    js.Global().Set("_hoge", js.FuncOf( jsFunc ))
+    <-make( chan bool )
+}
+#+END_SRC
+
+これにより =main()= が終了しないため、  
+JavaScript 側から =_hoge()= を実行できます。
+
+*** main() の終了検知
+
+上記の通り、 =go.run()= 実行後に golang 内の関数を実行するには、
+=main()= が終わらないようにする必要があります。
+
+ここで、理解の早い方は、
+「 =main()= が終らないのに =go.run()= が戻ってくるのか？」
+と疑問に思うでしょう。
+
+そこは大丈夫です。
+
+実は go.run() API は、async 宣言された関数です。
+
+よって、 await を付けずに実行した場合、 
+go.run() は main() が終わらなくても処理が戻ってきます。
+
+もしも main() の実行を検出したい場合は、
+await で =go.run()= を実行するか、 Promise の =then()= で処理を書きます。
+
+
+* wasm のパフォーマンス
+
+これまでブラウザ上で実行可能な言語が javascript に制限されていたのが、
+wasm によってその制限が無くなりました。
+
+しかし、現時点で wasm の実行パフォーマンスは、
+ブラウザによって大きく異なるようです。
+
+fengari と golang の wasm とで次の lua コードの実行時間を計測したところ、
+
+#+BEGIN_SRC lua
+local function fib( num )
+   if num < 2 then
+      return num
+   end
+   return fib( num - 2 ) + fib( num - 1 )
+end
+#+END_SRC
+
+firefox では fengari の方が若干速く終了し、
+chrome では wasm の方が爆速で終了しました。
+
+なお、 chrome の fengari は、 firefox の fengari よりも早いです。
+つまり、 JavaScript, wasm ともに chrome の方が高速に処理できます。
+
+また、
+golang を wasm に変換すると、
+生成した wasm のサイズが大きくなります。
+
+
+実行時のパフォーマンスや、ダウンロードサイズをトータルで考えると、
+golang の wasm を安易に利用するべきではないです。
+
+なお、 golang の公式ドキュメントに TinyGo が紹介されている通り、
+TinyGo では standard golang と比べると、
+サイズが小さく使い勝手も良いようなので、
+TinyGo を検討してみると良いと思います。
+
+ただし、TinyGo は幾つかの標準パッケージを対応していないため、
+それらパッケージを利用したプロジェクトは、 TinyGo を利用することができません。
+
+LuneScript はその制限に該当したため、 
+TinyGo ではなく standard golang で wasm 対応しています。
