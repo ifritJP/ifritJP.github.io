@@ -7,6 +7,13 @@
 
 LuneScript の動作確認用に、Web ブラウザ上で動作する LuneScript 環境を用意しています。
 
+LuneScript 環境には次の2つを用意しています。
+
+- fengari を利用した環境
+- golang の wasm を利用した環境
+
+* fengari を利用した環境
+
 [[https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/]]
 
 上記リンク先には、次の 3 つの textarea があります。
@@ -29,7 +36,7 @@ LuneScript の全ての処理をブラウザ上で動作させているため、
 スマホなどでは初回実行に時間が掛ります。
 
 
-* 技術解説
+** 技術解説
 
 fengari を利用してブラウザ上で Lua VM を動かし、
 その Lua VM 上で LuneScript コンパイラを実行しています。
@@ -65,7 +72,7 @@ LuneScript コンパイラのロードは、そこそこの時間がかかりま
 サーバ側に負荷は掛りません。
 サーバに必要な機能は、静的コンテンツのホスティングだけです。
 
-** LuneScript の fengari 対応
+*** LuneScript の fengari 対応
 
 fengari Lua VM 上で LuneScript を動かすにあたって、
 LuneScript の次の処理を修正しました。
@@ -83,7 +90,7 @@ LuneScript では、処理の簡単化と確実性を取って =ipairs()= では
 現状、オプションを指定していない場合は =pairs()= を利用していますが、
 将来はデフォルト状態を逆にすることも検討しています。
 
-* リファレンスのサンプルコード実行
+** リファレンスのサンプルコード実行
 
 この技術を使用して、 LuneScript リファレンスのサンプルコードを実行するようにしています。
 
@@ -94,7 +101,7 @@ LuneScript では、処理の簡単化と確実性を取って =ipairs()= では
 
 =lnsFront.setup()=, =lnsFront.compile()= 関数を実行するだけです。
 
-** lnsFront.setup()
+*** lnsFront.setup()
    
 =lnsFront.setup()= は、 fengari と LuneScript をロードし、
 各 HTML element の紐付けを行ない、
@@ -133,7 +140,7 @@ ID を発行して紐付けます。そして、その ID が戻り値となり�
 LuneScript のコードを入力する textarea が複数ある場合、
 =lnsFront.setup()= をそれぞれで実行します。
 
-*** lnsFront.setup() の注意
+**** lnsFront.setup() の注意
 
 *一つの textarea に対して、lnsFront.setup() を複数回実行しないでください。*
 
@@ -142,7 +149,7 @@ executeId で登録したボタンをクリックするか、
 =lnsFront.compile()= を実行することで、
 登録されている textarea 内の LuneScript のコードを実行します。
 
-** =lnsFront.compile()=
+*** =lnsFront.compile()=
 
 =lnsFront.compile()= は、
 =lnsFront.setup()= で登録した textarea 内の LuneScript コードを
@@ -159,3 +166,71 @@ lnsFront.compile( frontId, maxTime )
 
 maxTime を省略した場合、デフォルトの 2 秒がリミットになります。
 なお 10 秒以上を指定した場合、無効値として扱い、デフォルト値がセットされます。
+
+* golang の wasm を利用した環境
+
+[[https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/]]
+
+上記リンク先の UI 構成は、 fengari 利用時と同じです。
+
+LuneScript の実行に fengari を利用しているか、 golang の wasm を利用しているかの違いです。
+
+
+** 技術解説
+
+次に LuneScript の golang wasm を利用するサンプルコードを示します。
+
+#+BEGIN_SRC html
+<script type="text/javascript" src="./lnsc_frontend.js"></script>
+<script>
+  addEventListener("load", function( event ) {
+    document.__getLnsFrontEnd().then( (frontend) => {
+      let result = await frontend.conv2lua( `print( "hello world" );`, true, 4 );
+  
+      console.log( result.console );
+      console.log( result.execLog );
+      console.log( result.luaCode );
+  } );
+} );
+</script>
+#+END_SRC
+
+まず、 [[https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/lnsc_frontend.js]] を
+ロードします。
+
+このスクリプトで、 LuneScript の golang wasm を制御します。
+
+このスクリプトをロードすると、 =document.__getLnsFrontEnd()= 関数が追加されます。
+この関数を実行すると、 LuneScript の golang wasm がロードされます。
+なお lnsc_frontend.js は、
+LuneScript の golang wasm を worker として動作させます。
+
+=document.__getLnsFrontEnd()= は、 async 関数です。
+処理が終ると LuneScript の frontend オブジェクトが返されます。
+
+この frontend オブジェクトは、 以下のメソッドを持ちます。
+
+: frontend.conv2lua( lnsCode, execLua, timeoutSec )
+
+このメソッドは、指定の LuneScript から Lua へトランスコンパイルを行ないます。
+
+引数はそれぞれ
+
+- lnsCode
+  - トランスコンパイル対象の LuneScript 
+- execLua 
+  - トランスコンパイル後の Lua を実行するかどうかの bool。
+  - 実行する場合は true
+- timeoutSec
+  - トランスコンパイルから実行までの処理待ちタイムアウト(秒)。
+  - 指定時間内に処理が終わらない場合は強制停止させる。
+  - lnsCode で指定した LuneScript コードに無限ループの不具合があった場合の対処に利用する。
+
+このメソッドは、次のメンバを持つオブジェクトを返します。
+
+- luaCode
+  - lnsCode をトランスコンパイルした結果の lua コード
+- console
+  - トランスコンパイルした際のコンソール出力(warrning や error 情報)
+- execLog
+  - lua コードを実行した際の、console 出力結果
