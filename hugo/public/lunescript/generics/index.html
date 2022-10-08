@@ -33,7 +33,7 @@
 <meta itemprop="name" content="19. generics 編">
 <meta itemprop="description" content="ここでは、 LuneScript がサポートする Generics について説明します。 LuneScript では当初、組込み型の List/Array/Map でのみ Generics をサポートしていましたが、 ユーザ定義の関数やクラスでも Generics をサ">
 
-<meta itemprop="wordCount" content="2771">
+<meta itemprop="wordCount" content="3083">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -301,13 +301,63 @@ foreach val, key in test.func( &#34;ABC&#34; ) {
    print( key .. &#34;xyz&#34;, val .. &#34;XYZ&#34; );
 }</code></pre>
 </div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+型パラメータを戻り値に持つメソッドのオーバーライド
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+以下のような型パラメータを戻り値に持つメソッド func のオーバーライドはできません。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: error
+class Super&lt;T&gt; {
+   let val:T;
+   pub fn func():T {
+      return self.val;
+   }
+}
+class Sub extend Super&lt;int&gt; {
+   pub override fn func(): int { // error
+      return 1;
+   }
+}</code></pre>
+</div>
+<p>
+このようなメソッドをオーバーライドする場合、
+継承するクラスの型パラメータに特別な宣言が必要です。</p>
+<p>
+以下に例を挙げます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Super&lt;T&gt; {
+   let val:T;
+   pub fn func():T {
+      return self.val;
+   }
+}
+class Sub extend Super&lt;A=int&gt; {  // A=int
+   pub override fn func(): A {
+      return 1;
+   }
+}</code></pre>
+</div>
+<p>
+この例では、 Sub クラスは <code class="verbatim">Super&lt;T&gt;</code> を <code class="verbatim">Super&lt;A=int&gt;</code> として継承しています。</p>
+<p>
+この <code class="verbatim">Super&lt;A=int&gt;</code> は、
+型パラメータ int を A 型として利用することを宣言しています。
+そしてオーバーライドしている func() の戻り値の型に A を指定します。</p>
+<p>
+これにより、 型パラメータを戻り値にもつメソッドをオーバーライドできます。</p>
 </div>
 </div>
-<div id="outline-container-headline-7" class="outline-2">
-<h2 id="headline-7">
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-2">
+<h2 id="headline-8">
 型パラメータの制約
 </h2>
-<div id="outline-text-headline-7" class="outline-text-2">
+<div id="outline-text-headline-8" class="outline-text-2">
 <p>
 実型パラメータには、 nil 以外の全ての型を指定できます。</p>
 <p>
@@ -317,11 +367,11 @@ foreach val, key in test.func( &#34;ABC&#34; ) {
 これだと、Generics 内の処理で効果的な処理を書けません。</p>
 <p>
 そこで、型パラメータの制約を利用します。</p>
-<div id="outline-container-headline-8" class="outline-3">
-<h3 id="headline-8">
+<div id="outline-container-headline-9" class="outline-3">
+<h3 id="headline-9">
 サンプル
 </h3>
-<div id="outline-text-headline-8" class="outline-text-3">
+<div id="outline-text-headline-9" class="outline-text-3">
 <p>
 次は、型パラメータ制約のサンプルです。</p>
 <p>
@@ -410,11 +460,11 @@ SuperClass, IF は、それぞれ省略可能です。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-9" class="outline-2">
-<h2 id="headline-9">
+<div id="outline-container-headline-10" class="outline-2">
+<h2 id="headline-10">
 generics クラスの Mapping
 </h2>
-<div id="outline-text-headline-9" class="outline-text-2">
+<div id="outline-text-headline-10" class="outline-text-2">
 <p>
 LuneScript は、
 クラスのインスタンスを Map オブジェクトに変換する Mapping 機能を持ちます。</p>
@@ -640,6 +690,7 @@ if! let test2 = Test&lt;str&gt;._fromMap( map ) {
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design/">Y.1 LuneScript の開発方法</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_study/">Z. Go 言語へのトランスコンパイル (検討段階)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
 </ul>

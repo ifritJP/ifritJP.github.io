@@ -231,6 +231,54 @@ foreach val, key in test.func( "ABC" ) {
 }
 #+END_SRC
 
+** 型パラメータを戻り値に持つメソッドのオーバーライド
+
+以下のような型パラメータを戻り値に持つメソッド func のオーバーライドはできません。
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+class Super<T> {
+   let val:T;
+   pub fn func():T {
+      return self.val;
+   }
+}
+class Sub extend Super<int> {
+   pub override fn func(): int { // error
+      return 1;
+   }
+}
+#+END_SRC
+
+このようなメソッドをオーバーライドする場合、
+継承するクラスの型パラメータに特別な宣言が必要です。
+
+以下に例を挙げます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Super<T> {
+   let val:T;
+   pub fn func():T {
+      return self.val;
+   }
+}
+class Sub extend Super<A=int> {  // A=int
+   pub override fn func(): A {
+      return 1;
+   }
+}
+#+END_SRC
+
+この例では、 Sub クラスは =Super<T>= を =Super<A=int>= として継承しています。
+
+この =Super<A=int>= は、
+型パラメータ int を A 型として利用することを宣言しています。
+そしてオーバーライドしている func() の戻り値の型に A を指定します。
+
+これにより、 型パラメータを戻り値にもつメソッドをオーバーライドできます。
+
+
 * 型パラメータの制約
 
 実型パラメータには、 nil 以外の全ての型を指定できます。
