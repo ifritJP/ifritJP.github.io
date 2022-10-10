@@ -33,7 +33,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス トランスコンパイラ LuneScript で Lua の開発をもっと楽に!">
 
-<meta itemprop="wordCount" content="111606">
+<meta itemprop="wordCount" content="114003">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -16684,6 +16684,498 @@ Go へ変換する場合は、 AST の構造そのままでは、
 とはいえ、これは基礎の基礎である。</p>
 <p>
 次はもう少し内部について解説を行なう予定である。</p>
+<hr>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-design-2_ja" class="outline-2">
+<h2 id="design-2_ja">
+<strong>LuneScript の開発(型情報管理)</strong>
+</h2>
+<div id="outline-text-design-2_ja" class="outline-text-2">
+<p>
+LuneScript 開発の続き。</p>
+<p>
+フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。</p>
+<div id="outline-container-headline-515" class="outline-3">
+<h3 id="headline-515">
+型情報
+</h3>
+<div id="outline-text-headline-515" class="outline-text-3">
+<p>
+プログラミングには、データの型が重要である。</p>
+<p>
+特に LuneScript は静的型付け言語なので、
+データの型の管理の重要性は理解できるだろう。</p>
+<p>
+なお、 LuneScript のデータの型の管理は <code class="verbatim">Ast.lns</code> でやっている。</p>
+<p>
+型の管理をするソースがなんで <code class="verbatim">Ast.lns</code> なんて名前なんだ、というツッコミはあるだろうが、
+それは気にしないでほしい。</p>
+</div>
+</div>
+<div id="outline-container-headline-516" class="outline-3">
+<h3 id="headline-516">
+型の種類
+</h3>
+<div id="outline-text-headline-516" class="outline-text-3">
+<p>
+早速だが、次のコードにおいて型は幾つあるか分かるだろうか？</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">fn func() {
+  print( &#34;hello world&#34; );
+}</code></pre>
+</div>
+<p>
+答は以下の３つ。</p>
+<ul>
+<li>func の関数型</li>
+<li>print の関数型</li>
+<li>&#34;hello world&#34; の文字列型</li>
+</ul>
+<p>上記の型情報には、関数を表す型と文字列を表す型があることが分かる。</p>
+<p>
+もちろん、LuneScript は他にも整数型や実数型,クラスなど様々な型をサポートしている。</p>
+</div>
+</div>
+<div id="outline-container-headline-517" class="outline-3">
+<h3 id="headline-517">
+型の属性
+</h3>
+<div id="outline-text-headline-517" class="outline-text-3">
+<p>
+さらに、型は以下の 2 つに分けることが出来る。</p>
+<ul>
+<li>予めシステムに組み込んである builtin の型</li>
+<li>ユーザが定義する関数やクラスなどの型</li>
+</ul>
+<p>ここで問題なのが、ユーザ定義の型である。</p>
+<p>
+builtin 型だけであれば、
+型の情報を全てハードコーディングしておけば済むが、
+ユーザ定義の型をサポートするということは、
+「ユーザがどのような型を定義しているのか」ということを
+動的に管理しなければならないということである。</p>
+<p>
+例えば、次のユーザ定義の関数 func は、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">pub fn func&lt;T&gt;( val:T ) : &amp;List&lt;T&gt; {
+  return [ val ];  
+}</code></pre>
+</div>
+<p>
+次の構成からなる。</p>
+<ul>
+<li>
+<p>関数名</p>
+<ul>
+<li>func</li>
+</ul>
+</li>
+<li>
+<p>アクセス制限</p>
+<ul>
+<li>pub</li>
+</ul>
+</li>
+<li>
+<p>型パラメータ </p>
+<ul>
+<li>T</li>
+</ul>
+</li>
+<li>
+<p>引数</p>
+<ul>
+<li>名前 val</li>
+<li>型 T</li>
+</ul>
+</li>
+<li>
+<p>戻り値型</p>
+<ul>
+<li>&amp;List&lt;T&gt;</li>
+</ul>
+</li>
+</ul>
+<p>このように、一言で関数といっても多くの属性情報から構成される。</p>
+<p>
+なお、上記の例では示していないが、
+他にも属性には abstract や static, mutable など様々な属性で構成される。</p>
+<p>
+これらの構成情報を管理するのが、型情報である。</p>
+<p>
+この型情報は、LuneScript では <strong><code class="verbatim">Ast.TypeInfo</code></strong> クラスで管理している。</p>
+</div>
+</div>
+<div id="outline-container-headline-518" class="outline-3">
+<h3 id="headline-518">
+型情報のバリエーション
+</h3>
+<div id="outline-text-headline-518" class="outline-text-3">
+<p>
+次のコードを見て欲しい。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let list1:List&lt;int&gt;;
+let list2:&amp;List&lt;int&gt;;
+let list3:List&lt;int&gt;!;
+let list4:&amp;List&lt;int&gt;!;</code></pre>
+</div>
+<p>
+このコードは変数 list1 〜 list4 を宣言している。</p>
+<p>
+それぞれの変数の型は、下記 4 つである。</p>
+<ul>
+<li>List&lt;int&gt;</li>
+<li>List&lt;int&gt; の immutable</li>
+<li>List&lt;int&gt; の nilable</li>
+<li>List&lt;int&gt; の immutable の nilable</li>
+</ul>
+<p>これは List&lt;int&gt; に対するバリエーションである。</p>
+<p>
+このバリエーションは、基本的に全ての型に対して存在する。</p>
+<p>
+そして、それぞれは異なる型なので、
+型情報としても異なる型情報として管理する必要がある。</p>
+<div id="outline-container-headline-519" class="outline-4">
+<h4 id="headline-519">
+TypeInfo のメソッド
+</h4>
+<div id="outline-text-headline-519" class="outline-text-4">
+<p>
+上記の通り、全ての型に対して imuttable, nilable の型が存在する。</p>
+<p>
+そして、その型に簡単にアクセスするために、
+TypeInfo には次のメソッドを用意している。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">   /**この TypeInfo に対する immutable な型を取得  */
+   pub fn get_imutType(): &amp;TypeInfo;
+   /**この TypeInfo に対する nilable な型を取得  */
+   pub fn get_nilableTypeInfo(): &amp;TypeInfo;
+   /**この TypeInfo に対する nonnilable な型を取得  */
+   pub fn get_nonnilableType(): &amp;TypeInfo;
+   /**この TypeInfo に対する mutable な型を取得  */
+   pub fn get_srcTypeInfo(): &amp;TypeInfo;</code></pre>
+</div>
+<p>
+例えば <code class="verbatim">List&lt;int&gt;</code> を管理する TypeInfo の
+<code class="verbatim">get_imutType()</code> を実行すると <code class="verbatim">&amp;List&lt;int&gt;</code> を管理する <code class="verbatim">TypeInfo</code> が取得できる。</p>
+</div>
+</div>
+<div id="outline-container-headline-520" class="outline-4">
+<h4 id="headline-520">
+代入可能判定
+</h4>
+<div id="outline-text-headline-520" class="outline-text-4">
+<p>
+次の関数の引数において、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">fn func( mut list1:List&lt;int&gt;, mut list2:&amp;List&lt;int&gt;, 
+         mut list3:List&lt;int&gt;!, mut list4:&amp;List&lt;int&gt;! )</code></pre>
+</div>
+<p>
+引数 list1 から list4 は次の代入可否関係がある。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">list1 = list2; // error
+list1 = list3; // error
+list1 = list4; // error
+
+list2 = list1;
+list2 = list3; // error
+list2 = list4; // error
+
+list3 = list1;
+list3 = list2; // error
+list3 = list4; // error
+
+list4 = list1;
+list4 = list2;
+list4 = list3;</code></pre>
+</div>
+<p>
+簡単に言えば、以下の2つである。</p>
+<ul>
+<li>immutable から mutable への代入禁止</li>
+<li>nilable から 非 nilable への代入禁止</li>
+</ul>
+<p>
+型情報は、このような禁則制御も行なっている。</p>
+<p>
+当然、型の種別が異なるデータ間の代入制御も同様に行なう。
+(例えば、関数型のデータを整数型に代入する場合など)</p>
+</div>
+</div>
+<div id="outline-container-headline-521" class="outline-4">
+<h4 id="headline-521">
+generics 
+</h4>
+<div id="outline-text-headline-521" class="outline-text-4">
+<p>
+あるクラス Hoge を要素にもつ List 型の変数 list1, list2 を宣言した場合、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let mut list1:List&lt;Hoge&gt;;
+let mut list2:List&lt;&amp;Hoge&gt;;</code></pre>
+</div>
+<p>
+list1, list2 には次の関係がある。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">list1 = list2; // error
+list2 = list1;</code></pre>
+</div>
+<p>
+そしてこれは、先程の型情報のバリエーションとの組み合わせで制御が必要である。</p>
+</div>
+</div>
+<div id="outline-container-headline-522" class="outline-4">
+<h4 id="headline-522">
+class
+</h4>
+<div id="outline-text-headline-522" class="outline-text-4">
+<p>
+以下のクラスの継承関係がある時、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">class Super {
+}
+class Sub extend Super {
+}</code></pre>
+</div>
+<p>
+それぞれの型の変数には、次の関係がある。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let super = new Super();
+let sub = new Sub();
+
+super = sub;
+sub = super; // error</code></pre>
+</div>
+<p>
+そしてこれも、型情報のバリエーションとの組み合わせで制御が必要である。</p>
+</div>
+</div>
+<div id="outline-container-headline-523" class="outline-4">
+<h4 id="headline-523">
+nilable, immutable を管理するクラス
+</h4>
+<div id="outline-text-headline-523" class="outline-text-4">
+<p>
+LuneScript では、nilable, immutable の型情報を以下のクラスで管理する。
+なお、以下のクラスは <code class="verbatim">TypeInfo</code> のサブクラスである。</p>
+<ul>
+<li>
+<p><strong><code class="verbatim">Ast.ModifierTypeInfo</code></strong></p>
+<ul>
+<li>immutable を管理するクラス</li>
+</ul>
+</li>
+<li>
+<p><strong><code class="verbatim">Ast.NilableTypeInfo</code></strong></p>
+<ul>
+<li>nilable を管理するクラス</li>
+</ul>
+</li>
+</ul>
+<p>
+以上のように、型情報を管理するのが TypeInfo の主な役割りである。</p>
+<hr>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-design-3_ja" class="outline-2">
+<h2 id="design-3_ja">
+<strong>LuneScript の開発(スコープとシンボル)</strong>
+</h2>
+<div id="outline-text-design-3_ja" class="outline-text-2">
+<p>
+LuneScript 開発の続き。</p>
+<p>
+フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。</p>
+<div id="outline-container-headline-525" class="outline-3">
+<h3 id="headline-525">
+スコープ
+</h3>
+<div id="outline-text-headline-525" class="outline-text-3">
+<p>
+LuneScript は一般的なレキカルスコープである。</p>
+<p>
+また、スコープには次の種類がある。</p>
+<ul>
+<li>組込みスコープ</li>
+<li>グローバルスコープ</li>
+<li>モジュール内スコープ</li>
+</ul>
+<p>組込みスコープは、 int や str などの組込みの型シンボルや、
+<code class="verbatim">print()</code> や <code class="verbatim">string.format()</code> などの組込みの関数シンボルなどを管理する。</p>
+<p>
+グローバルスコープは、 lua のグローバルシンボル互換のシンボルを管理する。</p>
+<p>
+基本的にはユーザが作成するモジュールのシンボルは、全てモジュール内スコープで管理する。</p>
+<div id="outline-container-headline-526" class="outline-4">
+<h4 id="headline-526">
+スコープの構造
+</h4>
+<div id="outline-text-headline-526" class="outline-text-4">
+<p>
+スコープはツリー構造になっていて、各スコープには次の要素を保持する。</p>
+<ul>
+<li>親スコープ</li>
+<li>スコープに属するシンボルのリスト</li>
+</ul>
+<p>例えば、以下の <code class="verbatim">Test.lns</code> において、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+スコープは次の 2 つからなる。</p>
+<ul>
+<li><code class="verbatim">@Test</code> スコープ</li>
+<li><code class="verbatim">func</code> スコープ</li>
+</ul>
+<p>
+<code class="verbatim">@Test</code> スコープは、 Test.lns のモジュールを管理するスコープである。
+.lns ファイルは、 必ず独自のスコープを持つ。</p>
+<p>
+なお、 LuneScript のモジュールは、
+カレントディレクトリからの相対パスでモジュールを管理する。 </p>
+<p>
+相対パスが dir/Test.lns のモジュールは、
+@dir スコープの中に @Test スコープを持つ。</p>
+</div>
+</div>
+<div id="outline-container-headline-527" class="outline-4">
+<h4 id="headline-527">
+LuneScript でのクラス
+</h4>
+<div id="outline-text-headline-527" class="outline-text-4">
+<p>
+スコープは <strong><code class="verbatim">Ast.Scope</code></strong> クラスで管理する。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-528" class="outline-3">
+<h3 id="headline-528">
+シンボル
+</h3>
+<div id="outline-text-headline-528" class="outline-text-3">
+<p>
+スコープは、そのスコープに属するシンボルを管理する。</p>
+<p>
+例えば以下のソースの場合、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+この @Test には、ユーザが定義している <code class="verbatim">func</code> 関数シンボルが登録される。</p>
+<p>
+<code class="verbatim">func</code> スコープには、 <code class="verbatim">val1</code> , <code class="verbatim">val2</code> の変数シンボルが登録される。</p>
+<p>
+この時のスコープとシンボルは、次のようなツリーになる。</p>
+<div class="src src-dot">
+<pre tabindex="0"><code class="language-dot" data-lang="dot">digraph G {
+rankdir=RL;
+
+builtin[label=&#34;&lt;builtin&gt;&#34;];
+global[label=&#34;&lt;global&gt;&#34;];
+dir[label=&#34;@dir&#34;];
+dir_sym[shape=&#34;box&#34;];
+Test[label=&#34;@Test&#34;];
+Test_sym[shape=&#34;box&#34;];
+func_sym[shape=&#34;box&#34;];
+func;
+val1_sym[shape=&#34;box&#34;];
+val2_sym[shape=&#34;box&#34;];
+
+global-&gt;builtin
+dir_sym-&gt;global
+dir-&gt;dir_sym
+Test_sym-&gt;dir
+Test-&gt;Test_sym
+func-&gt;func_sym
+func_sym-&gt;Test
+val1_sym-&gt;func
+val2_sym-&gt;func
+}</code></pre>
+</div>
+<p>
+<a href="#lunescript_scope_png">#lunescript_scope_png</a></p>
+<p>
+ここで、楕円がスコープで、四角がシンボルを示す。</p>
+<div id="outline-container-headline-529" class="outline-4">
+<h4 id="headline-529">
+シンボルの構成
+</h4>
+<div id="outline-text-headline-529" class="outline-text-4">
+<p>
+シンボルは、次の属性から構成される。</p>
+<ul>
+<li>アクセス制限</li>
+<li>名前</li>
+<li>型</li>
+<li>mutable/immutable</li>
+</ul>
+<p>例えば以下のコードの場合、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+各シンボルは以下になる。</p>
+<table>
+<thead>
+<tr>
+<th>アクセス制限</th>
+<th>名前</th>
+<th>型</th>
+<th>mut/imut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>local</td>
+<td>func</td>
+<td>fn (int)</td>
+<td>imut</td>
+</tr>
+<tr>
+<td>local</td>
+<td>val1</td>
+<td>int</td>
+<td>imut</td>
+</tr>
+<tr>
+<td>local</td>
+<td>val2</td>
+<td>int</td>
+<td>imut</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-headline-530" class="outline-4">
+<h4 id="headline-530">
+LuneScript でのクラス
+</h4>
+<div id="outline-text-headline-530" class="outline-text-4">
+<p>
+スコープは <strong><code class="verbatim">Ast.SymbolInfo</code></strong> クラスで管理する。</p>
 </div>
 </div>
 </div>
@@ -16850,6 +17342,8 @@ Go へ変換する場合は、 AST の構造そのままでは、
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design/">Y.1 LuneScript の開発方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-2/">Y.2 LuneScript の開発(型情報管理)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-3/">Y.3 LuneScript の開発(スコープとシンボル)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_study/">Z. Go 言語へのトランスコンパイル (検討段階)</a></li>
 <li class="active"><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
 </ul>

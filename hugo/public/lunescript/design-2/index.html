@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>81.1 非同期処理(過去情報) - 公開技術情報</title>
+<title>Y.2 LuneScript の開発(型情報管理) - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/async_old/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/design-2/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -20,20 +20,20 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
-<meta property="og:title" content="81.1 非同期処理(過去情報)" />
-<meta property="og:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく" />
+<meta property="og:title" content="Y.2 LuneScript の開発(型情報管理)" />
+<meta property="og:description" content="LuneScript 開発の続き。 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。 型情報 プログラミングには、データの型が重要である。 特に LuneScript は静" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/async_old/" /><meta property="article:section" content="LuneScript" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/design-2/" /><meta property="article:section" content="LuneScript" />
 
 <meta property="og:site_name" content="公開技術情報" />
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="81.1 非同期処理(過去情報)"/>
-<meta name="twitter:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく"/>
-<meta itemprop="name" content="81.1 非同期処理(過去情報)">
-<meta itemprop="description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく">
+<meta name="twitter:title" content="Y.2 LuneScript の開発(型情報管理)"/>
+<meta name="twitter:description" content="LuneScript 開発の続き。 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。 型情報 プログラミングには、データの型が重要である。 特に LuneScript は静"/>
+<meta itemprop="name" content="Y.2 LuneScript の開発(型情報管理)">
+<meta itemprop="description" content="LuneScript 開発の続き。 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。 型情報 プログラミングには、データの型が重要である。 特に LuneScript は静">
 
-<meta itemprop="wordCount" content="1863">
+<meta itemprop="wordCount" content="1570">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -62,218 +62,299 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>81.1 非同期処理(過去情報)</h1>
+<main><h1>Y.2 LuneScript の開発(型情報管理)</h1>
 
 <p>
-LuneScript から go 言語へのトランスコンパイル対応したのを機に、
-LuneScript による非同期処理を対応しました。</p>
+LuneScript 開発の続き。</p>
 <p>
-ただし、これは非常に実験的な内容なので参考程度にしてください。</p>
-<p>
-<strong>1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。</strong></p>
+フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。</p>
 <div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
-LuneScript のランタイム
+型情報
 </h2>
 <div id="outline-text-headline-1" class="outline-text-2">
 <p>
-LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
-差を埋めるためのランタイムがあります。</p>
+プログラミングには、データの型が重要である。</p>
 <p>
-例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。</p>
-<ul>
-<li>lua との連携動作</li>
-<li>and or 演算子の挙動</li>
-</ul>
-<p>これら処理は、ランタイム内で宣言しているデータにアクセスしています。</p>
+特に LuneScript は静的型付け言語なので、
+データの型の管理の重要性は理解できるだろう。</p>
 <p>
-LuneScript を非同期処理に対応する場合、
-ランタイム内のデータアクセスを排他対応する必要があります。</p>
+なお、 LuneScript のデータの型の管理は <code class="verbatim">Ast.lns</code> でやっている。</p>
 <p>
-一方で、 mutex などによる排他制御は、
-シングルスレッド時にもパフォーマンスに影響してしまいます。</p>
-<p>
-今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
-排他制御は最低限にし、
-必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。</p>
-<p>
-具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
-スレッド毎に複製し、スレッド毎に切り替えて利用します。</p>
-<p>
-ここで一つ問題があります。</p>
-<p>
-それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。</p>
-<p>
-スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
-現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
-アクセス先を切り替える、という処理を行なえます。</p>
-<p>
-しかし、スレッド ID の取得が出来ないため、それが出来ません。</p>
-<p>
-これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
-という方法が必要になります。</p>
-<p>
-さすがにこれはやりたくないので、別の方法を考えました。</p>
-<p>
-以降では、今回導入した非同期処理の方法について説明します。</p>
+型の管理をするソースがなんで <code class="verbatim">Ast.lns</code> なんて名前なんだ、というツッコミはあるだろうが、
+それは気にしないでほしい。</p>
 </div>
 </div>
 <div id="outline-container-headline-2" class="outline-2">
 <h2 id="headline-2">
-LnsThread クラスの導入と制限
+型の種類
 </h2>
 <div id="outline-text-headline-2" class="outline-text-2">
 <p>
-LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。</p>
-<p>
-LnsThread クラスは、次のようなクラスです。</p>
+早速だが、次のコードにおいて型は幾つあるか分かるだろうか？</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-abstract class LnsThread {
-   pro abstract fn loop() mut;
+<pre tabindex="0"><code class="language-lns" data-lang="lns">fn func() {
+  print( &#34;hello world&#34; );
 }</code></pre>
 </div>
 <p>
-LnsThread のサブクラスでは、 <code class="verbatim">loop()</code> メソッドを override し、
-その中で非同期処理を行ないます。</p>
-<p>
-LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、</p>
-<pre class="example">
-_lune_control run_async_pipe;
-</pre>
-<p>
-go routine <code class="verbatim">loop()</code> メソッドが実行されます。</p>
-<p>
-なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。</p>
-<pre class="example">
-_lune_control use_async;
-</pre>
-<p>
-これは、 非同期処理を行なうことを宣言するコマンドです。</p>
-<p>
-このコマンドが実行されているモジュー内では、
-次の演算が制限がかかり、
-LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。</p>
+答は以下の３つ。</p>
 <ul>
-<li>and/or 演算</li>
-<li>nil 条件演算</li>
-<li>一部のビルトイン関数、メソッドアクセス</li>
+<li>func の関数型</li>
+<li>print の関数型</li>
+<li>&#34;hello world&#34; の文字列型</li>
 </ul>
-<p>また、非同期処理とのデータを送受信するための手段として、
-__pipe&lt;T&gt; クラスを追加しています。</p>
+<p>上記の型情報には、関数を表す型と文字列を表す型があることが分かる。</p>
 <p>
-__pipe&lt;T&gt; クラスは、 go の chan と等価と思ってください。</p>
+もちろん、LuneScript は他にも整数型や実数型,クラスなど様々な型をサポートしている。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+型の属性
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
 <p>
-__pipe&lt;T&gt; クラスは、次のようなクラスです。</p>
+さらに、型は以下の 2 つに分けることが出来る。</p>
+<ul>
+<li>予めシステムに組み込んである builtin の型</li>
+<li>ユーザが定義する関数やクラスなどの型</li>
+</ul>
+<p>ここで問題なのが、ユーザ定義の型である。</p>
+<p>
+builtin 型だけであれば、
+型の情報を全てハードコーディングしておけば済むが、
+ユーザ定義の型をサポートするということは、
+「ユーザがどのような型を定義しているのか」ということを
+動的に管理しなければならないということである。</p>
+<p>
+例えば、次のユーザ定義の関数 func は、</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-class __pipe&lt;T&gt; {
-  pub fn get() mut : T!;
-  pub fn put( val:T! ) mut;
+<pre tabindex="0"><code class="language-lns" data-lang="lns">pub fn func&lt;T&gt;( val:T ) : &amp;List&lt;T&gt; {
+  return [ val ];  
 }</code></pre>
 </div>
 <p>
-ここで、__pipe&lt;T&gt;  の T には __AsyncItem インタフェースを implement したクラスを
-指定する必要があります。</p>
+次の構成からなる。</p>
+<ul>
+<li>
+<p>関数名</p>
+<ul>
+<li>func</li>
+</ul>
+</li>
+<li>
+<p>アクセス制限</p>
+<ul>
+<li>pub</li>
+</ul>
+</li>
+<li>
+<p>型パラメータ </p>
+<ul>
+<li>T</li>
+</ul>
+</li>
+<li>
+<p>引数</p>
+<ul>
+<li>名前 val</li>
+<li>型 T</li>
+</ul>
+</li>
+<li>
+<p>戻り値型</p>
+<ul>
+<li>&amp;List&lt;T&gt;</li>
+</ul>
+</li>
+</ul>
+<p>このように、一言で関数といっても多くの属性情報から構成される。</p>
 <p>
-<code class="verbatim">put()</code> した val が、 <code class="verbatim">get()</code> で取得できるようになります。
-put(val:T!) に nil を与えると、その __pipe の通信は終了し、
-その後 nil 意外を <code class="verbatim">put()</code> しても、 <code class="verbatim">get()</code> は nil を返すようになります。</p>
+なお、上記の例では示していないが、
+他にも属性には abstract や static, mutable など様々な属性で構成される。</p>
 <p>
-__AsyncItem インタフェースを implement クラスは、
-同時に Mapping インタフェースも implement が必要です。</p>
+これらの構成情報を管理するのが、型情報である。</p>
 <p>
-__AsyncItem インタフェースを implement したクラスには、
-次のメソッドが追加されます。</p>
-<pre class="example">
-pub static fn _createPipe( num:int ) : __pipe&lt;T&gt;!;
-</pre>
-<p>
-ここで 引数 num は、 chan の cap と同じです。</p>
-<p>
-なお、 Lua にトランスコンパイルした場合、
-この <code class="verbatim">_createPipe()</code> 関数は必ず nil を返します。</p>
-<p>
-上記をまとめると、非同期処理は次のように書きます。</p>
-<div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-_lune_control use_async;
-
-class Test extend (__AsyncItem,Mapping) {
-   let val:str {pub};
-}
-
-class Async extend LnsThread {
-   let mut count:int {pub};
-   let mut pipe:__pipe&lt;Test&gt;!;
-   
-   pub fn __init( pipe:__pipe&lt;Test&gt;! ) {
-      super();
-      self.pipe = pipe;
-      self.count = 0;
-   }
-   
-   pro override fn loop() mut {
-      print( &#34;hoge:&#34; );
-      while true {
-         if! let mut pipe = self.pipe {
-            let! val = pipe.get() {  // pipe からデータを取得
-               print( &#34;hoge:&#34; );
-               break;
-            };
-            val.$val.find( &#34;%d&#34; (self.count) ## );
-            self.count = self.count + 1;
-         }
-      }
-   }
-   pub fn start() {
-      _lune_control run_async_pipe;  // loop() 起動
-   }
-   pub fn put( test:Test ) mut {
-      if! let mut pipe = self.pipe { // pipe にデータをセット
-         pipe.put( test );
-      }
-   }
-}
-
-let mut async = new Async( Test._createPipe( 10 ) );
-async.start();
-let mut async2 = new Async( Test._createPipe( 10 ) );
-async2.start();
-
-for _ = 1, 100000 {
-   async.put( new Test( &#34;abcdefg&#34; ) );
-   async2.put( new Test( &#34;abcdefg&#34; ) );
-}
-print( async.$count, async2.$count );</code></pre>
+この型情報は、LuneScript では <strong><code class="verbatim">Ast.TypeInfo</code></strong> クラスで管理している。</p>
 </div>
-<div id="outline-container-headline-3" class="outline-3">
-<h3 id="headline-3">
-非同期処理の制限
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+型情報のバリエーション
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+次のコードを見て欲しい。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let list1:List&lt;int&gt;;
+let list2:&amp;List&lt;int&gt;;
+let list3:List&lt;int&gt;!;
+let list4:&amp;List&lt;int&gt;!;</code></pre>
+</div>
+<p>
+このコードは変数 list1 〜 list4 を宣言している。</p>
+<p>
+それぞれの変数の型は、下記 4 つである。</p>
+<ul>
+<li>List&lt;int&gt;</li>
+<li>List&lt;int&gt; の immutable</li>
+<li>List&lt;int&gt; の nilable</li>
+<li>List&lt;int&gt; の immutable の nilable</li>
+</ul>
+<p>これは List&lt;int&gt; に対するバリエーションである。</p>
+<p>
+このバリエーションは、基本的に全ての型に対して存在する。</p>
+<p>
+そして、それぞれは異なる型なので、
+型情報としても異なる型情報として管理する必要がある。</p>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+TypeInfo のメソッド
 </h3>
-<div id="outline-text-headline-3" class="outline-text-3">
+<div id="outline-text-headline-5" class="outline-text-3">
 <p>
-次の処理を行なった場合の動作は未定義です。</p>
+上記の通り、全ての型に対して imuttable, nilable の型が存在する。</p>
+<p>
+そして、その型に簡単にアクセスするために、
+TypeInfo には次のメソッドを用意している。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">   /**この TypeInfo に対する immutable な型を取得  */
+   pub fn get_imutType(): &amp;TypeInfo;
+   /**この TypeInfo に対する nilable な型を取得  */
+   pub fn get_nilableTypeInfo(): &amp;TypeInfo;
+   /**この TypeInfo に対する nonnilable な型を取得  */
+   pub fn get_nonnilableType(): &amp;TypeInfo;
+   /**この TypeInfo に対する mutable な型を取得  */
+   pub fn get_srcTypeInfo(): &amp;TypeInfo;</code></pre>
+</div>
+<p>
+例えば <code class="verbatim">List&lt;int&gt;</code> を管理する TypeInfo の
+<code class="verbatim">get_imutType()</code> を実行すると <code class="verbatim">&amp;List&lt;int&gt;</code> を管理する <code class="verbatim">TypeInfo</code> が取得できる。</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+代入可能判定
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+次の関数の引数において、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">fn func( mut list1:List&lt;int&gt;, mut list2:&amp;List&lt;int&gt;, 
+         mut list3:List&lt;int&gt;!, mut list4:&amp;List&lt;int&gt;! )</code></pre>
+</div>
+<p>
+引数 list1 から list4 は次の代入可否関係がある。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">list1 = list2; // error
+list1 = list3; // error
+list1 = list4; // error
+
+list2 = list1;
+list2 = list3; // error
+list2 = list4; // error
+
+list3 = list1;
+list3 = list2; // error
+list3 = list4; // error
+
+list4 = list1;
+list4 = list2;
+list4 = list3;</code></pre>
+</div>
+<p>
+簡単に言えば、以下の2つである。</p>
 <ul>
-<li><code class="verbatim">Loop()</code> 内から、別モジュールのデータ、メソッドにアクセスする</li>
-<li>別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする</li>
-<li>LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  </li>
+<li>immutable から mutable への代入禁止</li>
+<li>nilable から 非 nilable への代入禁止</li>
 </ul>
-<p>以上のように、非常に限定的で使い勝手の悪い仕様になっています。
-この仕様は間違いなく将来変更になるので、
-冒頭で書いたようにあくまで参考程度にしてください。</p>
 <p>
-ちなみに、これだけ制限の多い非同期処理ですが、
-LuneScript の parse 処理に利用していて、
-LuneScript の高速化にほんの少し貢献しています。</p>
+型情報は、このような禁則制御も行なっている。</p>
+<p>
+当然、型の種別が異なるデータ間の代入制御も同様に行なう。
+(例えば、関数型のデータを整数型に代入する場合など)</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+generics 
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+あるクラス Hoge を要素にもつ List 型の変数 list1, list2 を宣言した場合、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let mut list1:List&lt;Hoge&gt;;
+let mut list2:List&lt;&amp;Hoge&gt;;</code></pre>
+</div>
+<p>
+list1, list2 には次の関係がある。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">list1 = list2; // error
+list2 = list1;</code></pre>
+</div>
+<p>
+そしてこれは、先程の型情報のバリエーションとの組み合わせで制御が必要である。</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+class
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<p>
+以下のクラスの継承関係がある時、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">class Super {
+}
+class Sub extend Super {
+}</code></pre>
+</div>
+<p>
+それぞれの型の変数には、次の関係がある。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">let super = new Super();
+let sub = new Sub();
+
+super = sub;
+sub = super; // error</code></pre>
+</div>
+<p>
+そしてこれも、型情報のバリエーションとの組み合わせで制御が必要である。</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
+<h3 id="headline-9">
+nilable, immutable を管理するクラス
+</h3>
+<div id="outline-text-headline-9" class="outline-text-3">
+<p>
+LuneScript では、nilable, immutable の型情報を以下のクラスで管理する。
+なお、以下のクラスは <code class="verbatim">TypeInfo</code> のサブクラスである。</p>
+<ul>
+<li>
+<p><strong><code class="verbatim">Ast.ModifierTypeInfo</code></strong></p>
+<ul>
+<li>immutable を管理するクラス</li>
+</ul>
+</li>
+<li>
+<p><strong><code class="verbatim">Ast.NilableTypeInfo</code></strong></p>
+<ul>
+<li>nilable を管理するクラス</li>
+</ul>
+</li>
+</ul>
+<p>
+以上のように、型情報を管理するのが TypeInfo の主な役割りである。</p>
 </div>
 </div>
 </div>
 </div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/async/" title="81. 安全な非同期処理"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 81. 安全な非同期処理</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/luago/" title="82. Lua と連携 編">Next - 82. Lua と連携 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/design/" title="Y.1 LuneScript の開発方法"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Y.1 LuneScript の開発方法</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/design-3/" title="Y.3 LuneScript の開発(スコープとシンボル)">Next - Y.3 LuneScript の開発(スコープとシンボル) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -419,7 +500,7 @@ LuneScript の高速化にほんの少し貢献しています。</p>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">80.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">80.4 LuneScript の WebAssembly 対応</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">81. 安全な非同期処理</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/async_old/">81.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">81.1 非同期処理(過去情報)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">82. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
@@ -430,7 +511,7 @@ LuneScript の高速化にほんの少し貢献しています。</p>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design/">Y.1 LuneScript の開発方法</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-2/">Y.2 LuneScript の開発(型情報管理)</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/design-2/">Y.2 LuneScript の開発(型情報管理)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-3/">Y.3 LuneScript の開発(スコープとシンボル)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_study/">Z. Go 言語へのトランスコンパイル (検討段階)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>

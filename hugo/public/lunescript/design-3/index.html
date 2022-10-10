@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>81.1 非同期処理(過去情報) - 公開技術情報</title>
+<title>Y.3 LuneScript の開発(スコープとシンボル) - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.100.1" />
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/async_old/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/design-3/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -20,20 +20,20 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
-<meta property="og:title" content="81.1 非同期処理(過去情報)" />
-<meta property="og:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく" />
+<meta property="og:title" content="Y.3 LuneScript の開発(スコープとシンボル)" />
+<meta property="og:description" content="LuneScript 開発の続き。 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。 スコープ LuneScript は一般的なレキカルスコープである。 また、スコープに" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/async_old/" /><meta property="article:section" content="LuneScript" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/design-3/" /><meta property="article:section" content="LuneScript" />
 
 <meta property="og:site_name" content="公開技術情報" />
 
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="81.1 非同期処理(過去情報)"/>
-<meta name="twitter:description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく"/>
-<meta itemprop="name" content="81.1 非同期処理(過去情報)">
-<meta itemprop="description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 ただし、これは非常に実験的な内容なので参考程度にしてく">
+<meta name="twitter:title" content="Y.3 LuneScript の開発(スコープとシンボル)"/>
+<meta name="twitter:description" content="LuneScript 開発の続き。 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。 スコープ LuneScript は一般的なレキカルスコープである。 また、スコープに"/>
+<meta itemprop="name" content="Y.3 LuneScript の開発(スコープとシンボル)">
+<meta itemprop="description" content="LuneScript 開発の続き。 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。 スコープ LuneScript は一般的なレキカルスコープである。 また、スコープに">
 
-<meta itemprop="wordCount" content="1863">
+<meta itemprop="wordCount" content="800">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -62,218 +62,201 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>81.1 非同期処理(過去情報)</h1>
+<main><h1>Y.3 LuneScript の開発(スコープとシンボル)</h1>
 
 <p>
-LuneScript から go 言語へのトランスコンパイル対応したのを機に、
-LuneScript による非同期処理を対応しました。</p>
+LuneScript 開発の続き。</p>
 <p>
-ただし、これは非常に実験的な内容なので参考程度にしてください。</p>
-<p>
-<strong>1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。</strong></p>
+フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。</p>
 <div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
-LuneScript のランタイム
+スコープ
 </h2>
 <div id="outline-text-headline-1" class="outline-text-2">
 <p>
-LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
-差を埋めるためのランタイムがあります。</p>
+LuneScript は一般的なレキカルスコープである。</p>
 <p>
-例えば go にトランスコンパイルする場合、次の処理をライタイムで実現しています。</p>
+また、スコープには次の種類がある。</p>
 <ul>
-<li>lua との連携動作</li>
-<li>and or 演算子の挙動</li>
+<li>組込みスコープ</li>
+<li>グローバルスコープ</li>
+<li>モジュール内スコープ</li>
 </ul>
-<p>これら処理は、ランタイム内で宣言しているデータにアクセスしています。</p>
+<p>組込みスコープは、 int や str などの組込みの型シンボルや、
+<code class="verbatim">print()</code> や <code class="verbatim">string.format()</code> などの組込みの関数シンボルなどを管理する。</p>
 <p>
-LuneScript を非同期処理に対応する場合、
-ランタイム内のデータアクセスを排他対応する必要があります。</p>
+グローバルスコープは、 lua のグローバルシンボル互換のシンボルを管理する。</p>
 <p>
-一方で、 mutex などによる排他制御は、
-シングルスレッド時にもパフォーマンスに影響してしまいます。</p>
+基本的にはユーザが作成するモジュールのシンボルは、全てモジュール内スコープで管理する。</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+スコープの構造
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
 <p>
-今回の非同期処理ではシングルスレッドへの影響を最小限にするため、
-排他制御は最低限にし、
-必要なデータを複製してスレッド毎にアクセスするデータを切り替えることしました。</p>
-<p>
-具体的には、「lua との連携動作」と「and or 演算子の挙動」に必要なランタイムデータを
-スレッド毎に複製し、スレッド毎に切り替えて利用します。</p>
-<p>
-ここで一つ問題があります。</p>
-<p>
-それは、 go は現在実行中のスレッド ID を取得することが出来ない、ということです。</p>
-<p>
-スレッド ID の取得が出来れば、ランタイムのデータにアクセスする際に、
-現在のスレッド ID を取得して、そのスレッド ID に対応したランタイムのデータに
-アクセス先を切り替える、という処理を行なえます。</p>
-<p>
-しかし、スレッド ID の取得が出来ないため、それが出来ません。</p>
-<p>
-これが出来ないと、スレッド ID を全ての関数の引数に渡していく、
-という方法が必要になります。</p>
-<p>
-さすがにこれはやりたくないので、別の方法を考えました。</p>
-<p>
-以降では、今回導入した非同期処理の方法について説明します。</p>
-</div>
-</div>
-<div id="outline-container-headline-2" class="outline-2">
-<h2 id="headline-2">
-LnsThread クラスの導入と制限
-</h2>
-<div id="outline-text-headline-2" class="outline-text-2">
-<p>
-LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。</p>
-<p>
-LnsThread クラスは、次のようなクラスです。</p>
-<div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-abstract class LnsThread {
-   pro abstract fn loop() mut;
-}</code></pre>
-</div>
-<p>
-LnsThread のサブクラスでは、 <code class="verbatim">loop()</code> メソッドを override し、
-その中で非同期処理を行ないます。</p>
-<p>
-LnsThread のサブクラスのメソッド内で次のコマンドが実行されると、</p>
-<pre class="example">
-_lune_control run_async_pipe;
-</pre>
-<p>
-go routine <code class="verbatim">loop()</code> メソッドが実行されます。</p>
-<p>
-なお、 LnsThread を継承するには、事前に次の宣言をしておく必要があります。</p>
-<pre class="example">
-_lune_control use_async;
-</pre>
-<p>
-これは、 非同期処理を行なうことを宣言するコマンドです。</p>
-<p>
-このコマンドが実行されているモジュー内では、
-次の演算が制限がかかり、
-LnsThread のサブクラスのメソッド内からのみしか実行できなくなります。</p>
+スコープはツリー構造になっていて、各スコープには次の要素を保持する。</p>
 <ul>
-<li>and/or 演算</li>
-<li>nil 条件演算</li>
-<li>一部のビルトイン関数、メソッドアクセス</li>
+<li>親スコープ</li>
+<li>スコープに属するシンボルのリスト</li>
 </ul>
-<p>また、非同期処理とのデータを送受信するための手段として、
-__pipe&lt;T&gt; クラスを追加しています。</p>
-<p>
-__pipe&lt;T&gt; クラスは、 go の chan と等価と思ってください。</p>
-<p>
-__pipe&lt;T&gt; クラスは、次のようなクラスです。</p>
+<p>例えば、以下の <code class="verbatim">Test.lns</code> において、</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-class __pipe&lt;T&gt; {
-  pub fn get() mut : T!;
-  pub fn put( val:T! ) mut;
-}</code></pre>
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
 </div>
 <p>
-ここで、__pipe&lt;T&gt;  の T には __AsyncItem インタフェースを implement したクラスを
-指定する必要があります。</p>
+スコープは次の 2 つからなる。</p>
+<ul>
+<li><code class="verbatim">@Test</code> スコープ</li>
+<li><code class="verbatim">func</code> スコープ</li>
+</ul>
 <p>
-<code class="verbatim">put()</code> した val が、 <code class="verbatim">get()</code> で取得できるようになります。
-put(val:T!) に nil を与えると、その __pipe の通信は終了し、
-その後 nil 意外を <code class="verbatim">put()</code> しても、 <code class="verbatim">get()</code> は nil を返すようになります。</p>
+<code class="verbatim">@Test</code> スコープは、 Test.lns のモジュールを管理するスコープである。
+.lns ファイルは、 必ず独自のスコープを持つ。</p>
 <p>
-__AsyncItem インタフェースを implement クラスは、
-同時に Mapping インタフェースも implement が必要です。</p>
+なお、 LuneScript のモジュールは、
+カレントディレクトリからの相対パスでモジュールを管理する。 </p>
 <p>
-__AsyncItem インタフェースを implement したクラスには、
-次のメソッドが追加されます。</p>
-<pre class="example">
-pub static fn _createPipe( num:int ) : __pipe&lt;T&gt;!;
-</pre>
-<p>
-ここで 引数 num は、 chan の cap と同じです。</p>
-<p>
-なお、 Lua にトランスコンパイルした場合、
-この <code class="verbatim">_createPipe()</code> 関数は必ず nil を返します。</p>
-<p>
-上記をまとめると、非同期処理は次のように書きます。</p>
-<div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
-_lune_control use_async;
-
-class Test extend (__AsyncItem,Mapping) {
-   let val:str {pub};
-}
-
-class Async extend LnsThread {
-   let mut count:int {pub};
-   let mut pipe:__pipe&lt;Test&gt;!;
-   
-   pub fn __init( pipe:__pipe&lt;Test&gt;! ) {
-      super();
-      self.pipe = pipe;
-      self.count = 0;
-   }
-   
-   pro override fn loop() mut {
-      print( &#34;hoge:&#34; );
-      while true {
-         if! let mut pipe = self.pipe {
-            let! val = pipe.get() {  // pipe からデータを取得
-               print( &#34;hoge:&#34; );
-               break;
-            };
-            val.$val.find( &#34;%d&#34; (self.count) ## );
-            self.count = self.count + 1;
-         }
-      }
-   }
-   pub fn start() {
-      _lune_control run_async_pipe;  // loop() 起動
-   }
-   pub fn put( test:Test ) mut {
-      if! let mut pipe = self.pipe { // pipe にデータをセット
-         pipe.put( test );
-      }
-   }
-}
-
-let mut async = new Async( Test._createPipe( 10 ) );
-async.start();
-let mut async2 = new Async( Test._createPipe( 10 ) );
-async2.start();
-
-for _ = 1, 100000 {
-   async.put( new Test( &#34;abcdefg&#34; ) );
-   async2.put( new Test( &#34;abcdefg&#34; ) );
-}
-print( async.$count, async2.$count );</code></pre>
+相対パスが dir/Test.lns のモジュールは、
+@dir スコープの中に @Test スコープを持つ。</p>
+</div>
 </div>
 <div id="outline-container-headline-3" class="outline-3">
 <h3 id="headline-3">
-非同期処理の制限
+LuneScript でのクラス
 </h3>
 <div id="outline-text-headline-3" class="outline-text-3">
 <p>
-次の処理を行なった場合の動作は未定義です。</p>
-<ul>
-<li><code class="verbatim">Loop()</code> 内から、別モジュールのデータ、メソッドにアクセスする</li>
-<li>別モジュールから LnsThread を継承したクラスのデータ、メソッドにアクセスする</li>
-<li>LnsThread を継承したクラスのインスタンス間のデータ、メソッドにアクセスする  </li>
-</ul>
-<p>以上のように、非常に限定的で使い勝手の悪い仕様になっています。
-この仕様は間違いなく将来変更になるので、
-冒頭で書いたようにあくまで参考程度にしてください。</p>
+スコープは <strong><code class="verbatim">Ast.Scope</code></strong> クラスで管理する。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+シンボル
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
 <p>
-ちなみに、これだけ制限の多い非同期処理ですが、
-LuneScript の parse 処理に利用していて、
-LuneScript の高速化にほんの少し貢献しています。</p>
+スコープは、そのスコープに属するシンボルを管理する。</p>
+<p>
+例えば以下のソースの場合、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+この @Test には、ユーザが定義している <code class="verbatim">func</code> 関数シンボルが登録される。</p>
+<p>
+<code class="verbatim">func</code> スコープには、 <code class="verbatim">val1</code> , <code class="verbatim">val2</code> の変数シンボルが登録される。</p>
+<p>
+この時のスコープとシンボルは、次のようなツリーになる。</p>
+<div class="src src-dot">
+<pre tabindex="0"><code class="language-dot" data-lang="dot">digraph G {
+rankdir=RL;
+
+builtin[label=&#34;&lt;builtin&gt;&#34;];
+global[label=&#34;&lt;global&gt;&#34;];
+dir[label=&#34;@dir&#34;];
+dir_sym[shape=&#34;box&#34;];
+Test[label=&#34;@Test&#34;];
+Test_sym[shape=&#34;box&#34;];
+func_sym[shape=&#34;box&#34;];
+func;
+val1_sym[shape=&#34;box&#34;];
+val2_sym[shape=&#34;box&#34;];
+
+global-&gt;builtin
+dir_sym-&gt;global
+dir-&gt;dir_sym
+Test_sym-&gt;dir
+Test-&gt;Test_sym
+func-&gt;func_sym
+func_sym-&gt;Test
+val1_sym-&gt;func
+val2_sym-&gt;func
+}</code></pre>
+</div>
+<p>
+<img src="../lunescript_scope.png" alt="../lunescript_scope.png" title="../lunescript_scope.png" /></p>
+<p>
+ここで、楕円がスコープで、四角がシンボルを示す。</p>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+シンボルの構成
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+シンボルは、次の属性から構成される。</p>
+<ul>
+<li>アクセス制限</li>
+<li>名前</li>
+<li>型</li>
+<li>mutable/immutable</li>
+</ul>
+<p>例えば以下のコードの場合、</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+各シンボルは以下になる。</p>
+<table>
+<thead>
+<tr>
+<th>アクセス制限</th>
+<th>名前</th>
+<th>型</th>
+<th>mut/imut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>local</td>
+<td>func</td>
+<td>fn (int)</td>
+<td>imut</td>
+</tr>
+<tr>
+<td>local</td>
+<td>val1</td>
+<td>int</td>
+<td>imut</td>
+</tr>
+<tr>
+<td>local</td>
+<td>val2</td>
+<td>int</td>
+<td>imut</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+LuneScript でのクラス
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+スコープは <strong><code class="verbatim">Ast.SymbolInfo</code></strong> クラスで管理する。</p>
 </div>
 </div>
 </div>
 </div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/async/" title="81. 安全な非同期処理"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 81. 安全な非同期処理</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/luago/" title="82. Lua と連携 編">Next - 82. Lua と連携 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/design-2/" title="Y.2 LuneScript の開発(型情報管理)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Y.2 LuneScript の開発(型情報管理)</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/go_study/" title="Z. Go 言語へのトランスコンパイル (検討段階)">Next - Z. Go 言語へのトランスコンパイル (検討段階) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -419,7 +402,7 @@ LuneScript の高速化にほんの少し貢献しています。</p>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">80.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">80.4 LuneScript の WebAssembly 対応</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">81. 安全な非同期処理</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/async_old/">81.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">81.1 非同期処理(過去情報)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">82. Lua と連携 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
@@ -431,7 +414,7 @@ LuneScript の高速化にほんの少し貢献しています。</p>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design/">Y.1 LuneScript の開発方法</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-2/">Y.2 LuneScript の開発(型情報管理)</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-3/">Y.3 LuneScript の開発(スコープとシンボル)</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/design-3/">Y.3 LuneScript の開発(スコープとシンボル)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_study/">Z. Go 言語へのトランスコンパイル (検討段階)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
 </ul>

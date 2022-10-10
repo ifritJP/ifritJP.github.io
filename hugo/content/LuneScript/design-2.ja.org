@@ -1,0 +1,231 @@
+#+title: Y.2 LuneScript の開発(型情報管理)
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript 開発の続き。
+
+フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。
+
+* 型情報
+
+プログラミングには、データの型が重要である。
+
+特に LuneScript は静的型付け言語なので、
+データの型の管理の重要性は理解できるだろう。
+
+なお、 LuneScript のデータの型の管理は =Ast.lns= でやっている。
+
+型の管理をするソースがなんで =Ast.lns= なんて名前なんだ、というツッコミはあるだろうが、
+それは気にしないでほしい。
+
+* 型の種類
+
+早速だが、次のコードにおいて型は幾つあるか分かるだろうか？
+
+#+BEGIN_SRC lns
+fn func() {
+  print( "hello world" );
+}
+#+END_SRC
+
+答は以下の３つ。
+
+- func の関数型
+- print の関数型
+- "hello world" の文字列型
+
+上記の型情報には、関数を表す型と文字列を表す型があることが分かる。
+
+もちろん、LuneScript は他にも整数型や実数型,クラスなど様々な型をサポートしている。
+
+* 型の属性
+
+さらに、型は以下の 2 つに分けることが出来る。
+
+- 予めシステムに組み込んである builtin の型
+- ユーザが定義する関数やクラスなどの型
+
+ここで問題なのが、ユーザ定義の型である。
+
+builtin 型だけであれば、
+型の情報を全てハードコーディングしておけば済むが、
+ユーザ定義の型をサポートするということは、
+「ユーザがどのような型を定義しているのか」ということを
+動的に管理しなければならないということである。
+
+例えば、次のユーザ定義の関数 func は、
+
+#+BEGIN_SRC lns
+pub fn func<T>( val:T ) : &List<T> {
+  return [ val ];  
+}
+#+END_SRC
+
+次の構成からなる。
+
+- 関数名
+  -  func
+- アクセス制限
+  - pub
+- 型パラメータ 
+  - T
+- 引数
+  - 名前 val
+  - 型 T
+- 戻り値型
+  -  &List<T>
+
+このように、一言で関数といっても多くの属性情報から構成される。
+
+なお、上記の例では示していないが、
+他にも属性には abstract や static, mutable など様々な属性で構成される。
+
+これらの構成情報を管理するのが、型情報である。
+
+この型情報は、LuneScript では *=Ast.TypeInfo=* クラスで管理している。
+
+* 型情報のバリエーション
+
+次のコードを見て欲しい。
+
+#+BEGIN_SRC lns
+let list1:List<int>;
+let list2:&List<int>;
+let list3:List<int>!;
+let list4:&List<int>!;
+#+END_SRC
+
+このコードは変数 list1 〜 list4 を宣言している。
+
+それぞれの変数の型は、下記 4 つである。
+
+- List<int>
+- List<int> の immutable
+- List<int> の nilable
+- List<int> の immutable の nilable
+
+これは List<int> に対するバリエーションである。
+
+このバリエーションは、基本的に全ての型に対して存在する。
+
+そして、それぞれは異なる型なので、
+型情報としても異なる型情報として管理する必要がある。
+
+
+** TypeInfo のメソッド
+
+上記の通り、全ての型に対して imuttable, nilable の型が存在する。
+
+そして、その型に簡単にアクセスするために、
+TypeInfo には次のメソッドを用意している。
+
+#+BEGIN_SRC lns
+   /**この TypeInfo に対する immutable な型を取得  */
+   pub fn get_imutType(): &TypeInfo;
+   /**この TypeInfo に対する nilable な型を取得  */
+   pub fn get_nilableTypeInfo(): &TypeInfo;
+   /**この TypeInfo に対する nonnilable な型を取得  */
+   pub fn get_nonnilableType(): &TypeInfo;
+   /**この TypeInfo に対する mutable な型を取得  */
+   pub fn get_srcTypeInfo(): &TypeInfo;
+#+END_SRC
+
+例えば =List<int>= を管理する TypeInfo の
+=get_imutType()= を実行すると =&List<int>= を管理する =TypeInfo= が取得できる。
+
+** 代入可能判定
+
+次の関数の引数において、
+
+#+BEGIN_SRC lns
+fn func( mut list1:List<int>, mut list2:&List<int>, 
+         mut list3:List<int>!, mut list4:&List<int>! ) 
+#+END_SRC
+
+引数 list1 から list4 は次の代入可否関係がある。
+
+#+BEGIN_SRC lns
+list1 = list2; // error
+list1 = list3; // error
+list1 = list4; // error
+
+list2 = list1;
+list2 = list3; // error
+list2 = list4; // error
+
+list3 = list1;
+list3 = list2; // error
+list3 = list4; // error
+
+list4 = list1;
+list4 = list2;
+list4 = list3;
+#+END_SRC
+
+簡単に言えば、以下の2つである。
+
+- immutable から mutable への代入禁止
+- nilable から 非 nilable への代入禁止
+
+
+型情報は、このような禁則制御も行なっている。
+
+当然、型の種別が異なるデータ間の代入制御も同様に行なう。
+(例えば、関数型のデータを整数型に代入する場合など)
+
+** generics 
+
+あるクラス Hoge を要素にもつ List 型の変数 list1, list2 を宣言した場合、
+
+#+BEGIN_SRC lns
+let mut list1:List<Hoge>;
+let mut list2:List<&Hoge>;
+#+END_SRC
+
+list1, list2 には次の関係がある。
+
+#+BEGIN_SRC lns
+list1 = list2; // error
+list2 = list1;
+#+END_SRC
+
+そしてこれは、先程の型情報のバリエーションとの組み合わせで制御が必要である。
+
+** class
+
+以下のクラスの継承関係がある時、
+
+#+BEGIN_SRC lns
+class Super {
+}
+class Sub extend Super {
+}
+#+END_SRC
+
+それぞれの型の変数には、次の関係がある。
+
+#+BEGIN_SRC lns
+let super = new Super();
+let sub = new Sub();
+
+super = sub;
+sub = super; // error
+#+END_SRC
+
+そしてこれも、型情報のバリエーションとの組み合わせで制御が必要である。
+
+** nilable, immutable を管理するクラス
+
+LuneScript では、nilable, immutable の型情報を以下のクラスで管理する。
+なお、以下のクラスは =TypeInfo= のサブクラスである。
+
+- *=Ast.ModifierTypeInfo=*
+  - immutable を管理するクラス
+- *=Ast.NilableTypeInfo=*
+  - nilable を管理するクラス
+
+
+以上のように、型情報を管理するのが TypeInfo の主な役割りである。

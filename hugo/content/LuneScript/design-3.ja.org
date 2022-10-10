@@ -1,0 +1,149 @@
+#+title: Y.3 LuneScript の開発(スコープとシンボル)
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript 開発の続き。
+
+フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。
+
+* スコープ
+
+LuneScript は一般的なレキカルスコープである。
+
+また、スコープには次の種類がある。
+
+- 組込みスコープ
+- グローバルスコープ
+- モジュール内スコープ
+
+組込みスコープは、 int や str などの組込みの型シンボルや、
+=print()= や =string.format()= などの組込みの関数シンボルなどを管理する。
+
+グローバルスコープは、 lua のグローバルシンボル互換のシンボルを管理する。
+
+基本的にはユーザが作成するモジュールのシンボルは、全てモジュール内スコープで管理する。
+
+
+** スコープの構造
+
+スコープはツリー構造になっていて、各スコープには次の要素を保持する。
+
+- 親スコープ
+- スコープに属するシンボルのリスト
+
+例えば、以下の =Test.lns= において、
+
+#+BEGIN_SRC lns
+// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );
+#+END_SRC
+
+スコープは次の 2 つからなる。
+
+- =@Test= スコープ
+- =func= スコープ
+
+
+=@Test= スコープは、 Test.lns のモジュールを管理するスコープである。
+.lns ファイルは、 必ず独自のスコープを持つ。
+
+なお、 LuneScript のモジュールは、
+カレントディレクトリからの相対パスでモジュールを管理する。 
+
+相対パスが dir/Test.lns のモジュールは、
+@dir スコープの中に @Test スコープを持つ。
+
+
+** LuneScript でのクラス
+
+スコープは *=Ast.Scope=* クラスで管理する。
+
+* シンボル
+
+スコープは、そのスコープに属するシンボルを管理する。
+
+例えば以下のソースの場合、
+
+#+BEGIN_SRC lns
+// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );
+#+END_SRC
+
+この @Test には、ユーザが定義している =func= 関数シンボルが登録される。
+
+=func= スコープには、 =val1= , =val2= の変数シンボルが登録される。
+
+この時のスコープとシンボルは、次のようなツリーになる。
+
+#+BEGIN_SRC dot :file lunescript_scope.png
+digraph G {
+rankdir=RL;
+
+builtin[label="<builtin>"];
+global[label="<global>"];
+dir[label="@dir"];
+dir_sym[shape="box"];
+Test[label="@Test"];
+Test_sym[shape="box"];
+func_sym[shape="box"];
+func;
+val1_sym[shape="box"];
+val2_sym[shape="box"];
+
+global->builtin
+dir_sym->global
+dir->dir_sym
+Test_sym->dir
+Test->Test_sym
+func->func_sym
+func_sym->Test
+val1_sym->func
+val2_sym->func
+}
+#+END_SRC
+
+[[../lunescript_scope.png]]
+
+ここで、楕円がスコープで、四角がシンボルを示す。
+
+
+** シンボルの構成
+
+シンボルは、次の属性から構成される。
+
+- アクセス制限
+- 名前
+- 型
+- mutable/immutable
+
+例えば以下のコードの場合、
+
+#+BEGIN_SRC lns
+// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );
+#+END_SRC
+
+各シンボルは以下になる。
+
+| アクセス制限 | 名前 | 型       | mut/imut |
+|--------------+------+----------+----------|
+| local        | func | fn (int) | imut     |
+| local        | val1 | int      | imut     |
+| local        | val2 | int      | imut     |
+
+
+** LuneScript でのクラス
+
+スコープは *=Ast.SymbolInfo=* クラスで管理する。
