@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        Golang の generics パフォーマンス - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="LuneScript は、 Golang (1.16 以降)へのトランスコンパイルを対応しています。 また、LuneScript は Generics に対応しています。 一方で、 Golang は version 1.18 から Generics に対応していま" />
+    <meta name="generator" content="Hugo 0.100.1 with theme pure" />
+    <title>Golang の generics パフォーマンス - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="Golang の generics パフォーマンス" />
+<meta property="og:description" content="LuneScript は、 Golang (1.16 以降)へのトランスコンパイルを対応しています。 また、LuneScript は Generics に対応しています。 一方で、 Golang は version 1.18 から Generics に対応していま" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-15-go-generics/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-10-15T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-10-15T00:00:00+00:00" />
+
+<meta itemprop="name" content="Golang の generics パフォーマンス">
+<meta itemprop="description" content="LuneScript は、 Golang (1.16 以降)へのトランスコンパイルを対応しています。 また、LuneScript は Generics に対応しています。 一方で、 Golang は version 1.18 から Generics に対応していま"><meta itemprop="datePublished" content="2022-10-15T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2022-10-15T00:00:00+00:00" />
+<meta itemprop="wordCount" content="1429">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Golang の generics パフォーマンス"/>
+<meta name="twitter:description" content="LuneScript は、 Golang (1.16 以降)へのトランスコンパイルを対応しています。 また、LuneScript は Generics に対応しています。 一方で、 Golang は version 1.18 から Generics に対応していま"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-15-go-generics/" class="title">Golang の generics パフォーマンス</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-10-15 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-15</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-09-19-go-wasm/" class="title">Golang の WASM (Golang から JavaScript の呼び出し, JavaScript から Golang の呼び出し)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-09-19 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-09-19</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-08-04-sloc/" class="title">LuneScript の工数( SLOC )</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-08-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-08-04</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-06-01-wstcplink/" class="title">WebSocket client と TCP client の中継ツールを作った</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-06-01 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-06-01</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-04-30-raspi-backup/" class="title">Raspberry pi イメージのバックアップ</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-04-30 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-04-30</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2022/2022-10-15-go-generics/"
+    >Golang の generics パフォーマンス</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-15-go-generics/" class="article-date">
+  <time datetime="2022-10-15 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-15</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2022/2022-10-15-go-generics/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1429</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">3 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+LuneScript は、 Golang (1.16 以降)へのトランスコンパイルを対応しています。
+また、LuneScript は Generics に対応しています。</p>
+<p>
+一方で、 Golang は version 1.18 から Generics に対応しています。</p>
+<p>
+<strong>つまり、 LuneScript は Golang が Generics 対応する前から</strong>
+<strong>Generics を利用できていました。</strong></p>
+<p>
+では、 Generics を利用していた LuneScript のコードを
+どうやって Generics 対応前の Golang にトランスコンパイルしていたかというと、
+Generics の型パラメータの値を interface{} に変換して処理を行なっていました。</p>
+<p>
+Java でいうところの autoboxing のようなことを変換時にやっていた、
+と思ってもらえば良いです。</p>
+<p>
+で、 Golang ネイティブで Generics 対応されて autoboxing する必要がなくなったので、
+LuneScript の Golang へのトランスコンパイルで
+Golang の Generics を利用するように変更する検討作業に入りました。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+検討に利用する golang のバージョン
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+今回は以下の go のバージョンを利用して検討します。</p>
+<pre class="example">
+$ go version
+go version go1.19.2 linux/amd64
+</pre>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+Generics のパフォーマンス確認
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+既存の処理を変更するので、
+それなりのメリットがないと意味がないです。</p>
+<p>
+そのメリットとは、
+autoboxing 相当の処理をやめて Golang ネイティブの Generics を利用することで、
+多少なりとも処理が速くなるんじゃないか？
+ということです。</p>
+<p>
+そのために、
+次の処理を既存 autoboxing 処理と、
+ネイティブの Generics 処理とで実行したパフォーマンスを比較します。</p>
+<ul>
+<li>「LuneScript の <code class="verbatim">List&lt;int&gt;</code> の要素の合計を計算する。」</li>
+</ul>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+テストコード
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+具体的なコードは以下です。</p>
+<p>
+このコードの <code class="verbatim">GenList[V any]</code> が generics を利用した List&lt;int&gt; の構造で、
+<code class="verbatim">BoxingList</code> が autoboxing を利用している従来の List&lt;int&gt; の構造です。</p>
+<p>
+それぞれの構造に 1000 個の int 要素を事前に追加しておき、
+リストから値を取りだしてトータルを計算する処理を 1000000 回繰替えして、
+その時間を計測します。</p>
+<div class="src src-go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">.</span> <span class="s">&#34;github.com/ifritJP/LuneScript/src/lune/base/runtime_go&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">init_miniGo</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">miniGo__mod__</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// generics 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span> <span class="nx">any</span><span class="p">]</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">items</span> <span class="p">[]</span><span class="nx">V</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">list</span> <span class="o">*</span><span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span><span class="p">])</span> <span class="nf">GetAt</span><span class="p">(</span> <span class="nx">index</span> <span class="kt">int</span> <span class="p">)</span> <span class="nx">V</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">list</span> <span class="nx">GenList</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">miniGo_generics</span><span class="p">(</span><span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">total</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">_forWork0</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork0</span> <span class="o">&lt;=</span> <span class="mi">1000000</span><span class="p">;</span> <span class="nx">_forWork0</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_forWork1</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork1</span> <span class="o">&lt;=</span> <span class="mi">1000</span><span class="p">;</span> <span class="nx">_forWork1</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">loop</span> <span class="o">:=</span> <span class="nx">_forWork1</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">total</span> <span class="p">=</span> <span class="nx">total</span> <span class="o">+</span> <span class="nx">list</span><span class="p">.</span><span class="nf">GetAt</span><span class="p">(</span><span class="nx">loop</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// total = total + list.items[loop-1]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">total</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// autoboxing
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">BoxingList</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">items</span> <span class="p">[]</span><span class="nx">any</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">list</span> <span class="o">*</span><span class="nx">BoxingList</span><span class="p">)</span> <span class="nf">GetAt</span><span class="p">(</span> <span class="nx">index</span> <span class="kt">int</span> <span class="p">)</span> <span class="nx">any</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">boxing</span> <span class="o">*</span><span class="nx">BoxingList</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">miniGo_autoboxing</span><span class="p">(</span><span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">total</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">_forWork0</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork0</span> <span class="o">&lt;=</span> <span class="mi">1000000</span><span class="p">;</span> <span class="nx">_forWork0</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_forWork1</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork1</span> <span class="o">&lt;=</span> <span class="mi">1000</span><span class="p">;</span> <span class="nx">_forWork1</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">loop</span> <span class="o">:=</span> <span class="nx">_forWork1</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">total</span> <span class="p">=</span> <span class="nx">total</span> <span class="o">+</span> <span class="nx">boxing</span><span class="p">.</span><span class="nf">GetAt</span><span class="p">(</span><span class="nx">loop</span><span class="o">-</span><span class="mi">1</span><span class="p">).(</span><span class="kt">int</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// total = total + boxing.items[loop-1].(int)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">total</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">Lns_miniGo_init</span><span class="p">(</span><span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">init_miniGo</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">miniGo__mod__</span> <span class="p">=</span> <span class="s">&#34;@miniGo&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Lns_InitMod</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">list</span> <span class="p">=</span> <span class="nx">GenList</span><span class="p">[</span><span class="kt">int</span><span class="p">]{[]</span><span class="kt">int</span><span class="p">{}}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">boxing</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">BoxingList</span><span class="p">{[]</span><span class="nx">any</span><span class="p">{}}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">var</span> <span class="nx">_forFrom0</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">var</span> <span class="nx">_forTo0</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="mi">1000</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_forWork0</span> <span class="o">:=</span> <span class="nx">_forFrom0</span><span class="p">;</span> <span class="nx">_forWork0</span> <span class="o">&lt;=</span> <span class="nx">_forTo0</span><span class="p">;</span> <span class="nx">_forWork0</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">count</span> <span class="o">:=</span> <span class="nx">_forWork0</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">list</span><span class="p">.</span><span class="nx">items</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span><span class="nx">count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">boxing</span><span class="p">.</span><span class="nx">items</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">boxing</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span><span class="nx">count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">miniGo_prev2</span>  <span class="o">:=</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;generics&#34;</span><span class="p">,</span> <span class="nf">miniGo_generics</span><span class="p">(</span><span class="nx">_env</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;time = &#34;</span><span class="p">,</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">miniGo_prev2</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">miniGo_prev3</span>  <span class="o">:=</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;autoboxing&#34;</span><span class="p">,</span> <span class="nf">miniGo_autoboxing</span><span class="p">(</span><span class="nx">_env</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;time = &#34;</span><span class="p">,</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">miniGo_prev3</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">MiniGo___main</span><span class="p">(</span> <span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">,</span> <span class="nx">args</span> <span class="o">*</span><span class="nx">LnsList</span> <span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="nf">Lns_miniGo_init</span><span class="p">(</span> <span class="nx">_env</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">return</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+実行結果
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+実行結果が以下です。</p>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">generics	500500000000	time = 	2.1711650000000002
+</span></span><span class="line"><span class="cl">autoboxing	500500000000	time = 	0.9791500000000002</span></span></code></pre></div>
+</div>
+<p>
+これを見ると分かりますが、
+なんと <strong>ネイティブの Generics を利用した方が倍も遅くなってしまいました。</strong></p>
+<p>
+これは意外でした。</p>
+<p>
+効果がないどころか、逆に遅くなってしまいました。</p>
+<p>
+なお、 このサンプルプログラムでは List の要素にアクセスする際、
+定義したメソッド <code class="verbatim">GetAt()</code> を介します。</p>
+<p>
+このメソッドを通さずに直節メンバにアクセスするように変更したところ
+(コメントアウトしている箇所のコメントを外し、
+その直前処理を代わりにコメントアウトする)、
+次のように generics を利用した方が速く処理が終りました。</p>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">generics	500500000000	time = 	0.6483559999999999
+</span></span><span class="line"><span class="cl">autoboxing	500500000000	time = 	1.000772</span></span></code></pre></div>
+</div>
+<p>
+generics を利用したメソッドは、オーバーヘッドが異様に大きいという結果になりました。</p>
+<p>
+ところで、 generics のメソッド対応方法って、これであってるよね？？</p>
+<div class="src src-go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span> <span class="nx">any</span><span class="p">]</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">items</span> <span class="p">[]</span><span class="nx">V</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">list</span> <span class="o">*</span><span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span><span class="p">])</span> <span class="nf">GetAt</span><span class="p">(</span> <span class="nx">index</span> <span class="kt">int</span> <span class="p">)</span> <span class="nx">V</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+まとめ
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+以上の結果をまとめると、次になります。</p>
+<ul>
+<li>generics を利用したメンバアクセスは、any との相互変換がなくなる分、速くなる。</li>
+<li>但し generics を利用したメソッドのオーバーヘッドが大きい。</li>
+</ul>
+<p>このことから、 <strong>LuneScript の autoboxing 処理をそのまま golang の generics へ</strong>
+<strong>置き換えることはしません。</strong></p>
+<p>
+ですが、generics を利用した方が速くなるケースがあるのも事実なので、
+今後も generics の検討を進めて、
+<strong>効果的な適応方法が見つかったら対応を進めたいと思います。</strong></p>
+</div>
+</div>
+</div>
+</div>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-09-19-go-wasm/" title="Golang の WASM (Golang から JavaScript の呼び出し, JavaScript から Golang の呼び出し)"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2022
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.a2959bb9e3b3c9e8aa6e358e6bb7090585dcf6831387b734c9459b13f23b1834.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.29680208905b16ba17da3c502ae2847f8396e8a4a95bec73e9a0981ed3746b23.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.bd9ece370823766409517a6402191cfc0f35dd406ecd994a5ba78e40fea79c37c67a579ebc6bf2f1101d2bf15c5e50fa4f04aec9abea19edeb112813034367af.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>
