@@ -2,7 +2,7 @@
 <html lang="ja">
   <head>
     <title>
-        LuneScript の import と meta - hoge blog
+        Golang の Heap メモリ制限 - hoge blog
       </title>
         <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
@@ -20,9 +20,9 @@
     <meta http-equiv="window-target" content="_top" />
     
     
-    <meta name="description" content="LuneScript は、モジュールを利用する際に import 命令を使用する。 この import 命令は、次の処理を行う。 指定のモジュールの .lns ファイルを解析し、何を定義しているかを調べ" />
+    <meta name="description" content="go は GC で heap メモリを管理している。 Java の場合、最大 heap サイズを指定し、 そのサイズを越えた場合は OutOfMemoryError になる。 最大 heap サイズが指定されていない場合はデフォ" />
     <meta name="generator" content="Hugo 0.100.1 with theme pure" />
-    <title>LuneScript の import と meta - hoge blog</title>
+    <title>Golang の Heap メモリ制限 - hoge blog</title>
     
     
     <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
@@ -34,20 +34,20 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
 <script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
     
-    <meta property="og:title" content="LuneScript の import と meta" />
-<meta property="og:description" content="LuneScript は、モジュールを利用する際に import 命令を使用する。 この import 命令は、次の処理を行う。 指定のモジュールの .lns ファイルを解析し、何を定義しているかを調べ" />
+    <meta property="og:title" content="Golang の Heap メモリ制限" />
+<meta property="og:description" content="go は GC で heap メモリを管理している。 Java の場合、最大 heap サイズを指定し、 そのサイズを越えた場合は OutOfMemoryError になる。 最大 heap サイズが指定されていない場合はデフォ" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lunescript-meta/" /><meta property="article:section" content="posts" />
-<meta property="article:published_time" content="2021-05-04T00:00:00+00:00" />
-<meta property="article:modified_time" content="2021-05-04T00:00:00+00:00" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-27-go-limit-heap/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-10-27T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-10-27T00:00:00+00:00" />
 
-<meta itemprop="name" content="LuneScript の import と meta">
-<meta itemprop="description" content="LuneScript は、モジュールを利用する際に import 命令を使用する。 この import 命令は、次の処理を行う。 指定のモジュールの .lns ファイルを解析し、何を定義しているかを調べ"><meta itemprop="datePublished" content="2021-05-04T00:00:00+00:00" />
-<meta itemprop="dateModified" content="2021-05-04T00:00:00+00:00" />
-<meta itemprop="wordCount" content="943">
+<meta itemprop="name" content="Golang の Heap メモリ制限">
+<meta itemprop="description" content="go は GC で heap メモリを管理している。 Java の場合、最大 heap サイズを指定し、 そのサイズを越えた場合は OutOfMemoryError になる。 最大 heap サイズが指定されていない場合はデフォ"><meta itemprop="datePublished" content="2022-10-27T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2022-10-27T00:00:00+00:00" />
+<meta itemprop="wordCount" content="1871">
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="LuneScript の import と meta"/>
-<meta name="twitter:description" content="LuneScript は、モジュールを利用する際に import 命令を使用する。 この import 命令は、次の処理を行う。 指定のモジュールの .lns ファイルを解析し、何を定義しているかを調べ"/>
+<meta name="twitter:title" content="Golang の Heap メモリ制限"/>
+<meta name="twitter:description" content="go は GC で heap メモリを管理している。 Java の場合、最大 heap サイズを指定し、 そのサイズを越えた場合は OutOfMemoryError になる。 最大 heap サイズが指定されていない場合はデフォ"/>
 
     <!--[if lte IE 9]>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
@@ -295,8 +295,8 @@
       <h1 itemprop="name">
   <a
     class="article-title"
-    href="/blog2/public/posts/2021/2021-05-04-lunescript-meta/"
-    >LuneScript の import と meta</a
+    href="/blog2/public/posts/2022/2022-10-27-go-limit-heap/"
+    >Golang の Heap メモリ制限</a
   >
 </h1>
 
@@ -304,98 +304,160 @@
         
 <span class="article-date">
   <i class="icon icon-calendar-check"></i>&nbsp;
-<a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lunescript-meta/" class="article-date">
-  <time datetime="2021-05-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2021-05-04</time>
+<a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-27-go-limit-heap/" class="article-date">
+  <time datetime="2022-10-27 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-27</time>
 </a>
 </span>
 
 
-        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2021/2021-05-04-lunescript-meta/#comments"
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2022/2022-10-27-go-limit-heap/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">943</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">2 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1871</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">4 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
       
 <p>
-LuneScript は、モジュールを利用する際に import 命令を使用する。</p>
+go は GC で heap メモリを管理している。</p>
 <p>
-この import 命令は、次の処理を行う。</p>
-<ul>
-<li>指定のモジュールの .lns ファイルを解析し、何を定義しているかを調べる</li>
-<li>shebang などで起動した場合は、指定のモジュールをロードする</li>
-</ul>
-<p>今回は、前者の話をする。</p>
+Java の場合、最大 heap サイズを指定し、
+そのサイズを越えた場合は OutOfMemoryError になる。
+最大 heap サイズが指定されていない場合はデフォルトのサイズが利用される。</p>
+<p>
+なお、Java でメモリフルが発生する際は、
+最大 heap サイズがデフォルト設定のまま、というケースが多い。</p>
+<p>
+まぁ、ここでは Java の話は置いておいて、
+go での heap 制御ってどうなの？と、いうのが今回の話。</p>
 <div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
-meta 情報
+GOGC と GOMEMLIMIT
 </h2>
 <div id="outline-text-headline-1" class="outline-text-2">
 <p>
-モジュールがどんなクラスや関数や変数を定義しているのかを示す情報を、
-LuneScript では meta 情報と呼ぶ。</p>
+go の heap メモリ制御は、 java のような予め決められた heap サイズ内で動作させる、
+<strong>ということではなく、</strong> GC をどのタイミングで実行するか、という制御になる。</p>
 <p>
-この meta 情報は、
-そのモジュール内で pub (あるいは pro) 宣言されている情報からなる。</p>
+つまり、厳密にある heap サイズ以下で運用したい、
+というようなことは <strong>現実的には不可能</strong> である。</p>
 <p>
-これには次の情報を含む。</p>
-<ul>
-<li>公開しているシンボル名</li>
-<li>公開しているシンボルの型情報</li>
-<li>そのモジュールが参照している外部モジュール情報   </li>
-</ul>
-<p>これらは、 .lns ファイルを解析することで取得できる。</p>
+まぁ Java のように制御しても、メモリフルエラーになるだけなので、
+それが嬉しいのか？と言われると、然程嬉しくないと思う。</p>
 <p>
-この解析には時間がかかるため、
-解析した情報を .meta ファイルとして記録しておき、
-.lns ファイルが更新されない場合は .lns ファイルを解析する代わりに、
-記録しておいた .meta をロードすることで解析時間を短縮している。</p>
+出来るだけ本流のユーザプログラムの処理を GC で邪魔せずに、
+パフォーマンスを発揮させることが、 go の設計思想としてあると考えられる。
+よって、 go は無理にユーザプログラムを邪魔してまで、
+使用されていないメモリの開放を行なわない。</p>
 <p>
-.meta ファイルは lua の table 定義として記録してあり、
-lua で .meta ファイルをロードすることで型を構成するために必要な table が読み込まれ、
-その table 内の情報を元に LuneScript の型情報を生成する。</p>
+とはいえ、全く開放せずに、際限なく heap を確保することは現実的に出来ないので、
+あるタイミングで GC を実行する。
+この GC タイミングの頻度を上げる(あるいは下げる)ことが、
+<strong>環境変数 GOGC, GOMEMLIMIT</strong> の役割である。</p>
 <p>
-一般には、 テキストフォーマットよりもバイナリフォーマットの方が高速に処理できる。</p>
+細かい話は次の公式ドキュメントを見てもらうのが一番だが、
+それを言ったらここで話が終ってしまうので少し補足をする。</p>
 <p>
-LuneScript の .meta ファイルも、
-テキストフォーマットではなくバイナリフォーマットの方が高速に処理できる可能性がある。</p>
+&lt;<a href="https://go.dev/doc/gc-guide">https://go.dev/doc/gc-guide</a>&gt;</p>
 <p>
-しかし、次の理由から .meta ファイルを lua の table 定義として記録している。</p>
-<ul>
-<li>LuneScript は元々 Lua VM 上で動作するプログラムだったため、
-VM 上でバイナリ操作する api を作成するよりも、
-Lua VM のネイティブの load 命令を使用する方が高速に処理できる。</li>
-<li>meta ファイルの syntax 変更する場合、
-バイナリフォーマットよりもテキストフォーマットの方がやり易い。</li>
-<li>不具合があった時に、テキストフォーマットの方が追い易い。</li>
-</ul>
+&lt;<a href="https://github.com/golang/proposal/blob/master/design/48409-soft-memory-limit.md">https://github.com/golang/proposal/blob/master/design/48409-soft-memory-limit.md</a>&gt;</p>
+<p>
+&lt;<a href="https://pkg.go.dev/runtime/debug@go1.19.2">https://pkg.go.dev/runtime/debug@go1.19.2</a>&gt;</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+GOGC
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+環境変数 GOGC は、 GC を開始するかどうかを判定する際の指標を設定する。</p>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">SetGCPercent sets the garbage collection target percentage: 
+</span></span><span class="line"><span class="cl">a collection is triggered when the ratio of freshly allocated data to live data 
+</span></span><span class="line"><span class="cl">remaining after the previous collection reaches this percentage. 
+</span></span><span class="line"><span class="cl">SetGCPercent returns the previous setting. 
+</span></span><span class="line"><span class="cl">The initial setting is the value of the GOGC environment variable at startup,
+</span></span><span class="line"><span class="cl">or 100 if the variable is not set. 
+</span></span><span class="line"><span class="cl">This setting may be effectively reduced in order to maintain a memory limit.
+</span></span><span class="line"><span class="cl">A negative percentage effectively disables garbage collection, 
+</span></span><span class="line"><span class="cl">unless the memory limit is reached. See SetMemoryLimit for more details.</span></span></code></pre></div>
+</div>
+<p>
+設定する値は 100 が基準値で、マイナスは GOMEMLIMIT(後述) だけで制御することを意味する。</p>
+<p>
+じゃぁ、 100 って具体的になんなのよ？っていうと、
+<strong>前回 GC 後に残ったデータサイズに対して新しく確保されたデータの比率が</strong>
+<strong>100 %に達したら GC を開始する。</strong> という意味。</p>
+<p>
+つまり GOGC に指定した値が 100 とは、
+前回 GC を実行し、利用されていて開放されなかったデータが 10MB あったら、
+次に新しく 10MB 確保した時に GC を実行する。
+という意味。</p>
+<p>
+この時の動作は、以下 URL のグラフを見ると分かり易い。</p>
+<p>
+&lt;<a href="https://go.dev/doc/gc-guide#GOGC">https://go.dev/doc/gc-guide#GOGC</a>&gt; </p>
+<p>
+このグラフは、 GOGC をスライドバーで変更できる図になっていて、
+デフォルトだと 100 になっている。
+また、最大で 20MiB の heap を使うプログラムを動かした場合の
+heap サイズの変化を表わしている。</p>
+<p>
+GOGC が 100 の場合、 Live Heap がピークの 20MiB になった後、 
+Heap が 40MiB になった時(つまりは、新たに 20MiB 確保された時)に GC が働き、
+未使用のメモリが開放されて、ピークの 20MiB に戻っている。</p>
+<p>
+GOGC のスライドを動かすと、 GOGC の値に応じてグラフが変化する。
+ここで確認するべきは、 
+GC の働くタイミングが変るのはもちろんだが、
+それとは別に、図の下部に表示されている GC CPU の値と、 Peak Mem に注目が必要である。</p>
+<p>
+GOGC を下げると、その分 Peak Mem は少なくなるが、GC 処理にかかる CPU 時間は増える。
+一方で、GOGC を上げると、その分 Peak Mem は増えるが、GC 処理にかかる時間は減る。</p>
+<p>
+このように <strong>使用するメモリサイズと性能はトレードオフである。</strong></p>
+<p>
+ただ、メモリサイズが小さければその分キャッシュに載り易くなる。
+すると、本来キャッシュに載っていた heap が、
+GC 頻度を下げたことでキャッシュに載らなくなる、ことが考えられる。
+この場合、キャッシュミスによるオーバーヘッドと、
+GC 処理のオーバーヘッドのどちらが大きのか、を考慮する必要があるかもしれない。</p>
+<p>
+この辺りは、 <strong>ユーザプログラムがどのような性質なのかを見極め</strong> 、
+カスタマイズする必要がある。</p>
+<p>
+なお当然だが、
+GOGC をどんな値にしたところで、ユーザプログラムにメモリリークがあれば、
+メモリは消費される一方である。</p>
 </div>
 </div>
-<div id="outline-container-headline-2" class="outline-2">
-<h2 id="headline-2">
-型情報
-</h2>
-<div id="outline-text-headline-2" class="outline-text-2">
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+GOMEMLIMIT
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
 <p>
-コード上に宣言した型情報は、
-LuneScript トランスコンパイラ内では <code class="verbatim">Ast.TypeInfo</code> クラスで管理される。
-<code class="verbatim">Ast.TypeInfo</code> インスタンスは、 1 つの型ごとに 1 つ生成される。</p>
+GOGC が、 GC の実行タイミングを制御する設定だったように、
+環境変数 GOMEMLIMIT も GC の実行タイミングを制御する設定である。</p>
 <p>
-そして、個々の <code class="verbatim">Ast.TypeInfo</code> インスタンスは、
-<code class="verbatim">Ast.ProcessInfo</code> クラスで管理される。</p>
+では何が違うかというと、
+GOGC は前回の Heap サイズに対する割合を指定する値だったが、
+GOMEMLIMIT は Heap サイズそのものに対する値である。</p>
 <p>
-<code class="verbatim">Ast.TypeInfo</code> にか、型を識別する ID が付加される。
-この ID は、 <code class="verbatim">Ast.ProcessInfo</code> ごとにユニークな値が振られる。</p>
+つまり、 <strong>Heap サイズが GOMEMLIMIT で指定した値になったら、GC を行なう。</strong></p>
 <p>
-つまり、
-1 つの <code class="verbatim">Ast.ProcessInfo</code> 内の <code class="verbatim">Ast.TypeInfo</code> は、
-同じ ID を持つ <code class="verbatim">Ast.TypeInfo</code> は存在しないが、
-異なる <code class="verbatim">Ast.ProcessInfo</code> においては、
-同じ ID を持つ <code class="verbatim">Ast.TypeInfo</code> が存在する可能性がある。</p>
+あくまで、GOMEMLIMIT は GC を行なうタイミングを指定するものであって、
+<strong>GOMEMLIMIT で指定したサイズを越えないように保証するものではない、</strong>
+ということは理解が必要である。</p>
 <p>
-この <code class="verbatim">Ast.ProcessInfo</code> から meta 情報を生成する。
-そして import 時には、meta 情報から <code class="verbatim">Ast.ProcessInfo</code> を生成する。</p>
+GOMEMLIMIT の指定は、数値+単位で指定する。</p>
+<p>
+具体的には、 20MiB に指定したい場合は、 <strong>GOMEMLIMIT=20MiB</strong> を指定する。
+単位は B, KiB, MiB, GiB, TiB が指定できるが、 go を利用するような環境は MiB か、
+GiB が殆どだろう。</p>
+<p>
+なお、 GOMEMLIMIT は go 1.19 以降で利用可能。</p>
+</div>
+</div>
 </div>
 </div>
 
@@ -410,14 +472,9 @@ LuneScript トランスコンパイラ内では <code class="verbatim">Ast.TypeI
     <div class="bar-inner">
         <ul class="pager pull-left">
             <li class="prev">
-                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-04-03-raspi-usb-hdd/" title="Rapberry pi 4 で構築する NAS (USB HDD UASP) の性能"><i
+                <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-15-go-generics/" title="Golang の generics パフォーマンス"><i
                         class="icon icon-angle-left"
                         aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
-            </li>
-            <li class="next">
-                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-05-04-lsp/"
-                    title="Language Server Protocol (LSP) メモ"><span>&nbsp;&nbsp;</span><i
-                        class="icon icon-angle-right" aria-hidden="true"></i></a>
             </li>
             
             <li class="toggle-toc">

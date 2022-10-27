@@ -1,0 +1,137 @@
+#+TITLE: Golang の Heap メモリ制限
+#+DATE: 2022-10-27
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: go
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+go は GC で heap メモリを管理している。
+
+Java の場合、最大 heap サイズを指定し、
+そのサイズを越えた場合は OutOfMemoryError になる。
+最大 heap サイズが指定されていない場合はデフォルトのサイズが利用される。
+
+なお、Java でメモリフルが発生する際は、
+最大 heap サイズがデフォルト設定のまま、というケースが多い。
+
+まぁ、ここでは Java の話は置いておいて、
+go での heap 制御ってどうなの？と、いうのが今回の話。
+
+* GOGC と GOMEMLIMIT
+
+go の heap メモリ制御は、 java のような予め決められた heap サイズ内で動作させる、
+*ということではなく、* GC をどのタイミングで実行するか、という制御になる。
+
+つまり、厳密にある heap サイズ以下で運用したい、
+というようなことは *現実的には不可能* である。
+
+まぁ Java のように制御しても、メモリフルエラーになるだけなので、
+それが嬉しいのか？と言われると、然程嬉しくないと思う。
+
+出来るだけ本流のユーザプログラムの処理を GC で邪魔せずに、
+パフォーマンスを発揮させることが、 go の設計思想としてあると考えられる。
+よって、 go は無理にユーザプログラムを邪魔してまで、
+使用されていないメモリの開放を行なわない。
+
+とはいえ、全く開放せずに、際限なく heap を確保することは現実的に出来ないので、
+あるタイミングで GC を実行する。
+この GC タイミングの頻度を上げる(あるいは下げる)ことが、
+*環境変数 GOGC, GOMEMLIMIT* の役割である。
+
+細かい話は次の公式ドキュメントを見てもらうのが一番だが、
+それを言ったらここで話が終ってしまうので少し補足をする。
+
+<https://go.dev/doc/gc-guide>
+
+<https://github.com/golang/proposal/blob/master/design/48409-soft-memory-limit.md>
+
+<https://pkg.go.dev/runtime/debug@go1.19.2>
+
+** GOGC
+
+環境変数 GOGC は、 GC を開始するかどうかを判定する際の指標を設定する。
+
+#+BEGIN_SRC txt
+SetGCPercent sets the garbage collection target percentage: 
+a collection is triggered when the ratio of freshly allocated data to live data 
+remaining after the previous collection reaches this percentage. 
+SetGCPercent returns the previous setting. 
+The initial setting is the value of the GOGC environment variable at startup,
+or 100 if the variable is not set. 
+This setting may be effectively reduced in order to maintain a memory limit.
+A negative percentage effectively disables garbage collection, 
+unless the memory limit is reached. See SetMemoryLimit for more details. 
+#+END_SRC
+
+設定する値は 100 が基準値で、マイナスは GOMEMLIMIT(後述) だけで制御することを意味する。
+
+じゃぁ、 100 って具体的になんなのよ？っていうと、
+*前回 GC 後に残ったデータサイズに対して新しく確保されたデータの比率が*
+*100 %に達したら GC を開始する。* という意味。
+
+つまり GOGC に指定した値が 100 とは、
+前回 GC を実行し、利用されていて開放されなかったデータが 10MB あったら、
+次に新しく 10MB 確保した時に GC を実行する。
+という意味。
+
+この時の動作は、以下 URL のグラフを見ると分かり易い。
+
+<https://go.dev/doc/gc-guide#GOGC> 
+
+このグラフは、 GOGC をスライドバーで変更できる図になっていて、
+デフォルトだと 100 になっている。
+また、最大で 20MiB の heap を使うプログラムを動かした場合の
+heap サイズの変化を表わしている。
+
+GOGC が 100 の場合、 Live Heap がピークの 20MiB になった後、 
+Heap が 40MiB になった時(つまりは、新たに 20MiB 確保された時)に GC が働き、
+未使用のメモリが開放されて、ピークの 20MiB に戻っている。
+
+GOGC のスライドを動かすと、 GOGC の値に応じてグラフが変化する。
+ここで確認するべきは、 
+GC の働くタイミングが変るのはもちろんだが、
+それとは別に、図の下部に表示されている GC CPU の値と、 Peak Mem に注目が必要である。
+
+GOGC を下げると、その分 Peak Mem は少なくなるが、GC 処理にかかる CPU 時間は増える。
+一方で、GOGC を上げると、その分 Peak Mem は増えるが、GC 処理にかかる時間は減る。
+
+このように *使用するメモリサイズと性能はトレードオフである。*
+
+ただ、メモリサイズが小さければその分キャッシュに載り易くなる。
+すると、本来キャッシュに載っていた heap が、
+GC 頻度を下げたことでキャッシュに載らなくなる、ことが考えられる。
+この場合、キャッシュミスによるオーバーヘッドと、
+GC 処理のオーバーヘッドのどちらが大きのか、を考慮する必要があるかもしれない。
+
+この辺りは、 *ユーザプログラムがどのような性質なのかを見極め* 、
+カスタマイズする必要がある。
+
+なお当然だが、
+GOGC をどんな値にしたところで、ユーザプログラムにメモリリークがあれば、
+メモリは消費される一方である。
+
+** GOMEMLIMIT
+
+GOGC が、 GC の実行タイミングを制御する設定だったように、
+環境変数 GOMEMLIMIT も GC の実行タイミングを制御する設定である。
+
+では何が違うかというと、
+GOGC は前回の Heap サイズに対する割合を指定する値だったが、
+GOMEMLIMIT は Heap サイズそのものに対する値である。
+
+つまり、 *Heap サイズが GOMEMLIMIT で指定した値になったら、GC を行なう。*
+
+あくまで、GOMEMLIMIT は GC を行なうタイミングを指定するものであって、
+*GOMEMLIMIT で指定したサイズを越えないように保証するものではない、*
+ということは理解が必要である。
+
+GOMEMLIMIT の指定は、数値+単位で指定する。
+
+具体的には、 20MiB に指定したい場合は、 *GOMEMLIMIT=20MiB* を指定する。
+単位は B, KiB, MiB, GiB, TiB が指定できるが、 go を利用するような環境は MiB か、
+GiB が殆どだろう。
+
+
+なお、 GOMEMLIMIT は go 1.19 以降で利用可能。
