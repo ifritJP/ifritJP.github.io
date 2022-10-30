@@ -44,7 +44,7 @@
 <meta itemprop="name" content="Tunnel/Reverse Tunnel over websocket を作った">
 <meta itemprop="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs"><meta itemprop="datePublished" content="2020-05-29T00:00:00+00:00" />
 <meta itemprop="dateModified" content="2020-05-29T00:00:00+00:00" />
-<meta itemprop="wordCount" content="5990">
+<meta itemprop="wordCount" content="6249">
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Tunnel/Reverse Tunnel over websocket を作った"/>
 <meta name="twitter:description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs"/>
@@ -312,8 +312,8 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-05-29-tunnel/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">5990</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">12 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">6249</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">13 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
@@ -585,9 +585,10 @@ $ kptunnel &lt;mode&gt; &lt;server&gt; [forward [forward [...]]] [options]
 <li>
 <p>forward</p>
 <ul>
-<li>tunnel で forward するポートの情報。</li>
+<li>tunnel で転送するポートの情報。</li>
 <li>forward は複数指定できる。</li>
-<li>reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。</li>
+<li><strong>server 側に forward が指定されている場合、</strong>
+<strong>client 側の設定は server 側の設定で上書きされる。</strong></li>
 <li>&#34;localのポート,forward先のポート&#34; の書式で指定する。</li>
 <li>localのポートに接続可能なネットワークを制限する場合は、
 そのネットワークを指定する。
@@ -599,10 +600,41 @@ $ kptunnel &lt;mode&gt; &lt;server&gt; [forward [forward [...]]] [options]
 通常の tunnel の場合、 localhost はサーバ自身になる。</li>
 </ul>
 </li>
+<li>
+<p>forward の書式は old_forward と new_forward の 2 つの書式がある。</p>
+<ul>
+<li>
+<p>old_forward は、 <code class="verbatim">local-port,remote-port</code> の書式で指定する。</p>
+<ul>
+<li>ここで reverse-tunnel の場合、 <code class="verbatim">local-port</code> はサーバ側の <code class="verbatim">host:port</code> を指定し、
+<code class="verbatim">remote-port</code> はクライアントからアクセスする <code class="verbatim">host:port</code> を指定する。</li>
+<li>tunnel の場合、 reverse-tunnel と逆になる。</li>
+</ul>
+</li>
+<li>
+<p>new_forward は、 <code class="verbatim">&lt;r|t&gt;,old_forward</code> の書式で指定する。</p>
+<ul>
+<li>ここで r は、 old_forward を reverse-tunnel として指定する。</li>
+<li>ここで t は、 old_forward を tunnel として指定する。</li>
+</ul>
+</li>
+<li>つまり、old_forward は転送設定を mode 指定に従うのに対し、
+new_forward は forward 設定毎に tunnel, reverse 設定を行なうかの違いである。</li>
+<li>
+<p>さらに言えば、 <strong>new_forward 書式を利用すると、 
+mode の tunnel, reverse の違いは意味がない。</strong></p>
+<ul>
+<li>mode の reverse (r-client, r-server 等)は、互換性のために残しているが、
+将来は削除する可能性がある。</li>
 </ul>
 </li>
 </ul>
-<p>次に代表的なコマンド例を示す。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>
+次に代表的なコマンド例を示す。</p>
 <ul>
 <li>server</li>
 </ul>

@@ -208,9 +208,10 @@ kptunnel コマンドは、次の書式をもつ。
   - クライアント側で指定する場合は、ホスト名を含めて指定する (hoge.com:1234)
 
 - forward
-  - tunnel で forward するポートの情報。
+  - tunnel で転送するポートの情報。
   - forward は複数指定できる。
-  - reverse tunnel の場合は、 server 側で指定する。tunnel の場合は client 側で指定する。
+  - *server 側に forward が指定されている場合、*
+    *client 側の設定は server 側の設定で上書きされる。*
   - "localのポート,forward先のポート" の書式で指定する。
   - localのポートに接続可能なネットワークを制限する場合は、
     そのネットワークを指定する。
@@ -218,6 +219,21 @@ kptunnel コマンドは、次の書式をもつ。
   - forward 先のポート情報は、相手にそのまま伝わる。
     - 例えば reverse tunnel で localhost を指定した場合、localhost は tunnel クライアント自身になり、
       通常の tunnel の場合、 localhost はサーバ自身になる。
+  - forward の書式は old_forward と new_forward の 2 つの書式がある。
+    - old_forward は、 =local-port,remote-port= の書式で指定する。
+      - ここで reverse-tunnel の場合、 =local-port= はサーバ側の =host:port= を指定し、
+        =remote-port= はクライアントからアクセスする =host:port= を指定する。
+      - tunnel の場合、 reverse-tunnel と逆になる。
+    - new_forward は、 =<r|t>,old_forward= の書式で指定する。
+      - ここで r は、 old_forward を reverse-tunnel として指定する。
+      - ここで t は、 old_forward を tunnel として指定する。
+    - つまり、old_forward は転送設定を mode 指定に従うのに対し、
+      new_forward は forward 設定毎に tunnel, reverse 設定を行なうかの違いである。
+    - さらに言えば、 *new_forward 書式を利用すると、 
+      mode の tunnel, reverse の違いは意味がない。*
+      - mode の reverse (r-client, r-server 等)は、互換性のために残しているが、
+        将来は削除する可能性がある。
+
 
 次に代表的なコマンド例を示す。
 
