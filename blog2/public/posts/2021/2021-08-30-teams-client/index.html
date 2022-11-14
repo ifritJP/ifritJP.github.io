@@ -44,7 +44,7 @@
 <meta itemprop="name" content="MS Teams client の作り方">
 <meta itemprop="description" content="自作ツールで、MS Teams に対して投稿を read/write する方法について書きます。 Teams の管理者権限の許可が必須 「 Teams の管理者権限の許可が必須 」です。 大事なことなので"><meta itemprop="datePublished" content="2021-08-30T00:00:00+00:00" />
 <meta itemprop="dateModified" content="2021-08-30T00:00:00+00:00" />
-<meta itemprop="wordCount" content="1487">
+<meta itemprop="wordCount" content="2452">
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="MS Teams client の作り方"/>
 <meta name="twitter:description" content="自作ツールで、MS Teams に対して投稿を read/write する方法について書きます。 Teams の管理者権限の許可が必須 「 Teams の管理者権限の許可が必須 」です。 大事なことなので"/>
@@ -312,8 +312,8 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2021/2021-08-30-teams-client/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">1487</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">3 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2452</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">5 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
@@ -380,16 +380,163 @@ token 取得
 発行された ClientID を指定して、アカウント認証するのですが、
 通常はブラウザのインタフェースを通して認証するのが一般的です。</p>
 <p>
-ブラウザを介さずにアカウント認証する場合は、以下の手順になります。</p>
+ですが、ブラウザを搭載していないアプリなどで利用する場合は、以下の手順になります。</p>
 <p>
-&lt;<a href="https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow">https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow</a>&gt;</p>
+&lt;<a href="https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code">https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code</a>&gt;</p>
+<p>
+なお、 この device code を利用する方法は、
+ClientID を発行したアプリの設定において、次をセットしておく必要があります。</p>
+<p>
+<strong>Azure の 「アプリ登録」 → 「認証」 で</strong>
+<strong>「モバイルとデスクトップのフローを有効」を 「はい」にする。</strong></p>
+<p>
+これを設定しておかないと、認証手順が進みません。</p>
+<div id="outline-container-headline-4" class="outline-4">
+<h4 id="headline-4">
+認証手順
+</h4>
+<div id="outline-text-headline-4" class="outline-text-4">
+<div id="outline-container-headline-5" class="outline-5">
+<h5 id="headline-5">
+device code 発行
+</h5>
+<div id="outline-text-headline-5" class="outline-text-5">
+<p>
+まず以下を実行し、 device code 登録に必要な情報を取得します。</p>
+<pre class="example">
+$ echo &#39;client_id={CLIENT_ID}&amp;scope=openid%20offline_access%20https%3A%2F%2Fgraph.microsoft.com%2FChannelMessage.Send&#39; | curl &#39;https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/devicecode&#39; -H &#39;Content-Type: application/x-www-form-urlencoded&#39; -d @-
+</pre>
+<p>
+ここで、 <code class="verbatim">{CLIENT_ID}</code> , <code class="verbatim">{TENANT_ID}</code> には、自分の環境に合せて設定してください。</p>
+<p>
+また、scope には必要なパーミッションのスコープを指定してください。</p>
+<p>
+上記の例は、所定のチャネルに新規登録する際に必要なパーミッション(ChannelMessage.Send)です。</p>
+<p>
+これを実行すると、次のようなレスポンスを得られます。</p>
+<div class="src src-json">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;user_code&#34;</span><span class="p">:</span><span class="s2">&#34;??????????????????&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;device_code&#34;</span><span class="p">:</span><span class="s2">&#34;??????????????????&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;verification_uri&#34;</span><span class="p">:</span><span class="s2">&#34;https://microsoft.com/devicelogin&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;expires_in&#34;</span><span class="p">:</span><span class="mi">900</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;interval&#34;</span><span class="p">:</span><span class="mi">5</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&#34;message&#34;</span><span class="p">:</span><span class="s2">&#34;To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code H6YXVV74E to authenticate.&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+ここで、 <code class="verbatim">user_code</code> と <code class="verbatim">device_code</code> をメモって起きます。</p>
+<p>
+<code class="verbatim">user_code</code> は認証させたいユーザに表示し、 
+<code class="verbatim">device_code</code> は teams client を開発する側で一時的に保持しておきます。</p>
 </div>
 </div>
-<div id="outline-container-headline-4" class="outline-3">
-<h3 id="headline-4">
+<div id="outline-container-headline-6" class="outline-5">
+<h5 id="headline-6">
+認可
+</h5>
+<div id="outline-text-headline-6" class="outline-text-5">
+<p>
+次に teams client を認証させたいユーザが以下の URL にブラウザでアクセスします。</p>
+<p>
+&lt;<a href="https://microsoft.com/devicelogin">https://microsoft.com/devicelogin</a>&gt;</p>
+<p>
+ここにアクセスすると、コード入力画面が表示されるので、
+<code class="verbatim">user_code</code> を入力します。</p>
+<p>
+<code class="verbatim">user_code</code> を入力すると、直ぐに Azure の認証画面に移るので ID/PASS を入力し、
+ teams client にアクセスを認可します。</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-5">
+<h5 id="headline-7">
+token 取得
+</h5>
+<div id="outline-text-headline-7" class="outline-text-5">
+<p>
+つぎに、token を取得します。</p>
+<pre class="example">
+echo &#39;grant_type=urn:ietf:params:oauth:grant-type:device_code&amp;client_id={CLIENT_ID}&amp;device_code={DEVICE_CODE}&#39; | curl -X POST https://login.microsoftonline.com/organizations/oauth2/v2.0/token -H &#39;Content-Type: application/x-www-form-urlencoded&#39;  -d @-
+</pre>
+<p>
+ここで <code class="verbatim">{CLIENT_ID}</code> , <code class="verbatim">{DEVICE_CODE}</code> に client_id と device_code を指定します。</p>
+<p>
+成功すると、次のレスポンスが返ってきます。</p>
+<div class="src src-json">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;token_type&#34;</span><span class="p">:</span><span class="s2">&#34;Bearer&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;scope&#34;</span><span class="p">:</span><span class="s2">&#34;openid profile email https://graph.microsoft.com/ChannelMessage.Send&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;expires_in&#34;</span><span class="p">:</span><span class="mi">3749</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;ext_expires_in&#34;</span><span class="p">:</span><span class="mi">3749</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;access_token&#34;</span><span class="p">:</span><span class="s2">&#34;?????????????&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;refresh_token&#34;</span><span class="p">:</span><span class="s2">&#34;???????????&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;id_token&#34;</span><span class="p">:</span><span class="s2">&#34;??????????????&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+この <code class="verbatim">access_token</code> と <code class="verbatim">refresh_token</code> が Graph API を利用する際に必要になります。</p>
+<p>
+なお、 access_token は短い間隔で expire し、
+refresh_token を使って expire した access_token を取り直して利用する運用方法になります。</p>
+<p>
+よって、refresh_token は非常に重要な情報です。</p>
+<p>
+refresh_token 自体も、一定期間で expire するようです。</p>
+<p>
+ここまでの作業を一定時間内で行なう必要あります。</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-5">
+<h5 id="headline-8">
+token の refresh
+</h5>
+<div id="outline-text-headline-8" class="outline-text-5">
+<p>
+前述の通り access_token は短かい時間で expire するので、
+refresh token で取り直す必要があります。</p>
+<p>
+以下を実行すると access_token を取り直せます。</p>
+<pre class="example">
+echo &#39;client_id={CLIENT_ID}&amp;scope=https%3A%2F%2Fgraph.microsoft.com%2FChannelMessage.Send&amp;refresh_token={REFRESH_TOKEN}&amp;grant_type=refresh_token&#39; | curl &#39;https://login.microsoftonline.com/organizations/oauth2/v2.0/token&#39; -d @- -H &#39;Content-Type: application/x-www-form-urlencoded&#39;
+</pre>
+<p>
+成功すると以下が返ります。</p>
+<div class="src src-json">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-json" data-lang="json"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;token_type&#34;</span><span class="p">:</span><span class="s2">&#34;Bearer&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;scope&#34;</span><span class="p">:</span><span class="s2">&#34;openid profile email https://graph.microsoft.com/ChannelMessage.Send&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;expires_in&#34;</span><span class="p">:</span><span class="mi">4745</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;ext_expires_in&#34;</span><span class="p">:</span><span class="mi">4745</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;access_token&#34;</span><span class="p">:</span><span class="s2">&#34;????????????????&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;refresh_token&#34;</span><span class="p">:</span><span class="s2">&#34;???????????????????&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">   <span class="nt">&#34;id_token&#34;</span><span class="p">:</span><span class="s2">&#34;?????????????????????&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-5">
+<h5 id="headline-9">
+access token の指定
+</h5>
+<div id="outline-text-headline-9" class="outline-text-5">
+<p>
+<strong>Graph API を利用するには access token が必要です。</strong></p>
+<p>
+Graph API の URL アクセス時の HTTP header に、以下を指定してください。</p>
+<pre class="example">
+Authorization: Bearer {ACCESS_TOKEN}
+</pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-3">
+<h3 id="headline-10">
 permission
 </h3>
-<div id="outline-text-headline-4" class="outline-text-3">
+<div id="outline-text-headline-10" class="outline-text-3">
 <p>
 Graph API は、そのスコープごとにアクセス制御されます。</p>
 <p>
@@ -402,11 +549,11 @@ API に permission を与えるには権限が必要になります。
 なお、任意にメッセージを投稿するには、管理者権限による permission が必要です。</p>
 </div>
 </div>
-<div id="outline-container-headline-5" class="outline-3">
-<h3 id="headline-5">
+<div id="outline-container-headline-11" class="outline-3">
+<h3 id="headline-11">
 Teams への投稿
 </h3>
-<div id="outline-text-headline-5" class="outline-text-3">
+<div id="outline-text-headline-11" class="outline-text-3">
 <p>
 Teams へ投稿するには以下の API を利用します。</p>
 <p>
@@ -447,15 +594,33 @@ Teams のチームへの投稿は次の概念で管理され、
 <strong>その permission を与えるには管理者権限が必要になります。</strong></p>
 <p>
 なお、個人間のチャットはチームのメッセージとは異なります。</p>
+<div id="outline-container-headline-12" class="outline-4">
+<h4 id="headline-12">
+新規投稿 API
+</h4>
+<div id="outline-text-headline-12" class="outline-text-4">
+<p>
+あるチーム内の、あるチャネルにメッセージを新規投稿する場合は、以下を利用します。</p>
+<pre class="example">
+https://graph.microsoft.com/v1.0/teams/{team-id}/channels/{channel-id}/messages
+</pre>
+<p>
+ここで <code class="verbatim">{team-id}</code> , <code class="verbatim">{channel-id}</code> は、チーム、チャネルの ID を指定します。</p>
+<p>
+送信するデータは以下の情報を参考にしてください。</p>
+<p>
+&lt;<a href="https://learn.microsoft.com/en-us/graph/api/channel-post-messages?view=graph-rest-beta&amp;tabs=http">https://learn.microsoft.com/en-us/graph/api/channel-post-messages?view=graph-rest-beta&amp;tabs=http</a>&gt;</p>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-6" class="outline-2">
-<h2 id="headline-6">
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-2">
+<h2 id="headline-13">
 Graph Explorer
 </h2>
-<div id="outline-text-headline-6" class="outline-text-2">
+<div id="outline-text-headline-13" class="outline-text-2">
 <p>
 &lt;<a href="https://developer.microsoft.com/en-us/graph/graph-explorer">https://developer.microsoft.com/en-us/graph/graph-explorer</a>&gt;</p>
 <p>
@@ -469,11 +634,11 @@ Web ツール(Graph Explorer)が用意されています。</p>
 実際にクライアントを自作する際には、 ClientID の発行が必須になります。</p>
 </div>
 </div>
-<div id="outline-container-headline-7" class="outline-2">
-<h2 id="headline-7">
+<div id="outline-container-headline-14" class="outline-2">
+<h2 id="headline-14">
 MS Graph API について
 </h2>
-<div id="outline-text-headline-7" class="outline-text-2">
+<div id="outline-text-headline-14" class="outline-text-2">
 <p>
 MS Graph API は、MS のさまざまなサービスにアクセスできる強力な API です。</p>
 <p>

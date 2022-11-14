@@ -57,9 +57,134 @@ Azure の CliendID 発行が出来るユーザは当然限られています。
 発行された ClientID を指定して、アカウント認証するのですが、
 通常はブラウザのインタフェースを通して認証するのが一般的です。
 
-ブラウザを介さずにアカウント認証する場合は、以下の手順になります。
+ですが、ブラウザを搭載していないアプリなどで利用する場合は、以下の手順になります。
 
-<https://docs.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow>
+<https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-device-code>
+
+なお、 この device code を利用する方法は、
+ClientID を発行したアプリの設定において、次をセットしておく必要があります。
+
+*Azure の 「アプリ登録」 → 「認証」 で*
+*「モバイルとデスクトップのフローを有効」を 「はい」にする。*
+
+これを設定しておかないと、認証手順が進みません。
+
+*** 認証手順
+
+
+**** device code 発行
+
+まず以下を実行し、 device code 登録に必要な情報を取得します。
+
+: $ echo 'client_id={CLIENT_ID}&scope=openid%20offline_access%20https%3A%2F%2Fgraph.microsoft.com%2FChannelMessage.Send' | curl 'https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/devicecode' -H 'Content-Type: application/x-www-form-urlencoded' -d @-
+
+ここで、 ={CLIENT_ID}= , ={TENANT_ID}= には、自分の環境に合せて設定してください。
+
+また、scope には必要なパーミッションのスコープを指定してください。
+
+上記の例は、所定のチャネルに新規登録する際に必要なパーミッション(ChannelMessage.Send)です。
+
+これを実行すると、次のようなレスポンスを得られます。
+
+#+BEGIN_SRC json
+ {
+  "user_code":"??????????????????",
+  "device_code":"??????????????????",
+  "verification_uri":"https://microsoft.com/devicelogin",
+  "expires_in":900,
+  "interval":5,
+  "message":"To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code H6YXVV74E to authenticate."
+}
+#+END_SRC
+
+ここで、 =user_code= と =device_code= をメモって起きます。
+
+=user_code= は認証させたいユーザに表示し、 
+=device_code= は teams client を開発する側で一時的に保持しておきます。
+
+**** 認可
+
+次に teams client を認証させたいユーザが以下の URL にブラウザでアクセスします。
+
+<https://microsoft.com/devicelogin>
+
+ここにアクセスすると、コード入力画面が表示されるので、
+=user_code= を入力します。
+
+=user_code= を入力すると、直ぐに Azure の認証画面に移るので ID/PASS を入力し、
+ teams client にアクセスを認可します。
+
+
+**** token 取得
+
+つぎに、token を取得します。
+
+: echo 'grant_type=urn:ietf:params:oauth:grant-type:device_code&client_id={CLIENT_ID}&device_code={DEVICE_CODE}' | curl -X POST https://login.microsoftonline.com/organizations/oauth2/v2.0/token -H 'Content-Type: application/x-www-form-urlencoded'  -d @-
+
+ここで ={CLIENT_ID}= , ={DEVICE_CODE}= に client_id と device_code を指定します。
+
+成功すると、次のレスポンスが返ってきます。
+
+#+BEGIN_SRC json
+{
+   "token_type":"Bearer",
+   "scope":"openid profile email https://graph.microsoft.com/ChannelMessage.Send",
+   "expires_in":3749,
+   "ext_expires_in":3749,
+   "access_token":"?????????????",
+   "refresh_token":"???????????",
+   "id_token":"??????????????"
+}
+#+END_SRC
+
+この =access_token= と =refresh_token= が Graph API を利用する際に必要になります。
+
+
+なお、 access_token は短い間隔で expire し、
+refresh_token を使って expire した access_token を取り直して利用する運用方法になります。
+
+よって、refresh_token は非常に重要な情報です。
+
+refresh_token 自体も、一定期間で expire するようです。
+
+ここまでの作業を一定時間内で行なう必要あります。
+
+
+**** token の refresh
+
+前述の通り access_token は短かい時間で expire するので、
+refresh token で取り直す必要があります。
+
+以下を実行すると access_token を取り直せます。
+
+: echo 'client_id={CLIENT_ID}&scope=https%3A%2F%2Fgraph.microsoft.com%2FChannelMessage.Send&refresh_token={REFRESH_TOKEN}&grant_type=refresh_token' | curl 'https://login.microsoftonline.com/organizations/oauth2/v2.0/token' -d @- -H 'Content-Type: application/x-www-form-urlencoded'
+
+成功すると以下が返ります。
+
+#+BEGIN_SRC json
+{
+   "token_type":"Bearer",
+   "scope":"openid profile email https://graph.microsoft.com/ChannelMessage.Send",
+   "expires_in":4745,
+   "ext_expires_in":4745,
+   "access_token":"????????????????",
+   "refresh_token":"???????????????????",
+   "id_token":"?????????????????????"
+}
+#+END_SRC
+
+
+
+**** access token の指定
+
+*Graph API を利用するには access token が必要です。*
+
+Graph API の URL アクセス時の HTTP header に、以下を指定してください。
+
+: Authorization: Bearer {ACCESS_TOKEN}
+
+
+
 
 
 ** permission
@@ -104,6 +229,21 @@ Teams のチームへの投稿は次の概念で管理され、
 *その permission を与えるには管理者権限が必要になります。*
 
 なお、個人間のチャットはチームのメッセージとは異なります。
+
+
+*** 新規投稿 API
+
+あるチーム内の、あるチャネルにメッセージを新規投稿する場合は、以下を利用します。
+
+: https://graph.microsoft.com/v1.0/teams/{team-id}/channels/{channel-id}/messages
+
+ここで ={team-id}= , ={channel-id}= は、チーム、チャネルの ID を指定します。
+
+送信するデータは以下の情報を参考にしてください。
+
+
+<https://learn.microsoft.com/en-us/graph/api/channel-post-messages?view=graph-rest-beta&tabs=http>
+
 
 * Graph Explorer
 
