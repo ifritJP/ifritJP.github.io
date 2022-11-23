@@ -340,6 +340,114 @@ kptunnel コマンドで使用可能なオプションについて説明する
 
 [[../tunnel.gif]]
 
+
+* dispatcher
+
+この Tunnel ツールは、
+一つの tunnel server で複数の tunnel client と接続できる。
+
+しかしその場合、次の問題がある。
+
+- tunnel server が落ちると、接続していた全ての tunnel client に影響する
+- client 毎にパラメータを設定できない
+  - パスワード
+  - forward 設定
+  - 等々
+
+これを解決するには、
+tunnel server を複数起動する必要がある。
+
+この場合、tunnel server ごとに tcp port を割り当てる必要が出てくる。
+
+しかし、複数のポートを開けるのは一般的にセキュリティ上好ましくない。
+
+そこで、 kptunnel では dispatcher サーバを用意している。
+
+dispatcher サーバは、
+個々の tunnel client からの要求をまとめて受け、
+reverse proxy のように各 tunnel server に振り分ける。
+
+#+BEGIN_SRC txt
+
+client ----->|                  |---> server 
+client ------|--> dispatcher ---|---> server 
+client ----->|                  |---> server 
+#+END_SRC
+
+** dispatcher の処理
+
+dispatcher は、 client から接続要求を受けると次の処理を行なう。
+
+- 接続要求の uri, http header をもとに、
+  その接続要求を受け付けるかどうかを判定する (*canAccept*)
+- 接続要求を受け付ける場合、 その client に対応する server の起動パラメータを決定する
+  (*getTunnelInfo*)
+- server を起動する
+- 起動した server に、 client からの接続要求を転送する
+
+これにより、 dispatcher を介して client と server が接続される。
+
+** dispatcher の処理のカスタマイズ
+
+dispatcher は、 tunnel client の要求毎に起動する tunnel server の構成を変更する。
+
+この tunnel server の具体的な制御は、ユーザによって異なる。
+
+この制御のカスタマイズは、 LuneScript のコードによって行なう。
+
+LuneScript のコードは、次の 2 つからなる。
+
+- *CanAccept.lns*
+  - *非* 排他処理
+  - 接続要求の uri, http header をもとに、
+    client からの接続要求を受け付けるかどうかを判定する
+  - この処理は *非* 排他処理で、 client のリクエスト毎に複数同時に動作する
+  - 1リクエスト毎に、 *独立* した VM 上で動作するため、
+    オブジェクトが毎回初期化される
+- *UserHandler.lns*
+  - 排他処理
+  - 次を処理する
+    - client からの接続要求を受け付けた後の、サーバ構成を決定する
+    - 切断後の処理
+  - この処理は、排他処理で、client のリクエスト毎にシーケンシャルに動作する
+  - 全てのリクエストで *共通* した VM 上で動作するため、
+    全てのリクエストでオブジェクトが保持される
+
+*** sample コード
+
+CanAccept.lns, UserHandler.lns の処理サンプルは、以下にある。
+
+: dispatcher/lns/user/sample/
+
+** dispatcher 起動コマンドオプション
+
+dispatcher の起動コマンドオプションを示す。
+
+#+BEGIN_SRC txt
+$ ./dispatcher wsserver
+
+Usage: ./dispatcher wsserver <server> [option] 
+
+   server: e.g. localhost:1234/path or :1234
+
+ options:
+  -console string
+    	console port. (:1234)
+  -ip string
+    	allow ip range (192.168.0.1/24)
+  -u string
+    	userHandler path. (ex: handler.lns,canAccess.lns)
+  -verbose
+    	verbose. (true or false)
+#+END_SRC
+
+次は、 localhost の 10000 ポートの /path に dispatcher を立ち上げ、
+カスタマイズ処理として lns/user/UserHandler.lns lns/user/canAccess.lns を指定している。
+
+
+: ./dispatcher wsserver localhost:10000/path -u lns/user/UserHandler.lns,lns/user/canAccess.lns
+
+
 * 開発に関して
 
 これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。

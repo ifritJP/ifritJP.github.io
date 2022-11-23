@@ -44,7 +44,7 @@
 <meta itemprop="name" content="Tunnel/Reverse Tunnel over websocket を作った">
 <meta itemprop="description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs"><meta itemprop="datePublished" content="2020-05-29T00:00:00+00:00" />
 <meta itemprop="dateModified" content="2020-05-29T00:00:00+00:00" />
-<meta itemprop="wordCount" content="6249">
+<meta itemprop="wordCount" content="7119">
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Tunnel/Reverse Tunnel over websocket を作った"/>
 <meta name="twitter:description" content="とある理由から 「Tunnel/Reverse Tunnel over websocket」 が必要になったので作ってみた。 「Tunnel/Reverse Tunnel over webs"/>
@@ -312,8 +312,8 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2020/2020-05-29-tunnel/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">6249</span>
-		<span class="post-readcount hidden-xs" itemprop="timeRequired">13 </span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">7119</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">15 </span>
       </div>
     </div>
     <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
@@ -864,16 +864,163 @@ kptunnel コマンドで使用可能なオプションについて説明する</
 </div>
 <div id="outline-container-headline-13" class="outline-2">
 <h2 id="headline-13">
-開発に関して
+dispatcher
 </h2>
 <div id="outline-text-headline-13" class="outline-text-2">
 <p>
-これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。</p>
+この Tunnel ツールは、
+一つの tunnel server で複数の tunnel client と接続できる。</p>
+<p>
+しかしその場合、次の問題がある。</p>
+<ul>
+<li>tunnel server が落ちると、接続していた全ての tunnel client に影響する</li>
+<li>
+<p>client 毎にパラメータを設定できない</p>
+<ul>
+<li>パスワード</li>
+<li>forward 設定</li>
+<li>等々</li>
+</ul>
+</li>
+</ul>
+<p>これを解決するには、
+tunnel server を複数起動する必要がある。</p>
+<p>
+この場合、tunnel server ごとに tcp port を割り当てる必要が出てくる。</p>
+<p>
+しかし、複数のポートを開けるのは一般的にセキュリティ上好ましくない。</p>
+<p>
+そこで、 kptunnel では dispatcher サーバを用意している。</p>
+<p>
+dispatcher サーバは、
+個々の tunnel client からの要求をまとめて受け、
+reverse proxy のように各 tunnel server に振り分ける。</p>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">client -----&gt;|                  |---&gt; server 
+</span></span><span class="line"><span class="cl">client ------|--&gt; dispatcher ---|---&gt; server 
+</span></span><span class="line"><span class="cl">client -----&gt;|                  |---&gt; server</span></span></code></pre></div>
+</div>
 <div id="outline-container-headline-14" class="outline-3">
 <h3 id="headline-14">
-スレッド
+dispatcher の処理
 </h3>
 <div id="outline-text-headline-14" class="outline-text-3">
+<p>
+dispatcher は、 client から接続要求を受けると次の処理を行なう。</p>
+<ul>
+<li>接続要求の uri, http header をもとに、
+その接続要求を受け付けるかどうかを判定する (<strong>canAccept</strong>)</li>
+<li>接続要求を受け付ける場合、 その client に対応する server の起動パラメータを決定する
+(<strong>getTunnelInfo</strong>)</li>
+<li>server を起動する</li>
+<li>起動した server に、 client からの接続要求を転送する</li>
+</ul>
+<p>これにより、 dispatcher を介して client と server が接続される。</p>
+</div>
+</div>
+<div id="outline-container-headline-15" class="outline-3">
+<h3 id="headline-15">
+dispatcher の処理のカスタマイズ
+</h3>
+<div id="outline-text-headline-15" class="outline-text-3">
+<p>
+dispatcher は、 tunnel client の要求毎に起動する tunnel server の構成を変更する。</p>
+<p>
+この tunnel server の具体的な制御は、ユーザによって異なる。</p>
+<p>
+この制御のカスタマイズは、 LuneScript のコードによって行なう。</p>
+<p>
+LuneScript のコードは、次の 2 つからなる。</p>
+<ul>
+<li>
+<p><strong>CanAccept.lns</strong></p>
+<ul>
+<li><strong>非</strong> 排他処理</li>
+<li>接続要求の uri, http header をもとに、
+client からの接続要求を受け付けるかどうかを判定する</li>
+<li>この処理は <strong>非</strong> 排他処理で、 client のリクエスト毎に複数同時に動作する</li>
+<li>1リクエスト毎に、 <strong>独立</strong> した VM 上で動作するため、
+オブジェクトが毎回初期化される</li>
+</ul>
+</li>
+<li>
+<p><strong>UserHandler.lns</strong></p>
+<ul>
+<li>排他処理</li>
+<li>
+<p>次を処理する</p>
+<ul>
+<li>client からの接続要求を受け付けた後の、サーバ構成を決定する</li>
+<li>切断後の処理</li>
+</ul>
+</li>
+<li>この処理は、排他処理で、client のリクエスト毎にシーケンシャルに動作する</li>
+<li>全てのリクエストで <strong>共通</strong> した VM 上で動作するため、
+全てのリクエストでオブジェクトが保持される</li>
+</ul>
+</li>
+</ul>
+<div id="outline-container-headline-16" class="outline-4">
+<h4 id="headline-16">
+sample コード
+</h4>
+<div id="outline-text-headline-16" class="outline-text-4">
+<p>
+CanAccept.lns, UserHandler.lns の処理サンプルは、以下にある。</p>
+<pre class="example">
+dispatcher/lns/user/sample/
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-17" class="outline-3">
+<h3 id="headline-17">
+dispatcher 起動コマンドオプション
+</h3>
+<div id="outline-text-headline-17" class="outline-text-3">
+<p>
+dispatcher の起動コマンドオプションを示す。</p>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ ./dispatcher wsserver
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">Usage: ./dispatcher wsserver &lt;server&gt; [option] 
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">   server: e.g. localhost:1234/path or :1234
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"> options:
+</span></span><span class="line"><span class="cl">  -console string
+</span></span><span class="line"><span class="cl">    	console port. (:1234)
+</span></span><span class="line"><span class="cl">  -ip string
+</span></span><span class="line"><span class="cl">    	allow ip range (192.168.0.1/24)
+</span></span><span class="line"><span class="cl">  -u string
+</span></span><span class="line"><span class="cl">    	userHandler path. (ex: handler.lns,canAccess.lns)
+</span></span><span class="line"><span class="cl">  -verbose
+</span></span><span class="line"><span class="cl">    	verbose. (true or false)</span></span></code></pre></div>
+</div>
+<p>
+次は、 localhost の 10000 ポートの /path に dispatcher を立ち上げ、
+カスタマイズ処理として lns/user/UserHandler.lns lns/user/canAccess.lns を指定している。</p>
+<pre class="example">
+./dispatcher wsserver localhost:10000/path -u lns/user/UserHandler.lns,lns/user/canAccess.lns
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-18" class="outline-2">
+<h2 id="headline-18">
+開発に関して
+</h2>
+<div id="outline-text-headline-18" class="outline-text-2">
+<p>
+これ以降の章では、この Tunnel ツール開発に関する技術的な内容について記載する。</p>
+<div id="outline-container-headline-19" class="outline-3">
+<h3 id="headline-19">
+スレッド
+</h3>
+<div id="outline-text-headline-19" class="outline-text-3">
 <p>
 この Tunnel ツールは、主に次の 6 つのスレッドで構成される。</p>
 <ul>
@@ -937,11 +1084,11 @@ host -&gt; stream2Tunnel
 <li>packetWriter は WriteQueue からデータを読み取り tunnel に送る</li>
 <li>keepalive は WriteQueue にダミーデータを送る</li>
 </ul>
-<div id="outline-container-headline-15" class="outline-4">
-<h4 id="headline-15">
+<div id="outline-container-headline-20" class="outline-4">
+<h4 id="headline-20">
 tunnel 内に複数の TCP セッションを通す場合
 </h4>
-<div id="outline-text-headline-15" class="outline-text-4">
+<div id="outline-text-headline-20" class="outline-text-4">
 <p>
 tunnel には複数の TCP セッションを通すことができる。    
 次の要素は、tunnel 内の TCP セッション毎に増える。</p>
@@ -1002,11 +1149,11 @@ host2 -&gt; CITI2
 </div>
 </div>
 </div>
-<div id="outline-container-headline-16" class="outline-3">
-<h3 id="headline-16">
+<div id="outline-container-headline-21" class="outline-3">
+<h3 id="headline-21">
 Tunnel の再接続
 </h3>
-<div id="outline-text-headline-16" class="outline-text-3">
+<div id="outline-text-headline-21" class="outline-text-3">
 <p>
 tunnel が切断されても、
 tunnel を再接続すれば tunnel 内に流れる tcp セッションは継続通信可能である。</p>
@@ -1030,11 +1177,11 @@ TCP セッションが切断された場合は再送制御なども当然破棄�
 このような「送ったつもりが相手に届いていないデータ」がある場合、
 TCP セッションを継続させるにはそのデータを再送してやる必要がある。
 この再送処理は、 packetWriter スレッドが実行する。</p>
-<div id="outline-container-headline-17" class="outline-4">
-<h4 id="headline-17">
+<div id="outline-container-headline-22" class="outline-4">
+<h4 id="headline-22">
 フロー制御
 </h4>
-<div id="outline-text-headline-17" class="outline-text-4">
+<div id="outline-text-headline-22" class="outline-text-4">
 <p>
 前述の通り、再接続後は送信側と受信側とでデータの不整合を確認し、
 受信されていないデータの再送信が必要になる。</p>
@@ -1079,11 +1226,11 @@ packetWriter_server -&gt;&gt; packetReader_client : write the sync</code></pre>
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-18" class="outline-4">
-<h4 id="headline-18">
+<div id="outline-container-headline-23" class="outline-4">
+<h4 id="headline-23">
 リングバッファ
 </h4>
-<div id="outline-text-headline-18" class="outline-text-4">
+<div id="outline-text-headline-23" class="outline-text-4">
 <p>
 前述の通り再送信のデータ保持のためにフロー制御を行なっている。
 このデータ保持用のバッファは、
@@ -1116,11 +1263,11 @@ node5 -&gt; node0
 <img src="../tunnel_ring.svg" alt="../tunnel_ring.svg" title="../tunnel_ring.svg" /></p>
 </div>
 </div>
-<div id="outline-container-headline-19" class="outline-4">
-<h4 id="headline-19">
+<div id="outline-container-headline-24" class="outline-4">
+<h4 id="headline-24">
 送信パケットの結合
 </h4>
-<div id="outline-text-headline-19" class="outline-text-4">
+<div id="outline-text-headline-24" class="outline-text-4">
 <p>
 tunnel は 2 つの Host の間のパケットを中継する。
 一つのパケットは、MTU サイズに近いほど効率よく送信することができる。</p>
@@ -1142,11 +1289,11 @@ packetWriter は、パケットを結合するために積極的にパケット�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-20" class="outline-3">
-<h3 id="headline-20">
+<div id="outline-container-headline-25" class="outline-3">
+<h3 id="headline-25">
 protocol
 </h3>
-<div id="outline-text-headline-20" class="outline-text-3">
+<div id="outline-text-headline-25" class="outline-text-3">
 <p>
 ここでは tunnel client/server 間で通信を開始する時の protocol について説明する。</p>
 <p>
@@ -1164,11 +1311,11 @@ server -&gt;&gt; client : AuthResult</code></pre>
 <p>
 この protocol の後は、-port オプションで指定されたポートをリスニングし、
 アクセス毎に TCP 接続セッションを開始する。</p>
-<div id="outline-container-headline-21" class="outline-4">
-<h4 id="headline-21">
+<div id="outline-container-headline-26" class="outline-4">
+<h4 id="headline-26">
 AuthCallenge
 </h4>
-<div id="outline-text-headline-21" class="outline-text-4">
+<div id="outline-text-headline-26" class="outline-text-4">
 <p>
 AuthCallenge は、次の情報を client に通知する。</p>
 <ul>
@@ -1179,11 +1326,11 @@ AuthCallenge は、次の情報を client に通知する。</p>
 <p>client は、この情報から Challenge/Response の Response 情報を生成する。</p>
 </div>
 </div>
-<div id="outline-container-headline-22" class="outline-4">
-<h4 id="headline-22">
+<div id="outline-container-headline-27" class="outline-4">
+<h4 id="headline-27">
 AuthResponse
 </h4>
-<div id="outline-text-headline-22" class="outline-text-4">
+<div id="outline-text-headline-27" class="outline-text-4">
 <p>
 AuthResponse は、次の情報を server に通知する。</p>
 <ul>
@@ -1212,11 +1359,11 @@ AuthResponse は、次の情報を server に通知する。</p>
 <p>server は、この情報から client 認証を行なう。</p>
 </div>
 </div>
-<div id="outline-container-headline-23" class="outline-4">
-<h4 id="headline-23">
+<div id="outline-container-headline-28" class="outline-4">
+<h4 id="headline-28">
 AuthResult
 </h4>
-<div id="outline-text-headline-23" class="outline-text-4">
+<div id="outline-text-headline-28" class="outline-text-4">
 <p>
 AuthResult は、次の情報を client に通知する。</p>
 <ul>
@@ -1234,11 +1381,11 @@ AuthResult は、次の情報を client に通知する。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-24" class="outline-3">
-<h3 id="headline-24">
+<div id="outline-container-headline-29" class="outline-3">
+<h3 id="headline-29">
 開発言語
 </h3>
-<div id="outline-text-headline-24" class="outline-text-3">
+<div id="outline-text-headline-29" class="outline-text-3">
 <p>
 この Tunnel ツールの開発には、次の技術が不可欠である。</p>
 <ul>
