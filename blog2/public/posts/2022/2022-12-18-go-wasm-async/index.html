@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        Golang の WASM (JavaScript の非同期処理 async との連携) - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="go の wasm と、JavaScript の非同期処理との連携についてです。 基本的な go の wasm と JavaScript 間のインタフェースについては、 以前のネタを確認してください" />
+    <meta name="generator" content="Hugo 0.100.1 with theme pure" />
+    <title>Golang の WASM (JavaScript の非同期処理 async との連携) - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="Golang の WASM (JavaScript の非同期処理 async との連携)" />
+<meta property="og:description" content="go の wasm と、JavaScript の非同期処理との連携についてです。 基本的な go の wasm と JavaScript 間のインタフェースについては、 以前のネタを確認してください" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-18-go-wasm-async/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-12-18T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-12-18T00:00:00+00:00" />
+
+<meta itemprop="name" content="Golang の WASM (JavaScript の非同期処理 async との連携)">
+<meta itemprop="description" content="go の wasm と、JavaScript の非同期処理との連携についてです。 基本的な go の wasm と JavaScript 間のインタフェースについては、 以前のネタを確認してください"><meta itemprop="datePublished" content="2022-12-18T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2022-12-18T00:00:00+00:00" />
+<meta itemprop="wordCount" content="2241">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Golang の WASM (JavaScript の非同期処理 async との連携)"/>
+<meta name="twitter:description" content="go の wasm と、JavaScript の非同期処理との連携についてです。 基本的な go の wasm と JavaScript 間のインタフェースについては、 以前のネタを確認してください"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-18-go-wasm-async/" class="title">Golang の WASM (JavaScript の非同期処理 async との連携)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-12-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-12-18</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-04-3d-printer-slice/" class="title">FDM 3D プリンタのスライス設定と STL エラー対策</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-12-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-12-04</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-11-27-3d-printer-filament-box/" class="title">100 均で作る超お手軽・安価な 3D プリンタ用フィラメント除湿・送出・保管ボックス</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-11-27 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-11-27</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-27-go-limit-heap/" class="title">Golang の Heap メモリ制限</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-10-27 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-27</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-15-go-generics/" class="title">Golang の generics パフォーマンス</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-10-15 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-15</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2022/2022-12-18-go-wasm-async/"
+    >Golang の WASM (JavaScript の非同期処理 async との連携)</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-18-go-wasm-async/" class="article-date">
+  <time datetime="2022-12-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-12-18</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2022/2022-12-18-go-wasm-async/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2241</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">5 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+go の wasm と、JavaScript の非同期処理との連携についてです。</p>
+<p>
+基本的な go の wasm と JavaScript 間のインタフェースについては、
+以前のネタを確認してください。</p>
+<p>
+<a href="../2022-09-19-go-wasm">../2022-09-19-go-wasm</a></p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+go の wasm の非同期処理
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+複数の goroutine を利用したプログラムを wasm に変換すると、
+<code>GOMAXPROCS=1</code> を指定した時と同じ動作になります。</p>
+<p>
+つまり、複数の goroutine を起動させても、
+複数の goroutine が同時に動作することはなく、
+ある瞬間にアクティブになる goroutine は 1 つだけということです。</p>
+<p>
+これは前回のネタでも書いたことです。</p>
+<p>
+そして JavaScript と連携する際に、 go にはもう一つ大きな特徴があります。</p>
+<p>
+<strong>全ての gorouine が chan 待ち等でブロックすると、go のランタイムエラーが発生する。</strong></p>
+<p>
+これは wasm に限らない go の特徴ですが、
+JavaScript との連携する際に注意が必要な特徴です。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+JavaScript と wasm 間の関数コールは全て同期呼び出し
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+JavaScript は、 async 宣言した関数は自動的に
+Promise ベースの非同期関数として処理されます。</p>
+<p>
+async 宣言した関数の終了を待つには、
+関数コールする際に await を利用して実行するか、
+Promise の then 等にコールバックを登録する必要があります。</p>
+<p>
+なお、 go から JavaScript の関数をコールする場合、
+通常の同期呼び出しになり、 await を利用した関数コールはできません。</p>
+<p>
+つまり、
+<strong>go から JavaScript の async 関数をコールし、その async 関数の処理終了を待つには、</strong>
+<strong>その async 関数の戻り値の Promise を処理する必要がある</strong> 、
+ということです。</p>
+<p>
+具体的な Promise 処理については、以下のサイトの解説を確認してください。</p>
+<p>
+&lt;<a href="https://stackoverflow.com/questions/68426700/how-to-wait-a-js-async-function-from-golang-wasm">https://stackoverflow.com/questions/68426700/how-to-wait-a-js-async-function-from-golang-wasm</a>&gt;</p>
+<p>
+ここでは、上記サイトのコード部分を抜粋しておきます。</p>
+<div class="src src-go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">await</span><span class="p">(</span><span class="nx">awaitable</span> <span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="p">([]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">then</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nb">close</span><span class="p">(</span><span class="nx">then</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">thenFunc</span> <span class="o">:=</span> <span class="nx">js</span><span class="p">.</span><span class="nf">FuncOf</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">this</span> <span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">then</span> <span class="o">&lt;-</span> <span class="nx">args</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nx">thenFunc</span><span class="p">.</span><span class="nf">Release</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">catch</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nb">close</span><span class="p">(</span><span class="nx">catch</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">catchFunc</span> <span class="o">:=</span> <span class="nx">js</span><span class="p">.</span><span class="nf">FuncOf</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">this</span> <span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">catch</span> <span class="o">&lt;-</span> <span class="nx">args</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nx">catchFunc</span><span class="p">.</span><span class="nf">Release</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">awaitable</span><span class="p">.</span><span class="nf">Call</span><span class="p">(</span><span class="s">&#34;then&#34;</span><span class="p">,</span> <span class="nx">thenFunc</span><span class="p">).</span><span class="nf">Call</span><span class="p">(</span><span class="s">&#34;catch&#34;</span><span class="p">,</span> <span class="nx">catchFunc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nx">result</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">then</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">result</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nx">err</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">catch</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+この Promise 処理について、一点注意が必要です。</p>
+<p>
+それは、以下の go の特徴です。</p>
+<p>
+<strong>『全ての gorouine が chan 待ち等でブロックすると、go のランタイムエラーが発生する。』</strong></p>
+<p>
+上記のコードの通り、Promise 処理を待つには chan を利用して待つ必要があります。
+一方で、 go の特徴から全ての gorouine がブロックすると 
+go がランタイムエラーしてしまいます。</p>
+<p>
+例えば次のようなケースです。</p>
+<div class="src src-plantuml">
+<pre tabindex="0"><code class="language-plantuml" data-lang="plantuml">js -&gt; go : go.run()
+go -&gt; go : wait chan
+js &lt;-- go: return go&#39;s Promise
+js -&gt; go : call a go&#39;s function
+js &lt;- go: call a js&#39;s async function
+js --&gt; go : return Promise
+go -&gt; go : wait to call a &#39;then&#39; callback --- deadlock</code></pre>
+</div>
+<p>
+<img src="../goroutine_wasm_block.svg" alt="../goroutine_wasm_block.svg" title="../goroutine_wasm_block.svg" /></p>
+<p>
+このケースでは、次の動作になります。</p>
+<ul>
+<li>go.run() で実行した go の wasm の処理内で chan 待ちを行ないます。</li>
+<li>これにより、 wasm の処理がそこで停止し、
+js 側には go の wasm の実行を待つ promise が返されます。</li>
+<li>そして、js 側から go の関数を実行します。</li>
+<li>この go の関数から js の async 関数を呼びます。</li>
+<li>そして、その promise を待ちます。</li>
+</ul>
+<p>こうすると、 go 内で deadlock を検知し、 go の wasm は異常終了します。</p>
+<p>
+ただ、上記の図だとちょっと伝わり難いと思うので、
+<strong>もう少し分かり易くした図</strong> が以下です。</p>
+<div class="src src-plantuml">
+<pre tabindex="0"><code class="language-plantuml" data-lang="plantuml">js -&gt; go_runtime: go.run()
+go_runtime -[#green]-&gt; go_main_goroutine: &lt;font color=green&gt; go main()
+go_main_goroutine-[#red]&gt; go_main_goroutine: &lt;font color=red&gt;wait chan
+js &lt;-- go_runtime  : return go&#39;s Promise
+js -&gt; go_runtime: call a go&#39;s function
+js &lt;- go_runtime  : call a js&#39;s async function
+js --&gt; go_runtime: return Promise
+go_runtime-[#red]&gt; go_runtime: &lt;font color=red&gt;wait to call a &#39;then&#39; callback --- deadlock</code></pre>
+</div>
+<p>
+<img src="../goroutine_wasm_block2.svg" alt="../goroutine_wasm_block2.svg" title="../goroutine_wasm_block2.svg" /></p>
+<p>
+go の wasm を実行する場合、 
+go の main 関数がコールされる前に go の runtime が実行され、
+その runtime 内から同期的に main が実行されるのではなく、
+<strong>main 用の goroutine が起動されて、そこで main が実行されます。</strong>
+そして、 main 内で chan 待ちをすると、 go runtime が js 側に処理を戻す。
+という形になります。</p>
+<p>
+そして、その後の js から go 関数の呼び出しは、 
+<strong>go runtime 内から直接同期実行されます。</strong>
+これによって go runtime 内で chan 待ちすると全ての go routine が待ち状態になり、
+deadlock する、という訳です。</p>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+go から js の promise 待ちをする場合
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+以上を踏まえ、go から js の promise 待ちをする場合に deadlock を回避するには、
+以下が必要になります。</p>
+<p>
+<strong>js から実行される go の関数を同期的に実行するのではなく goroutine を利用する。</strong></p>
+<div class="src src-plantuml">
+<pre tabindex="0"><code class="language-plantuml" data-lang="plantuml">js -&gt; go_runtime: go.run()
+go_runtime -[#green]-&gt; go_main_goroutine: &lt;font color=green&gt; go main()
+go_main_goroutine-[#red]&gt; go_main_goroutine: &lt;font color=red&gt;wait chan
+js &lt;-- go_runtime  : return go&#39;s Promise
+js -&gt; go_runtime: call a go&#39;s function
+go_runtime -[#green]-&gt; go_sub_goroutine: &lt;font color=green&gt;go sub()
+js &lt;-- go_runtime: return
+js &lt;- go_sub_goroutine  : call a js&#39;s async function
+js --&gt; go_sub_goroutine: return Promise
+go_sub_goroutine-[#red]&gt; go_sub_goroutine: &lt;font color=red&gt;wait to call a &#39;then&#39; callback --- ok</code></pre>
+</div>
+<p>
+<img src="../goroutine_wasm_block3.svg" alt="../goroutine_wasm_block3.svg" title="../goroutine_wasm_block3.svg" /></p>
+<p>
+上記のように、  go 内から js の promise 待ちをする際は、
+直接 go runtime から実行するのではなく、
+goroutine を起動してその goroutine 内で promise を待ちます。</p>
+<p>
+これによって、 go が deadlock することなく js の非同期処理と連携を行なうことができます。</p>
+<p>
+js では await を使って async 関数の処理を待つことで、
+await の処理内で他の非同期な js の処理を行なうことが出来ます。
+一方で、
+<strong>go の wasm 内の chan 待ちは完全に処理が停止します。</strong></p>
+<p>
+<strong>なので、 js からの関数コールはブロックさせずに、速やかに処理を戻すのが鉄則です。</strong></p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+js の async と go の goroutine 
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+go 内で chan 待ちをする際、
+goroutine を使わずに js の async 関数から go の関数をコールし、
+その go の関数内で chan 待ちをしても結果は同じになるのか気になったので、
+以下のケースを確認しました。</p>
+<div class="src src-plantuml">
+<pre tabindex="0"><code class="language-plantuml" data-lang="plantuml">js -&gt; go_runtime: go.run()
+go_runtime -[#green]-&gt; go_main_goroutine: &lt;font color=green&gt; go main()
+go_main_goroutine-[#red]&gt; go_main_goroutine: &lt;font color=red&gt;wait chan
+js &lt;-- go_runtime  : return go&#39;s Promise
+js -[#blue]-&gt; &#34;js async func&#34; : &lt;font color=blue&gt;call async func
+&#34;js async func&#34; -&gt; go_runtime: call a go&#39;s function
+js &lt;- go_runtime  : call a js&#39;s async function
+js --&gt; go_runtime: return Promise
+go_runtime-[#red]&gt; go_runtime: &lt;font color=red&gt;wait to call a &#39;then&#39; callback -- deadlock</code></pre>
+</div>
+<p>
+<img src="../goroutine_wasm_block4.svg" alt="../goroutine_wasm_block4.svg" title="../goroutine_wasm_block4.svg" /></p>
+<p>
+結果としては、 <strong>js の async 関数から go の関数を呼んでも deadlock しました。</strong></p>
+<p>
+よって、 js からコールさせる go の関数は、
+ブロックさせずに速やかに処理を戻しましょう。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+まとめ 
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+go の wasm 対応はちょっと面倒なイメージがありますが、
+go の標準ライブラリを使ったプログラムをそのままブラウザ上で動かせるという
+メリットは大きいです。</p>
+<p>
+もちろん「TCP 接続をする」
+などの wasm がそもそもサポートしていない処理は動きません。
+しかし、それでも go のソースを変更せずにそのままビルドが通って
+ wasm のモジュールが生成できる、
+というのは大きな長所です。</p>
+<p>
+また js で worker を使うよりは制限が少なく非同期処理を組めるのも
+web で go を使うメリットとも言えると思います。</p>
+<p>
+今回の JS の非同期処理との連携を活用すれば、
+JS や TypeScript でプログラムを組むよりも
+高度な処理を組み易くなる可能性もあると思います。</p>
+<p>
+とはいえ、go の wasm サイズは「デカ過ぎだろ」とツッコミを入れなければならないですが。。</p>
+<p>
+以上。</p>
+</div>
+</div>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-04-3d-printer-slice/" title="FDM 3D プリンタのスライス設定と STL エラー対策"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2022
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.a2959bb9e3b3c9e8aa6e358e6bb7090585dcf6831387b734c9459b13f23b1834.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.29680208905b16ba17da3c502ae2847f8396e8a4a95bec73e9a0981ed3746b23.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.bd9ece370823766409517a6402191cfc0f35dd406ecd994a5ba78e40fea79c37c67a579ebc6bf2f1101d2bf15c5e50fa4f04aec9abea19edeb112813034367af.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

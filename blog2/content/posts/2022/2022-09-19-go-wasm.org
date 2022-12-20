@@ -29,8 +29,8 @@ golang の wasm で動かせるようにサポートしました。
 
 : $ cp "$(go env GOROOT)/misc/wasm/wasm_exec.js" .
 
-- html で wasm_exec.js をロードし、以下を JS で実行されます。
-
+- html で wasm_exec.js をロードし、JS から以下を実行すると 
+wasm 化した go のプログラムが実行されます。
 #+BEGIN_SRC js
   const go = new Go();
   WebAssembly.instantiateStreaming(fetch("main.wasm"), go.importObject).then((result) => {
@@ -42,9 +42,9 @@ golang の wasm で動かせるようにサポートしました。
 
 ** os.Args の引数
 
-golang のモジュールへの引数は os.Args で処理します。
+golang は、コマンドライン引数を os.Args で処理します。
 
-JavaScript から golang のモジュールを実行する際の引数を指定するには、
+JavaScript から golang のモジュールを実行する際に引数を指定するには、
 以下のように =go.run()= する前に argv 変数にリストをセットします。
 
 #+BEGIN_SRC js
@@ -63,7 +63,7 @@ go.run(result.instance);
 ここで注意点として、以下が挙げられます。
 
 - 再度 main を実行する場合は、 JS の =new Go()= から実行しなおします。
-- goroutine は、同時には動作しません。
+- goroutine は、複数同時には動作しません。
   - ~GOMAXPROCS=1~ を指定した時と同じ動作になります。
 
 
@@ -245,7 +245,8 @@ end
 firefox では fengari の方が若干速く終了し、
 chrome では wasm の方が爆速で終了しました。
 
-なお、 chrome の fengari は、 firefox の fengari よりも早いです。
+なお、 chrome 上で動作させた fengari は、 
+firefox 上で動作させた fengari よりも早いです。
 つまり、 JavaScript, wasm ともに chrome の方が高速に処理できます。
 
 また、
@@ -253,15 +254,16 @@ golang を wasm に変換すると、
 生成した wasm のサイズが大きくなります。
 
 
-実行時のパフォーマンスや、ダウンロードサイズをトータルで考えると、
+実行時のパフォーマンスがブラウザによって大きく依存する点や、
+wasm のサイズをトータルで考えると、
 golang の wasm を安易に利用するべきではないです。
 
 なお、 golang の公式ドキュメントに TinyGo が紹介されている通り、
 TinyGo では standard golang と比べると、
-サイズが小さく使い勝手も良いようなので、
+wasm のサイズが小さく使い勝手も良いようなので、
 TinyGo を検討してみると良いと思います。
 
-ただし、TinyGo は幾つかの標準パッケージを対応していないため、
+ただし、TinyGo は go の幾つかの標準パッケージを対応していないため、
 それらパッケージを利用したプロジェクトは、 TinyGo を利用することができません。
 
 LuneScript はその制限に該当したため、 

@@ -44,7 +44,7 @@
 <meta itemprop="name" content="Golang の WASM (Golang から JavaScript の呼び出し, JavaScript から Golang の呼び出し)">
 <meta itemprop="description" content="LuneScript Web Frontは今迄 fengari を利用していましたが、 golang の wasm で動かせるようにサポートしました。 その際に golang の wasm の利用方法について調べたことをまとめておき"><meta itemprop="datePublished" content="2022-09-19T00:00:00+00:00" />
 <meta itemprop="dateModified" content="2022-09-19T00:00:00+00:00" />
-<meta itemprop="wordCount" content="2511">
+<meta itemprop="wordCount" content="2562">
 <meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Golang の WASM (Golang から JavaScript の呼び出し, JavaScript から Golang の呼び出し)"/>
 <meta name="twitter:description" content="LuneScript Web Frontは今迄 fengari を利用していましたが、 golang の wasm で動かせるようにサポートしました。 その際に golang の wasm の利用方法について調べたことをまとめておき"/>
@@ -224,6 +224,16 @@
             <li>
                 <div class="item-inner">
                     <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-18-go-wasm-async/" class="title">Golang の WASM (JavaScript の非同期処理 async との連携)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-12-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-12-18</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
                         <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-04-3d-printer-slice/" class="title">FDM 3D プリンタのスライス設定と STL エラー対策</a>
                     </p>
                     <p class="item-date">
@@ -258,16 +268,6 @@
                     </p>
                     <p class="item-date">
                         <time datetime="2022-10-15 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-15</time>
-                    </p>
-                </div>
-            </li>
-            <li>
-                <div class="item-inner">
-                    <p class="item-title">
-                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-09-19-go-wasm/" class="title">Golang の WASM (Golang から JavaScript の呼び出し, JavaScript から Golang の呼び出し)</a>
-                    </p>
-                    <p class="item-date">
-                        <time datetime="2022-09-19 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-09-19</time>
                     </p>
                 </div>
             </li>
@@ -312,7 +312,7 @@
 
         <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2022/2022-09-19-go-wasm/#comments"
             class="article-comment-link"></a></span>
-		<span class="post-wordcount hidden-xs" itemprop="wordCount">2511</span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2562</span>
 		<span class="post-readcount hidden-xs" itemprop="timeRequired">6 </span>
       </div>
     </div>
@@ -352,8 +352,9 @@ $ GOOS=js GOARCH=wasm go build -o main.wasm
 $ cp &#34;$(go env GOROOT)/misc/wasm/wasm_exec.js&#34; .
 </pre>
 <ul>
-<li>html で wasm_exec.js をロードし、以下を JS で実行されます。</li>
+<li>html で wasm_exec.js をロードし、JS から以下を実行すると </li>
 </ul>
+<p>wasm 化した go のプログラムが実行されます。</p>
 <div class="src src-js">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">  <span class="kr">const</span> <span class="nx">go</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Go</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl">  <span class="nx">WebAssembly</span><span class="p">.</span><span class="nx">instantiateStreaming</span><span class="p">(</span><span class="nx">fetch</span><span class="p">(</span><span class="s2">&#34;main.wasm&#34;</span><span class="p">),</span> <span class="nx">go</span><span class="p">.</span><span class="nx">importObject</span><span class="p">).</span><span class="nx">then</span><span class="p">((</span><span class="nx">result</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">{</span>
@@ -368,9 +369,9 @@ os.Args の引数
 </h3>
 <div id="outline-text-headline-2" class="outline-text-3">
 <p>
-golang のモジュールへの引数は os.Args で処理します。</p>
+golang は、コマンドライン引数を os.Args で処理します。</p>
 <p>
-JavaScript から golang のモジュールを実行する際の引数を指定するには、
+JavaScript から golang のモジュールを実行する際に引数を指定するには、
 以下のように <code class="verbatim">go.run()</code> する前に argv 変数にリストをセットします。</p>
 <div class="src src-js">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="nx">go</span><span class="p">.</span><span class="nx">argv</span> <span class="o">=</span> <span class="p">[</span> <span class="s2">&#34;a&#34;</span><span class="p">,</span> <span class="s2">&#34;b&#34;</span><span class="p">,</span> <span class="s2">&#34;c&#34;</span> <span class="p">];</span>
@@ -393,7 +394,7 @@ JavaScript から golang のモジュールを実行する際の引数を指定�
 <ul>
 <li>再度 main を実行する場合は、 JS の <code class="verbatim">new Go()</code> から実行しなおします。</li>
 <li>
-<p>goroutine は、同時には動作しません。</p>
+<p>goroutine は、複数同時には動作しません。</p>
 <ul>
 <li><code>GOMAXPROCS=1</code> を指定した時と同じ動作になります。</li>
 </ul>
@@ -611,22 +612,24 @@ fengari と golang の wasm とで次の lua コードの実行時間を計測�
 firefox では fengari の方が若干速く終了し、
 chrome では wasm の方が爆速で終了しました。</p>
 <p>
-なお、 chrome の fengari は、 firefox の fengari よりも早いです。
+なお、 chrome 上で動作させた fengari は、 
+firefox 上で動作させた fengari よりも早いです。
 つまり、 JavaScript, wasm ともに chrome の方が高速に処理できます。</p>
 <p>
 また、
 golang を wasm に変換すると、
 生成した wasm のサイズが大きくなります。</p>
 <p>
-実行時のパフォーマンスや、ダウンロードサイズをトータルで考えると、
+実行時のパフォーマンスがブラウザによって大きく依存する点や、
+wasm のサイズをトータルで考えると、
 golang の wasm を安易に利用するべきではないです。</p>
 <p>
 なお、 golang の公式ドキュメントに TinyGo が紹介されている通り、
 TinyGo では standard golang と比べると、
-サイズが小さく使い勝手も良いようなので、
+wasm のサイズが小さく使い勝手も良いようなので、
 TinyGo を検討してみると良いと思います。</p>
 <p>
-ただし、TinyGo は幾つかの標準パッケージを対応していないため、
+ただし、TinyGo は go の幾つかの標準パッケージを対応していないため、
 それらパッケージを利用したプロジェクトは、 TinyGo を利用することができません。</p>
 <p>
 LuneScript はその制限に該当したため、 
