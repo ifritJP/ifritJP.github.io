@@ -53,6 +53,7 @@ SRCS += recommend.ja.org
 SRCS += completion.ja.org
 SRCS += onWeb.ja.org
 SRCS += test.ja.org
+SRCS += ebnf.ja.org
 SRCS += Box.ja.org
 SRCS += design.ja.org
 SRCS += design-2.ja.org

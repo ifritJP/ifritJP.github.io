@@ -13545,6 +13545,90 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf
 
 以上。
 -----
+* *BNF*
+:PROPERTIES:
+:CUSTOM_ID: ebnf_ja
+:END:
+
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+#+BEGIN_SRC bnf
+     <code> ::= [<shebang>] [<comment>] [<subfile>] <stmt_list>
+
+  <shebang> ::= "#!" <anytoken>
+
+  <comment> ::= {<comment>} |
+		"//"| <anytoken> | 
+		"/*" <multi_anytoken> "*/"
+
+  <subfile> ::= <subfile_owner> | <subfile_sub>
+  <subfile_owner> ::= "subfile" "owner" <module> "\;"
+  <subfile_sub> ::= {<subfile_sub>} | "subfile" "use" <module> "\;"
+
+  <stmt_list> ::= {<stmt>}
+
+  <stmt> ::= <declaration> | <block> | <super> |
+	   <asynclock> | <if> | <when> | <switch> | <match> | <while> |
+	     <repeat> | <for> | <apply> | <foreach> | <forsort> | <return> |
+	     <break> | <unwrap> | <scope> | <lune_control> |
+	     <none> | <stmt_exp>
+
+  <declaration> ::= <decl_var> | <decl_fn> | 
+		    <decl_class> | <decl_interface> | <decl_module> |
+		    <proto> | <macro> | <alge> | <form> | <alias> | <misc>
+  <misc> ::= <test>
+
+  <block> ::= "{" <stmt_list> "}"
+  <super> ::= "super" <arg_list> "\;"
+
+  <asynclock> ::= "__asyncLock" <block> |
+		  "__luago" <block> | 
+		  "__luaLock" <block> | 
+		  "__luaDepend" <block>
+  <if> ::= "if" <exp> <block> { "elseif" <exp> <block> } [ "else" <block> ] |
+	   "if!" [ "let" <sym_list> "=" ] <exp> <block> [ "else" <block> ]
+  <when> ::= "when!" <exp> <block> [ "else" <block> ]
+  <switch> ::= "switch" <exp> "{" { "case" <exp_list> <block> } [ "default" <block> ] |
+	       "_switch" <exp> "{" { "case" <exp_list> <block> } [ "default" <block> ]
+  <match> ::= "match" <exp> "{" { "case" ["(" <sym_list> ")"] <block> } [ "default" <block> ] |
+	      "_match" <exp> "{" { "case" ["(" <sym_list> ")"] <block> } [ "default" <block> ]
+  <while> ::= "while" <exp> <block>
+  <repeat> ::= "repeat" <block> <exp> "\;"
+  <for> ::= "for" <sym> "=" <exp> "," <exp> [ "," <exp> ] <block>
+  <apply> ::= "apply" <sym> "of" <exp> <block>
+  <foreach> ::= "foreach" <sym_list> "in" <exp> <block>
+  <forsort> ::= "forsort" <sym_list> "in" <exp> <block>
+  <return> ::= "return" <exp> "\;"
+  <break> ::= "break" "\;"
+  <unwrap> ::= "unwrap" <sym_list> "=" <exp> "\;"
+  <scope> ::= "__scope" "root" "(" <sym_list> ")" <block>
+  <lune_control> ::= "_lune_control" <anytoken> "\;"
+  <none> ::= "\;"
+  <stmt_exp> ::= <exp> "\;"
+
+
+  <dec_var> ::= "let" <decl_sym_list> [ "=" <exp> ] "\;" |
+	       "let!" <decl_sym_list> "=" <exp> <block> [ "then" <block> ] [ "else" <block> ] "\;"
+  <decl_fn> ::= [<decl_access>] "fn" <sym> [generics] "(" <decl_sym_list> ")"
+		["mut"] [":" <type_list> <block>
+
+  <decl_class> ::= [<decl_access>] "class" <sym> [generics] 
+		   [ extend <type> "("<type_list> ")" "{" <class_field> "}"
+  <class_field> ::= <decl_member> | <decl_method> | <init_block> | <advertise> |
+		    <decl_enum> | <lune_control> | <exp_macro>
+
+
+
+
+  <comment> ::= {<comment>} |
+		"\"| <anytoken> "\"" | 
+		"'" <anytoken> "'" |
+		"```" <multianytoken> "```"
+#+END_SRC
+-----
 * *Box 編*
 :PROPERTIES:
 :CUSTOM_ID: box_ja

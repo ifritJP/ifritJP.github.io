@@ -13,6 +13,8 @@
 
 *2022/1 raspberry pi os bullseye を使用した時の補足を追加。*
 
+*2023/1 ssh でデフォルト pi ユーザが使えない時の補足を追加。*
+
 
 RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
 Web に載っていますが、幾つかハマったポイントがあったので、
@@ -69,9 +71,37 @@ RaspberryPi に キーボードとディスプレイを接続する必要があ�
 OS イメージ書き込み時にファイルを作成しておいた方が良いでしょう。
 
 
-これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。
++これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。+
 
-*※デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。*
++※デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。+
+
+*Bullseye からは、デフォルト user/pass が利用できなくなりました。*
+
+ssh を利用するには、次の手順で user/pass を設定しておく必要があります。
+
+なお、Raspberry Pi Imager を利用してイメージを作成する場合は、
+Raspberry Pi Imager のウィザードに従えば以下の user/pass 設定手順は不要です。
+
+** user/pass 設定
+
+以下のコマンドで、
+OS イメージ内の /boot/userconf.txt に user/pass 情報を設定します。
+
+#+BEGIN_SRC txt
+$ echo -n 'user:' > userconf.txt
+$ echo 'password' | openssl passwd -6 -stdin >> userconf.txt
+#+END_SRC
+
+上記 user, password は適宜変更してください。
+
+これを実行すると、 userconf.txt は次のような状態になります。
+
+: user:encrypted_password
+
+この userconf.txt を OS イメージの /boot にコピーします。
+
+この OS イメージを起動すると、上記で指定した user/pass で ssh が接続できます。
+
 
 * apt パッケージ更新
 
@@ -176,6 +206,11 @@ Controller XX:XX:XX:XX:XX:XX
 
 これで Audio Sink が認識されたので、 A2DP が利用できます。
 
+*sudo pulseaudio -D* で安定しない場合は、以下を実行してみてください。
+
+: $ pulseaudio --start
+
+
 次はペアリングです。
 
 ** ペアリング方法
@@ -236,6 +271,17 @@ Bluetooth を使用したことがあれば分かると思いますが、
 
 : [agent] Confirm passkey ?????? (yes/no): yes
 
+*emacs の shell-mode だと、上手く認証できないので console での操作推奨です。*
+
+
+クライアント側の OS によっては、
+ペアリングしただけでは A2DP 接続されていない状態になります。
+クライアント側で音楽再生用の接続をしてください。
+この接続を行なうと、再度上記の Confirm の問合せになることがあります。
+
+*この Confirm を通さないと、一定時間で切断されることになります。*
+
+
 
 一定時間経過すると、 discoverable が自動で off になりますが、
 discoverable off で明示的に off にしてください。
@@ -283,7 +329,7 @@ Changing XX:XX:XX:XX:XX:XX trust succeeded
 
 ペアリング完了した状態で、次のコマンドを実行してください。
 
-$ pactl list sources short
+: $ pactl list sources short
 
 これで次のような出力がされます。
 
@@ -340,7 +386,9 @@ $ pactl list sinks short
 
 一時的に出力先を変更する場合は、以下を実行します。
 
-: set-default-sink alsa_output.usb-Burr-Brown_from_TI_USB_Audio_CODEC-00.analog-stereo
+: $ pactl set-default-sink 0
+
+ここで 0 には、 =pactl list sinks short= で表示されている番号を指定します。
 
 
 * WiFi を無効化
@@ -424,5 +472,5 @@ raspberry pi os bullseye にすると、次の英語の音声が数秒ごとに�
 - https://www.raspberrypi.org/forums/viewtopic.php?t=68779
 - https://qiita.com/yyano/items/802da53ad8a4a00d00e1  
 - https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt
-
+- https://www.raspberrypi.com/news/raspberry-pi-bullseye-update-april-2022/
 
