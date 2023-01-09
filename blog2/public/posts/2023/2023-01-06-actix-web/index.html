@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        actix-web (Rust の web フレームワーク) - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="Web サーバを作成するにあたり actix-web を使ってみたので、 初心者の目線から見た感想など。 actix-web 世の中には言語ごとに様々な web フレームワークがありますが、 actix-web は Rust" />
+    <meta name="generator" content="Hugo 0.100.1 with theme pure" />
+    <title>actix-web (Rust の web フレームワーク) - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="actix-web (Rust の web フレームワーク)" />
+<meta property="og:description" content="Web サーバを作成するにあたり actix-web を使ってみたので、 初心者の目線から見た感想など。 actix-web 世の中には言語ごとに様々な web フレームワークがありますが、 actix-web は Rust" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2023/2023-01-06-actix-web/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2022-01-06T00:00:00+00:00" />
+<meta property="article:modified_time" content="2022-01-06T00:00:00+00:00" />
+
+<meta itemprop="name" content="actix-web (Rust の web フレームワーク)">
+<meta itemprop="description" content="Web サーバを作成するにあたり actix-web を使ってみたので、 初心者の目線から見た感想など。 actix-web 世の中には言語ごとに様々な web フレームワークがありますが、 actix-web は Rust"><meta itemprop="datePublished" content="2022-01-06T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2022-01-06T00:00:00+00:00" />
+<meta itemprop="wordCount" content="3785">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="actix-web (Rust の web フレームワーク)"/>
+<meta name="twitter:description" content="Web サーバを作成するにあたり actix-web を使ってみたので、 初心者の目線から見た感想など。 actix-web 世の中には言語ごとに様々な web フレームワークがありますが、 actix-web は Rust"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-18-go-wasm-async/" class="title">Golang の WASM (JavaScript の非同期処理 async との連携)</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-12-18 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-12-18</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-12-04-3d-printer-slice/" class="title">FDM 3D プリンタのスライス設定と STL エラー対策</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-12-04 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-12-04</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-11-27-3d-printer-filament-box/" class="title">100 均で作る超お手軽・安価な 3D プリンタ用フィラメント除湿・送出・保管ボックス</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-11-27 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-11-27</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-27-go-limit-heap/" class="title">Golang の Heap メモリ制限</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-10-27 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-27</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2022/2022-10-15-go-generics/" class="title">Golang の generics パフォーマンス</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2022-10-15 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-10-15</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2023/2023-01-06-actix-web/"
+    >actix-web (Rust の web フレームワーク)</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-01-06-actix-web/" class="article-date">
+  <time datetime="2022-01-06 00:00:00 &#43;0000 UTC" itemprop="datePublished">2022-01-06</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2023/2023-01-06-actix-web/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">3785</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">8 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+Web サーバを作成するにあたり actix-web を使ってみたので、
+初心者の目線から見た感想など。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+actix-web
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+世の中には言語ごとに様々な web フレームワークがありますが、
+actix-web は Rust の web フレームワークです。</p>
+<p>
+なんで actix-web を選んだのかと言えば、「Rust を使いたかった」から。</p>
+<p>
+Rust は数年前に話題になったときに、どんなもんなんだろう？と、
+チュートリアルと簡単なツールを作っただけで、それ以降触っていなかったので、
+そろそろちゃんと触っておこう、と思ったのが Rust を選択した一番の理由。</p>
+<p>
+特に当時 Rust で作ったツールはシングルスレッドのツールで、
+Rust の特性であるデータの排他制御の恩恵やら、
+Rust でのマルチスレッドプログラミングのやり方などがさっぱりな状況だったので、
+今回改めて Rust を使うことにした。</p>
+<p>
+Rust を選択した理由としては他にも、</p>
+<ul>
+<li>Rust の強力なコンパイラ時のチェックはセキュリティ上も効果があるはず</li>
+<li>gc 系の言語に比べてパフォーマンスも高い</li>
+</ul>
+<p>などがあります。</p>
+<p>
+特に、セキュリティは結構気にしている。
+というのも、web サービスは攻撃対象になりやすいので、
+コンパイラ時にガッツリとチェックされる Rust であれば、
+攻撃のスキを与え難いのではないか？と期待していたりします。</p>
+<p>
+まぁ、実際のところどうなのかは不明ですが。。</p>
+<p>
+少なくとも C/C++ よりはマシだとは思うが、 
+他のイマドキの言語と比べてどうなのか？は良く分からん。</p>
+<p>
+で、 Rust を選んだ理由は上記だが、
+じゃぁなんで Rust の中で actix-web なのか、といえば、
+Rust の web フレームワークの中で github のスターの数が多かったから。
+というそれだけの理由です。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+actix-web のリファレンス
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+actix-web のリファレンスは以下です。</p>
+<p>
+&lt;<a href="https://actix.rs/docs/getting-started/">https://actix.rs/docs/getting-started/</a>&gt;</p>
+<p>
+前述した通り、 Rust は数年前に少し触った程度ですが、
+そんな知識しかない状態でも
+上記のリファレンスに従うと簡単な web サービスが動かせました。</p>
+<p>
+とはいえ、
+リファレンスのコードそのままなら動くが、
+リファレンスのコードそのままで自分の期待する処理は実現できない訳で。</p>
+<p>
+そして、リファレンスのコードから少し外れると、
+やっぱり動かなくなる(というかビルドが通らない)訳で。。。</p>
+<p>
+そんな訳で、以降では Rust 初心者、 
+actix-web 初心者がひっかかるであろう箇所について説明していきます。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+actix-web の構成
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+actix-web の構成を大まかに分けると、サーバとハンドラからなります。</p>
+<ul>
+<li>
+<p>サーバの主な役割り</p>
+<ul>
+<li>path と ハンドラの紐付けの管理</li>
+<li>サーバがクライアントからアクセスされた時に、
+アクセスされた path に従って紐付けられているハンドラをコールする</li>
+<li>各ハンドラからアクセスする共有データの管理</li>
+<li>指定された port での Listen 処理</li>
+<li>TLS</li>
+</ul>
+</li>
+<li>
+<p>ハンドラの主な役割り</p>
+<ul>
+<li>サーバによってハンドラが呼びだされ、
+要求に対する実際の処理を行なう。</li>
+</ul>
+</li>
+</ul>
+<p>サーバとハンドラの役割を見ると、ハンドラが非常に簡素です。
+そして、実際にハンドラはかなり簡単に書けます。</p>
+<p>
+なお、 リクエスト処理に必須の Query の処理や Body の Json パースなども、
+ハンドラの引数に指定しておくだけで、自動で行なわれます。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+サーバ
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+以下のようにすると、 8080 ポートで listen するサーバが起動します。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="w">    </span><span class="n">HttpServer</span>::<span class="n">new</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">App</span>::<span class="n">new</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="c1">// enable logger
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">            </span><span class="p">.</span><span class="n">wrap</span><span class="p">(</span><span class="n">middleware</span>::<span class="n">Logger</span>::<span class="n">default</span><span class="p">())</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="n">service</span><span class="p">(</span><span class="n">index_test1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">&#34;/hoge&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">web</span>::<span class="n">get</span><span class="p">().</span><span class="n">to</span><span class="p">(</span><span class="n">index_test2</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="n">bind</span><span class="p">((</span><span class="s">&#34;127.0.0.1&#34;</span><span class="p">,</span><span class="w"> </span><span class="mi">8080</span><span class="p">))</span><span class="o">?</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="n">run</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="k">await</span></span></span></code></pre></div>
+</div>
+<p>
+ここで、次の部分が path とハンドラの紐付けです。
+<code class="verbatim">index_test1</code>, <code class="verbatim">index_test2</code> はハンドラ関数で、必要な処理を自分で作成します。
+ハンドラ関数の名前は任意です。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="n">service</span><span class="p">(</span><span class="n">index_test1</span><span class="p">)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">&#34;/hoge&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">web</span>::<span class="n">get</span><span class="p">().</span><span class="n">to</span><span class="p">(</span><span class="n">index_test2</span><span class="p">))</span></span></span></code></pre></div>
+</div>
+<p>
+この <code class="verbatim">service()</code> , <code class="verbatim">route()</code> は、
+それぞれ異なるハンドラ(<code class="verbatim">index_test1</code>, <code class="verbatim">index_test2</code>)の登録処理です。
+この登録関数は複数繋げて書けます。</p>
+<p>
+ハンドラの登録は、 <code class="verbatim">service()</code> , <code class="verbatim">route()</code> の2種類で、
+<code class="verbatim">service()</code> はハンドラ関数だけ指定し、
+<code class="verbatim">route()</code> はサーバ登録時に path と http METHOD とハンドラ関数を指定します。</p>
+<p>
+こう見ると、 <code class="verbatim">service()</code> の方は path と http METHOD の指定なしにどうやって
+ハンドラを紐付けているのか疑問に感じると思いますが、
+それはハンドラのパートで説明します。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+ハンドラ
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+ハンドラは、処理に必要なリクエストの Path や Query, JSON などを引数に宣言でき、
+戻り値として Json や文字列、 Result 型などを宣言できます。
+宣言したハンドラの型に応じて、サーバが良い感じに引数にデータを渡してハンドラを呼び出し、
+また宣言したハンドラの戻り値の型に応じてレスポンスを返します。</p>
+<p>
+ハンドラに宣言できる引数と戻り値については、以下を参照してください。</p>
+<ul>
+<li>
+<p>引数</p>
+<ul>
+<li><a href="https://actix.rs/docs/extractors">https://actix.rs/docs/extractors</a></li>
+<li>
+<p>次の URL で説明されている <code class="verbatim">web::Data&lt;T&gt;</code> 型は、各ハンドラで情報を共有するため <strong>特に重要</strong></p>
+<ul>
+<li><a href="https://actix.rs/docs/application/#shared-mutable-state">https://actix.rs/docs/application/#shared-mutable-state</a></li>
+<li><code class="verbatim">web::Data&lt;T&gt;</code> 型の注意点については後述します</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>戻り値</p>
+<ul>
+<li><a href="https://docs.rs/actix-web/latest/actix_web/trait.Responder.html">https://docs.rs/actix-web/latest/actix_web/trait.Responder.html</a></li>
+<li>
+<p>オススメとしては</p>
+<ul>
+<li>JSON を返す場合は <code class="verbatim">Json&lt;T&gt;</code></li>
+<li>
+<p>StatusCode をカスタマイズする場合 <code class="verbatim">(R,StatusCode)</code></p>
+<ul>
+<li>ここで R には、 <code class="verbatim">Json&lt;T&gt;</code> 等が指定可能</li>
+</ul>
+</li>
+<li>StatusCode 以外のヘッダを返す場合は HttpResponseBuilder</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p><strong>引数は、ハンドラの処理に必要なものを複数組み合わせて指定できます。</strong></p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="k">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">index</span><span class="p">(</span><span class="w"> </span><span class="n">info</span>: <span class="nc">actix_web</span>::<span class="n">HttpRequest</span><span class="p">,</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">body</span>: <span class="nc">web</span>::<span class="n">Payload</span><span class="w"> </span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span></span></span></code></pre></div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+ハンドラの <code class="verbatim">service()</code> , <code class="verbatim">route()</code> の違い
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+前述の通り、
+ハンドラをサーバに登録するには <code class="verbatim">service()</code> , <code class="verbatim">route()</code>  の 2 パターンあります。</p>
+<p>
+ハンドラをサーバに登録する際に、
+<code class="verbatim">service()</code> はハンドラの関数だけを指定し、
+<code class="verbatim">route()</code> はハンドラの関数と path, method を指定します。</p>
+<p>
+どちらのハンドラも、
+上述したようにハンドラ処理に必要な引数と戻り値を組み合わせて定義します。</p>
+<p>
+違いは、 <code class="verbatim">service()</code> の時は、
+次のように関数定義の際にマクロで path と method を指定することです。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="cp">#[get(</span><span class="s">&#34;/hoge&#34;</span><span class="cp">)]</span><span class="w"> </span><span class="c1">// /hoge の GET 処理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">index</span><span class="p">(</span><span class="w"> </span><span class="n">info</span>: <span class="nc">actix_web</span>::<span class="n">HttpRequest</span><span class="w"> </span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">Result</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span></span></span></code></pre></div>
+</div>
+<p>
+関数と path と method の組み合わせがセットで定義されるので、
+個人的には <code class="verbatim">service()</code> の方が分かり易いと思います。</p>
+<p>
+もちろん、 <code class="verbatim">route()</code> の方がサーバ定義に集約されていて分かり易い、
+という考えもあると思います。</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+<code class="verbatim">web::Data&lt;T&gt;</code> 型
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+Web サービスの各ハンドラ処理で、なんらかの情報を共有したいことは良くあります。</p>
+<p>
+この情報共有に利用するのが <code class="verbatim">web::Data&lt;T&gt;</code> 型です。</p>
+<p>
+ここでは、次のサンプルを元に説明します。</p>
+<p>
+&lt;<a href="https://actix.rs/docs/application/#shared-mutable-state">https://actix.rs/docs/application/#shared-mutable-state</a>&gt;</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="k">use</span><span class="w"> </span><span class="n">actix_web</span>::<span class="p">{</span><span class="n">web</span><span class="p">,</span><span class="w"> </span><span class="n">App</span><span class="p">,</span><span class="w"> </span><span class="n">HttpServer</span><span class="p">};</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">use</span><span class="w"> </span><span class="n">std</span>::<span class="n">sync</span>::<span class="n">Mutex</span><span class="p">;</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span> <span class="nc">AppStateWithCounter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">counter</span>: <span class="nc">Mutex</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// &lt;- Mutex is necessary to mutate safely across threads
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">index</span><span class="p">(</span><span class="n">data</span>: <span class="nc">web</span>::<span class="n">Data</span><span class="o">&lt;</span><span class="n">AppStateWithCounter</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">String</span> <span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">counter</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span><span class="w"> </span><span class="c1">// &lt;- get counter&#39;s MutexGuard
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">    </span><span class="o">*</span><span class="n">counter</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="c1">// &lt;- access counter inside MutexGuard
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="fm">format!</span><span class="p">(</span><span class="s">&#34;Request number: {counter}&#34;</span><span class="p">)</span><span class="w"> </span><span class="c1">// &lt;- response with count
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="cp">#[actix_web::main]</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">main</span><span class="p">()</span><span class="w"> </span>-&gt; <span class="nc">std</span>::<span class="n">io</span>::<span class="nb">Result</span><span class="o">&lt;</span><span class="p">()</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">web</span>::<span class="n">Data</span>::<span class="n">new</span><span class="p">(</span><span class="n">AppStateWithCounter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">counter</span>: <span class="nc">Mutex</span>::<span class="n">new</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">});</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">HttpServer</span>::<span class="n">new</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">App</span>::<span class="n">new</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="n">app_data</span><span class="p">(</span><span class="n">counter</span><span class="p">.</span><span class="n">clone</span><span class="p">())</span><span class="w"> </span><span class="c1">// &lt;- register the created data
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">            </span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">web</span>::<span class="n">get</span><span class="p">().</span><span class="n">to</span><span class="p">(</span><span class="n">index</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">})</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="n">bind</span><span class="p">((</span><span class="s">&#34;127.0.0.1&#34;</span><span class="p">,</span><span class="w"> </span><span class="mi">8080</span><span class="p">))</span><span class="o">?</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="n">run</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">.</span><span class="k">await</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></div>
+</div>
+<div id="outline-container-headline-8" class="outline-4">
+<h4 id="headline-8">
+共有データの持ち方
+</h4>
+<div id="outline-text-headline-8" class="outline-text-4">
+<p>
+上記サンプルは、 
+次の AppStateWithCounter 構造体を各ハンドラで共有する情報として扱います。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">AppStateWithCounter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">counter</span>: <span class="nc">Mutex</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// &lt;- Mutex is necessary to mutate safely across threads
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+ここで <code class="verbatim">counter:Mutex&lt;i32&gt;</code> が、共有する情報です。
+つまり、 i32 値を共有します。
+もちろん、 i32 ではなく構造体など任意の情報を共有することも可能です。</p>
+<p>
+以下のように複数の情報をそれぞれ Mutex にすることも可能です。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">AppStateWithCounter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">counter1</span>: <span class="nc">Mutex</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">counter2</span>: <span class="nc">Mutex</span><span class="o">&lt;</span><span class="kt">i32</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+あるいは、一つの構造体として Mutex にすることも可能です。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="k">struct</span> <span class="nc">CounterSet</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">counter1</span>: <span class="kt">i32</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">counter2</span>: <span class="kt">i32</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="k">struct</span> <span class="nc">AppStateWithCounter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">counterSet</span>: <span class="nc">Mutex</span><span class="o">&lt;</span><span class="n">CounterSet</span><span class="o">&gt;</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+これは、それぞれのデータの排他をどう制御するのか？の設計の違いです。</p>
+<p>
+前者のそれぞれを Mutex にした場合、
+それぞれで排他をかけるので、
+それぞれ別々に異なるハンドラでアクセスできます。</p>
+<p>
+一方で後者の 1 つの Mutex にした場合、
+排他をかけるのは 1 つなので、
+同時アクセスできるのは 1 つのハンドラだけになります。</p>
+<p>
+前者の方は、同時アクセス可能なハンドラを増やせるというメリットはありますが、
+一方でデッドロックやデータの整合性をどのように管理するか？などを考える必要があります。</p>
+<p>
+後者は、アクセス可能なハンドラが一つに限定される代りに、
+デッドロックやデータの整合性を考えずに済むというメリットがあります。</p>
+<p>
+どちらにするかは、それぞれの考え方次第です。</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-4">
+<h4 id="headline-9">
+共有データをサーバへ登録
+</h4>
+<div id="outline-text-headline-9" class="outline-text-4">
+<p>
+次の処理で共有データを生成し、</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">web</span>::<span class="n">Data</span>::<span class="n">new</span><span class="p">(</span><span class="n">AppStateWithCounter</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">counter</span>: <span class="nc">Mutex</span>::<span class="n">new</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">});</span></span></span></code></pre></div>
+</div>
+<p>
+そして次の処理 <code class="verbatim">app_data(counter.clone())</code> で共有データをサーバに登録します。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="w">    </span><span class="n">HttpServer</span>::<span class="n">new</span><span class="p">(</span><span class="k">move</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="n">App</span>::<span class="n">new</span><span class="p">()</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">            </span><span class="p">.</span><span class="n">app_data</span><span class="p">(</span><span class="n">counter</span><span class="p">.</span><span class="n">clone</span><span class="p">())</span><span class="w"> </span><span class="c1">// &lt;- register the created data
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="w">            </span><span class="p">.</span><span class="n">route</span><span class="p">(</span><span class="s">&#34;/&#34;</span><span class="p">,</span><span class="w"> </span><span class="n">web</span>::<span class="n">get</span><span class="p">().</span><span class="n">to</span><span class="p">(</span><span class="n">index</span><span class="p">))</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="p">})</span></span></span></code></pre></div>
+</div>
+<p>
+異なる複数のサーバに、同じ共有データを登録することも出来ます。</p>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-4">
+<h4 id="headline-10">
+ハンドラで共有データを処理
+</h4>
+<div id="outline-text-headline-10" class="outline-text-4">
+<p>
+ハンドラで共有データを処理するには、
+ハンドラの引数にそのデータの型を宣言します。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="k">async</span><span class="w"> </span><span class="k">fn</span> <span class="nf">index</span><span class="p">(</span><span class="n">data</span>: <span class="nc">web</span>::<span class="n">Data</span><span class="o">&lt;</span><span class="n">AppStateWithCounter</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="nb">String</span> <span class="p">{</span></span></span></code></pre></div>
+</div>
+<p>
+これによって、サーバからそのデータが引数に渡されてハンドラがコールされます。</p>
+<p>
+そして、ハンドラから実際に共有データにアクセスするには Mutex を lock() します。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="w">    </span><span class="kd">let</span><span class="w"> </span><span class="k">mut</span><span class="w"> </span><span class="n">counter</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">counter</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">unwrap</span><span class="p">();</span><span class="w"> </span><span class="c1">// &lt;- get counter&#39;s MutexGuard
+</span></span></span></code></pre></div>
+</div>
+<p>
+この lock() で得られたデータに対して操作すれば、共有データが操作されます。</p>
+<div class="src src-rs">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="w">    </span><span class="o">*</span><span class="n">counter</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="c1">// &lt;- access counter inside MutexGuard
+</span></span></span></code></pre></div>
+</div>
+<p>
+なお、 lock() された共有データは、
+その共有データの変数のスコープから出る際に unlock されます。 </p>
+<p>
+よって、共有データを lock() した変数のスコープを出来るだけ小さくすることで
+排他期間を短くできるので、良く考えてスコープを制御する必要があります。</p>
+<p>
+ただし、 排他期間を短くすることだけに注目し、
+1 つのハンドラ処理で複数回 lock() する、などしてしまうと、
+逆に適切な排他制御が出来なくなる可能性もあるので注意が必要です。</p>
+<p>
+まぁ、これは Rust に限った話しではなく、一般的な排他制御の話ですが。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-2">
+<h2 id="headline-11">
+async/await
+</h2>
+<div id="outline-text-headline-11" class="outline-text-2">
+<p>
+イマドキの言語で良く見る async/await。</p>
+<p>
+Rust にも async/await があります。</p>
+<p>
+というか、 actix-web は基本となる handler の型が async なので、
+async は必須。</p>
+<p>
+で、 async/await の関係については javascript とほとんど同じと考えて良いです。
+<strong>async の関数は、 await で待たないと処理されずに先に進んでしまうので注意が必要です。</strong></p>
+<p>
+なお、 await は <code class="verbatim">val.await</code> というようにメンバにアクセスするような形で指定します。</p>
+<p>
+また、 await で待てるのは async 関数内のみになります。
+この辺りも javascript と同じです。</p>
+<p>
+じゃぁ、 async 関数ではない通常の関数から async の終了を待つにはどうするのかと言うと、
+次の <code class="verbatim">block_on()</code> を使う。</p>
+<p>
+&lt;<a href="https://docs.rs/actix-web/4.2.1/actix_web/rt/struct.Runtime.html#method.block_on">https://docs.rs/actix-web/4.2.1/actix_web/rt/struct.Runtime.html#method.block_on</a>&gt;</p>
+<p>
+<strong>ただ、この <code class="verbatim">block_on()</code> を使うのはイマイチな気がします。</strong></p>
+<p>
+というのも、 <code class="verbatim">block_on()</code> を使うには Runtime を作る必要があり、
+Runtime を作るには OS リソースが必要です。
+そして、Runtime を同時に一定数作ると <strong>OS リソースが無くなって Runtime が作れなくなります。</strong>
+この OS リソースは、Linux の場合はファイルハンドル数(<code class="verbatim">ulimit -n</code>)の制限に依存します。</p>
+<p>
+まぁ、数百くらい同時に Runtime を作った場合の話なので、
+実用上あまり気にしなくても良いかもしれないですが、
+結構早めに上限が来てしまうことは認識しておいた方が良いでしょう。</p>
+<p>
+そんな訳で、
+非 async 関数から async をコールしないように開発を進めるのが基本になります。</p>
+</div>
+</div>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2021/2021-12-05-display-dots/" title="液晶ディスプレイメーカーのドット抜け保証"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            <li class="next">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-01-09-raspi-strange-hdd/"
+                    title="Raspberry pi に接続していた USB HDD が調子悪いので色々と対応してみた(未解決)"><span>&nbsp;&nbsp;</span><i
+                        class="icon icon-angle-right" aria-hidden="true"></i></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2023
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.a2959bb9e3b3c9e8aa6e358e6bb7090585dcf6831387b734c9459b13f23b1834.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.29680208905b16ba17da3c502ae2847f8396e8a4a95bec73e9a0981ed3746b23.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.bd9ece370823766409517a6402191cfc0f35dd406ecd994a5ba78e40fea79c37c67a579ebc6bf2f1101d2bf15c5e50fa4f04aec9abea19edeb112813034367af.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

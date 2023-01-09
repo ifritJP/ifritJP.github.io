@@ -1,0 +1,379 @@
+#+TITLE: actix-web (Rust の web フレームワーク)
+#+DATE: 2022-01-06
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: Rust
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+Web サーバを作成するにあたり actix-web を使ってみたので、
+初心者の目線から見た感想など。
+
+* actix-web
+
+世の中には言語ごとに様々な web フレームワークがありますが、
+actix-web は Rust の web フレームワークです。
+
+なんで actix-web を選んだのかと言えば、「Rust を使いたかった」から。
+
+Rust は数年前に話題になったときに、どんなもんなんだろう？と、
+チュートリアルと簡単なツールを作っただけで、それ以降触っていなかったので、
+そろそろちゃんと触っておこう、と思ったのが Rust を選択した一番の理由。
+
+特に当時 Rust で作ったツールはシングルスレッドのツールで、
+Rust の特性であるデータの排他制御の恩恵やら、
+Rust でのマルチスレッドプログラミングのやり方などがさっぱりな状況だったので、
+今回改めて Rust を使うことにした。
+
+Rust を選択した理由としては他にも、
+
+- Rust の強力なコンパイラ時のチェックはセキュリティ上も効果があるはず
+- gc 系の言語に比べてパフォーマンスも高い
+
+などがあります。
+
+特に、セキュリティは結構気にしている。
+というのも、web サービスは攻撃対象になりやすいので、
+コンパイラ時にガッツリとチェックされる Rust であれば、
+攻撃のスキを与え難いのではないか？と期待していたりします。
+
+まぁ、実際のところどうなのかは不明ですが。。
+
+少なくとも C/C++ よりはマシだとは思うが、 
+他のイマドキの言語と比べてどうなのか？は良く分からん。
+
+
+で、 Rust を選んだ理由は上記だが、
+じゃぁなんで Rust の中で actix-web なのか、といえば、
+Rust の web フレームワークの中で github のスターの数が多かったから。
+というそれだけの理由です。
+
+* actix-web のリファレンス
+
+actix-web のリファレンスは以下です。
+
+<https://actix.rs/docs/getting-started/>
+
+前述した通り、 Rust は数年前に少し触った程度ですが、
+そんな知識しかない状態でも
+上記のリファレンスに従うと簡単な web サービスが動かせました。
+
+とはいえ、
+リファレンスのコードそのままなら動くが、
+リファレンスのコードそのままで自分の期待する処理は実現できない訳で。
+
+そして、リファレンスのコードから少し外れると、
+やっぱり動かなくなる(というかビルドが通らない)訳で。。。
+
+そんな訳で、以降では Rust 初心者、 
+actix-web 初心者がひっかかるであろう箇所について説明していきます。
+
+* actix-web の構成
+
+actix-web の構成を大まかに分けると、サーバとハンドラからなります。
+
+- サーバの主な役割り
+  - path と ハンドラの紐付けの管理
+  - サーバがクライアントからアクセスされた時に、
+    アクセスされた path に従って紐付けられているハンドラをコールする
+  - 各ハンドラからアクセスする共有データの管理
+  - 指定された port での Listen 処理
+  - TLS
+
+- ハンドラの主な役割り
+  - サーバによってハンドラが呼びだされ、
+    要求に対する実際の処理を行なう。
+
+サーバとハンドラの役割を見ると、ハンドラが非常に簡素です。
+そして、実際にハンドラはかなり簡単に書けます。
+
+なお、 リクエスト処理に必須の Query の処理や Body の Json パースなども、
+ハンドラの引数に指定しておくだけで、自動で行なわれます。
+
+* サーバ
+
+以下のようにすると、 8080 ポートで listen するサーバが起動します。
+
+#+BEGIN_SRC rs
+    HttpServer::new(move || {
+        App::new()
+            // enable logger
+            .wrap(middleware::Logger::default())
+            .service(index_test1)
+            .route("/hoge", web::get().to(index_test2))
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
+#+END_SRC
+
+ここで、次の部分が path とハンドラの紐付けです。
+=index_test1=, =index_test2= はハンドラ関数で、必要な処理を自分で作成します。
+ハンドラ関数の名前は任意です。
+
+#+BEGIN_SRC rs
+            .service(index_test1)
+            .route("/hoge", web::get().to(index_test2))
+#+END_SRC
+
+この =service()= , =route()= は、
+それぞれ異なるハンドラ(=index_test1=, =index_test2=)の登録処理です。
+この登録関数は複数繋げて書けます。
+
+ハンドラの登録は、 =service()= , =route()= の2種類で、
+=service()= はハンドラ関数だけ指定し、
+=route()= はサーバ登録時に path と http METHOD とハンドラ関数を指定します。
+
+こう見ると、 =service()= の方は path と http METHOD の指定なしにどうやって
+ハンドラを紐付けているのか疑問に感じると思いますが、
+それはハンドラのパートで説明します。
+
+* ハンドラ
+
+ハンドラは、処理に必要なリクエストの Path や Query, JSON などを引数に宣言でき、
+戻り値として Json や文字列、 Result 型などを宣言できます。
+宣言したハンドラの型に応じて、サーバが良い感じに引数にデータを渡してハンドラを呼び出し、
+また宣言したハンドラの戻り値の型に応じてレスポンスを返します。
+ 
+ハンドラに宣言できる引数と戻り値については、以下を参照してください。
+
+- 引数
+  - https://actix.rs/docs/extractors
+  - 次の URL で説明されている =web::Data<T>= 型は、各ハンドラで情報を共有するため *特に重要*
+    - https://actix.rs/docs/application/#shared-mutable-state
+    - =web::Data<T>= 型の注意点については後述します
+- 戻り値
+  - https://docs.rs/actix-web/latest/actix_web/trait.Responder.html
+  - オススメとしては
+    - JSON を返す場合は =Json<T>=
+    - StatusCode をカスタマイズする場合 =(R,StatusCode)=
+      - ここで R には、 =Json<T>= 等が指定可能
+    - StatusCode 以外のヘッダを返す場合は HttpResponseBuilder
+
+*引数は、ハンドラの処理に必要なものを複数組み合わせて指定できます。*
+
+#+BEGIN_SRC rs
+async fn index( info: actix_web::HttpRequest, mut body: web::Payload ) -> Result<String>
+#+END_SRC
+
+
+** ハンドラの =service()= , =route()= の違い
+
+前述の通り、
+ハンドラをサーバに登録するには =service()= , =route()=  の 2 パターンあります。
+
+ハンドラをサーバに登録する際に、
+=service()= はハンドラの関数だけを指定し、
+=route()= はハンドラの関数と path, method を指定します。
+
+どちらのハンドラも、
+上述したようにハンドラ処理に必要な引数と戻り値を組み合わせて定義します。
+
+違いは、 =service()= の時は、
+次のように関数定義の際にマクロで path と method を指定することです。
+
+#+BEGIN_SRC rs
+#[get("/hoge")] // /hoge の GET 処理
+async fn index( info: actix_web::HttpRequest ) -> Result<String>
+#+END_SRC
+
+
+関数と path と method の組み合わせがセットで定義されるので、
+個人的には =service()= の方が分かり易いと思います。
+
+もちろん、 =route()= の方がサーバ定義に集約されていて分かり易い、
+という考えもあると思います。
+
+
+** =web::Data<T>= 型
+
+Web サービスの各ハンドラ処理で、なんらかの情報を共有したいことは良くあります。
+
+この情報共有に利用するのが =web::Data<T>= 型です。
+
+ここでは、次のサンプルを元に説明します。
+
+<https://actix.rs/docs/application/#shared-mutable-state>
+
+#+BEGIN_SRC rs
+use actix_web::{web, App, HttpServer};
+use std::sync::Mutex;
+
+struct AppStateWithCounter {
+    counter: Mutex<i32>, // <- Mutex is necessary to mutate safely across threads
+}
+
+async fn index(data: web::Data<AppStateWithCounter>) -> String {
+    let mut counter = data.counter.lock().unwrap(); // <- get counter's MutexGuard
+    *counter += 1; // <- access counter inside MutexGuard
+
+    format!("Request number: {counter}") // <- response with count
+}
+
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+    let counter = web::Data::new(AppStateWithCounter {
+        counter: Mutex::new(0),
+    });
+
+    HttpServer::new(move || {
+        App::new()
+            .app_data(counter.clone()) // <- register the created data
+            .route("/", web::get().to(index))
+    })
+    .bind(("127.0.0.1", 8080))?
+    .run()
+    .await
+}
+#+END_SRC
+
+*** 共有データの持ち方
+
+上記サンプルは、 
+次の AppStateWithCounter 構造体を各ハンドラで共有する情報として扱います。
+
+#+BEGIN_SRC rs
+struct AppStateWithCounter {
+    counter: Mutex<i32>, // <- Mutex is necessary to mutate safely across threads
+}
+#+END_SRC
+
+ここで =counter:Mutex<i32>= が、共有する情報です。
+つまり、 i32 値を共有します。
+もちろん、 i32 ではなく構造体など任意の情報を共有することも可能です。
+
+以下のように複数の情報をそれぞれ Mutex にすることも可能です。
+
+#+BEGIN_SRC rs
+struct AppStateWithCounter {
+    counter1: Mutex<i32>,
+    counter2: Mutex<i32>,
+}
+#+END_SRC
+
+あるいは、一つの構造体として Mutex にすることも可能です。
+
+#+BEGIN_SRC rs
+struct CounterSet {
+    counter1: i32,
+    counter2: i32,
+}
+struct AppStateWithCounter {
+    counterSet: Mutex<CounterSet>,
+}
+#+END_SRC
+
+これは、それぞれのデータの排他をどう制御するのか？の設計の違いです。
+
+前者のそれぞれを Mutex にした場合、
+それぞれで排他をかけるので、
+それぞれ別々に異なるハンドラでアクセスできます。
+
+一方で後者の 1 つの Mutex にした場合、
+排他をかけるのは 1 つなので、
+同時アクセスできるのは 1 つのハンドラだけになります。
+
+前者の方は、同時アクセス可能なハンドラを増やせるというメリットはありますが、
+一方でデッドロックやデータの整合性をどのように管理するか？などを考える必要があります。
+
+後者は、アクセス可能なハンドラが一つに限定される代りに、
+デッドロックやデータの整合性を考えずに済むというメリットがあります。
+
+どちらにするかは、それぞれの考え方次第です。
+
+*** 共有データをサーバへ登録
+
+次の処理で共有データを生成し、
+
+#+BEGIN_SRC rs
+    let counter = web::Data::new(AppStateWithCounter {
+        counter: Mutex::new(0),
+    });
+#+END_SRC
+
+そして次の処理 =app_data(counter.clone())= で共有データをサーバに登録します。
+
+#+BEGIN_SRC rs
+    HttpServer::new(move || {
+        App::new()
+            .app_data(counter.clone()) // <- register the created data
+            .route("/", web::get().to(index))
+    })
+#+END_SRC
+
+異なる複数のサーバに、同じ共有データを登録することも出来ます。
+
+*** ハンドラで共有データを処理
+
+ハンドラで共有データを処理するには、
+ハンドラの引数にそのデータの型を宣言します。
+
+#+BEGIN_SRC rs
+async fn index(data: web::Data<AppStateWithCounter>) -> String {
+#+END_SRC
+
+これによって、サーバからそのデータが引数に渡されてハンドラがコールされます。
+
+そして、ハンドラから実際に共有データにアクセスするには Mutex を lock() します。
+
+#+BEGIN_SRC rs
+    let mut counter = data.counter.lock().unwrap(); // <- get counter's MutexGuard
+#+END_SRC
+
+この lock() で得られたデータに対して操作すれば、共有データが操作されます。
+
+#+BEGIN_SRC rs
+    *counter += 1; // <- access counter inside MutexGuard
+#+END_SRC
+
+なお、 lock() された共有データは、
+その共有データの変数のスコープから出る際に unlock されます。 
+
+よって、共有データを lock() した変数のスコープを出来るだけ小さくすることで
+排他期間を短くできるので、良く考えてスコープを制御する必要があります。
+
+ただし、 排他期間を短くすることだけに注目し、
+1 つのハンドラ処理で複数回 lock() する、などしてしまうと、
+逆に適切な排他制御が出来なくなる可能性もあるので注意が必要です。
+
+まぁ、これは Rust に限った話しではなく、一般的な排他制御の話ですが。
+
+
+* async/await
+
+イマドキの言語で良く見る async/await。
+
+Rust にも async/await があります。
+
+というか、 actix-web は基本となる handler の型が async なので、
+async は必須。
+
+で、 async/await の関係については javascript とほとんど同じと考えて良いです。
+*async の関数は、 await で待たないと処理されずに先に進んでしまうので注意が必要です。*
+
+
+なお、 await は =val.await= というようにメンバにアクセスするような形で指定します。
+
+また、 await で待てるのは async 関数内のみになります。
+この辺りも javascript と同じです。
+
+じゃぁ、 async 関数ではない通常の関数から async の終了を待つにはどうするのかと言うと、
+次の =block_on()= を使う。
+
+<https://docs.rs/actix-web/4.2.1/actix_web/rt/struct.Runtime.html#method.block_on>
+
+*ただ、この =block_on()= を使うのはイマイチな気がします。*
+
+というのも、 =block_on()= を使うには Runtime を作る必要があり、
+Runtime を作るには OS リソースが必要です。
+そして、Runtime を同時に一定数作ると *OS リソースが無くなって Runtime が作れなくなります。*
+この OS リソースは、Linux の場合はファイルハンドル数(=ulimit -n=)の制限に依存します。
+
+
+まぁ、数百くらい同時に Runtime を作った場合の話なので、
+実用上あまり気にしなくても良いかもしれないですが、
+結構早めに上限が来てしまうことは認識しておいた方が良いでしょう。
+
+そんな訳で、
+非 async 関数から async をコールしないように開発を進めるのが基本になります。
