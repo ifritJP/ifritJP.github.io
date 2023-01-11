@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.100.1" />
+<meta name="generator" content="Hugo 0.109.0">
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/singleboard/raspios64-point/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -26,7 +26,6 @@
 <meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/raspios64-point/" /><meta property="article:section" content="singleboard" />
 
 <meta property="og:site_name" content="公開技術情報" />
-
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法"/>
 <meta name="twitter:description" content="8GB 版 Raspberry Pi を購入したので、 せっかく 8GB を使うなら 32bit よりも 64bit 版の方が良いだろうと軽い気持で 64bit 版 Raspberry Pi OS をインストールしたものの、何故かエラーが発生し"/>
@@ -155,7 +154,7 @@ type はパラメータの型を示します。</p>
 request が定義されます。
 さらに具体的には、次のように _IOW() を使って ioctl をコールします。</p>
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="n">ioctl</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="n">_IOW</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kt">int</span> <span class="p">),</span> <span class="n">param</span> <span class="p">);</span></span></span></code></pre></div>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="nf">ioctl</span><span class="p">(</span> <span class="n">fd</span><span class="p">,</span> <span class="nf">_IOW</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="kt">int</span> <span class="p">),</span> <span class="n">param</span> <span class="p">);</span></span></span></code></pre></div>
 </div>
 <p>
 ここで param は、 int 型のパラメータです。</p>
@@ -175,7 +174,7 @@ _IOW() などのマクロから定義された request から、
 具体的には、次のような処理がデバイスドライバには書かれています。</p>
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">switch</span> <span class="p">(</span> <span class="n">request</span> <span class="p">)</span> <span class="p">{</span>
-</span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="n">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
+</span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="nf">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
 </span></span><span class="line"><span class="cl">      <span class="c1">// group:1, num:0 の処理
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="k">break</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">   <span class="k">case</span> <span class="nf">_IOR</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="kt">int</span> <span class="p">)</span><span class="o">:</span>
@@ -312,7 +311,7 @@ https://www.wdic.org/w/TECH/SIGBUS</p>
 </span></span><span class="line"><span class="cl">    <span class="kt">int32_t</span> <span class="n">buf</span><span class="p">[</span> <span class="mi">2</span> <span class="p">];</span>
 </span></span><span class="line"><span class="cl">    <span class="kt">int32_t</span> <span class="o">*</span> <span class="n">pVal</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int32_t</span><span class="o">*</span><span class="p">)((</span><span class="kt">int8_t</span><span class="o">*</span><span class="p">)</span><span class="n">buf</span><span class="o">+</span><span class="mi">1</span><span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="o">*</span><span class="n">pVal</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>  <span class="c1">// error
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="n">printf</span><span class="p">(</span> <span class="s">&#34;%p: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pVal</span><span class="p">,</span> <span class="o">*</span><span class="n">pVal</span> <span class="p">);</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">printf</span><span class="p">(</span> <span class="s">&#34;%p: %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">pVal</span><span class="p">,</span> <span class="o">*</span><span class="n">pVal</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>

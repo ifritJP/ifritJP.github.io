@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説 - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.100.1" />
+<meta name="generator" content="Hugo 0.109.0">
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -26,14 +26,13 @@
 <meta property="og:url" content="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/" /><meta property="article:section" content="singleboard" />
 
 <meta property="og:site_name" content="公開技術情報" />
-
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説"/>
 <meta name="twitter:description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html 2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。 2022/1 raspberry pi os bullseye を使用した時の補足を追加。 2023/1 ssh でデフ"/>
 <meta itemprop="name" content="Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説">
 <meta itemprop="description" content="2019/6 Bluetooth のファイル転送、PAN 設定について書きました。 https://ifritjp.github.io/blog/site/2019/06/15/rasp0w.html 2020/12 RaspberryPi4 の最新セットアップ方法に更新しました。 2022/1 raspberry pi os bullseye を使用した時の補足を追加。 2023/1 ssh でデフ">
 
-<meta itemprop="wordCount" content="3832">
+<meta itemprop="wordCount" content="4061">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -76,6 +75,8 @@
 <p>
 <strong>2023/1 ssh でデフォルト pi ユーザが使えない時の補足を追加。</strong></p>
 <p>
+<strong>2023/1 raspios_lite_arm64-2022-09-26 使用時、ログンしないと Bluetooth の音楽接続できない場合の補足を追加。</strong></p>
+<p>
 RaspberryPi で Bluetooth AUDIO (A2DP) レシーバーを作成するための設定方法が
 Web に載っていますが、幾つかハマったポイントがあったので、
 そのポイントを解説していきます。</p>
@@ -89,14 +90,14 @@ OS イメージ
 </h2>
 <div id="outline-text-headline-1" class="outline-text-2">
 <p>
-https://www.raspberrypi.org/software/operating-systems/</p>
+&lt;<a href="https://www.raspberrypi.org/software/operating-systems/">https://www.raspberrypi.org/software/operating-systems/</a>&gt;</p>
 <p>
 RaspberryPi の OS イメージは、
 必ず <strong>Raspberry Pi OS</strong> を使用してください。
 Raspberry Pi OS であれば、
 Lite でも with desktop でも and recommended software でも OK です。</p>
 <p>
-ちなみに今回使用したのは現時点で最新 2020-12-02 5.4 を使用しました。</p>
+ちなみに今回使用したのは現時点で最新 <del>2020-12-02 5.4</del> 2022-09-26 を使用しました。</p>
 <p>
 <strong>2020/3 現在、 Raspbian Buster と RaspberryPi3 Model B の組み合わせだと、A2DP 再生時の音声ノイズを改善できません。</strong>
 Raspbian Stretch でも、バージョンが異なるとノイズを改善できない可能性があります。
@@ -105,7 +106,7 @@ RaspberryPi3 Model B 以外でどうか、
 <p>
 なお、RaspberryPi3 の WiFi で脆弱性が確認されているようです。</p>
 <p>
-https://pc.watch.impress.co.jp/docs/news/1237645.html</p>
+&lt;<a href="https://pc.watch.impress.co.jp/docs/news/1237645.html">https://pc.watch.impress.co.jp/docs/news/1237645.html</a>&gt;</p>
 <p>
 この記事では、末尾で WiFi を無効化しているので影響はありませんが、
 もしも WiFi を有効化している場合は <strong>各自の自己責任</strong> のもと、
@@ -138,6 +139,8 @@ OS イメージ書き込み時にファイルを作成しておいた方が良�
 <del>これで Raspbian を起動すれば、 ssh (id: pi, password: raspberry)が利用可能です。</del></p>
 <p>
 <del>※デフォルトパスワードを変える、 pi アカウントを無効にするなど別途設定してください。</del></p>
+<p>
+<strong>2023/1 追記</strong></p>
 <p>
 <strong>Bullseye からは、デフォルト user/pass が利用できなくなりました。</strong></p>
 <p>
@@ -195,6 +198,8 @@ bluetooth 関連のパッケージ追加
 <div class="src src-txt">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ sudo apt-get install bluez pulseaudio-module-bluetooth python-gobject python-gobject-2</span></span></code></pre></div>
 </div>
+<p>
+<strong>2023/1 追記</strong></p>
 <p>
 <strong>bullseye の場合 python-gobject python-gobject-2 は不要</strong>  </p>
 <p>
@@ -379,9 +384,6 @@ discoverable が on の状態だと新規にペアリングを登録可能なの
 </h3>
 <div id="outline-text-headline-9" class="outline-text-3">
 <p>
-<strong>bullseye の場合、この『ペアリングの認証』作業は不要です。</strong>
-<strong>というか、上記の Confirm passkey の確認が、『ペアリングの認証』になります。</strong></p>
-<p>
 ペアリングすると、次のように出力されます。</p>
 <div class="src src-txt">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">[CHG] Device XX:XX:XX:XX:XX:XX Connected: yes
@@ -456,8 +458,6 @@ $ sudo service bluetooth restart
 </h2>
 <div id="outline-text-headline-11" class="outline-text-2">
 <p>
-<strong>bullseye の場合は不要。問題が発生する場合に設定してください。</strong>  </p>
-<p>
 デフォルトの起動状態では Audio Sink が有効にならないので、
 Audio Sink を有効にするために /etc/rc.local に次の処理を追加します。</p>
 <div class="src src-txt">
@@ -465,6 +465,45 @@ Audio Sink を有効にするために /etc/rc.local に次の処理を追加し
 </span></span><span class="line"><span class="cl">pulseaudio -D
 </span></span><span class="line"><span class="cl">service bluetooth restart</span></span></code></pre></div>
 </div>
+<p>
+<strong>2023/1 追記</strong></p>
+<p>
+<strong>raspberry pi os の raspios_lite_arm64-2022-09-26 では、上記では上手くいきませんでした。</strong></p>
+<p>
+上記の代わりに、以下を実施してください。</p>
+<ul>
+<li>以下を実行</li>
+</ul>
+<pre class="example">
+$ sudo systemctl --global disable pulseaudio.service pulseaudio.socket
+</pre>
+<ul>
+<li>at をインストール</li>
+</ul>
+<pre class="example">
+$ sudo apt-get install at
+</pre>
+<ul>
+<li>下記を /etc/rc.local に追加</li>
+</ul>
+<div class="src src-txt">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">echo &#34;/usr/bin/pulseaudio -D --log-target=journal --exit-idle-time=-1&#34; | at now</span></span></code></pre></div>
+</div>
+<p>
+なお、 raspios_lite_arm64-2022-09-26 では、
+ユーザがログインすると pulseaudio が起動するようになっています。</p>
+<p>
+その設定を、 <code class="verbatim">sudo systemctl --global disable pulseaudio.service pulseaudio.socket</code> で
+無効化しています。
+これをしておかないと、
+boot 時に起動している pulseaudio とログイン時に起動される pulseaudio がバッティングして、
+ログアウトすると bluetooth 接続が出来なくなってしまいます。</p>
+<p>
+なお、ログイン時に pulseaudio を起動する設定に戻すには、
+rc.local に追加した行を削除するのと、以下を実行してください。</p>
+<pre class="example">
+$ sudo systemctl --global enable pulseaudio.service pulseaudio.socket
+</pre>
 </div>
 </div>
 <div id="outline-container-headline-12" class="outline-2">
@@ -597,6 +636,8 @@ android
 </h2>
 <div id="outline-text-headline-19" class="outline-text-2">
 <p>
+<strong>2022/1 追記</strong></p>
+<p>
 raspberry pi os bullseye にすると、次の英語の音声が数秒ごとに出力されます。</p>
 <pre class="example">
 To install the screen reader press control alt spce
@@ -618,6 +659,7 @@ sudo mv /etc/xdg/autostart/piwiz.desktop /etc/xdg/autostart/piwiz.desktop.bak
 <li><a href="https://qiita.com/yyano/items/802da53ad8a4a00d00e1">https://qiita.com/yyano/items/802da53ad8a4a00d00e1</a>  </li>
 <li><a href="https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt">https://raspberrypi.stackexchange.com/questions/118911/how-do-i-stop-the-audio-message-to-install-the-screen-reader-press-control-alt</a></li>
 <li><a href="https://www.raspberrypi.com/news/raspberry-pi-bullseye-update-april-2022/">https://www.raspberrypi.com/news/raspberry-pi-bullseye-update-april-2022/</a></li>
+<li><a href="https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/SystemWide/">https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/SystemWide/</a></li>
 </ul>
 </div>
 </div>

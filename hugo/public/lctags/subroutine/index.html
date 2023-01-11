@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編) - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.100.1" />
+<meta name="generator" content="Hugo 0.109.0">
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lctags/subroutine/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -26,7 +26,6 @@
 <meta property="og:url" content="https://ifritjp.github.io/documents/lctags/subroutine/" /><meta property="article:section" content="lctags" />
 
 <meta property="og:site_name" content="公開技術情報" />
-
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)"/>
 <meta name="twitter:description" content="コーディングしていると、関数が肥大化していくことが良くあります。 関数の肥大化は、メンテナンス性や可読性が落ちる原因になるため、 リファクタリン"/>
@@ -137,10 +136,10 @@ lctags の DB を作成し、次の内容のソースコードを登録してお
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="k">struct</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="n">type_t</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span> <span class="kt">type_t</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">type_t</span> <span class="n">typ</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">        <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">        <span class="n">typ</span><span class="p">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
@@ -180,12 +179,12 @@ lctags メニューでは、 refactoring の &#39;r&#39; を押し、さらに s
 </span></span><span class="line"><span class="cl"><span class="c1">//======= call ======
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">);</span>
@@ -201,7 +200,7 @@ lctags メニューでは、 refactoring の &#39;r&#39; を押し、さらに s
 <p>
 置き換えると次のようになります。</p>
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">static</span> <span class="kt">int</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pVal</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">pVal</span><span class="p">);</span>
@@ -209,10 +208,10 @@ lctags メニューでは、 refactoring の &#39;r&#39; を押し、さらに s
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">type_t</span> <span class="n">typ</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">       <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">       <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">       <span class="k">if</span> <span class="p">(</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">       <span class="p">}</span>
 </span></span><span class="line"><span class="cl">    <span class="p">}</span>
@@ -244,7 +243,7 @@ lctags メニューでは、 refactoring の &#39;r&#39; を押し、さらに s
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func6</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">type_t</span> <span class="n">typ</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">type_t</span> <span class="n">typ</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">        <span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">        <span class="n">typ</span><span class="p">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
@@ -300,12 +299,12 @@ val が値渡しになったサブルーチンコードが生成されます。<
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">typ</span><span class="p">,</span> <span class="n">val</span> <span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="n">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pVal</span> <span class="p">)</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="nf">func6__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">type_t</span><span class="o">*</span> <span class="n">pTyp</span><span class="p">,</span> <span class="kt">int</span> <span class="n">pVal</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="n">pVal</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl">  <span class="n">pTyp</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="n">pVal</span><span class="p">;</span>
@@ -409,14 +408,14 @@ C-c C-c することで更新されます。</p>
 </span></span><span class="line"><span class="cl"><span class="c1">//======= call ======
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">result__</span> <span class="o">=</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">result__</span> <span class="o">=</span> <span class="nf">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">1</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span> <span class="p">}</span>
 </span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">2</span> <span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;</span> <span class="p">}</span>
 </span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="mi">3</span> <span class="p">)</span> <span class="p">{</span> <span class="k">continue</span><span class="p">;</span> <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">int</span> <span class="nf">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="mi">3</span><span class="p">;</span>
@@ -453,14 +452,14 @@ emacs では、次のように lctags-sub-ret-type を設定するだけです�
 </span></span><span class="line"><span class="cl"><span class="c1">//======= call ======
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="kt">int</span> <span class="n">funcRet__</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">  <span class="n">subMod_t</span> <span class="n">result__</span> <span class="o">=</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="kt">subMod_t</span> <span class="n">result__</span> <span class="o">=</span> <span class="nf">func7__sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">funcRet__</span><span class="p">,</span> <span class="n">val</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModReturn</span> <span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">funcRet__</span><span class="p">;</span> <span class="p">}</span>
 </span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModBreak</span> <span class="p">)</span> <span class="p">{</span> <span class="k">break</span><span class="p">;</span> <span class="p">}</span>
 </span></span><span class="line"><span class="cl">  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="n">result__</span> <span class="o">==</span> <span class="n">subModContinue</span> <span class="p">)</span> <span class="p">{</span> <span class="k">continue</span><span class="p">;</span> <span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="c1">//======= sub routine ======
-</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="n">subMod_t</span> <span class="n">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="k">static</span> <span class="kt">subMod_t</span> <span class="nf">func7__sub</span><span class="p">(</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pFuncRet__</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">  <span class="k">if</span> <span class="p">(</span> <span class="n">val</span> <span class="o">==</span> <span class="mi">10</span> <span class="p">)</span> <span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">subModContinue</span><span class="p">;</span>

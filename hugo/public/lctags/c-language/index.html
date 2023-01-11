@@ -4,7 +4,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>lctags を開発している時に改めて感じた C 言語規格のイケてないところ - 公開技術情報</title>
-<meta name="generator" content="Hugo 0.100.1" />
+<meta name="generator" content="Hugo 0.109.0">
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
 <link rel="canonical" href="https://ifritjp.github.io/documents/lctags/c-language/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
@@ -26,7 +26,6 @@
 <meta property="og:url" content="https://ifritjp.github.io/documents/lctags/c-language/" /><meta property="article:section" content="lctags" />
 
 <meta property="og:site_name" content="公開技術情報" />
-
 <meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="lctags を開発している時に改めて感じた C 言語規格のイケてないところ"/>
 <meta name="twitter:description" content="まずは宣伝 lctags は libclang の AST 情報を利用した C/C&#43;&#43; 向けのソースコードタグシステムです。 ベース機能はソースコードタグシステムですが、 シンボル補完機能等のコー"/>
@@ -370,15 +369,15 @@ struct 宣言内に struct 宣言を持つ場合に使うことが多いと思�
 <p>
 普通はやらないと思いますが、規格上は次のようなコードが書けてしまいます。</p>
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">sub</span><span class="p">(</span> <span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span> <span class="p">}</span> <span class="o">*</span> <span class="n">test</span> <span class="p">)</span>
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span> <span class="p">}</span> <span class="o">*</span> <span class="n">test</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="n">test</span><span class="o">-&gt;</span><span class="n">val</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="n">func</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">()</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
 </span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">TEST</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span> <span class="p">}</span> <span class="n">test</span><span class="p">;</span>
-</span></span><span class="line"><span class="cl">    <span class="n">sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">test</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sub</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">test</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
@@ -388,12 +387,12 @@ struct 宣言内に struct 宣言を持つ場合に使うことが多いと思�
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub2</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">pFunc</span><span class="p">)(</span><span class="kt">void</span><span class="p">)</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">pFunc</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">pFunc</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func2</span><span class="p">()</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">sub2</span><span class="p">(</span> <span class="n">func</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sub2</span><span class="p">(</span> <span class="n">func</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
@@ -409,12 +408,12 @@ struct 宣言内に struct 宣言を持つ場合に使うことが多いと思�
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">exec</span><span class="p">(</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">add</span><span class="p">)(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">add</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">add</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl">
 </span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">dump</span><span class="p">(</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">output</span><span class="p">)(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">output</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">output</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
@@ -447,11 +446,11 @@ typedef 宣言するのが面倒だという意見もあると思います。
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">callback</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">callback</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
 </span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
@@ -460,13 +459,13 @@ typedef 宣言するのが面倒だという意見もあると思います。
 次のように typedef 宣言するべきです。</p>
 <div class="src src-c">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="k">typedef</span> <span class="kt">void</span> <span class="nf">callback_t</span><span class="p">(</span> <span class="kt">void</span> <span class="p">);</span>
-</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="n">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">callback</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">callback</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span>
-</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="n">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="kt">void</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">callback_t</span> <span class="o">*</span> <span class="n">callback</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sub</span><span class="p">(</span> <span class="n">callback</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
@@ -496,7 +495,7 @@ prototype 宣言と定義を行なう必要があります。</p>
 </span></span><span class="line"><span class="cl"><span class="c1">// 関数定義
 </span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kt">void</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">callback</span><span class="p">)(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">);</span>
 </span></span><span class="line"><span class="cl"><span class="p">{</span>
-</span></span><span class="line"><span class="cl">    <span class="n">callback</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">callback</span><span class="p">();</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
 <p>
