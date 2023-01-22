@@ -58,6 +58,7 @@ SRCS += Box.ja.org
 SRCS += design.ja.org
 SRCS += design-2.ja.org
 SRCS += design-3.ja.org
+SRCS += error.ja.org
 
 SRCS := $(addprefix content/LuneScript/, $(SRCS))
 INDEX := $(addprefix content/LuneScript/, $(INDEX))

@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>16. クラス override 編 - 公開技術情報</title>
+<title>10.6. エラーハンドリング編 - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.109.0">
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/classoverride/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/error/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -20,19 +20,19 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
-<meta property="og:title" content="16. クラス override 編" />
-<meta property="og:description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の" />
+<meta property="og:title" content="10.6. エラーハンドリング編" />
+<meta property="og:description" content="ここでは LuneScript のエラーハンドリングについて説明します。 エラーハンドリング 現状の LuneScript は、大域脱出をサポートしていません。 何等かのエラーが発生した場合" />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/classoverride/" /><meta property="article:section" content="LuneScript" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/error/" /><meta property="article:section" content="LuneScript" />
 
 <meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="16. クラス override 編"/>
-<meta name="twitter:description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の"/>
-<meta itemprop="name" content="16. クラス override 編">
-<meta itemprop="description" content="LuneScript は、メソッドの override をサポートします。 メソッドの override クラスのメソッドは全て override 可能です。 むしろ、現在は override を抑制することができません。 メソッドの override の">
+<meta name="twitter:title" content="10.6. エラーハンドリング編"/>
+<meta name="twitter:description" content="ここでは LuneScript のエラーハンドリングについて説明します。 エラーハンドリング 現状の LuneScript は、大域脱出をサポートしていません。 何等かのエラーが発生した場合"/>
+<meta itemprop="name" content="10.6. エラーハンドリング編">
+<meta itemprop="description" content="ここでは LuneScript のエラーハンドリングについて説明します。 エラーハンドリング 現状の LuneScript は、大域脱出をサポートしていません。 何等かのエラーが発生した場合">
 
-<meta itemprop="wordCount" content="799">
+<meta itemprop="wordCount" content="1469">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -61,138 +61,243 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>16. クラス override 編</h1>
+<main><h1>10.6. エラーハンドリング編</h1>
 
 <p>
-LuneScript は、メソッドの override をサポートします。</p>
+ここでは LuneScript のエラーハンドリングについて説明します。</p>
 <div id="outline-container-headline-1" class="outline-2">
 <h2 id="headline-1">
-メソッドの override
+エラーハンドリング
 </h2>
 <div id="outline-text-headline-1" class="outline-text-2">
 <p>
-クラスのメソッドは全て override 可能です。</p>
+現状の LuneScript は、大域脱出をサポートしていません。</p>
 <p>
-むしろ、現在は override を抑制することができません。</p>
+何等かのエラーが発生した場合、関数の戻り値でエラーを通知する必要があります。</p>
 <p>
-メソッドの override の例を次に示します。</p>
-<div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Super {
-   pub fn func() {
-      print( __func__ );
-   }
-}
-class Sub extend Super {
-   pub override fn func() {
-      print( __func__ );
-   }
-}
-fn test( obj:Super ) {
-   obj.func();
-}
-test( new Super() ); // Super.func
-test( new Sub() ); // Sub.func</code></pre>
-</div>
-<p>
-ここで、 Sub クラスは Super クラスの func メソッドを override しています。</p>
-<p>
-override する Sub クラス側のメソッドは、
-override キーワードで明示する必要があります。</p>
-</div>
-</div>
-<div id="outline-container-headline-2" class="outline-2">
-<h2 id="headline-2">
-親クラスのメソッド呼び出し
-</h2>
-<div id="outline-text-headline-2" class="outline-text-2">
-<p>
-override しているサブクラスから、親クラスのメソッドをコールするには、
-<code class="verbatim">super()</code> を使用します。</p>
-<p>
-次に <code class="verbatim">super()</code> の例を示します。</p>
-<div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
-class Super {
-   pub fn func(): int {
-      return 1;
-   }
-}
-class Sub extend Super {
-   pub override fn func(): int {
-      return 10 + super();
-   }
-}
-fn test( obj:Super ) {
-   print( obj.func() );
-}
-test( new Sub() ); // 11</code></pre>
-</div>
-<p>
-この例では、 Super クラスの <code class="verbatim">func()</code> メソッドを Sub クラスで override しています。
-そして、 Sub クラスの <code class="verbatim">func()</code> から <code class="verbatim">super()</code> を使用して、
-Super クラスの <code class="verbatim">func()</code> メソッドを呼び出しています。</p>
-</div>
-</div>
-<div id="outline-container-headline-3" class="outline-2">
-<h2 id="headline-3">
-abstract
-</h2>
-<div id="outline-text-headline-3" class="outline-text-2">
-<p>
-実体を持たない abstract メソッドを定義できます。</p>
-<p>
-次に abstract の例を示します。</p>
-<div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
-abstract class Super {
-   pub abstract fn func(): int;
-}
-class Sub extend Super {
-   pub override fn func(): int {
-      return 10;
-   }
-}
-fn test( obj:Super ) {
-   print( obj.func() );
-}
-test( new Sub() );</code></pre>
-</div>
-<p>
-この例で、 <code class="verbatim">func()</code> メソッドは実体を持たない abstract メソッドです。</p>
-<p>
-なお、 abstract メソッドを持つクラスは abstract クラスとして宣言する必要があります。</p>
-<p>
-abstract メソッドの実体は、 継承したクラスで定義されます。
-もしも、親クラスの全ての abstract メソッドを継承したクラスで override しないと、
-その継承したクラスは abstract として宣言する必要があります。</p>
-<p>
-abstract クラスは、それ単体ではインスタンスを生成できなくなります。</p>
-</div>
-</div>
-<div id="outline-container-headline-4" class="outline-2">
-<h2 id="headline-4">
-まとめ
-</h2>
-<div id="outline-text-headline-4" class="outline-text-2">
-<p>
-LuneScript のメソッド override/abstract の仕様は次の通りです。</p>
+エラーの通知方法としては、大きく次の 2 つがあります。</p>
 <ul>
-<li>全てのメソッドは override 出来る</li>
-<li>override するクラスは、 override を明示する必要がある</li>
-<li>override しているメソッドから、 override 元のメソッドをコールするには <code class="verbatim">super()</code> を利用する。</li>
-<li>実体の持たない abstract メソッドを宣言できる</li>
-<li>abstract メソッドを持つクラスは abstract クラスとなる</li>
-<li>abstract メソッドは、サブクラスで override しなければならない</li>
-<li>abstract クラスは、単体ではインスタンスを生成できない</li>
+<li>nilable を利用し、エラーを nil で表現する。</li>
+<li>alge 型 __Ret を利用する。</li>
 </ul>
-<p>次回は、 class の advertise について説明します。</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+nilable を利用する場合
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+関数の戻り値に nilable を利用することで、
+その関数のエラーを表現できます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): str! {
+   if not flag {
+       return nil;
+   }
+   return &#34;hoge&#34;;
+}</code></pre>
+</div>
+<p>
+上記の関数は処理が成功した場合 <code class="verbatim">str</code> を返し、
+失敗した場合は <code class="verbatim">nil</code> を返します。</p>
+<p>
+この方法は、実現が簡単であるという利点がありますが、
+どういったエラーが発生したのかを示す情報を示せないという欠点があります。</p>
+<p>
+この欠点をカバーするには、次のようにエラー内容を示す多値を返すことで、
+この欠点をカバーできます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): str!, str! {
+   if not flag {
+       return nil, &#34;error&#34;;
+   }
+   return &#34;hoge&#34;, nil;
+}</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+alge 型 __Ret を利用する場合
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+次の alge 型 __Ret を利用すると、多値返却を使用せずに、エラーの内容を示すことができます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">alge __Ret&lt;T1,T2&gt; {
+  Ok(val:T1),
+  Err(val:T2),
+}</code></pre>
+</div>
+<p>
+<strong>alge 型 __Ret</strong> は、 v1.5.2 から利用可能です。</p>
+<p>
+たとえば、前述の <code class="verbatim">func()</code> を __Ret を使って表現すると次になります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): __Ret&lt;str,str&gt; {
+   if not flag {
+       return .Err(&#34;error&#34;);
+   }
+   return .Ok( &#34;hoge&#34; )
+}</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+<code class="verbatim">!</code> 演算子
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+エラーを返す関数において、
+その関数の処理内で実行するサブ関数がエラーを返す場合、
+サブ関数毎にエラーの判定を行なう必要があり、処理が煩雑になります。</p>
+<p>
+例えば、次はサブ関数 <code class="verbatim">sub()</code> があり、 
+この関数を 3 回コールする <code class="verbatim">func()</code> があります。</p>
+<p>
+<code class="verbatim">func()</code> は、3 回エラー判定処理が必要になります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val &gt; 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let! work1 = self.sub( val + 1 ) {  // check error
+         return nil;
+      };
+      let! work2 = self.sub( val + 2 ) { // check error
+         return nil;
+      };
+      let! work3 = self.sub( val + 3 ) { // check error
+         return nil;
+      };
+      return &#34;%s&#34; (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( hoge.func( 0 ) );
+print( hoge.func( 1 ) );</code></pre>
+</div>
+<p>
+<code class="verbatim">!</code> 演算子は、上記のエラーチェックを簡略化するものです。</p>
+<p>
+<code class="verbatim">!</code> 演算子の仕様を説明をする前に、
+上記のコードを <code class="verbatim">!</code> 演算子を使って書き換えたコードがどうなるかを見た方が
+イメージし易いので、次にコードを示します。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val &gt; 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return &#34;%s&#34; (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( hoge.func( 0 ) );
+print( hoge.func( 1 ) );</code></pre>
+</div>
+<p>
+<code class="verbatim">!</code> を使った方のコードは、エラー判定処理が簡略化されていることが分かると思います。</p>
+<p>
+nilable ではなく <code class="verbatim">__Ret</code> を使った場合は以下になります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : __Ret&lt;int,__Er&gt; {
+      if val &gt; 3 {
+	 return .Err( __serr( &#34;err&#34; ) );
+      }
+      return .Ok( val );
+   }
+   pub fn func( val:int ) : __Ret&lt;str,__Er&gt; {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return .Ok( &#34;%s&#34; (work1 + work2 + work3) );
+   }
+}
+let hoge = new Hoge();
+for count = 0, 1 {
+   match hoge.func( count ) {
+      case .Ok( val ) {
+         print( &#34;ok&#34;, val );
+      }
+      case .Err( err ) {
+         print( &#34;ng&#34;, err.$txt );
+      }
+   }
+}</code></pre>
+</div>
+<div id="outline-container-headline-5" class="outline-4">
+<h4 id="headline-5">
+<code class="verbatim">!</code> 演算子の仕様
+</h4>
+<div id="outline-text-headline-5" class="outline-text-4">
+<p>
+<code class="verbatim">!</code> 演算子を利用するには、 <strong>次の仕様を満す必要があります。</strong></p>
+<ul>
+<li><code class="verbatim">!</code> 演算子の直前の値の型 T が nilable か __Ret 型である。</li>
+<li>
+<p><code class="verbatim">!</code> 演算子を利用している statement を含む関数の戻り値の型 R が次を満す。</p>
+<ul>
+<li>T が nilable の場合、R も nilable である。</li>
+<li>
+<p>T が <code class="verbatim">__Ret&lt;T1,T2&gt;</code> の場合、 R は <code class="verbatim">__Ret&lt;R1,R2&gt;</code> である。</p>
+<ul>
+<li>ここで R2 は T2 を代入可能な型でなければならない。</li>
+<li>T1, R1 は任意の型で良い。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>上記の __Ret を使ったサンプルで言うと、</p>
+<ul>
+<li>func() の戻り値は <code class="verbatim">__Ret&lt;str,__Er&gt;</code> である。</li>
+<li><code class="verbatim">!</code> 演算子の直前の値 sub() の型は <code class="verbatim">__Ret&lt;int,__Er&gt;</code> である。</li>
+<li>つまり <code class="verbatim">T1 = int</code>, <code class="verbatim">T2 = __Er</code> ,  <code class="verbatim">R1 = str</code>, <code class="verbatim">R2 = __Er</code> となる。</li>
+<li>よって、 <code class="verbatim">T2=R2=__Er</code> となり、 <code class="verbatim">!</code> 演算子が使用可能となる。</li>
+</ul>
+<p>
+上記を仕様を満す場合、 <strong><code class="verbatim">!</code> 演算子は次の動作になります。</strong></p>
+<ul>
+<li><code class="verbatim">!</code> 演算子の直前の値が .Err の場合、
+そのコードを含む関数の戻り値にその値をセットして return する。</li>
+<li><code class="verbatim">!</code> 演算子の直前の値が .Ok の場合、
+<code class="verbatim">!</code> 演算子の評価結果を .Ok の値として処理を続ける。</li>
+</ul>
+<p>また、 <code class="verbatim">!</code> 演算子 を利用可能な箇所は、<a href="../ebnf">../ebnf</a> に示す次の statement に限ります。</p>
+<ul>
+<li>stmt_exp</li>
+<li>if</li>
+<li>decl_var</li>
+</ul>
+<p>上記以外の statement については、随時対応します。</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/classadvertise/" title="15. クラス advertise 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 15. クラス advertise 編</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/interface/" title="17. インタフェース 編">Next - 17. インタフェース 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/closure/" title="10.5. クロージャ"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 10.5. クロージャ</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/nilable/" title="11. nilable 編">Next - 11. nilable 編 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -312,13 +417,13 @@ LuneScript のメソッド override/abstract の仕様は次の通りです。</
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/closure/">10.5. クロージャ</a></li>
-<li class=""><a href="https://ifritjp.github.io/documents/lunescript/error/">10.6. エラーハンドリング編</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/error/">10.6. エラーハンドリング編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>

@@ -1,0 +1,212 @@
+#+TITLE: 10.6. エラーハンドリング編
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+ここでは LuneScript のエラーハンドリングについて説明します。
+
+* エラーハンドリング
+
+現状の LuneScript は、大域脱出をサポートしていません。
+
+何等かのエラーが発生した場合、関数の戻り値でエラーを通知する必要があります。
+
+
+エラーの通知方法としては、大きく次の 2 つがあります。
+
+- nilable を利用し、エラーを nil で表現する。
+- alge 型 __Ret を利用する。
+
+** nilable を利用する場合
+
+関数の戻り値に nilable を利用することで、
+その関数のエラーを表現できます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(flag:bool): str! {
+   if not flag {
+       return nil;
+   }
+   return "hoge";
+}
+#+END_SRC
+
+上記の関数は処理が成功した場合 =str= を返し、
+失敗した場合は =nil= を返します。
+
+この方法は、実現が簡単であるという利点がありますが、
+どういったエラーが発生したのかを示す情報を示せないという欠点があります。
+
+この欠点をカバーするには、次のようにエラー内容を示す多値を返すことで、
+この欠点をカバーできます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(flag:bool): str!, str! {
+   if not flag {
+       return nil, "error";
+   }
+   return "hoge", nil;
+}
+#+END_SRC
+
+** alge 型 __Ret を利用する場合
+
+次の alge 型 __Ret を利用すると、多値返却を使用せずに、エラーの内容を示すことができます。
+
+#+BEGIN_SRC lns
+alge __Ret<T1,T2> {
+  Ok(val:T1),
+  Err(val:T2),
+}
+#+END_SRC
+
+*alge 型 __Ret* は、 v1.5.2 から利用可能です。
+
+
+たとえば、前述の =func()= を __Ret を使って表現すると次になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(flag:bool): __Ret<str,str> {
+   if not flag {
+       return .Err("error");
+   }
+   return .Ok( "hoge" )
+}
+#+END_SRC
+
+** =!= 演算子
+
+エラーを返す関数において、
+その関数の処理内で実行するサブ関数がエラーを返す場合、
+サブ関数毎にエラーの判定を行なう必要があり、処理が煩雑になります。
+
+例えば、次はサブ関数 =sub()= があり、 
+この関数を 3 回コールする =func()= があります。
+
+=func()= は、3 回エラー判定処理が必要になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val > 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let! work1 = self.sub( val + 1 ) {  // check error
+         return nil;
+      };
+      let! work2 = self.sub( val + 2 ) { // check error
+         return nil;
+      };
+      let! work3 = self.sub( val + 3 ) { // check error
+         return nil;
+      };
+      return "%s" (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( hoge.func( 0 ) );
+print( hoge.func( 1 ) );
+#+END_SRC
+
+=!= 演算子は、上記のエラーチェックを簡略化するものです。
+
+=!= 演算子の仕様を説明をする前に、
+上記のコードを =!= 演算子を使って書き換えたコードがどうなるかを見た方が
+イメージし易いので、次にコードを示します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val > 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return "%s" (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( hoge.func( 0 ) );
+print( hoge.func( 1 ) );
+#+END_SRC
+
+=!= を使った方のコードは、エラー判定処理が簡略化されていることが分かると思います。
+
+nilable ではなく =__Ret= を使った場合は以下になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : __Ret<int,__Er> {
+      if val > 3 {
+	 return .Err( __serr( "err" ) );
+      }
+      return .Ok( val );
+   }
+   pub fn func( val:int ) : __Ret<str,__Er> {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return .Ok( "%s" (work1 + work2 + work3) );
+   }
+}
+let hoge = new Hoge();
+for count = 0, 1 {
+   match hoge.func( count ) {
+      case .Ok( val ) {
+         print( "ok", val );
+      }
+      case .Err( err ) {
+         print( "ng", err.$txt );
+      }
+   }
+}
+#+END_SRC
+
+*** =!= 演算子の仕様
+
+=!= 演算子を利用するには、 *次の仕様を満す必要があります。*
+
+- =!= 演算子の直前の値の型 T が nilable か __Ret 型である。
+- =!= 演算子を利用している statement を含む関数の戻り値の型 R が次を満す。
+  - T が nilable の場合、R も nilable である。
+  - T が =__Ret<T1,T2>= の場合、 R は =__Ret<R1,R2>= である。
+    - ここで R2 は T2 を代入可能な型でなければならない。
+    - T1, R1 は任意の型で良い。
+
+上記の __Ret を使ったサンプルで言うと、
+
+- func() の戻り値は =__Ret<str,__Er>= である。
+- =!= 演算子の直前の値 sub() の型は =__Ret<int,__Er>= である。
+- つまり =T1 = int=, =T2 = __Er= ,  =R1 = str=, =R2 = __Er= となる。
+- よって、 =T2=R2=__Er= となり、 =!= 演算子が使用可能となる。
+
+
+上記を仕様を満す場合、 *=!= 演算子は次の動作になります。*
+
+- =!= 演算子の直前の値が .Err の場合、
+  そのコードを含む関数の戻り値にその値をセットして return する。
+- =!= 演算子の直前の値が .Ok の場合、
+  =!= 演算子の評価結果を .Ok の値として処理を続ける。
+
+また、 =!= 演算子 を利用可能な箇所は、[[../ebnf]] に示す次の statement に限ります。
+
+- stmt_exp
+- if
+- decl_var
+
+上記以外の statement については、随時対応します。

@@ -32,7 +32,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス トランスコンパイラ LuneScript で Lua の開発をもっと楽に!">
 
-<meta itemprop="wordCount" content="114663">
+<meta itemprop="wordCount" content="116156">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -119,6 +119,12 @@ LuneScript は、次の特徴を持ちます。</p>
 <li>構造化データと非構造化データとの相互変換。 (Mapping)</li>
 <li>マクロ により、ポリモーフィズム等の動的処理に頼らないデザインを実現可能。</li>
 <li>変数の初期化漏れを検知</li>
+<li>
+<p><code class="verbatim">!</code> 演算子による関数のエラー移譲</p>
+<ul>
+<li><a href="#error">#error</a></li>
+</ul>
+</li>
 <li>Lua と go へのトランスコンパイル。</li>
 <li>JSON と互換なデータ表現をサポート。</li>
 <li>トランスコンパイルした Lua コードは、外部ライブラリを前提とせずに単体で動作可能。</li>
@@ -17322,6 +17328,245 @@ LuneScript でのクラス
 <div id="outline-text-headline-535" class="outline-text-4">
 <p>
 スコープは <strong><code class="verbatim">Ast.SymbolInfo</code></strong> クラスで管理する。</p>
+<hr>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-error_ja" class="outline-2">
+<h2 id="error_ja">
+<strong>エラーハンドリング編</strong>
+</h2>
+<div id="outline-text-error_ja" class="outline-text-2">
+<p>
+ここでは LuneScript のエラーハンドリングについて説明します。</p>
+<div id="outline-container-headline-537" class="outline-3">
+<h3 id="headline-537">
+エラーハンドリング
+</h3>
+<div id="outline-text-headline-537" class="outline-text-3">
+<p>
+現状の LuneScript は、大域脱出をサポートしていません。</p>
+<p>
+何等かのエラーが発生した場合、関数の戻り値でエラーを通知する必要があります。</p>
+<p>
+エラーの通知方法としては、大きく次の 2 つがあります。</p>
+<ul>
+<li>nilable を利用し、エラーを nil で表現する。</li>
+<li>alge 型 __Ret を利用する。</li>
+</ul>
+<div id="outline-container-headline-538" class="outline-4">
+<h4 id="headline-538">
+nilable を利用する場合
+</h4>
+<div id="outline-text-headline-538" class="outline-text-4">
+<p>
+関数の戻り値に nilable を利用することで、
+その関数のエラーを表現できます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): str! {
+   if not flag {
+       return nil;
+   }
+   return &#34;hoge&#34;;
+}</code></pre>
+</div>
+<p>
+上記の関数は処理が成功した場合 <code class="verbatim">str</code> を返し、
+失敗した場合は <code class="verbatim">nil</code> を返します。</p>
+<p>
+この方法は、実現が簡単であるという利点がありますが、
+どういったエラーが発生したのかを示す情報を示せないという欠点があります。</p>
+<p>
+この欠点をカバーするには、次のようにエラー内容を示す多値を返すことで、
+この欠点をカバーできます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): str!, str! {
+   if not flag {
+       return nil, &#34;error&#34;;
+   }
+   return &#34;hoge&#34;, nil;
+}</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-539" class="outline-4">
+<h4 id="headline-539">
+alge 型 __Ret を利用する場合
+</h4>
+<div id="outline-text-headline-539" class="outline-text-4">
+<p>
+次の alge 型 __Ret を利用すると、多値返却を使用せずに、エラーの内容を示すことができます。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">alge __Ret&lt;T1,T2&gt; {
+  Ok(val:T1),
+  Err(val:T2),
+}</code></pre>
+</div>
+<p>
+<strong>alge 型 __Ret</strong> は、 v1.5.2 から利用可能です。</p>
+<p>
+たとえば、前述の <code class="verbatim">func()</code> を __Ret を使って表現すると次になります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): __Ret&lt;str,str&gt; {
+   if not flag {
+       return .Err(&#34;error&#34;);
+   }
+   return .Ok( &#34;hoge&#34; )
+}</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-540" class="outline-4">
+<h4 id="headline-540">
+<code class="verbatim">!</code> 演算子
+</h4>
+<div id="outline-text-headline-540" class="outline-text-4">
+<p>
+エラーを返す関数において、
+その関数の処理内で実行するサブ関数がエラーを返す場合、
+サブ関数毎にエラーの判定を行なう必要があり、処理が煩雑になります。</p>
+<p>
+例えば、次はサブ関数 <code class="verbatim">sub()</code> があり、 
+この関数を 3 回コールする <code class="verbatim">func()</code> があります。</p>
+<p>
+<code class="verbatim">func()</code> は、3 回エラー判定処理が必要になります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val &gt; 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let! work1 = self.sub( val + 1 ) {  // check error
+         return nil;
+      };
+      let! work2 = self.sub( val + 2 ) { // check error
+         return nil;
+      };
+      let! work3 = self.sub( val + 3 ) { // check error
+         return nil;
+      };
+      return &#34;%s&#34; (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( hoge.func( 0 ) );
+print( hoge.func( 1 ) );</code></pre>
+</div>
+<p>
+<code class="verbatim">!</code> 演算子は、上記のエラーチェックを簡略化するものです。</p>
+<p>
+<code class="verbatim">!</code> 演算子の仕様を説明をする前に、
+上記のコードを <code class="verbatim">!</code> 演算子を使って書き換えたコードがどうなるかを見た方が
+イメージし易いので、次にコードを示します。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val &gt; 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return &#34;%s&#34; (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( hoge.func( 0 ) );
+print( hoge.func( 1 ) );</code></pre>
+</div>
+<p>
+<code class="verbatim">!</code> を使った方のコードは、エラー判定処理が簡略化されていることが分かると思います。</p>
+<p>
+nilable ではなく <code class="verbatim">__Ret</code> を使った場合は以下になります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : __Ret&lt;int,__Er&gt; {
+      if val &gt; 3 {
+	 return .Err( __serr( &#34;err&#34; ) );
+      }
+      return .Ok( val );
+   }
+   pub fn func( val:int ) : __Ret&lt;str,__Er&gt; {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return .Ok( &#34;%s&#34; (work1 + work2 + work3) );
+   }
+}
+let hoge = new Hoge();
+for count = 0, 1 {
+   match hoge.func( count ) {
+      case .Ok( val ) {
+         print( &#34;ok&#34;, val );
+      }
+      case .Err( err ) {
+         print( &#34;ng&#34;, err.$txt );
+      }
+   }
+}</code></pre>
+</div>
+<div id="outline-container-headline-541" class="outline-5">
+<h5 id="headline-541">
+<code class="verbatim">!</code> 演算子の仕様
+</h5>
+<div id="outline-text-headline-541" class="outline-text-5">
+<p>
+<code class="verbatim">!</code> 演算子を利用するには、 <strong>次の仕様を満す必要があります。</strong></p>
+<ul>
+<li><code class="verbatim">!</code> 演算子の直前の値の型 T が nilable か __Ret 型である。</li>
+<li>
+<p><code class="verbatim">!</code> 演算子を利用している statement を含む関数の戻り値の型 R が次を満す。</p>
+<ul>
+<li>T が nilable の場合、R も nilable である。</li>
+<li>
+<p>T が <code class="verbatim">__Ret&lt;T1,T2&gt;</code> の場合、 R は <code class="verbatim">__Ret&lt;R1,R2&gt;</code> である。</p>
+<ul>
+<li>ここで R2 は T2 を代入可能な型でなければならない。</li>
+<li>T1, R1 は任意の型で良い。</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>上記の __Ret を使ったサンプルで言うと、</p>
+<ul>
+<li>func() の戻り値は <code class="verbatim">__Ret&lt;str,__Er&gt;</code> である。</li>
+<li><code class="verbatim">!</code> 演算子の直前の値 sub() の型は <code class="verbatim">__Ret&lt;int,__Er&gt;</code> である。</li>
+<li>つまり <code class="verbatim">T1 = int</code>, <code class="verbatim">T2 = __Er</code> ,  <code class="verbatim">R1 = str</code>, <code class="verbatim">R2 = __Er</code> となる。</li>
+<li>よって、 <code class="verbatim">T2=R2=__Er</code> となり、 <code class="verbatim">!</code> 演算子が使用可能となる。</li>
+</ul>
+<p>
+上記を仕様を満す場合、 <strong><code class="verbatim">!</code> 演算子は次の動作になります。</strong></p>
+<ul>
+<li><code class="verbatim">!</code> 演算子の直前の値が .Err の場合、
+そのコードを含む関数の戻り値にその値をセットして return する。</li>
+<li><code class="verbatim">!</code> 演算子の直前の値が .Ok の場合、
+<code class="verbatim">!</code> 演算子の評価結果を .Ok の値として処理を続ける。</li>
+</ul>
+<p>また、 <code class="verbatim">!</code> 演算子 を利用可能な箇所は、<a href="#ebnf">#ebnf</a> に示す次の statement に限ります。</p>
+<ul>
+<li>stmt_exp</li>
+<li>if</li>
+<li>decl_var</li>
+</ul>
+<p>上記以外の statement については、随時対応します。</p>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -17451,6 +17696,7 @@ LuneScript でのクラス
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/closure/">10.5. クロージャ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/error/">10.6. エラーハンドリング編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
