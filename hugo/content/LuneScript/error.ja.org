@@ -210,3 +210,67 @@ for count = 0, 1 {
 - decl_var
 
 上記以外の statement については、随時対応します。
+
+** __Er 型
+
+=__Ret= のエラー時の情報を示す型として __Er 型を追加しています。
+
+この型は次の interface です。
+
+#+BEGIN_SRC org
+pub interface __Er {
+   fn get_txt():str;
+}
+#+END_SRC
+
+また、 __Er 型のインスタンスを生成する関数として、
+次の =__serr()= 関数を用意しています。
+
+#+BEGIN_SRC lns
+pub fn __err(mess:str): __Er;
+#+END_SRC
+
+
+** タプルと __Ret を組み合わせた多値返却関数のエラーハンドリング
+
+=__Ret= は Ok と Err との値を表現する alge 型です。
+どちらも Ok も Err も保持できるのは一つの型の値です。
+
+LuneScript は多値返却を利用できますが、 
+エラーハンドリング目的で利用する場合は __Ret 一つしか返せません。
+
+そこで、 __Ret で保持する型にタプルを利用することで、
+多値返却と同じ感覚でエラーハンドリングを行なえます。
+
+以下は、 __Ret とタプルを組み合わせた処理のサンプルです。
+
+=func()= 内で sub() を実行しています。
+この時に =!= を使用してエラーの移譲を行なっていつつ、
+タプルを使って多値返却と同等の処理を実現しています。
+
+#+BEGIN_SRC lns
+fn sub(flag:bool) : __Ret<(int,str),__Er> {
+   if flag {
+      return .Ok( (= 1,"abc") );
+   }
+   return .Err( __serr( "err" ));
+}
+
+fn func(flag:bool) : __Ret<int,__Er> {
+   let (val1, val2) = sub(flag)!;
+   let (val3, val4) = sub(flag)!;
+   print( val1, val2, val3, val4 );
+   return .Ok( val1 + val3 );
+}
+
+foreach cond in [true,false] {
+   match func( cond ) {
+      case .Ok( val ) {
+         print( "ok", val );
+      }
+      case .Err( val ) {
+         print( "ng", val.$txt );
+      }
+   }
+}
+#+END_SRC

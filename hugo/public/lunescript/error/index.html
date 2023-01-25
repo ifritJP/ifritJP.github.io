@@ -32,7 +32,7 @@
 <meta itemprop="name" content="10.6. エラーハンドリング編">
 <meta itemprop="description" content="ここでは LuneScript のエラーハンドリングについて説明します。 エラーハンドリング 現状の LuneScript は、大域脱出をサポートしていません。 何等かのエラーが発生した場合">
 
-<meta itemprop="wordCount" content="1473">
+<meta itemprop="wordCount" content="1895">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -292,6 +292,76 @@ for count = 0, 1 {
 </div>
 </div>
 </div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+__Er 型
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+<code class="verbatim">__Ret</code> のエラー時の情報を示す型として __Er 型を追加しています。</p>
+<p>
+この型は次の interface です。</p>
+<div class="src src-org">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-org" data-lang="org"><span class="line"><span class="cl">pub interface __Er {
+</span></span><span class="line"><span class="cl">   fn get_txt():str;
+</span></span><span class="line"><span class="cl">}</span></span></code></pre></div>
+</div>
+<p>
+また、 __Er 型のインスタンスを生成する関数として、
+次の <code class="verbatim">__serr()</code> 関数を用意しています。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">pub fn __err(mess:str): __Er;</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+タプルと __Ret を組み合わせた多値返却関数のエラーハンドリング
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+<code class="verbatim">__Ret</code> は Ok と Err との値を表現する alge 型です。
+どちらも Ok も Err も保持できるのは一つの型の値です。</p>
+<p>
+LuneScript は多値返却を利用できますが、 
+エラーハンドリング目的で利用する場合は __Ret 一つしか返せません。</p>
+<p>
+そこで、 __Ret で保持する型にタプルを利用することで、
+多値返却と同じ感覚でエラーハンドリングを行なえます。</p>
+<p>
+以下は、 __Ret とタプルを組み合わせた処理のサンプルです。</p>
+<p>
+<code class="verbatim">func()</code> 内で sub() を実行しています。
+この時に <code class="verbatim">!</code> を使用してエラーの移譲を行なっていつつ、
+タプルを使って多値返却と同等の処理を実現しています。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">fn sub(flag:bool) : __Ret&lt;(int,str),__Er&gt; {
+   if flag {
+      return .Ok( (= 1,&#34;abc&#34;) );
+   }
+   return .Err( __serr( &#34;err&#34; ));
+}
+
+fn func(flag:bool) : __Ret&lt;int,__Er&gt; {
+   let (val1, val2) = sub(flag)!;
+   let (val3, val4) = sub(flag)!;
+   print( val1, val2, val3, val4 );
+   return .Ok( val1 + val3 );
+}
+
+foreach cond in [true,false] {
+   match func( cond ) {
+      case .Ok( val ) {
+         print( &#34;ok&#34;, val );
+      }
+      case .Err( val ) {
+         print( &#34;ng&#34;, val.$txt );
+      }
+   }
+}</code></pre>
+</div>
+</div>
+</div>
 </div>
 </div>
 <div class="edit-meta">
@@ -407,6 +477,7 @@ for count = 0, 1 {
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">03. Lua バージョン間のクロスコンパイル</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">04. 値編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">04.2. Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tuple/">04.3 タプル編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">05. enum 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">06. match 編</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">07. 変数 編</a></li>

@@ -1189,6 +1189,7 @@ LuneScript で扱える値の型と、トランスコンパイラ後の Lua の�
 | +Array+    | +テーブル+   |              | +配列(固定長)+                   | +[@ 1, 2, 3 ]+          |
 | Map        | テーブル     | LnsMap       | マップ                           | { "A":1, "BC": 100 }    |
 | Set        | テーブル     | LnsSet       | セット                           | (@ 1, 2, 3)             |
+| Tuple      | テーブル     | []LnsAny     | タプル                           | (= 1, 2, 3)             |
 | class      | テーブル     | struct       | クラス                           | class Test {}           |
 | interface  | テーブル     | interface    | インタフェース                   | interface Test {}       |
 | fn         | function     | func         | 関数                             | fn func() {}            |
@@ -1199,7 +1200,7 @@ LuneScript で扱える値の型と、トランスコンパイラ後の Lua の�
 
 *2019/3* Set 追加。
 *2020/10* Luaval 追加
-
+*2023/1* タプル追加
 
 上記の通り、 LuneScript では Lua の値を細分化してそれぞれを個別の型として扱います。
 
@@ -1624,6 +1625,14 @@ nilable については、以下を参照してください。
 
 [[#set/]]
 
+*** Tuple
+
+値の組み合わせを扱います。
+
+詳しくは次の記事を参照してください。
+
+[[#tuple/]]
+
 *** generics
 
 List, Array, Map は generics 対応しています。
@@ -1882,6 +1891,95 @@ let set4 = set1.clone().and(set2);  // 2 3
 let set5 = set1.clone().sub(set2);  // 1
 #+END_SRC
 
+-----
+* *タプル編*
+:PROPERTIES:
+:CUSTOM_ID: tuple_ja
+:END:
+
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+ここでは、 値の組み合わせであるタプルの扱いついて説明します。
+
+タプルは v1.5.3 から利用可能です。
+
+** タプルのコンストラクタ
+
+タプルは次のように書くことでオブジェクトを生成します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let obj = (= 1, "abc" ); // 1 "abc"
+#+END_SRC
+
+これは、1, "abc" の値の組み合わせを保持するタプルです。
+
+タプルは ~(= )~ で値を括ります。
+
+*必ず 1 つ以上のデータを指定する必要があります*
+
+なお、 *タプルは nilable の値を含められません。*
+
+** タプルの型宣言
+
+上記処理は型推論により型宣言を省略していますが、
+省略しない場合は次のように書きます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let obj:(int,str) = (= 1, "abc" ); // 1 "abc"
+#+END_SRC
+
+~(int,str)~ は、要素が int と str であるタプルの型を宣言します。
+
+*** タプル型の各要素の名称
+
+タプル型の宣言時に、次のように各要素の型にシンボルを付けることが可能です。
+
+#+BEGIN_SRC lns
+fn func(): (id:int, mess:str);
+#+END_SRC
+
+- シンボルが id で、型が int。
+- シンボルが mess で、型が str。
+
+ただ、上記はあくまでも人がその型が何なのか理解するのを補助するためのもので、
+処理上は次のように省略したときと何も違いはありません。
+
+#+BEGIN_SRC lns
+fn func(): (int,str);
+#+END_SRC
+
+** タプルの値の展開
+
+タプル型に格納されている値を展開するには次の代入文を使用します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let (val1,val2) = (= 1, "abc" ); // 1 "abc"
+print( val1 + 10, val2 .. "xyz" ); // 11 abcxyz
+#+END_SRC
+
+let の変数名を =()= で括ることで、
+初期値のタプルに格納されている値が各変数に代入されます。
+
+この代入には次の制限があります。
+
+- 代入先の変数の数とタプルの要素数が一致しなければならない
+- 代入元のタプルは 1 つでなければならない
+
+なお、次のような方法でタプルの各要素を参照することはできません。 
+
+#+BEGIN_SRC lns
+// @lnsFront: ng
+let val = (= 1, "abc" ); // 1 "abc"
+print( val[1] ); // error
+#+END_SRC
+
+以上。
 -----
 * *enum 編*
 :PROPERTIES:
@@ -4396,6 +4494,327 @@ func1( 1, "abc" );
 func2( 1, "abc" );
 #+END_SRC
 -----
+* *クロージャ*
+:PROPERTIES:
+:CUSTOM_ID: closure_ja
+:END:
+
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript はクロージャに対応している。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func( mut val:int ): form {
+   return fn () {
+      val = val + 1;
+      print( val );
+   };
+}
+
+let sub1 = func( 10 );
+sub1(##); // 11
+sub1(##); // 12
+sub1(##); // 13
+sub1(##); // 14
+let sub2 = func( 100 );
+sub2(##); // 101
+sub2(##); // 102
+sub2(##); // 103
+sub2(##); // 104
+#+END_SRC
+
+上記の関数 =func()= は、クロージャを生成して返す関数である。
+このクロージャは、 func の引数 val をインクリメントして出力する関数である。
+
+このサンプルでは、func(10), func(100) をコールし、
+それぞれで生成されたクロージャを sub1, sub2 セットし、4 回ずつコールしている。
+これによって、 11 〜 14, 101 〜 104 が出力される。
+
+-----
+* *エラーハンドリング編*
+:PROPERTIES:
+:CUSTOM_ID: error_ja
+:END:
+
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+ここでは LuneScript のエラーハンドリングについて説明します。
+
+** エラーハンドリング
+
+現状の LuneScript は、大域脱出をサポートしていません。
+
+何等かのエラーが発生した場合、関数の戻り値でエラーを通知する必要があります。
+
+
+エラーの通知方法としては、大きく次の 2 つがあります。
+
+- nilable を利用し、エラーを nil で表現する。
+- alge 型 __Ret を利用する。
+
+*** nilable を利用する場合
+
+関数の戻り値に nilable を利用することで、
+その関数のエラーを表現できます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(flag:bool): str! {
+   if not flag {
+       return nil;
+   }
+   return "hoge";
+}
+#+END_SRC
+
+上記の関数は処理が成功した場合 =str= を返し、
+失敗した場合は =nil= を返します。
+
+この方法は、実現が簡単であるという利点がありますが、
+どういったエラーが発生したのかを示す情報を示せないという欠点があります。
+
+この欠点をカバーするには、次のようにエラー内容を示す多値を返すことで、
+この欠点をカバーできます。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(flag:bool): str!, str! {
+   if not flag {
+       return nil, "error";
+   }
+   return "hoge", nil;
+}
+#+END_SRC
+
+*** alge 型 __Ret を利用する場合
+
+次の alge 型 __Ret を利用すると、多値返却を使用せずに、エラーの内容を示すことができます。
+
+#+BEGIN_SRC lns
+alge __Ret<T1,T2> {
+  Ok(val:T1),
+  Err(val:T2),
+}
+#+END_SRC
+
+*alge 型 __Ret* は、 v1.5.2 から利用可能です。
+
+
+たとえば、前述の =func()= を __Ret を使って表現すると次になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func(flag:bool): __Ret<str,str> {
+   if not flag {
+       return .Err("error");
+   }
+   return .Ok( "hoge" );
+}
+#+END_SRC
+
+*** =!= 演算子
+
+エラーを返す関数において、
+その関数の処理内で実行するサブ関数がエラーを返す場合、
+サブ関数毎にエラーの判定を行なう必要があり、処理が煩雑になります。
+
+例えば、次はサブ関数 =sub()= があり、 
+この関数を 3 回コールする =func()= があります。
+
+=func()= は、3 回エラー判定処理が必要になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val > 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let! work1 = self.sub( val + 1 ) {  // check error
+         return nil;
+      };
+      let! work2 = self.sub( val + 2 ) { // check error
+         return nil;
+      };
+      let! work3 = self.sub( val + 3 ) { // check error
+         return nil;
+      };
+      return "%s" (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( "%s" (hoge.func( 0 )) );
+print( "%s" (hoge.func( 1 )) );
+#+END_SRC
+
+=!= 演算子は、上記のエラーチェックを簡略化するものです。
+
+=!= 演算子の仕様を説明をする前に、
+上記のコードを =!= 演算子を使って書き換えたコードがどうなるかを見た方が
+イメージし易いので、次にコードを示します。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val > 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return "%s" (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( "%s" (hoge.func( 0 )) );
+print( "%s" (hoge.func( 1 )) );
+#+END_SRC
+
+=!= を使った方のコードは、エラー判定処理が簡略化されていることが分かると思います。
+
+nilable ではなく =__Ret= を使った場合は以下になります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : __Ret<int,__Er> {
+      if val > 3 {
+	 return .Err( __serr( "err" ) );
+      }
+      return .Ok( val );
+   }
+   pub fn func( val:int ) : __Ret<str,__Er> {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return .Ok( "%s" (work1 + work2 + work3) );
+   }
+}
+let hoge = new Hoge();
+for count = 0, 1 {
+   match hoge.func( count ) {
+      case .Ok( val ) {
+         print( "ok", val );
+      }
+      case .Err( err ) {
+         print( "ng", err.$txt );
+      }
+   }
+}
+#+END_SRC
+
+**** =!= 演算子の仕様
+
+=!= 演算子を利用するには、 *次の仕様を満す必要があります。*
+
+- =!= 演算子の直前の値の型 T が nilable か __Ret 型である。
+- =!= 演算子を利用している statement を含む関数の戻り値の型 R が次を満す。
+  - T が nilable の場合、R も nilable である。
+  - T が =__Ret<T1,T2>= の場合、 R は =__Ret<R1,R2>= である。
+    - ここで R2 は T2 を代入可能な型でなければならない。
+    - T1, R1 は任意の型で良い。
+
+上記の __Ret を使ったサンプルで言うと、
+
+- func() の戻り値は =__Ret<str,__Er>= である。
+- =!= 演算子の直前の値 sub() の型は =__Ret<int,__Er>= である。
+- つまり =T1 = int=, =T2 = __Er= ,  =R1 = str=, =R2 = __Er= となる。
+- よって、 =T2=R2=__Er= となり、 =!= 演算子が使用可能となる。
+
+
+上記を仕様を満す場合、 *=!= 演算子は次の動作になります。*
+
+- =!= 演算子の直前の値が .Err の場合、
+  そのコードを含む関数の戻り値にその値をセットして return する。
+- =!= 演算子の直前の値が .Ok の場合、
+  =!= 演算子の評価結果を .Ok の値として処理を続ける。
+
+また、 =!= 演算子 を利用可能な箇所は、[[#ebnf]] に示す次の statement に限ります。
+
+- stmt_exp
+- if
+- decl_var
+
+上記以外の statement については、随時対応します。
+
+*** __Er 型
+
+=__Ret= のエラー時の情報を示す型として __Er 型を追加しています。
+
+この型は次の interface です。
+
+#+BEGIN_SRC org
+pub interface __Er {
+   fn get_txt():str;
+}
+#+END_SRC
+
+また、 __Er 型のインスタンスを生成する関数として、
+次の =__serr()= 関数を用意しています。
+
+#+BEGIN_SRC lns
+pub fn __err(mess:str): __Er;
+#+END_SRC
+
+
+*** タプルと __Ret を組み合わせた多値返却関数のエラーハンドリング
+
+=__Ret= は Ok と Err との値を表現する alge 型です。
+どちらも Ok も Err も保持できるのは一つの型の値です。
+
+LuneScript は多値返却を利用できますが、 
+エラーハンドリング目的で利用する場合は __Ret 一つしか返せません。
+
+そこで、 __Ret で保持する型にタプルを利用することで、
+多値返却と同じ感覚でエラーハンドリングを行なえます。
+
+以下は、 __Ret とタプルを組み合わせた処理のサンプルです。
+
+=func()= 内で sub() を実行しています。
+この時に =!= を使用してエラーの移譲を行なっていつつ、
+タプルを使って多値返却と同等の処理を実現しています。
+
+#+BEGIN_SRC lns
+fn sub(flag:bool) : __Ret<(int,str),__Er> {
+   if flag {
+      return .Ok( (= 1,"abc") );
+   }
+   return .Err( __serr( "err" ));
+}
+
+fn func(flag:bool) : __Ret<int,__Er> {
+   let (val1, val2) = sub(flag)!;
+   let (val3, val4) = sub(flag)!;
+   print( val1, val2, val3, val4 );
+   return .Ok( val1 + val3 );
+}
+
+foreach cond in [true,false] {
+   match func( cond ) {
+      case .Ok( val ) {
+         print( "ok", val );
+      }
+      case .Err( val ) {
+         print( "ng", val.$txt );
+      }
+   }
+}
+#+END_SRC
+-----
 * *nilable 編*
 :PROPERTIES:
 :CUSTOM_ID: nilable_ja
@@ -4843,47 +5262,6 @@ LuneScript は、次の仕様によって nil 安全を実現しています。
   
 
 次回はクラスについて説明します。
------
-* *クロージャ*
-:PROPERTIES:
-:CUSTOM_ID: closure_ja
-:END:
-
-# -*- coding:utf-8 -*-
-#+STARTUP: nofold
-#+OPTIONS: ^:{}
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
-
-LuneScript はクロージャに対応している。
-
-#+BEGIN_SRC lns
-// @lnsFront: ok
-fn func( mut val:int ): form {
-   return fn () {
-      val = val + 1;
-      print( val );
-   };
-}
-
-let sub1 = func( 10 );
-sub1(##); // 11
-sub1(##); // 12
-sub1(##); // 13
-sub1(##); // 14
-let sub2 = func( 100 );
-sub2(##); // 101
-sub2(##); // 102
-sub2(##); // 103
-sub2(##); // 104
-#+END_SRC
-
-上記の関数 =func()= は、クロージャを生成して返す関数である。
-このクロージャは、 func の引数 val をインクリメントして出力する関数である。
-
-このサンプルでは、func(10), func(100) をコールし、
-それぞれで生成されたクロージャを sub1, sub2 セットし、4 回ずつコールしている。
-これによって、 11 〜 14, 101 〜 104 が出力される。
-
 -----
 * *クラス 基本 編*
 :PROPERTIES:
@@ -14571,219 +14949,3 @@ func( 1 );
 *** LuneScript でのクラス
 
 スコープは *=Ast.SymbolInfo=* クラスで管理する。
------
-* *エラーハンドリング編*
-:PROPERTIES:
-:CUSTOM_ID: error_ja
-:END:
-
-# -*- coding:utf-8 -*-
-#+STARTUP: nofold
-#+OPTIONS: ^:{}
-#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
-
-ここでは LuneScript のエラーハンドリングについて説明します。
-
-** エラーハンドリング
-
-現状の LuneScript は、大域脱出をサポートしていません。
-
-何等かのエラーが発生した場合、関数の戻り値でエラーを通知する必要があります。
-
-
-エラーの通知方法としては、大きく次の 2 つがあります。
-
-- nilable を利用し、エラーを nil で表現する。
-- alge 型 __Ret を利用する。
-
-*** nilable を利用する場合
-
-関数の戻り値に nilable を利用することで、
-その関数のエラーを表現できます。
-
-#+BEGIN_SRC lns
-// @lnsFront: ok
-fn func(flag:bool): str! {
-   if not flag {
-       return nil;
-   }
-   return "hoge";
-}
-#+END_SRC
-
-上記の関数は処理が成功した場合 =str= を返し、
-失敗した場合は =nil= を返します。
-
-この方法は、実現が簡単であるという利点がありますが、
-どういったエラーが発生したのかを示す情報を示せないという欠点があります。
-
-この欠点をカバーするには、次のようにエラー内容を示す多値を返すことで、
-この欠点をカバーできます。
-
-#+BEGIN_SRC lns
-// @lnsFront: ok
-fn func(flag:bool): str!, str! {
-   if not flag {
-       return nil, "error";
-   }
-   return "hoge", nil;
-}
-#+END_SRC
-
-*** alge 型 __Ret を利用する場合
-
-次の alge 型 __Ret を利用すると、多値返却を使用せずに、エラーの内容を示すことができます。
-
-#+BEGIN_SRC lns
-alge __Ret<T1,T2> {
-  Ok(val:T1),
-  Err(val:T2),
-}
-#+END_SRC
-
-*alge 型 __Ret* は、 v1.5.2 から利用可能です。
-
-
-たとえば、前述の =func()= を __Ret を使って表現すると次になります。
-
-#+BEGIN_SRC lns
-// @lnsFront: ok
-fn func(flag:bool): __Ret<str,str> {
-   if not flag {
-       return .Err("error");
-   }
-   return .Ok( "hoge" );
-}
-#+END_SRC
-
-*** =!= 演算子
-
-エラーを返す関数において、
-その関数の処理内で実行するサブ関数がエラーを返す場合、
-サブ関数毎にエラーの判定を行なう必要があり、処理が煩雑になります。
-
-例えば、次はサブ関数 =sub()= があり、 
-この関数を 3 回コールする =func()= があります。
-
-=func()= は、3 回エラー判定処理が必要になります。
-
-#+BEGIN_SRC lns
-// @lnsFront: ok
-class Hoge {
-   fn sub( val:int ) : int! {
-      if val > 3 {
-	 return nil;
-      }
-      return val;
-   }
-   pub fn func( val:int ) : str! {
-      let! work1 = self.sub( val + 1 ) {  // check error
-         return nil;
-      };
-      let! work2 = self.sub( val + 2 ) { // check error
-         return nil;
-      };
-      let! work3 = self.sub( val + 3 ) { // check error
-         return nil;
-      };
-      return "%s" (work1 + work2 + work3);
-   }
-}
-let hoge = new Hoge();
-print( "%s" (hoge.func( 0 )) );
-print( "%s" (hoge.func( 1 )) );
-#+END_SRC
-
-=!= 演算子は、上記のエラーチェックを簡略化するものです。
-
-=!= 演算子の仕様を説明をする前に、
-上記のコードを =!= 演算子を使って書き換えたコードがどうなるかを見た方が
-イメージし易いので、次にコードを示します。
-
-#+BEGIN_SRC lns
-// @lnsFront: ok
-class Hoge {
-   fn sub( val:int ) : int! {
-      if val > 3 {
-	 return nil;
-      }
-      return val;
-   }
-   pub fn func( val:int ) : str! {
-      let work1 = self.sub( val + 1 )!;
-      let work2 = self.sub( val + 2 )!;
-      let work3 = self.sub( val + 3 )!;
-      return "%s" (work1 + work2 + work3);
-   }
-}
-let hoge = new Hoge();
-print( "%s" (hoge.func( 0 )) );
-print( "%s" (hoge.func( 1 )) );
-#+END_SRC
-
-=!= を使った方のコードは、エラー判定処理が簡略化されていることが分かると思います。
-
-nilable ではなく =__Ret= を使った場合は以下になります。
-
-#+BEGIN_SRC lns
-// @lnsFront: ok
-class Hoge {
-   fn sub( val:int ) : __Ret<int,__Er> {
-      if val > 3 {
-	 return .Err( __serr( "err" ) );
-      }
-      return .Ok( val );
-   }
-   pub fn func( val:int ) : __Ret<str,__Er> {
-      let work1 = self.sub( val + 1 )!;
-      let work2 = self.sub( val + 2 )!;
-      let work3 = self.sub( val + 3 )!;
-      return .Ok( "%s" (work1 + work2 + work3) );
-   }
-}
-let hoge = new Hoge();
-for count = 0, 1 {
-   match hoge.func( count ) {
-      case .Ok( val ) {
-         print( "ok", val );
-      }
-      case .Err( err ) {
-         print( "ng", err.$txt );
-      }
-   }
-}
-#+END_SRC
-
-**** =!= 演算子の仕様
-
-=!= 演算子を利用するには、 *次の仕様を満す必要があります。*
-
-- =!= 演算子の直前の値の型 T が nilable か __Ret 型である。
-- =!= 演算子を利用している statement を含む関数の戻り値の型 R が次を満す。
-  - T が nilable の場合、R も nilable である。
-  - T が =__Ret<T1,T2>= の場合、 R は =__Ret<R1,R2>= である。
-    - ここで R2 は T2 を代入可能な型でなければならない。
-    - T1, R1 は任意の型で良い。
-
-上記の __Ret を使ったサンプルで言うと、
-
-- func() の戻り値は =__Ret<str,__Er>= である。
-- =!= 演算子の直前の値 sub() の型は =__Ret<int,__Er>= である。
-- つまり =T1 = int=, =T2 = __Er= ,  =R1 = str=, =R2 = __Er= となる。
-- よって、 =T2=R2=__Er= となり、 =!= 演算子が使用可能となる。
-
-
-上記を仕様を満す場合、 *=!= 演算子は次の動作になります。*
-
-- =!= 演算子の直前の値が .Err の場合、
-  そのコードを含む関数の戻り値にその値をセットして return する。
-- =!= 演算子の直前の値が .Ok の場合、
-  =!= 演算子の評価結果を .Ok の値として処理を続ける。
-
-また、 =!= 演算子 を利用可能な箇所は、[[#ebnf]] に示す次の statement に限ります。
-
-- stmt_exp
-- if
-- decl_var
-
-上記以外の statement については、随時対応します。

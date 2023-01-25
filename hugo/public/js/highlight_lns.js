@@ -3,7 +3,7 @@
 
         hljs.registerLanguage("lns", function (e) {
             const KEYWORDS = {
-                type: "int real str bool stem form List Map Set __exp __ Mapping",
+                type: "int real str bool stem form List Map Set __exp __ Mapping __Ret __Er",
                 keyword: "fn macro let and return if when then else elseif" +
                     " proto extend abstract pub pro pri local static non" +
                     " override advertise" +
@@ -14,7 +14,7 @@
                     " class interface module require" +
                     " enum alge match switch case" +
                     " for foreach forsort while in not or repeat until _",
-                built_in: '_G _ENV super self _exp' +
+                built_in: '_G _ENV super self _exp __serr' +
                     ' __func__ __line__ __mod__ type __var',
                 const_val: "true false nil",
                 meta: '_lune_control __luago __async __noasync __asyncLock __unsafe'
@@ -22,7 +22,7 @@
             
             const OPE = {
                 className: 'operator',
-                begin: /`{|,,,,|,,,|,,|\.\.|[=|\+\*\-\?&~<>:$#]|\(@|\[@|@@@|@@=|@@/
+                begin: /`{|,,,,|,,,|,,|\.\.|[=|\+\*\-\?&~<>:$#]|\(@|\(=|\[@|@@@|@@=|@@/
             };
 
             return {
