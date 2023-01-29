@@ -4804,7 +4804,37 @@ pub fn __err(mess:str): __Er;
 #+END_SRC
 
 
-*** タプルと __Ret を組み合わせた多値返却関数のエラーハンドリング
+*** タプルを利用した多値返却関数のエラーハンドリング
+
+タプルを利用することで、多値返却関数のエラーハンドリングが可能です。
+
+#+BEGIN_SRC lns
+fn sub(flag:bool) : (int,str)!,str! {
+   if flag {
+      return (= 1,"abc"), nil;
+   }
+   return nil, "err";
+}
+
+fn func(flag:bool) : (int,str)!,str! {
+   let (val1, val2) = sub(flag)!;
+   let (val3, val4) = sub(flag)!;
+   print( val1, val2, val3, val4 );
+   return (= val1 + val3, val2 .. val4 ), nil;
+}
+
+foreach cond in [true,false] {
+   let tuple, err = func( cond );
+   when! tuple {
+      let (val1,val2) = tuple;
+      print( "ok", val1, val2 );
+   } else {
+      print( "ng", err );
+   }
+}
+#+END_SRC
+
+**** __Ret を利用した場合
 
 =__Ret= は Ok と Err との値を表現する alge 型です。
 どちらも Ok も Err も保持できるのは一つの型の値です。

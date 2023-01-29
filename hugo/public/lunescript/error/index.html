@@ -32,7 +32,7 @@
 <meta itemprop="name" content="10.6. エラーハンドリング編">
 <meta itemprop="description" content="ここでは LuneScript のエラーハンドリングについて説明します。 エラーハンドリング 現状の LuneScript は、大域脱出をサポートしていません。 何等かのエラーが発生した場合">
 
-<meta itemprop="wordCount" content="2156">
+<meta itemprop="wordCount" content="2276">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -355,9 +355,41 @@ __Er 型
 </div>
 <div id="outline-container-headline-7" class="outline-3">
 <h3 id="headline-7">
-タプルと __Ret を組み合わせた多値返却関数のエラーハンドリング
+タプルを利用した多値返却関数のエラーハンドリング
 </h3>
 <div id="outline-text-headline-7" class="outline-text-3">
+<p>
+タプルを利用することで、多値返却関数のエラーハンドリングが可能です。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">fn sub(flag:bool) : (int,str)!,str! {
+   if flag {
+      return (= 1,&#34;abc&#34;), nil;
+   }
+   return nil, &#34;err&#34;;
+}
+
+fn func(flag:bool) : (int,str)!,str! {
+   let (val1, val2) = sub(flag)!;
+   let (val3, val4) = sub(flag)!;
+   print( val1, val2, val3, val4 );
+   return (= val1 + val3, val2 .. val4 ), nil;
+}
+
+foreach cond in [true,false] {
+   let tuple, err = func( cond );
+   when! tuple {
+      let (val1,val2) = tuple;
+      print( &#34;ok&#34;, val1, val2 );
+   } else {
+      print( &#34;ng&#34;, err );
+   }
+}</code></pre>
+</div>
+<div id="outline-container-headline-8" class="outline-4">
+<h4 id="headline-8">
+__Ret を利用した場合
+</h4>
+<div id="outline-text-headline-8" class="outline-text-4">
 <p>
 <code class="verbatim">__Ret</code> は Ok と Err との値を表現する alge 型です。
 どちらも Ok も Err も保持できるのは一つの型の値です。</p>
@@ -399,6 +431,8 @@ foreach cond in [true,false] {
       }
    }
 }</code></pre>
+</div>
+</div>
 </div>
 </div>
 </div>
