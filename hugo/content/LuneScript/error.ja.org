@@ -146,6 +146,30 @@ print( "%s" (hoge.func( 1 )) );
 
 =!= を使った方のコードは、エラー判定処理が簡略化されていることが分かると思います。
 
+2つの値を返す場合は、次のようになります。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int!, str! {
+      if val > 3 {
+	 return nil, "err";
+      }
+      return val, nil;
+   }
+   pub fn func( val:int ) : int!, str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return work1 + work2 + work3, nil;
+   }
+}
+let hoge = new Hoge();
+print( "%s,%s" ( hoge.func( 0 )) );
+print( "%s,%s" ( hoge.func( 1 )) );
+#+END_SRC
+
+
 nilable ではなく =__Ret= を使った場合は以下になります。
 
 #+BEGIN_SRC lns
@@ -182,18 +206,29 @@ for count = 0, 1 {
 =!= 演算子を利用するには、 *次の仕様を満す必要があります。*
 
 - =!= 演算子の直前の値の型 T が nilable か __Ret 型である。
+  - =!= T が nilable の場合、 T に続く型 T2 があっても良い。
 - =!= 演算子を利用している statement を含む関数の戻り値の型 R が次を満す。
   - T が nilable の場合、R も nilable である。
+    - T2 がある場合、R2 があり、 R2 は T2 を代入可能である。
   - T が =__Ret<T1,T2>= の場合、 R は =__Ret<R1,R2>= である。
     - ここで R2 は T2 を代入可能な型でなければならない。
     - T1, R1 は任意の型で良い。
 
-上記の __Ret を使ったサンプルで言うと、
+上記の =pub fn func( val:int ) : int!, str!= を使ったサンプルで説明すると、
+
+- func() の戻り値は =int!, str!= である。
+- =!= 演算子の直前の値 sub() の型は =int!, str!= である。
+- つまり =T1 = int!=, =T2 = str!= ,  =R1 = int!=, =R2 = str!= となる。
+- よって、 =T2=R2=str!= となり、 =!= 演算子が使用可能となる。
+
+また、上記の __Ret を使ったサンプルで言うと、
 
 - func() の戻り値は =__Ret<str,__Er>= である。
 - =!= 演算子の直前の値 sub() の型は =__Ret<int,__Er>= である。
 - つまり =T1 = int=, =T2 = __Er= ,  =R1 = str=, =R2 = __Er= となる。
 - よって、 =T2=R2=__Er= となり、 =!= 演算子が使用可能となる。
+
+
 
 
 上記を仕様を満す場合、 *=!= 演算子は次の動作になります。*
@@ -249,6 +284,7 @@ LuneScript は多値返却を利用できますが、
 タプルを使って多値返却と同等の処理を実現しています。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn sub(flag:bool) : __Ret<(int,str),__Er> {
    if flag {
       return .Ok( (= 1,"abc") );

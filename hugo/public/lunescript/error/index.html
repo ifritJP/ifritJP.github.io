@@ -32,7 +32,7 @@
 <meta itemprop="name" content="10.6. エラーハンドリング編">
 <meta itemprop="description" content="ここでは LuneScript のエラーハンドリングについて説明します。 エラーハンドリング 現状の LuneScript は、大域脱出をサポートしていません。 何等かのエラーが発生した場合">
 
-<meta itemprop="wordCount" content="1895">
+<meta itemprop="wordCount" content="2156">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -214,6 +214,28 @@ print( &#34;%s&#34; (hoge.func( 1 )) );</code></pre>
 <p>
 <code class="verbatim">!</code> を使った方のコードは、エラー判定処理が簡略化されていることが分かると思います。</p>
 <p>
+2つの値を返す場合は、次のようになります。</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int!, str! {
+      if val &gt; 3 {
+	 return nil, &#34;err&#34;;
+      }
+      return val, nil;
+   }
+   pub fn func( val:int ) : int!, str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return work1 + work2 + work3, nil;
+   }
+}
+let hoge = new Hoge();
+print( &#34;%s,%s&#34; ( hoge.func( 0 )) );
+print( &#34;%s,%s&#34; ( hoge.func( 1 )) );</code></pre>
+</div>
+<p>
 nilable ではなく <code class="verbatim">__Ret</code> を使った場合は以下になります。</p>
 <div class="src src-lns">
 <pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
@@ -251,11 +273,21 @@ for count = 0, 1 {
 <p>
 <code class="verbatim">!</code> 演算子を利用するには、 <strong>次の仕様を満す必要があります。</strong></p>
 <ul>
-<li><code class="verbatim">!</code> 演算子の直前の値の型 T が nilable か __Ret 型である。</li>
+<li>
+<p><code class="verbatim">!</code> 演算子の直前の値の型 T が nilable か __Ret 型である。</p>
+<ul>
+<li><code class="verbatim">!</code> T が nilable の場合、 T に続く型 T2 があっても良い。</li>
+</ul>
+</li>
 <li>
 <p><code class="verbatim">!</code> 演算子を利用している statement を含む関数の戻り値の型 R が次を満す。</p>
 <ul>
-<li>T が nilable の場合、R も nilable である。</li>
+<li>
+<p>T が nilable の場合、R も nilable である。</p>
+<ul>
+<li>T2 がある場合、R2 があり、 R2 は T2 を代入可能である。</li>
+</ul>
+</li>
 <li>
 <p>T が <code class="verbatim">__Ret&lt;T1,T2&gt;</code> の場合、 R は <code class="verbatim">__Ret&lt;R1,R2&gt;</code> である。</p>
 <ul>
@@ -266,7 +298,14 @@ for count = 0, 1 {
 </ul>
 </li>
 </ul>
-<p>上記の __Ret を使ったサンプルで言うと、</p>
+<p>上記の <code class="verbatim">pub fn func( val:int ) : int!, str!</code> を使ったサンプルで説明すると、</p>
+<ul>
+<li>func() の戻り値は <code class="verbatim">int!, str!</code> である。</li>
+<li><code class="verbatim">!</code> 演算子の直前の値 sub() の型は <code class="verbatim">int!, str!</code> である。</li>
+<li>つまり <code class="verbatim">T1 = int!</code>, <code class="verbatim">T2 = str!</code> ,  <code class="verbatim">R1 = int!</code>, <code class="verbatim">R2 = str!</code> となる。</li>
+<li>よって、 <code class="verbatim">T2=R2=str!</code> となり、 <code class="verbatim">!</code> 演算子が使用可能となる。</li>
+</ul>
+<p>また、上記の __Ret を使ったサンプルで言うと、</p>
 <ul>
 <li>func() の戻り値は <code class="verbatim">__Ret&lt;str,__Er&gt;</code> である。</li>
 <li><code class="verbatim">!</code> 演算子の直前の値 sub() の型は <code class="verbatim">__Ret&lt;int,__Er&gt;</code> である。</li>
@@ -335,7 +374,8 @@ LuneScript は多値返却を利用できますが、
 この時に <code class="verbatim">!</code> を使用してエラーの移譲を行なっていつつ、
 タプルを使って多値返却と同等の処理を実現しています。</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">fn sub(flag:bool) : __Ret&lt;(int,str),__Er&gt; {
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn sub(flag:bool) : __Ret&lt;(int,str),__Er&gt; {
    if flag {
       return .Ok( (= 1,&#34;abc&#34;) );
    }
