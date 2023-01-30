@@ -1,0 +1,176 @@
+#+TITLE: LuneScript のタプルの go 実装
+#+DATE: 2023-01-29
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: LuneScript
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+LuneScript の v1.5.3 からタプルを対応している。
+
+このタプルの go 実装についてパフォーマンスを調べた内容を載せておく。
+
+* LuneScript のタプルの go 変換初期実装
+
+ここでは、LuneScript のタプルを go に変換した際に、
+どのような実装になっているかを説明する。
+
+LuneScript で次のようなタプル (int と str のペア) を定義した場合、
+
+: (int,str)
+
+go では次の型として扱う。
+
+: []any
+
+つまり、タプルの各要素の型情報は一旦 any に丸め、
+タプルから値を取得する際に型変換を行なう。
+
+例えば次の LuneScript のコードは、
+
+#+BEGIN_SRC lns
+  fn hoge() (int,str) {
+     return (= 1, "abc" );
+  }  
+  fn sub() {
+     let (val1, val2) = hoge();
+     print( val1, val2 );
+  }
+#+END_SRC
+
+go に変換すると次のようなコードになる。
+
+#+BEGIN_SRC go
+  func hoge() []LnsAny {
+      return []LnsAny{1, "abc"}
+  }
+  func sub() {
+      tuple := hoge()
+      val1 := tuple[0].(int) // 型変換
+      val2 := tuple[1].(string) // 型変換
+      fmt.Print( "%v %v", val1, val2 )
+  }
+#+END_SRC
+
+上記の通り、タプルから値を取得する際に型変換を行なうため、
+実行時のオーバーヘッドがかかる。
+
+このオーバーヘッドを削減するため、
+go の generics を利用する方法を検討し、
+両者のパフォーマンスを実測し、より良い方を採用する。
+
+* go の generics を利用した実装
+
+上記の LuneScript を go の generics を利用した実装は以下になる。
+
+
+#+BEGIN_SRC go
+  type Tuple2[T1,T2 any] struct {
+    Val1 T1
+    Val2 T2
+  }
+  func hoge() *Tuple2[int,string] {
+      return &Tuple2[int,string]{1, "abc"}
+  }
+  func sub() {
+      tuple := hoge()
+      val1 := tuple.Val1
+      val2 := tuple.Val2
+      fmt.Print( "%v %v", val1, val2 )
+  }
+#+END_SRC
+
+* ベンチマーク用 LuneScript コード
+
+ベンチマークを測る LuneScript のコードは以下のものを利用する。
+
+#+BEGIN_SRC lns
+fn sub(flag:bool) : (int,str)!,str! {
+   if flag {
+      return (= 1,"abc"), nil;
+   }
+   return nil, "err";
+}
+
+fn func(flag:bool) : (int,str)!,str! {
+   let (val1, val2) = sub(flag)!;
+   let (val3, val4) = sub(flag)!;
+   return (= val1 + val3, val2 .. val4 ), nil;
+}
+
+for _ = 1, 1000 * 1000 * 10 {
+   func( true );
+}
+#+END_SRC
+
+
+さらに、 tuple を使わずに多値返却のみで等価な動作をする次のコードも参考に速度を測る。
+
+#+BEGIN_SRC lns
+fn sub(flag:bool) : int!,str!, str! {
+   if flag {
+      return 1, "abc", nil;
+   }
+   return nil, nil, "err";
+}
+
+fn func(flag:bool) : int!,str!,str! {
+   let val1, val2, err1 = sub(flag);
+   if err1 {
+      return nil, nil, err1;
+   }
+   let val3, val4, err2 = sub(flag);
+   if err2 {
+      return nil, nil, err2;
+   }
+   when! val1, val2, val3, val4 {
+      return val1 + val3, val2 .. val4,nil;
+   }
+   error( "" );
+}
+
+for _ = 1, 1000 * 1000 * 10 {
+   func( true );
+}
+#+END_SRC
+
+* ベンチマーク結果
+
+- tuple: []any を利用した場合
+#+BEGIN_SRC txt
+real	0m1.925s
+user	0m1.968s
+sys	0m0.111s
+#+END_SRC
+  
+- tuple: generics を利用した場合
+
+#+BEGIN_SRC txt
+real	0m0.996s
+user	0m1.064s
+sys	0m0.033s
+#+END_SRC
+
+- 非tuple: 多値返却
+
+#+BEGIN_SRC txt
+real	0m0.980s
+user	0m1.015s
+sys	0m0.021s
+#+END_SRC
+
+
+* まとめ
+
+まとめると、それぞれの実行時間は次の結果となった。
+
+
+: (tuple: []any)  ＞＞＞＞ (tuple: generics) ＞≒ (非tuple: 多値返却)
+
+少し意外だったのは、
+タプルを使わない多値返却と比べても、
+ほとんどパフォーマンスが変わらない処理時間になることが判った。
+
+
+以上から、LuneScript のタプルの go 変換実装は、ジェネリクスを使用する。
