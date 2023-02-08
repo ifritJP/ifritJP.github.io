@@ -32,7 +32,7 @@
 <meta itemprop="name" content="10.6. エラーハンドリング編">
 <meta itemprop="description" content="ここでは LuneScript のエラーハンドリングについて説明します。 エラーハンドリング 現状の LuneScript は、大域脱出をサポートしていません。 何等かのエラーが発生した場合">
 
-<meta itemprop="wordCount" content="2276">
+<meta itemprop="wordCount" content="2288">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -125,7 +125,8 @@ alge 型 __Ret を利用する場合
 <p>
 次の alge 型 __Ret を利用すると、多値返却を使用せずに、エラーの内容を示すことができます。</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">alge __Ret&lt;T1,T2&gt; {
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+alge __Ret&lt;T1,T2&gt; {
   Ok(val:T1),
   Err(val:T2),
 }</code></pre>
@@ -340,16 +341,18 @@ __Er 型
 <code class="verbatim">__Ret</code> のエラー時の情報を示す型として __Er 型を追加しています。</p>
 <p>
 この型は次の interface です。</p>
-<div class="src src-org">
-<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-org" data-lang="org"><span class="line"><span class="cl">pub interface __Er {
-</span></span><span class="line"><span class="cl">   fn get_txt():str;
-</span></span><span class="line"><span class="cl">}</span></span></code></pre></div>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub interface __Er {
+   fn get_txt():str;
+}</code></pre>
 </div>
 <p>
 また、 __Er 型のインスタンスを生成する関数として、
 次の <code class="verbatim">__serr()</code> 関数を用意しています。</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">pub fn __err(mess:str): __Er;</code></pre>
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn __err(mess:str): __Er;</code></pre>
 </div>
 </div>
 </div>
@@ -361,7 +364,8 @@ __Er 型
 <p>
 タプルを利用することで、多値返却関数のエラーハンドリングが可能です。</p>
 <div class="src src-lns">
-<pre tabindex="0"><code class="language-lns" data-lang="lns">fn sub(flag:bool) : (int,str)!,str! {
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn sub(flag:bool) : (int,str)!,str! {
    if flag {
       return (= 1,&#34;abc&#34;), nil;
    }
@@ -369,8 +373,8 @@ __Er 型
 }
 
 fn func(flag:bool) : (int,str)!,str! {
-   let (val1, val2) = sub(flag)!;
-   let (val3, val4) = sub(flag)!;
+   let val1, val2 = sub(flag)!...;
+   let val3, val4 = sub(flag)!...;
    print( val1, val2, val3, val4 );
    return (= val1 + val3, val2 .. val4 ), nil;
 }
@@ -378,7 +382,7 @@ fn func(flag:bool) : (int,str)!,str! {
 foreach cond in [true,false] {
    let tuple, err = func( cond );
    when! tuple {
-      let (val1,val2) = tuple;
+      let val1,val2 = tuple...;
       print( &#34;ok&#34;, val1, val2 );
    } else {
       print( &#34;ng&#34;, err );
@@ -415,8 +419,8 @@ fn sub(flag:bool) : __Ret&lt;(int,str),__Er&gt; {
 }
 
 fn func(flag:bool) : __Ret&lt;int,__Er&gt; {
-   let (val1, val2) = sub(flag)!;
-   let (val3, val4) = sub(flag)!;
+   let val1, val2 = sub(flag)!...;
+   let val3, val4 = sub(flag)!...;
    print( val1, val2, val3, val4 );
    return .Ok( val1 + val3 );
 }

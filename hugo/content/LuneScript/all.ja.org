@@ -1938,6 +1938,7 @@ let obj:(int,str) = (= 1, "abc" ); // 1 "abc"
 タプル型の宣言時に、次のように各要素の型にシンボルを付けることが可能です。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 fn func(): (id:int, mess:str);
 #+END_SRC
 
@@ -1948,12 +1949,13 @@ fn func(): (id:int, mess:str);
 処理上は次のように省略したときと何も違いはありません。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 fn func(): (int,str);
 #+END_SRC
 
 ** タプルの値の展開
 
-タプル型に格納されている値を展開するには ... 演算子を使用します。
+タプル型に格納されている値を展開するには =...= 演算子を使用します。
 
 #+BEGIN_SRC lns
   // @lnsFront: ok
@@ -1965,12 +1967,12 @@ fn func(): (int,str);
   print( val1 + 10, val2 .. "xyz" ); // 11 abcxyz
 #+END_SRC
 
-タプル型の値の彼に ... を指定することで、タプルが展開されます。
+タプル型の値の後に =...= を指定することで、タプルが展開されます。
 
 なお、次のような方法でタプルの各要素を参照することはできません。 
 
 #+BEGIN_SRC lns
-// @lnsFront: ng
+// @lnsFront: error
 let val = (= 1, "abc" ); // 1 "abc"
 print( val[1] ); // error
 #+END_SRC
@@ -4594,6 +4596,7 @@ fn func(flag:bool): str!, str! {
 次の alge 型 __Ret を利用すると、多値返却を使用せずに、エラーの内容を示すことができます。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 alge __Ret<T1,T2> {
   Ok(val:T1),
   Err(val:T2),
@@ -4788,7 +4791,8 @@ for count = 0, 1 {
 
 この型は次の interface です。
 
-#+BEGIN_SRC org
+#+BEGIN_SRC lns
+// @lnsFront: skip
 pub interface __Er {
    fn get_txt():str;
 }
@@ -4798,6 +4802,7 @@ pub interface __Er {
 次の =__serr()= 関数を用意しています。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn __err(mess:str): __Er;
 #+END_SRC
 
@@ -4807,6 +4812,7 @@ pub fn __err(mess:str): __Er;
 タプルを利用することで、多値返却関数のエラーハンドリングが可能です。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 fn sub(flag:bool) : (int,str)!,str! {
    if flag {
       return (= 1,"abc"), nil;
@@ -4815,8 +4821,8 @@ fn sub(flag:bool) : (int,str)!,str! {
 }
 
 fn func(flag:bool) : (int,str)!,str! {
-   let (val1, val2) = sub(flag)!;
-   let (val3, val4) = sub(flag)!;
+   let val1, val2 = sub(flag)!...;
+   let val3, val4 = sub(flag)!...;
    print( val1, val2, val3, val4 );
    return (= val1 + val3, val2 .. val4 ), nil;
 }
@@ -4824,7 +4830,7 @@ fn func(flag:bool) : (int,str)!,str! {
 foreach cond in [true,false] {
    let tuple, err = func( cond );
    when! tuple {
-      let (val1,val2) = tuple;
+      let val1,val2 = tuple...;
       print( "ok", val1, val2 );
    } else {
       print( "ng", err );
@@ -4859,8 +4865,8 @@ fn sub(flag:bool) : __Ret<(int,str),__Er> {
 }
 
 fn func(flag:bool) : __Ret<int,__Er> {
-   let (val1, val2) = sub(flag)!;
-   let (val3, val4) = sub(flag)!;
+   let val1, val2 = sub(flag)!...;
+   let val3, val4 = sub(flag)!...;
    print( val1, val2, val3, val4 );
    return .Ok( val1 + val3 );
 }
@@ -5513,7 +5519,7 @@ import しているモジュール内で定義することは出来ません。
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
-   fn func();
+   pub fn func();
    pub fn sub() {
       self.func();
    }
@@ -9651,6 +9657,7 @@ pub fn __main( argList:&List<str> ):int {
 次の LuneScript のコードはコマンドラインオプションを出力します。
   
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn __main( argList:&List<str> ) : int {
    foreach arg, index in argList {
       print( index, arg );
@@ -12258,14 +12265,15 @@ LuneScript の処理を終わらさずに待たせる必要があります。
 - この notify() を利用することで、JavaScript から非同期のメッセージを受信できます。
 
 #+BEGIN_SRC lns
+// @lnsFront: ok
 pub class AsyncItem extend (__AsyncItem,Mapping) {
    let val:str {pub};
 }
 
-let queue:__pipe<AsyncItem>! = AsyncItem._createPipe( 0 );
+let queue = __lns.Sync._createPipe( AsyncItem, 0 );
 
 fn loop() {
-  while! queue {
+  when! queue {
     while true {
        let! item = queue.get() {
           break;
@@ -14458,6 +14466,7 @@ conv -> meta;
 例えば次のコードを字句解析すると、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 print( "hoge" );
 #+END_SRC
 
@@ -14479,6 +14488,7 @@ print( "hoge" );
 Parser クラスは、上記の字句解析を行うクラスである。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    pub abstract fn getToken() mut : &Token!;
 #+END_SRC
 
@@ -14497,6 +14507,7 @@ PushbackParser インタフェースは、 =push back= をサポートするイ�
 例えば次のようなコードを解析する際、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 if val {
 }
 print();
@@ -14517,6 +14528,7 @@ LuneScript の syntax を解析し、AST を生成する。
 例えば次のコードから、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 fn add( val:int ) : int {
    return val + 10;
 }
@@ -14655,6 +14667,7 @@ LuneScript 開発の続き。
 早速だが、次のコードにおいて型は幾つあるか分かるだろうか？
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 fn func() {
   print( "hello world" );
 }
@@ -14688,6 +14701,7 @@ builtin 型だけであれば、
 例えば、次のユーザ定義の関数 func は、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn func<T>( val:T ) : &List<T> {
   return [ val ];  
 }
@@ -14721,6 +14735,7 @@ pub fn func<T>( val:T ) : &List<T> {
 次のコードを見て欲しい。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let list1:List<int>;
 let list2:&List<int>;
 let list3:List<int>!;
@@ -14752,6 +14767,7 @@ let list4:&List<int>!;
 TypeInfo には次のメソッドを用意している。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
    /**この TypeInfo に対する immutable な型を取得  */
    pub fn get_imutType(): &TypeInfo;
    /**この TypeInfo に対する nilable な型を取得  */
@@ -14770,6 +14786,7 @@ TypeInfo には次のメソッドを用意している。
 次の関数の引数において、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 fn func( mut list1:List<int>, mut list2:&List<int>, 
          mut list3:List<int>!, mut list4:&List<int>! ) 
 #+END_SRC
@@ -14777,6 +14794,7 @@ fn func( mut list1:List<int>, mut list2:&List<int>,
 引数 list1 から list4 は次の代入可否関係がある。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 list1 = list2; // error
 list1 = list3; // error
 list1 = list4; // error
@@ -14810,6 +14828,7 @@ list4 = list3;
 あるクラス Hoge を要素にもつ List 型の変数 list1, list2 を宣言した場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let mut list1:List<Hoge>;
 let mut list2:List<&Hoge>;
 #+END_SRC
@@ -14817,6 +14836,7 @@ let mut list2:List<&Hoge>;
 list1, list2 には次の関係がある。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 list1 = list2; // error
 list2 = list1;
 #+END_SRC
@@ -14828,6 +14848,7 @@ list2 = list1;
 以下のクラスの継承関係がある時、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 class Super {
 }
 class Sub extend Super {
@@ -14837,6 +14858,7 @@ class Sub extend Super {
 それぞれの型の変数には、次の関係がある。
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 let super = new Super();
 let sub = new Sub();
 
@@ -14901,6 +14923,7 @@ LuneScript は一般的なレキカルスコープである。
 例えば、以下の =Test.lns= において、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 // Test.lns
 fn func( val1:int ) {
   let val2 = val1 + 10;
@@ -14935,6 +14958,7 @@ func( 1 );
 例えば以下のソースの場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 // Test.lns
 fn func( val1:int ) {
   let val2 = val1 + 10;
@@ -14992,6 +15016,7 @@ val2_sym->func
 例えば以下のコードの場合、
 
 #+BEGIN_SRC lns
+// @lnsFront: skip
 // Test.lns
 fn func( val1:int ) {
   let val2 = val1 + 10;
