@@ -1,4 +1,4 @@
-#+TITLE: 24. Macro edition
+#+TITLE: 24. Macro
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
@@ -12,18 +12,25 @@ This time, I will explain about LuneScript macros.
 
 LuneScript supports macros.
 
-*Perhaps it makes more sense these days to say metaprogramming rather than macros.*
+*Maybe it's easier to say "metaprogramming" than "macro" these days.*
 
-To explain "what is a macro", it is easier to explain the difference from a function.
+To explain "what is a macro", I think it will be easier to understand if you explain the difference from a function.
 
-*A function is a collection of certain processes. On the other hand, macros can define multiple function definitions themselves together. Of course, you can define not only function definitions but almost all processes that can be defined as macros.*
+*A function is a collection of operations. On the other hand, macros can define multiple function definitions themselves collectively. Of course, what can be defined as a macro is not only function definition, but almost all processes can be defined.*
 
-I think Lisp is the most major programming language for macros, but LuneScript macros aren't as powerful as Lisp. However, it is not as restrictive as C macros.
+I think Lisp is the most major programming language for macros, but LuneScript macros are not as advanced as Lisp. However, they are not as restrictive as C language macros.
+
+
+** Macro basics
+
+*Macros are expanded at compile time, not at run time.*
+
+It's difficult to write a macro if you don't keep this in mind, so be sure to keep this in mind when writing a macro.
 
 
 ** Simple macro example
 
-The following is an example of a simple macro.
+Here's a simple macro example:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 macro _Hello() {
@@ -33,35 +40,35 @@ _Hello(); // hello world
 #+END_SRC
 
 
-This is the macro _Hello that displays hello world.
+This is the macro _Hello that prints hello world.
 
-The macro definition uses the macro keyword.
+Macro definitions use the macro keyword.
 
-This example is a macro that is exactly the same as using a function definition, and there is no point in defining it as a macro.
+This example is a macro that is no different from using a function definition, so there is no point in defining it as a macro.
 
 However, it is a good example to convey that "macros can be defined in the same way as function definitions".
 
-In programming languages equipped with macros, macro definitions often require special processing, unlike general function definitions.
+In programming languages with macros, macro definitions often require special processing unlike general function definitions.
 
-This raises the hurdle of mind that "macro seems to be difficult".
+As a result, the hurdles of the mind rise, saying, "Macro seems to be something difficult."
 
-However, with LuneScript, you can define macros in the same way as general function definitions, as in the hello world sample above.
+However, in LuneScript, like the hello world sample above, you can define macros in the same way as defining functions in general.
 
-However, you cannot define a meaningful macro by writing a macro like the above example.
+However, you cannot define a meaningful macro by writing a macro like the example above.
 
-The following describes how to define meaningful macros.
+Below we'll show you how to define meaningful macros.
 
 
-** Macro example
+** macro example
 
 Here's an example of a slightly more practical macro:
 
-This macro has the following specifications.
-- Macro _Test that defines a function that returns a value of int
-- The int value returned by the function is given as a macro argument.
-- The name of the function to be defined is determined by the value of int
-- Specifically, the function name that returns 1 is func1.
-Below is the specific macro code.
+This macro has the following specifications:
+- A macro _Test that defines a function that returns an int value
+- The int value returned by the function is given as an argument to the macro
+- The name of the defined function is determined by the value of int
+- Specifically, the function name that returns 1 is func1
+Here is the code for the specific macro:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 macro _Test( val:int ) {
@@ -80,9 +87,9 @@ print( func1(), func10() ); // 1  10
 #+END_SRC
 
 
-Expanding a macro is almost the same as a function call.
+When expanding a macro, it's pretty much the same as a function call.
 
-In this case, _Test (1) and _Test (10) are macro expansions. _Test (1), _Test (10) expands to:
+In this case, _Test( 1 ), _Test( 10 ) are macro expansions. _Test( 1 ), _Test( 10 ) expands to
 #+BEGIN_SRC lns
 // @lnsFront: ok
 // Test( 1 )
@@ -96,14 +103,14 @@ fn func10():int {
 #+END_SRC
 
 
-This defines the functions func1 () and func10 (), so ~print( func1(), func10() )~ outputs 1 10.
+This defines functions func1() and func10() , so ~print( func1(), func10() )~ outputs 1 10 .
 
 This macro is described below.
 
 
-** How to write a macro
+** how to write a macro
 
-The syntax for defining a macro is:
+The macro definition syntax is:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 macro name( arg ) {
@@ -115,7 +122,7 @@ macro name( arg ) {
 #+END_SRC
 
 
-Start with the keyword macro, followed by the macro name name, the argument arg, and so on. The macro name name must start with _. Conversely, non-macro symbol names must start with something other than _.
+It starts with the keyword macro, followed by the macro name name and the arguments arg. Macro name name must start with _. Conversely, non-macro symbol names must not start with _.
 
 Macro arguments support the following types:
 - int
@@ -127,16 +134,16 @@ Macro arguments support the following types:
 - sym
 - __exp
 - __block
-sym, stat, __exp, __block will be described later.
+sym, stat, __exp, and __block are described below.
 
-This is followed by the macro-statement block and the expand-statement.
+Next comes the macro-statement block, followed by the expand-statement .
 
-To understand how to define a macro, it's easier to understand expand-statement first, so let's talk about expand-statement before we talk about the macro-statement block.
+To understand how to define a macro, it is easier to understand expand-statement first, so expand-statement will be explained before explaining the macro-statement block.
 
 
 *** argument
 
-The following can be used as the argument types dedicated to macros.
+The following argument types are available for macros only.
 - sym
 - stat  
 - __exp
@@ -147,7 +154,7 @@ The following can be used as the argument types dedicated to macros.
 
 sym is a type that can store symbols.
 
-Symbols can be used as functions, variables, members, classes, all symbols.
+Symbols can be used as functions, variables, members, classes, and all symbols.
 
 
 **** stat
@@ -159,21 +166,21 @@ stat is a type that can store statements.
 
 __exp is a type that can store all expressions.
 
-You can specify any expression, for example =1 + 1= or =func()=. However, the expression must be error-free and evaluable when you call the macro.
+Any expression can be specified, for example =1 + 1= or =func()= . However, it must be an expression that can be evaluated without error at the time the macro is called.
 
 
 **** __block
 
 __block is a type that can store the block statement ={}=.
 
-Like __exp, it must be a block that can be evaluated without error when calling the macro.
+Like __exp, it must be a block that can be evaluated without error at the time the macro is called.
 
 
 *** expand-statement
 
-expand-statement writes the code after expanding the macro.
+expand-statement writes the code after macro expansion.
 
-In the _Test macro example, the following part is the expand-statement.
+In the _Test macro example, the next part is the expand-statement.
 #+BEGIN_SRC lns
 // @lnsFront: skip
    fn ,,,name(): int {
@@ -182,21 +189,21 @@ In the _Test macro example, the following part is the expand-statement.
 #+END_SRC
 
 
-This expands the function definition.
+This will expand the function definition.
 
-Macro-specific operators are available in this expand-statement. ,, is the operator.
+Macro-only operators are available in this expand-statement. ,, is that operator.
 
-The available operators are:
+Available operators include:
 - ,,,,
 - ,,,
 - ,,
-*,,,, are operators that convert the symbol obtained by evaluating the variable that follows it into a string.*
+*,,,, is an operator that converts the symbol obtained by evaluating the immediately following variable to a string.*
 
-*,,, are operators that convert the string obtained by evaluating the variable that follows it into a symbol.*
+*,,, is an operator that converts the string obtained by evaluating the immediately following variable into a symbol.*
 
-*,, are operators that expand the variables that follow.*
+*,, is an operator that expands the variable that immediately follows it.*
 
-That is, in the above example, ,,, name converts the string in the name variable to a symbol, and ,, val expands the val variable, and the ~_Test( 1 )~ macro expands to:
+So, in the example above, ,,,name converts the string in the name variable to a symbol, ,,val expands the val variable, and the ~_Test( 1 )~ macro expands to:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func1():int {
@@ -205,20 +212,20 @@ fn func1():int {
 #+END_SRC
 
 
-You can write any code in expand-statement, provided that the following restrictions are met:
+Any code can be written in expand-statement as long as it satisfies the following restrictions.
 
 *expand-statement must be a statement.*
 
-In other words, expand-statement can be written in any code as long as it is not a statement, such as an expression or part of an incomplete token.
+In other words, expand-statement can write any code unless it doesn't form a statement, such as an expression or part of an incomplete token.
 
 You can also write multiple statements in expand-statement.
 
 
 *** macro-statement
 
-In the macro-statement block, define the variables used in expand-statement. Variables used in expand-statement must be declared in the top-level scope of the macro-statement block.
+In the macro-statement block, define the variables used by expand-statement. Variables used in expand-statement must be declared in the topmost scope of the macro-statement block.
 
-In the _Test macro example, next is macro-statement.
+In the _Test macro example, the macro-statement is:
 #+BEGIN_SRC lns
 // @lnsFront: skip
    {
@@ -227,11 +234,11 @@ In the _Test macro example, next is macro-statement.
 #+END_SRC
 
 
-Here we define the variable name. "Func% d" (val) is set as the initial value of name.
+Here we are defining the variable name. Sets "func%d" (val) as the initial value of name.
 
-Within the macro-statement, you can take advantage of all the features of LuneScript. Specifically, you can also define functions in macro-statement.
+Inside the macro-statement, you can use all the features of LuneScript. Specifically, you can also define functions within macro-statement.
 
-For example, the _Test macro can also be written as:
+For example, the _Test macro could also be written like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 macro _Test( val:int ) {
@@ -248,11 +255,11 @@ macro _Test( val:int ) {
 #+END_SRC
 
 
-In this example, the macro-statement declares the =funcname()= function and assigns the result to the name variable.
+In this example, the macro-statement declares the =funcname()= function and assigns its result to the name variable.
 
-Note that the only functions that can be used in macro-statement are the standard LuneScript functions. Even a function defined in the same source cannot be used from macro-statement if the function is defined outside the macro.
+The functions that can be used in macro-statement are only LuneScript standard functions. Even if the function is defined in the same source, if the function is defined outside the macro, it cannot be used from the macro-statement.
 
-macro-statement can use macro-only operators like expand-statement.
+A macro-statement can use macro-only operators just like an expand-statement.
 
 Specifically, the following operators are available:
 - ,,,,
@@ -260,11 +267,11 @@ Specifically, the following operators are available:
 - ,,
 - ~`{}~
 - ~~  
-*",,,," ",,," ",," is almost the same as expand-statement. The difference from expand-statement is that expand-statement processes the variable that immediately follows it, while macro-statement processes the expression that immediately follows it.*
+*``,,,,'' ``,,,'' ``,,'' is almost equivalent to expand-statement. The difference with expand-statement is that while expand-statement targets the variable that follows it, macro-statement targets the expression that follows it.*
 
-~`{}~ can use the statement written in ~`{}~ as the value as it is.
+~`{}~ can use the statement written in ~`{}~ as it is.
 
-For example, the above _Test macro can also be written using ~`{}~ as follows:
+For example, the _Test macro above can also be written using ~`{}~ as:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 macro _Test( val:int ) {
@@ -285,9 +292,9 @@ print( func1(), func10() ); // 1  10
 #+END_SRC
 
 
-Here, ~`{}~ is used to store the function definition itself in the variable defstat, and defstat is expanded by expand-statement.
+Here, ~`{}~ is used to store the function definition itself in the variable defstat, and defstat is expanded with expand-statement.
 
-The initialization part of this defstat is extracted as follows.
+Extracting the initialization part of this defstat looks like this:
 #+BEGIN_SRC lns
 // @lnsFront: skip
       let defstat = `{
@@ -298,13 +305,13 @@ The initialization part of this defstat is extracted as follows.
 #+END_SRC
 
 
-*Here you can see that we are using ~~.*
+*Here you can see the use of ~~ .*
 
-*~~ specifies the expression delimiter for operators such as ,,,. In the above, ~~ is used after "func% d" (val). This indicates that the expression that applies the ,,, operator is up to "func% d" (val), after which () is part of the macro-expanding statement.*
+*~~ is used to delimit operator expressions such as ,,, . The above uses ~~ after "func%d"(val). This indicates that the expression to which the ,,, operator applies is up to "func%d"(val), after which the () is part of the macro-expanding statement.*
 
-If you do not specify ~~, the string generated by "func% d" (val) will have () added, resulting in a syntax error.
+If ~~ is not specified, it means that () is attached to the string generated by "func%d"(val), resulting in a syntax error.
 
-The following is an example of a list of ~`{}~.
+Here is an example listing for ~`{}~:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 macro _Test( val:int ) {
@@ -328,9 +335,9 @@ print( func1(), func2(), func3(), func4(), func5() ); // 1 2 3 4 5
 #+END_SRC
 
 
-In this example, multiple function definitions (func1 to func5) are created by storing multiple function definitions in the list statList of ~`{}~ and expanding them.
+In this example, multiple function definitions (func1 to func5) are performed by storing multiple function definitions in the list statList of ~`{}~ and expanding them.
 
-The macro-statement block is not required. If you omit the macro-statement block, omit each {} as follows.
+Note that the macro-statement block is optional. If you omit the macro-statement block, omit the entire {} as follows.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 macro name( arg ) {
@@ -342,21 +349,21 @@ macro name( arg ) {
 
 *** Functions available in macro-statement
 
-The following functions are available in macro-statement:
+The following functions are available in macro-statement.
 - fn _lnsLoad( name:str, code:str ): stem;
-This function loads the LuneScript code specified by code and returns its module.
+This function loads the LuneScript code specified by code and returns that module.
 
 
-*** Macro expansion
+*** macro expansion
 
-The method of expanding the macro is the same as the function call.
+The way macros are expanded is the same as for function calls.
 
 
-** Public macro
+** public macro
 
 Macros can be exposed to external modules.
 
-You can make the macro available to the import destination by declaring pub as follows:
+By declaring pub as follows, the macro can be used at the import destination.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 pub macro _Hello() {
@@ -368,13 +375,13 @@ pub macro _Hello() {
 
 ** A little practical macro example
 
-The following is an example of a slightly more practical macro.
+Here is an example of a slightly more practical macro.
 
-In order to handle JSON used in REST API parameters and responses provided by Google etc. in LuneScript, it is convenient to classify it for each REST API JSON format. At such times, manually defining classes that handle multiple types of JSON-formatted data is inefficient and a source of bugs.
+In order to handle JSON used in parameters and responses of REST API provided by Google etc. with LuneScript, it is convenient to classify each JSON format of REST API. In such a case, manually defining a class that handles various types of JSON format data is inefficient and causes bugs.
 
-So we'll load the sample JSON format and create a macro that defines a class that can store that JSON format.
+So let's create a macro that loads the sample JSON format and defines a class that can store that JSON format.
 
-In this example, we read the following JSON file and
+For this example, load the following JSON file,
 #+NAME: hoge.js
 #+BEGIN_SRC js
 {
@@ -384,7 +391,7 @@ In this example, we read the following JSON file and
 #+END_SRC
 
 
-It is a macro that defines the following class to handle the above JSON.
+A macro that defines the following classes for handling the above JSON.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Hoge {
@@ -394,7 +401,7 @@ class Hoge {
 #+END_SRC
 
 
-The following is a concrete example of a macro.
+Here is a concrete example of a macro:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 macro _MkClass( name:str, path:str ) {
@@ -436,42 +443,42 @@ print( hoge.$val1, hoge.$val2 );
 #+END_SRC
 
 
-This macro reads JSON from a file and declares a class to store that JSON structure.
+This macro reads JSON from a file and declares a class to store the JSON structure.
 
-The class name is specified by the first argument of the macro.
+Specify the class name in the first argument of the macro.
 
 This macro does the following:
 - Open the specified file and read the JSON string defined in that file.
-- From the JSON string txt, generate the LuneScript code with "pub let val =% s;" (txt) ;.
+- Generate LuneScript code from JSON string txt with "pub let val = %s;" (txt);
 - Use =_lnsLoad()= to load the generated LuneScript code
-- Extract the json val from the loaded module and list the JSON elements with forsort
-- Generate ~`{}~ that declares the members that hold the enumerated elements and add it to memStatList
-- Declare the class with name and memStatList.
-In this sample, the members are treated as int and str type data for ease of processing. Lists etc. are not supported.
+- Extract json val from loaded module and enumerate JSON elements with forsort
+- Generate ~`{}~ declaring a member holding the enumerated elements and add it to memStatList
+- Declare a class with name and memStatList.
+In this example, the members are treated as int and str type data for simplicity. It does not support lists etc.
 
 
-** Common Map between macros
+** Common map between macros
 
-Macros are processes that are executed at compile time. Also, macro execution is independent of each other. When executing two macros A and B, it is not possible to change the control of macro B depending on the execution result of macro A.
+Macros are actions that are performed at compile time. Also, each macro execution is independent. When executing two macros A and B, it is not possible to change the control of macro B depending on the execution result of macro A.
 
-However, this can be inconvenient. Therefore, sharing data within macros is a common map between macros.
+However, this can be inconvenient. Therefore, common map between macros is used to share data within macros.
 
-** This is an experimental function.*
+**This is an experimental feature.*
 
-You can use the special variable =__var= from within the macro-statement of the macro.
+From within the macro-statement of the macro, the special variable =__var= is available.
 
 The special variable __var has the following restrictions:
-- Public macros cannot use __var
-- Macros that access __var must be used from the same namespace that defines them.
-- If you access __var from a different namespace, the contents of that __var are undefined.
+- public macros cannot use __var
+- Macros that access __var must be used from the same namespace that defines the macro.
+- If __var is accessed from a different namespace, the contents of that __var are undefined.
 
-The types of this variable are:
+The type of this variable is:
 : let mut __var:Map<str,stem>
 
 
-This variable is generated at the beginning of compilation of each module and all macros access the same variable.
+This variable is created at the start of compilation for each module, and all macros access the same variable.
 
-Here is an example:
+For example:
 #+BEGIN_SRC lns
 // @lnsFront: ok
    macro _test0( name:str, val:int ) {
@@ -498,13 +505,13 @@ Here is an example:
 #+END_SRC
 
 
-In this example, the _test0 () macro holds int data in =__var[ "hoge" ]=, and the _test1 () macro modifies the processing according to the stored value of =__var[ "hoge" ]=.
+In this example, the _test0() macro holds the int data in =__var[ "hoge" ]= and the _test1() macro changes the processing depending on the stored value of =__var[ "hoge" ]=.
 
 
 * summary
 
-LuneScript allows you to define macros as if you were a function.
+LuneScript can define macros in the same way as functions.
 
 Also, by using macros, you can define various processes.
 
-Next time, I'll show you how to build a project that you develop using LuneScript.
+Next time, I will explain how to build a project developed using LuneScript.

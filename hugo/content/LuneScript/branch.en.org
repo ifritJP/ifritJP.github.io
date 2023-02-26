@@ -5,20 +5,20 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-This time, I will explain the general branching syntax of LuneScript.
+This time I will explain the general branching syntax of LuneScript.
 
 
 * Syntax list
 
-LuneScript supports the following general branching syntax:
+LuneScript supports the following general branching syntax.
 - if
 - switch
-By the way, the reason why we use "general" branch control here is that there is a separate branch control in the nilable control.
+By the way, the reason why I dare to call it "general" branch control here is that there is separate branch control in nilable control.
 
 
 ** if
 
-Use the if statement as follows:
+The if statement is used like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val = 1;
@@ -34,20 +34,20 @@ else {
 #+END_SRC
 
 
-I don't think it's necessary to explain, but it is processed as follows.
-- If the if expression holds, the if block is executed.
-- If the if expression does not hold and the elseif expression holds, the elseif block is executed.
-- If all expressions are unsuccessful, the else block is executed.
-- There may be multiple elseifs.
-- elseif and else do not have to exist.
-- The condition for an expression to "fail" is when the result of the expression is nil or false.
+I don't think it needs explanation, but it is processed as follows.
+- If the if expression is true, the if block is executed.
+- If the if expression is false and the elseif expression is true, the elseif block is executed.
+- If all the expressions fail, the else block is executed.
+- Multiple elseif may exist.
+- elseif and else may not exist.
+- The condition that the expression is "failed" is when the result of the expression is nil or false.
 
 
-*** Comparison with bool value
+*** Comparing with a bool value
 
-LuneScript does not recommend comparing with bool values.
+LuneScript discourages comparisons with bool values.
 
-Specifically, we do not recommend the following operations.
+Specifically, we do not recommend the following operations:
 #+BEGIN_SRC lns
 // @lnsFront: ok
    let val1 = true;
@@ -64,9 +64,9 @@ Specifically, we do not recommend the following operations.
 
 The above operations will be deprecated in the near future.
 
-Currently, it prints a warning message at compile time.
+Now prints a warning message when compiling.
 
-If you want to switch the process depending on the boolean value of bool, do as follows.
+If you want to switch processing depending on bool true/false value, please do as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let exp = true;
@@ -85,7 +85,7 @@ if not exp {
 
 ** switch
 
-Use the switch statement as follows:
+Use the switch statement like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val = 1;
@@ -103,9 +103,9 @@ switch val {
 #+END_SRC
 
 
-This sample is synonymous with the if sample above.
+Note that this sample is synonymous with the if sample above.
 
-You can write multiple expressions in the switch case as follows:
+You can write multiple expressions in the case of a switch like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val = 1;
@@ -120,7 +120,7 @@ switch val {
 #+END_SRC
 
 
-This is synonymous with the following if statement, which executes the block if it matches any of the values.
+This is synonymous with the following if statement, which executes that block if any value is matched.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val = 1;
@@ -133,9 +133,9 @@ else {
 #+END_SRC
 
 
-The point to note in the switch statement is that break is not required unlike C language.
+The point to be noted with the switch statement is that break is not required unlike C language.
 
-For example, the following break exits the for statement instead of exiting the switch statement.
+For example, the following break will exit the for statement instead of exiting the switch statement.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 for count = 1, 10 {
@@ -151,9 +151,9 @@ for count = 1, 10 {
 
 *** Flow analysis of enum values
 
-If the switch condition is an enum value, the case statement checks whether all enum values are specified and analyzes the flow.
+If the switch condition is an enum value, flow analysis is performed by checking whether all enum values are specified in the case statement.
 
-For example, in the following cases, the =print()= statement after the switch statement in the =func()= function results in an unreachable error. This is because return is specified for all values of the enum value Val (Val1, Val2).
+For example, in the following case, the =print()= statement after the switch statement within the =func()= function will result in an unreachable error. This is because return is specified for all the values ( Val1, Val2 ) cases of the enum value Val .
 #+BEGIN_SRC lns
 // @lnsFront: error
 enum Val {
@@ -174,7 +174,7 @@ fn func( val:Val ) {
 #+END_SRC
 
 
-Also, if cases are specified for all enum values and default is also specified, the default will not be reached and a warning will be issued.
+Also, if case is specified for all enum values and default is also specified, the default will not be reached, resulting in a warning.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 enum Val {
@@ -200,11 +200,11 @@ fn func( val:Val ) {
 
 **** fail safe default
 
-As mentioned above, if cases are specified for all enum values and default is also specified, the default will not be reached and a warning will be issued.
+As mentioned above, if case is specified for all enum values and default is also specified, the default will not be reached, resulting in a warning.
 
-However, if you are using default as fail safe, you may want to specify default.
+But sometimes you want to specify default if you use default as fail safe.
 
-In such cases, you can suppress the warning by specifying _default instead of default.
+In such cases, you can suppress the warning by specifying _default instead of default .
 #+BEGIN_SRC lns
 // @lnsFront: ok
 enum Val {
@@ -228,13 +228,13 @@ fn func( val:Val ) {
 
 
 
-*** All cases forced switch
+*** all-case-enforced switch
 :PROPERTIES:
 :CUSTOM_ID: _switch
 :END:
 
 
-In a switch that requires an enum value, if you want to make sure that cases are declared for all enum values, you can use _switch as follows.
+In a switch conditional on an enum value, when you want to be sure to declare a case for all enum values, you can use _switch as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 enum Val {
@@ -254,7 +254,7 @@ fn func( val:Val ) {
 #+END_SRC
 
 
-In _switch, if there is a missing case for enum, a compile error will occur. Also, default cannot be used.
+In _switch, if there is a missing case for enum, a compilation error will occur. Also default is not available.
 #+BEGIN_SRC lns
 // @lnsFront: error
 enum Val {
@@ -271,15 +271,15 @@ fn func( val:Val ) {
 #+END_SRC
 
 
-By using _switch, when the enum value increases during development, it is possible to reliably detect omissions in the switch-case statement.
+By using _switch, when the number of enum values increases during development, omissions in switch-case statements can be reliably detected.
 
-_Match can be used in match-case as well.
+_match can be used in match-case as well.
 
 
 * summary
 
-The general branching syntax for LuneScript is if and switch.
+Common branching syntaxes in LuneScript are if and switch.
 
-There is no goto.
+There are no gotos.
 
-Next time, I will talk about repetitive control.
+Next time, I will explain the repeat control.

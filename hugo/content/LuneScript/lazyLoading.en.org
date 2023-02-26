@@ -1,15 +1,15 @@
-#+TITLE: 27. Delayed loading
+#+TITLE: 27. Lazy Loading
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-For a project of some size, you will be importing multiple modules. And I am importing another module within the imported module.
+A project of any size will import multiple modules. And another module is imported within the imported module.
 
-Import in a scripting language means dynamic loading. When you start a script, the main processing of the script finally starts after all the modules used by the script are loaded.
+Import in scripting languages means dynamic loading. When you start a script, after all the modules used by the script have been loaded, the script's main process finally starts.
 
-For example, if there is an import relationship as shown in the following figure, the processing of the main mod module will be performed after all the related modules have been loaded.
+For example, if there is an import relationship as shown in the following figure, the main mod module will be processed after all related modules have been loaded.
 #+BEGIN_SRC dot :file lazy.svg :cache yes :results silent
 digraph G {
 rankdir = TB;
@@ -34,57 +34,59 @@ funcC -> subC_3
 
 [[../lazy.svg]]
 
-However, not all imported modules are always used.
+However, it doesn't always use all imported modules.
 
-For example, consider a program that provides three functions (funcA, funcB, funcC). If you select and run one of the three in this program, the remaining two unselected features will not be used.
+For example, consider the above diagram as a program that provides three functions (funcA, funcB, funcC).
 
-import loads the module regardless of whether the module is used or not. In other words, the time required to load the module and the memory area for storing the loaded data are wasted.
+If you choose to run one of the three of this program, the other two features that were not chosen will not be used.
 
-As explained in the figure above, if funcA is selected, funcB, funcB_1 ~ funcB_3, func_C, funcC_1 ~ funcC_3 will be wasted.
+import loads the module regardless of whether the module is used. In other words, the time it takes to load modules that are not actually used and the memory area that stores the loaded data is wasted.
 
-If your project is small, you rarely need to worry about this waste. However, as the size of the project grows, this waste cannot be ignored.
+In the above diagram, if funcA is selected, funcB, subB_1 to subB_3, func_C, subC_1 to subC_3 are wasted.
 
-For example, if one module takes 0.01 seconds to load, 100 modules would take 1 second.
+If your project is small, you probably don't need to worry about this waste. However, when the scale of the project grows, it becomes impossible to ignore this waste.
 
-If the program is resident, the load process is only once, so you can put up with it even if it takes some startup time, but if you have to start it for each request without being resident, this useless load process can not be ignored. increase.
+For example, even if the time required to load one module is 0.01 seconds, it will take 1 second if there are 100 modules.
+
+If the program is resident, the loading process is only done once, so even if it takes a little time to start up, you can put up with it. increase.
 
 Lazy loading eliminates the waste of this loading process.
 
 
-* Lazy loading
+* lazy loading
 
-Lazy loading is a process that loads modules when they are needed, rather than loading all the relevant modules at boot time.
+Lazy loading is a processing method that loads modules only when they are needed, rather than loading all related modules at startup.
 
-As explained in the figure above, if funcA is selected, the inaccessible funcB, funcB_1 ~ funcB_3, func_C, funcC_1 ~ funcC_3 will not be loaded.
+In the above figure, when funcA is selected, funcB, subB_1 to subB_3, func_C, subC_1 to subC_3 that are not accessed are not loaded.
 
-This saves the load processing time and the memory area for storing the loaded data.
-
-
-** How to achieve lazy loading
-
-Lazy loading determines whether the module has been loaded when it is accessed, loads it if it is not loaded, and uses the loaded data if it is not loaded.
-
-On the other hand, normal loading loads modules in a string at startup (import timing).
-
-In other words, lazy loading involves more judgment processing than normal loading, so there is that much overhead. Of course, the overhead is very small. However, it is true that there is overhead, so performance degradation can occur in very critical or case cases.
-
-Such cases need to be considered when using lazy loading.
+This saves load processing time and memory area for storing loaded data.
 
 
-** Impact of lazy loading
+** How to implement lazy loading
 
-As mentioned earlier, lazy loading has a small amount of overhead.
+Lazy loading determines whether or not the module has been loaded when the module is accessed, loads it if it is not loaded, and uses the loaded data if it is loaded.
 
-But that will have little effect.
+On the other hand, normal loading loads all modules in a daisy chain at startup (timing of import).
 
-The more likely effect is the difference in execution order.
+In other words, in lazy loading, judgment processing is included compared to normal loading, so there is overhead for that amount. Of course the overhead is very low. However, since it is true that overhead is applied, performance degradation may occur in very critical cases.
+
+When using lazy loading, it is necessary to consider such cases.
 
 
-*** Effect of execution order due to difference in load method
+** Effects of lazy loading
 
-The processing written in the top scope of a module is executed when the module is loaded.
+As mentioned earlier, lazy loading has a small overhead.
 
-For example, if you have the following module
+But it will have little effect.
+
+What is likely to have more impact is the difference in the order of execution.
+
+
+*** Effects of execution order due to different load methods
+
+Anything you put in the top scope of a module will be executed when that module is loaded.
+
+For example, if you have a module like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( "hoge" );
@@ -94,9 +96,9 @@ fn func() {
 #+END_SRC
 
 
-Hoge is output when this module is loaded. On the other hand, =func()= is not executed, so foo is not output.
+hoge is output when this module is loaded. On the other hand, =func()= is not executed just because it is loaded, so foo is not printed.
 
-And if there is the next module to import this module,
+And if you have the following module that imports this module,
 #+BEGIN_SRC lns
 // @lnsFront: skip
 import Hoge;
@@ -106,7 +108,7 @@ Hoge.func();
 #+END_SRC
 
 
-For a normal load, the following output is produced:
+A normal load produces the following output:
 #+BEGIN_SRC txt
 hoge
 bar
@@ -114,7 +116,7 @@ foo
 #+END_SRC
 
 
-On the other hand, in the case of lazy loading, the following output is produced.
+On the other hand, lazy loading produces the following output:
 #+BEGIN_SRC txt
 bar
 hoge
@@ -122,28 +124,30 @@ foo
 #+END_SRC
 
 
-*Comparing the output results, the output order of bar and hoge is swapped.*
+*Comparing the output results, the output order of bar and hoge is reversed.*
 
-The reason why this happens is that on a normal road
-- The submodule Hoge is loaded at the timing of import, and
-- At that timing, =print( "hoge" )= is executed and
-- =print( "bar" )= is executed after the submodule Hoge has finished loading.
-On the other hand, in lazy loading, the submodule Hoge is not loaded at the timing of import in normal loading, and the submodule Hoge is not loaded.
-- First =print( "hoge" )= is executed,
-- Just before running the next =Hoge.func()=, the submodule Hoge is loaded and
+The reason why this happens is that in a normal load
+- The submodule Hoge is loaded at the timing of import,
+- At that timing, =print( "hoge" )= is executed,
+- =print( "bar" )= is executed after loading submodule Hoge.
+On the other hand, in lazy loading, the submodule Hoge is not loaded at the timing of import in normal loading,
+- First =print( "hoge" )= is executed and
+- Just before executing the next =Hoge.func()=, the submodule Hoge is loaded and
 - =print( "hoge" )= is processed.
-This is the difference between normal and lazy loads.
+This is the difference between normal loading and lazy loading.
 
 
-*** Impact of global due to different loading methods
+*** Impact of global on different load methods
 
-In addition to pub / pro / pri / local, LuneScript access control includes global.
+LuneScript access control has global in addition to pub/pro/pri/local.
 
-For more information on global, see other articles, but global is registered when the module is loaded.
+As for the details of global , refer to other articles, global is registered when the module is loaded.
 
-*In other words, the timing at which global data is registered will be different due to the effect of lazy loading.*
+*In other words, the timing at which global data is registered is delayed due to the effects of lazy loading.*
 
-I think there are few cases where global is used, but be careful.
+I think that there are few cases where global is used, but please be careful.
+
+*global is recommended only for cases that require compatibility with existing Lua code.*
 
 
 * how to use
@@ -152,31 +156,31 @@ Lazy loading is available with the following instructions:
 - import
 - module
 |-|-|
-| order | Load processing | 
+| order | load processing | 
 |-+-|
 | import | Compile option dependent | 
-| import.l | Lazy loading | 
+| import.l | lazy loading | 
 | import.d | Normal load | 
 |-|-|
-| order | Load processing | 
+| order | load processing | 
 |-+-|
 | module | Compile option dependent | 
-| module.l | Lazy loading | 
+| module.l | lazy loading | 
 | module.d | Normal load | 
 
-For example, the Sub module will be lazy loaded by doing the following:
+For example, a Sub module is lazily loaded by doing:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 import.l Sub;
 #+END_SRC
 
 
-import and module depend on compile options.
+import, module are compile option dependent.
 
-If you specify the following in the compile options,
+If you specify the following compile options:
 : --default-lazy
 
 
-import and module will be lazy loading.
+import, module will be lazy loaded.
 
-If import.d and module.d are specified, normal loading will occur even when =--default-lazy= is specified.
+If import.d and module.d are specified, normal loading will be performed even when =--default-lazy= is specified.

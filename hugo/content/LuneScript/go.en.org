@@ -1,42 +1,42 @@
-#+TITLE: 80. Transcompile to Go language
+#+TITLE: 80. Transcompiling to Go Language
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-LuneScript can be transcompiled to Go as well as Lua as the language to transcompile.
+LuneScript can be transcompiled to Go as well as Lua as a transcompiled language.
 
-This feature makes LuneScript faster (about 16 times faster) by transcompiling LuneScript's self-hosting code into go language code and building it with go.
+With this feature, LuneScript's self-hosting code is transcompiled into go language code and built with go to speed up LuneScript (approximately 16 times).
 
-See below for speedups. https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/
+See below for acceleration. https://ifritjp.github.io/blog2/public/posts/2021/2021-06-28-lunescript-build-time-2000/
 
-However, some features are not supported because the support is limited to the features required for LuneScript self-hosting.
+However, since the support is limited to the functions required for LuneScript self-hosting, some functions are not supported.
 
-That said, LuneScript's self-hosting itself uses most of LuneScript's features, so it's fine for normal use.
+However, LuneScript's self-hosting itself uses most of LuneScript's features, so it can handle normal usage without any problems.
 
 
 * How to transcompile to go language
 
-*To transcompile to the go language, specify -langGo when using the LuneScript command line option save or SAVE to output the transcompile result to go to a file with a .go extension.*
+*To transcompile to go language, by specifying -langGo at LuneScript command line option save or SAVE, output the transcompile result to go to a file with .go extension.*
 
 
-* Cooperation with Lua
+* Working with Lua
 
-When transcompiling to the go language, you need to use a special type when working with Lua.
+When you transcompile to the go language, you need to use special types when working with Lua.
 
 See below for details.
 
 [[../lua]]
 
 
-* Post-transcompile configuration to Go language
+* Configuration after transcompiling to Go language
 
-LuneScript is a Lua transcompiler that features the ability to use Lua code directly from LuneScript.
+LuneScript is a transcompiler to Lua, and has the advantage of being able to use Lua code directly from LuneScript.
 
-This feature is inherited even after transcompiling to the Go language.
+This feature is inherited even after transpiling to Go language.
 
-For example, you can run the following code even after converting it to Go language.
+For example, the following code will work even after converting to Go language.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let step = 30;
@@ -89,27 +89,27 @@ _profile( fib_lns( step ) );
 #+END_SRC
 
 
-This code does the Fibonacci calculations in lua and LuneScript.
+This code does Fibonacci calculations with lua and LuneScript.
 
-The first code variable defines the lua code, loads it with the =loadLua()= function, and loads the Lua function with fib_lua. And the =fib_lns()= function in the latter half is a LuneScript function that performs Fibonacci calculations.
+The first code variable defines the lua code, the =loadLua()= function loads it, and the loaded Lua function is fib_lua. And the =fib_lns()= function in the second half is a LuneScript function that performs Fibonacci calculations.
 
 
-** When transcompiled to Lua
+** Transcompiled to Lua
 
-Transcompiling the above code into Lua and running it produces the following:
+Transpiling the above code to Lua and running it will output:
 #+BEGIN_SRC txt
 fib_lua( step ) = 24157817: step = 37: time = 5.69
 fib_lns( step ) = 24157817: step = 37: time = 5.38
 #+END_SRC
 
 
-This shows the calculation result and calculation time for each of = fib_lua () = and =fib_lns()=.
+This shows the calculation result and calculation time of =fib_lua()= and =fib_lns()= respectively.
 
-Looking at this, we can see that the function =fib_lua()= loaded by Lua and the function =fib_lns()= of Lns take almost the same execution time.
+Looking at this, you can see that the execution time of function =fib_lua()= loaded by Lua and function =fib_lns()= of Lns takes almost the same time.
 
-This is a natural result. This is because if you convert LuneScript to Lua, =fib_lns()= written in LuneScript and =fib_lua()= in Lua will have almost the same Lua code.
+This is a natural result. This is because when LuneScript is converted to Lua, =fib_lns()= written in LuneScript and =fib_lua()= written in Lua are almost the same Lua code.
 
-The code when transcompiling the above code into Lua looks like this:
+When the above code is transcompiled to Lua, the code looks like this:
 #+BEGIN_SRC lua
 --miniGo.lns
 local _moduleObj = {}
@@ -150,7 +150,7 @@ return _moduleObj
 #+END_SRC
 
 
-The following is an excerpt of the notable definition of the =fib_lns()= function.
+Here's an excerpt from the notable =fib_lns()= function definition:
 #+BEGIN_SRC lua
 local function fib_lns( num )
    if num < 2 then
@@ -161,23 +161,23 @@ end
 #+END_SRC
 
 
-As you can see, =fib_lns()= and =fib_lub()= are equivalent codes.
+As you can see, =fib_lns()= and =fib_lub()= have equivalent code.
 
-Therefore, it is natural that = fib_lns () = and =fib_lua()= take about the same amount of time.
+So it's no surprise that =fib_lns()= and =fib_lua()= take about the same amount of time.
 
 
 ** When transcompiled to go
 
-On the other hand, when transcompiled to go, the execution result is as follows.
+On the other hand, when transpiling to go , the execution result is:
 #+BEGIN_SRC txt
 fib_lua( step ) = 24157817: step = 37: time = 6.07
 fib_lns( step ) = 24157817: step = 37: time = 0.34
 #+END_SRC
 
 
-*You can see that the calculation time of =fib_lns()= is about 1/18 shorter than that of = fib_lua () =.*
+*You can see that =fib_lns()= takes about 1/18 less time than =fib_lua()=.*
 
-The result of transcompiling to go is as follows.
+Here is the result of transcompiling to go:
 #+BEGIN_SRC go
 // This code is transcompiled by LuneScript.
 package lnsc
@@ -243,18 +243,18 @@ func miniGo_fib_lns_1025_(num LnsInt) LnsInt {
 #+END_SRC
 
 
-The function name is longer, but you can see that the LuneScript code has been converted to go as is. When you execute a function, you just call the function normally as follows.
+Although the function name is long, you can see that the LuneScript code is converted to go as it is. When executing a function, just call the function normally as follows.
 :  miniGo_fib_lns_1025_(miniGo_step)
 
 
-On the other hand, Lua's =fib_lua()= function is loaded with a function for executing Lua's code by =miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)=, and when it is executed, the function is called as follows.
+On the other hand, Lua's =fib_lua()= function is loaded by =miniGo_fib_lua = miniGo_loadLua_1009_(miniGo_code)= with a function for executing Lua code, and when executing it, the function is called as follows.
 : Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
 
 
-As you can see, the processing is completely different between = fib_lns () = and =fib_lua()=.
+As you can see, =fib_lns()= and =fib_lua()= are completely different.
 
 
-** Build
+** build
 
 The following steps are required to transcompile and build to go.
 - Generate go.mod
@@ -263,7 +263,7 @@ The following steps are required to transcompile and build to go.
 - Generate .go from .lns
 - Update go.mod
 - go build
-If you update .lns, repeat the process after "Generate .go from .lns".
+If you have updated .lns, repeat the process starting with "Generate .go from .lns".
 
 I will explain each step.
 
@@ -277,26 +277,26 @@ Execute the following command in the directory where lune.js is located.
 
 *** Register the LuneScript runtime with go.mod
 
-Register the LuneScript runtime with go.mod with the following command:
+Register the LuneScript runtime in go.mod with the following command.
 : $ go get github.com/ifritJP/LuneScript/src@latest
 
 
-Run go mod tidy for the rest of the work, but be sure to run go get first.
+You'll run go mod tidy in the following steps, but be sure to run go get first.
 
 
 *** Generate main.go
 
 go requires the entry function =main()=.
 
-The following command will generate main.go, which defines the =main()= function for go.
+The following command generates main.go which defines the =main()= function of go.
 : $ lnsc hoge.lns mkmain main.go
 
 
-Here hoge.lns specifies the main module that defines __main in lns. main.go specifies the output path.
+where hoge.lns specifies the main module which defines __main in lns. main.go specifies the output path.
 
-A module that defines the __main function is required when transcompiling to go.
+A module that defines a __main function is required when transpiling to go.
 
-The main.go generated by this command contains the code that initializes the lns runtime.
+The main.go generated by this command contains code to initialize the lns runtime.
 
 
 *** Generate .go from .lns
@@ -305,19 +305,19 @@ Generate .go with the following command.
 : $ lnsc hoge.lns save -langGo
 
 
-For the main module that contains the __main function, add the --main option as well.
+If the main module contains the __main function, add the --main option.
 : $ lnsc hoge.lns save -langGo --main hoge
 
 
-Where the hoge in --main hoge is the import path for the main module.
+where hoge in --main hoge is the import path of the main module.
 
-For example, if the main module is foo / bar / hoge.lns
+For example, if your main module is foo/bar/hoge.lns,
 : $ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
 
 
-It will be.
+becomes.
 
-If you want to transcompile LuneScript to go, you need the __main function.
+A __main function is required when transcompiling LuneScript to go.
 
 
 *** Update go.mod
@@ -329,18 +329,18 @@ Update go.mod with the following command.
 
 *** go build
 
-After converting all the lns files and generating main.go, run go build.
+After converting all lns files and generating main.go, run go build.
 : $ go build
 
 
-*If the above fails, try the following:*
+*If the above gives an error, try the following.*
 : $ go build -tags gopherlua
 
 
-This will build the transcompiled module with go.
+This will build the transcompiled module in go.
 
 
-** Lua library link required after transcompiling to go
+** Need to link Lua library after transcompiling to go
 #+BEGIN_QUOTE
 追記
 
@@ -350,14 +350,14 @@ This will build the transcompiled module with go.
 #+END_QUOTE
 
 
-As mentioned above, LuneScript works closely with Lua. And even after transcompiling to go, it supports the linked operation.
+As mentioned above, LuneScript works closely with Lua. And even after transcompiling to go, it still supports that interaction.
 
-To achieve this integration, the code after transcompiling to go requires a lua VM to do the lua processing.
+In order for this interaction to work, the code transcompiled to go needs the lua VM to do the lua work.
 
-In detail, besides this Lua integration, LuneScript has some processing that requires a Lua VM. Specifically, Lua VM is used for macro expansion processing and some built-in function processing.
+To be more precise, in addition to this interaction with Lua, LuneScript also has operations that require the Lua VM. Specifically, Lua VM is used for processing macro expansion and processing some built-in functions.
 
-*The lua VM assumes the official lua-5.3.4 and links liblua5.3.so.*
+*That lua VM assumes the official lua-5.3.4 and links liblua5.3.so .*
 
-The go language has the advantage of being able to generate one environment-independent executable, but unfortunately transcompiling LuneScript to go requires a link to liblua5.3.so.
+The go language has the advantage of being able to generate a single, environment-independent executable, but unfortunately transcompiling LuneScript to go requires linking to liblua5.3.so .
 
-Not only do you need liblua5.3.so at run time, but you also need the lua-5.3.4 include file at build time.
+Note that not only liblua5.3.so is required at runtime, but also include files for lua-5.3.4 are required at build time.

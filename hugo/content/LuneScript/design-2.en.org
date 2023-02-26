@@ -1,0 +1,225 @@
+#+TITLE: Y.2 Development of LuneScript (type information management)
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+Continuation of LuneScript development.
+
+Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation.
+
+
+* type information
+
+Data types are important in programming.
+
+Especially since LuneScript is a statically typed language, you can understand the importance of data type management.
+
+Note that =Ast.lns= manages LuneScript data types.
+
+Some people may quibble about why the type management source is called =Ast.lns=, but don't worry about it.
+
+
+* Type of mold
+
+Quickly, how many types are there in the following code?
+#+BEGIN_SRC lns
+// @lnsFront: skip
+fn func() {
+  print( "hello world" );
+}
+#+END_SRC
+
+
+The answer is the following three.
+- the functional form of func
+- Functional form of print
+- String type for "hello world"
+It can be seen that the above type information includes types representing functions and types representing strings.
+
+Of course, LuneScript supports various other types such as integer type, real number type, and class.
+
+
+* type attribute
+
+Furthermore, types can be divided into the following two types.
+- type of builtin that is pre-installed in the system
+- Types such as user-defined functions and classes
+The problem here is user-defined types.
+
+If there are only builtin types, all the type information can be hard-coded, but supporting user-defined types means that "what types are defined by the user?" This means that it must be managed systematically.
+
+For example, the following user-defined function func is
+#+BEGIN_SRC lns
+// @lnsFront: skip
+pub fn func<T>( val:T ) : &List<T> {
+  return [ val ];  
+}
+#+END_SRC
+
+
+It consists of the following.
+- function name
+  - func
+- access restrictions
+  - pub
+- Type parameters 
+  - T
+- argument
+  - name val
+  - Type T
+- return type
+  - &List<T>
+In this way, even if it is simply called a function, it is composed of a lot of attribute information.
+
+Although not shown in the above example, there are other attributes such as abstract, static, and mutable.
+
+Type information manages this configuration information.
+
+This type information is managed by the =Ast.TypeInfo= class in LuneScript.
+
+
+* Variation of type information
+
+Please see the following code.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+let list1:List<int>;
+let list2:&List<int>;
+let list3:List<int>!;
+let list4:&List<int>!;
+#+END_SRC
+
+
+This code declares variables list1 to list4.
+
+Each variable has the following four types.
+- List<int>
+- List<int> immutable
+- nilable of List<int>
+- List<int> immutable nilable
+This is a variation on List<int>.
+
+This variation exists for basically all types.
+
+And since each is a different type, it is necessary to manage them as different type information.
+
+
+** Methods of TypeInfo
+
+As mentioned above, there are immuttable and nilable types for all types.
+
+And for easy access to that type, TypeInfo has the following methods:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+   /**この TypeInfo に対する immutable な型を取得  */
+   pub fn get_imutType(): &TypeInfo;
+   /**この TypeInfo に対する nilable な型を取得  */
+   pub fn get_nilableTypeInfo(): &TypeInfo;
+   /**この TypeInfo に対する nonnilable な型を取得  */
+   pub fn get_nonnilableType(): &TypeInfo;
+   /**この TypeInfo に対する mutable な型を取得  */
+   pub fn get_srcTypeInfo(): &TypeInfo;
+#+END_SRC
+
+
+For example, if you execute =get_imutType()= of TypeInfo that manages =List<int>=, you can get =TypeInfo= that manages =&List<int>=.
+
+
+** substitutable decision
+
+In the arguments of the function:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+fn func( mut list1:List<int>, mut list2:&List<int>, 
+         mut list3:List<int>!, mut list4:&List<int>! ) 
+#+END_SRC
+
+
+Arguments list1 to list4 have the following assignability relation.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+list1 = list2; // error
+list1 = list3; // error
+list1 = list4; // error
+
+list2 = list1;
+list2 = list3; // error
+list2 = list4; // error
+
+list3 = list1;
+list3 = list2; // error
+list3 = list4; // error
+
+list4 = list1;
+list4 = list2;
+list4 = list3;
+#+END_SRC
+
+
+Simply put, there are two.
+- No assignment from immutable to mutable
+- No assignment from nilable to non-nilable
+
+The type information also performs such prohibition control.
+
+Naturally, assignment control between data of different types is similarly performed. (For example, when assigning function type data to integer type)
+
+
+** generics 
+
+If you declare List type variables list1 and list2 that have a certain class Hoge as an element,
+#+BEGIN_SRC lns
+// @lnsFront: skip
+let mut list1:List<Hoge>;
+let mut list2:List<&Hoge>;
+#+END_SRC
+
+
+list1 and list2 have the following relationship.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+list1 = list2; // error
+list2 = list1;
+#+END_SRC
+
+
+And this needs to be controlled in combination with the variations of the type information mentioned earlier.
+
+
+** class
+
+When there is an inheritance relationship of the following classes,
+#+BEGIN_SRC lns
+// @lnsFront: skip
+class Super {
+}
+class Sub extend Super {
+}
+#+END_SRC
+
+
+Variables of each type have the following relationships:
+#+BEGIN_SRC lns
+// @lnsFront: skip
+let super = new Super();
+let sub = new Sub();
+
+super = sub;
+sub = super; // error
+#+END_SRC
+
+
+And this also requires control in combination with variation of type information.
+
+
+** Class that manages nilable and immutable
+
+In LuneScript, the following classes manage nilable and immutable type information. The following classes are subclasses of =TypeInfo=.
+- =Ast.ModifierTypeInfo=
+  - Class that manages immutable
+- =Ast.NilableTypeInfo=
+  - A class that manages nilables
+
+As described above, the main role of TypeInfo is to manage type information.

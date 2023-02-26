@@ -1,54 +1,54 @@
-#+TITLE: 81.1 Asynchronous processing O (past information)
+#+TITLE: 81.1 Asynchronous processing (past information)
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-Taking the opportunity of transcompiling from LuneScript to go language, asynchronous processing by LuneScript is supported.
+With the support of transcompiling from LuneScript to go language, asynchronous processing by LuneScript is now supported.
 
-However, this is a very experimental content and should be used as a reference only.
+However, this is very experimental content, so please use it only as a reference.
 
-*Abolished from 1.3.0. Keep this document as a past log.*
+*Deprecated since 1.3.0. This document will be retained as a past log.*
 
 
 * LuneScript runtime
 
-LuneScript has a runtime to bridge the gap between the LuneScript language specification and the language specification to which it is transcompiled.
+LuneScript has a runtime to bridge the gap between the LuneScript language specification and the transcompiled language specification.
 
-For example, when transcompiling to go, the following processing is realized in ryetime.
-- Cooperation with lua
+For example, when transcompiling to go, the runtime implements the following processing.
+- Working with lua
 - and or operator behavior
-These processes are accessing the data declared in the runtime.
+These operations are accessing data declared within the runtime.
 
-When LuneScript supports asynchronous processing, it is necessary to exclusively support data access in the runtime.
+When LuneScript supports asynchronous processing, it is necessary to support exclusive data access within the runtime.
 
-On the other hand, exclusive control by mutex etc. affects the performance even when single threaded.
+On the other hand, exclusive control by mutex etc. affects performance even in single thread.
 
-In this asynchronous process, in order to minimize the impact on single threads, exclusive control was minimized, necessary data was duplicated, and the data to be accessed was switched for each thread.
+In this asynchronous process, in order to minimize the impact on a single thread, we minimized exclusive control, duplicated the necessary data, and switched the data to be accessed for each thread.
 
-Specifically, the runtime data required for "cooperation with lua" and "behavior of the and or operator" is duplicated for each thread and switched for each thread.
+Specifically, the runtime data required for "cooperation with lua" and "behavior of and or operator" is duplicated for each thread and switched for each thread.
 
 There is one problem here.
 
-That is, go cannot get the ID of the thread that is currently running.
+That is, go can't get the current running thread id.
 
-If the thread ID can be obtained, when accessing the runtime data, the current thread ID can be obtained and the access destination can be switched to the runtime data corresponding to that thread ID.
+If you can get the thread ID, you can get the current thread ID and switch the access destination to the runtime data corresponding to that thread ID when accessing the runtime data.
 
-However, it cannot be done because the thread ID cannot be obtained.
+However, it is not possible because the thread ID cannot be obtained.
 
-If you can't do this, you'll need to pass the thread ID to all function arguments.
+If you can't do this, you'll need a way to pass the thread ID to all function arguments.
 
-I really don't want to do this, so I thought of another method.
+I didn't want to do this, so I thought of another way.
 
-The following describes the asynchronous processing method introduced this time.
+In the following, I will explain the asynchronous processing method introduced this time.
 
 
-* Introduction and restrictions of the LnsThread class
+* Introduction and limitations of the LnsThread class
 
-When performing asynchronous processing with LuneScript, inherit the LnsThread class.
+If you do asynchronous processing in LuneScript, inherit the LnsThread class.
 
-The LnsThread class is as follows:
+The LnsThread class is a class like this:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 abstract class LnsThread {
@@ -57,29 +57,29 @@ abstract class LnsThread {
 #+END_SRC
 
 
-The LnsThread subclass overrides the =loop()= method and performs asynchronous processing within it.
+A subclass of LnsThread overrides the =loop()= method and does asynchronous processing within it.
 
-When the following command is executed within a method of a subclass of LnsThread,
+When the following command is executed within a method of a subclass of LnsThread:
 : _lune_control run_async_pipe;
 
 
-The go routine =loop()= method is executed.
+go routine =loop()= The method is executed.
 
 In order to inherit LnsThread, the following declaration must be made in advance.
 : _lune_control use_async;
 
 
-This is a command that declares asynchronous processing.
+This is the command that declares that we are doing asynchronous processing.
 
-Within the module in which this command is executed, the following operations are restricted and can only be performed from within the methods of subclasses of LnsThread.
-- and / or arithmetic
-- nil conditional calculation
-- Some built-in functions and method access
-We have also added the __pipe <T> class as a way to send and receive data to and from asynchronous processing.
+Within the module in which this command is executed, the following operations are restricted and can only be executed from within methods of subclasses of LnsThread.
+- and/or operations
+- nil conditional operation
+- some built-in functions, method access
+It also adds the __pipe<T> class as a means of sending and receiving data to and from asynchronous processes.
 
-Think of the __pipe <T> class as equivalent to go's chan.
+Think of the __pipe<T> class as equivalent to chan in go.
 
-The __pipe <T> class is as follows:
+The __pipe<T> class is a class like this:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 class __pipe<T> {
@@ -89,21 +89,21 @@ class __pipe<T> {
 #+END_SRC
 
 
-Here, T in __pipe <T> must be a class that implements the __AsyncItem interface.
+Here, T of __pipe<T> must be a class that implements the __AsyncItem interface.
 
-The =put()= val can now be obtained with =get()=. If you give nil to put (val: T!), That __pipe will end communication, and then =put()= will return nil even if you do something unexpected with nil.
+The val obtained by =put()= can now be obtained by =get()=. If you give nil to put(val:T!), the communication of that __pipe will end, and after that even if =put()= is not nil, =get()= will return nil.
 
-The __AsyncItem interface implement class requires the Mapping interface to be implemented at the same time.
+A class that implements the __AsyncItem interface must also implement the Mapping interface at the same time.
 
-The following methods are added to the class that implements the __AsyncItem interface.
+The following methods are added to classes that implement the __AsyncItem interface.
 : pub static fn _createPipe( num:int ) : __pipe<T>!;
 
 
-Where the argument num is the same as chan's cap.
+where the argument num is the same as the cap of chan.
 
 Note that this =_createPipe()= function always returns nil when transcompiled to Lua.
 
-To summarize the above, asynchronous processing is written as follows.
+Summarizing the above, asynchronous processing is written as follows.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 _lune_control use_async;
@@ -159,12 +159,12 @@ print( async.$count, async2.$count );
 
 
 
-** Asynchronous processing restrictions
+** Limitations of asynchronous processing
 
-The behavior when the following processing is performed is undefined.
+The behavior is undefined if the following processing is performed.
 - Access data and methods of another module from within =Loop()=
-- Access the data and methods of the class that inherits LnsThread from another module
+- Access data and methods of a class that inherits LnsThread from another module
 - Access data and methods between instances of classes that inherit LnsThread
-As mentioned above, the specifications are very limited and inconvenient to use. This specification will definitely change in the future, so please use it as a reference only as mentioned at the beginning.
+As mentioned above, it is a very limited and inconvenient specification. This specification will definitely change in the future, so please use it only as a reference as I wrote at the beginning.
 
-By the way, this is an asynchronous process with many restrictions, but it is used for the parse process of LuneScript, and it contributes a little to the speedup of LuneScript.
+By the way, although this asynchronous processing has many restrictions, it is used for LuneScript parse processing, and it contributes a little to the speedup of LuneScript.

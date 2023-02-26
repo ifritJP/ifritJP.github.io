@@ -1,11 +1,11 @@
-#+TITLE: 25. Cast edition
+#+TITLE: 25. Cast
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-LuneScript provides three types of casts.
+LuneScript offers three types of casting.
 - ~@@~
 - ~@@@~
 - ~@@=~
@@ -21,7 +21,7 @@ let val2:int = val1@@int;
 #+END_SRC
 
 
-The following values that cannot be converted can also be forcibly cast.
+Forced casting can also be performed on values that cannot be converted originally, such as the following.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val1:stem = 1;
@@ -30,11 +30,11 @@ print( #val2 ); // runtime error
 #+END_SRC
 
 
-*The above assigns the value 1 of type int to val1 of stem type and casts it to val2 of str list type. That is, I have cast the int to a str list. Accessing this val2 will result in a run-time error.*
+*The above assigns the value 1 of type int to val1 of type stem and casts it to val2 of type str list. In other words, you cast the int type to a str list. Accessing this val2 will result in a runtime error.*
 
-If you explicitly cast something that can implicitly perform type conversion with @@, you will get a warning.
+Note that if you explicitly cast something that can be type-converted implicitly with @@ , a warning will occur.
 
-For example, ~func( "abc"@@stem )~ in the following sample outputs a warning because the conversion from the string "abc" to stem can be done without an explicit cast.
+For example, ~func( "abc"@@stem )~ in the following sample prints a warning because the string "abc" can be converted to stem without an explicit cast.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( val:stem ) {
@@ -43,9 +43,9 @@ func( "abc"@@stem );
 #+END_SRC
 
 
-Also, apparently incorrect type conversions will result in compilation errors.
+Also, an apparently illegal type conversion will result in a compilation error.
 
-For example, in the following case, ~1@@str~ is converting from int to str, but this type conversion is not possible, so a compile error will occur.
+For example, in the following case, ~1@@str~ is converted from int to str, but since this type conversion is not possible, a compilation error occurs.
 #+BEGIN_SRC lns
 // @lnsFront: error
 let val = "abc"@@int;  // error
@@ -53,18 +53,18 @@ let val2 = 1@@str;  // error
 #+END_SRC
 
 
-Casting =@@= to a class type will output a warning.
+A =@@= cast to a class type prints a warning.
 
 =@@= cannot cast from nilable to non-nilable.
 
-Use ~@@@~ or ~@@=~ to cast to a class type.
+Use ~@@@~ or ~@@=~ for casting to class types.
 
 
 * ~@@@~
 
-~@@@~ dynamically checks the source type and converts it.
+~@@@~ dynamically checks the type of the conversion source and performs type conversion.
 
-The following is an example of ~@@@~.
+Here is an example for ~@@@~.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( val:stem ) {
@@ -80,26 +80,26 @@ func( "abc" ); // str:abc
 #+END_SRC
 
 
-~val@@@int~ checks the type of val, converts it if it is an int, and returns nil if it is not an int. ~val@@@str~ also checks the type of val, converts it if it is str, and returns nil if it is not str.
+~val@@@int~ checks the type of val, converts it if it is int type, and returns nil if it is not int type. Also, ~val@@@str~ checks the type of val, converts it if it is str type, and returns nil if it is not str type.
 
-This causes ~func( 1 )~ to print an int: 1 and ~func( "abc" )~ to print str: abc.
+This causes ~func( 1 )~ to output int:1 and ~func( "abc" )~ to str:abc.
 
-=@@@= can be cast even if the cast source is nilable.
+=@@@= is castable even if the caster is nilable.
 
 
-** Limitation of ~@@@~ 1
+** Restriction 1 for ~@@@~
 
-A @@@ cast from a real value to an int should return nil, but in some cases it succeeds.
+A @@@ cast from a value of type real to an int should return nil, but there are cases where it succeeds.
 
-That case is when you cast a real type value that has no decimal point to an int.
+That case is when a value of type real with no decimal places is cast to int.
 
-By default, @@@ casts from real values to ints should return nil, which is a current limitation.
+Originally, a @@@ cast from a value of type real to int should return nil, but this is a current limitation.
 
-When transcompiled to Go language, @@@ cast from real type value to int returns nil as originally specified.
+Note that when transpiling to Go language, @@@ casting from a real type value to int returns nil as per the original specification.
 
 This behavior is subject to change in the future.
 
-For example, the following ~func( 1 )~ outputs ~int:1~, ~real:1~, and ~func( 2.5 )~ outputs ~real:2.5~.
+For example, the following ~func( 1 )~ outputs ~int:1~ , ~real:1~ , and ~func( 2.5 )~ outputs ~real:2.5~ .
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( val:stem ) {
@@ -116,26 +116,26 @@ func( 2.5 );
 
 
 
-** Limitation of ~@@@~ 2
+** Restriction 2 of ~@@@~
 
-@@@ is only available for int / real / str / class / interface.
+@@@ is only available for int/real/str/class/interface.
 
-Enum etc. cannot be used.
+You can't use enum etc.
 
-Also, generics are not available in class.
+Also, generics are not available in class either.
 
 
 * ~@@=~
 
-~@@=~ is used when converting a class that does not have a method. If you specify a class that has a method or a class other than the class, a compile error will occur.
+~@@=~ is used when converting classes without methods. A compile error will occur if you specify a class that has a method or something other than a class.
 
-Note that ~@@=~ also forcibly performs type conversion without checking the conversion source value.
+Note that ~@@=~ also performs type conversion forcibly without checking the original value.
 
-~@@=~ should only be used if type checking takes a long time.
+~@@=~ should only be used when type checking is slow.
 
 
 * summary
 
-*Cast should be avoided as much as possible except for conversion between int and real. You can create generic processing while preserving the type by using generics or alge.*
+*Casts should be avoided as much as possible, except for conversions between int and real. By using generics, alge, etc., you can create general-purpose processing while keeping the type.*
 
-Even if you use the cast, use ~@@@~ and design so that the use of ~@@~ and ~@@=~ is the minimum necessary.
+Even if you use cast, please use ~@@@~ and design so that the use of ~@@~ and ~@@=~ is kept to a minimum.

@@ -5,12 +5,12 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-LuneScript supports shebang.
+LuneScript supports shebangs.
 
 
-* Shebang compatible
+* shebang correspondence
 
-Shebang is a function that executes the specified interpreter when the script file is executed by specifying the interpreter to be used in the comment on the first line of the script file that is often seen in shell scripts. For example, in bash, specify as follows.
+Shebang is a function that specifies the interpreter to be used by specifying the interpreter to be used as a comment in the first line of a script file often seen in shell scripts, etc., and the specified interpreter is executed when the script file is executed. For example in bash you would specify:
 #+BEGIN_SRC sh
 #! /bin/bash
 #+END_SRC
@@ -22,11 +22,11 @@ In LuneScript, specify:
 #+END_SRC
 
 
-Here, =/usr/bin/lnsc= needs to be specified according to the environment.
+Here, =/usr/bin/lnsc= must be specified according to the environment.
 
-This allows the LuneScript file containing =#!= to be executed as is.
+This allows you to run the LuneScript file containing =#!= as is.
 
-For example, if you have the following file hello.lns,
+For example, if you have a file hello.lns like this:
 #+BEGIN_SRC sh
 #! /usr/bin/lnsc -shebang
 print( "hello world" );
@@ -41,26 +41,26 @@ hello world
 
 
 +At this time, there are the following restrictions.+
-- +In the go version of lnsc, the .lua that corresponds to the .lns file you are importing++Must be generated in advance.+
+- +In the go version of lnsc, .lua corresponding to the .lns file you are importing is++Must be generated in advance.+
 
 
-* Command line arguments
+* command line arguments
 
-There are cases where you want to handle command line arguments, such as when launched by shebang or transcompiled to go.
+There are cases where you want to process command line arguments, such as when invoked with shebang or transcompiled to go.
 
-To handle this command line argument, define the following __main function to handle the command line arguments passed to this function's arguments.
+To process this command line argument, define the following __main function and process the command line arguments passed to this function.
 #+BEGIN_SRC lns
 // @lnsFront: skip   
 pub fn __main( argList:&List<str> ):int
 #+END_SRC
 
 
-The type of the __main function must be declared with the above type except for the argument name argList.
+The type of the __main function must be declared with the above type, except for the argument name argList.
 
 
 ** Execution order of __main
 
-The execution order of this __main function is performed after the top scope processing is completed. That is, for the following script
+The execution order of this __main function is performed after the processing of the top scope is finished. That is, for the script
 #+BEGIN_SRC lns
 #! /usr/bin/lnsc -shebang
 // @lnsFront: skip   
@@ -73,7 +73,7 @@ pub fn __main( argList:&List<str> ):int {
 #+END_SRC
 
 
-The output result is as follows.
+The output will be:
 #+BEGIN_SRC txt
 $ ./mini.lns 
 hello world
@@ -82,11 +82,11 @@ hoge
 
 
 
-** __main argument
+** Arguments for __main
 
-The argument for =__main= is =&List<str>=.
+The argument of =__main= is =&List<str>=.
 
-This list contains the script path first, followed by command line arguments.
+This list contains the path of the script at the beginning, followed by the command line arguments.
 #+BEGIN_SRC lns
 #! /usr/bin/lnsc -shebang
 // @lnsFront: skip   
@@ -100,10 +100,11 @@ pub fn __main( argList:&List<str> ):int {
 
 
 
-* Behavior of __main () function when transcompiled to lua
+* __main() function behavior when transpiling to lua
 
-The following LuneScript code outputs command line options.
+The following LuneScript code prints the command line options.
 #+BEGIN_SRC lns
+// @lnsFront: skip
 pub fn __main( argList:&List<str> ) : int {
    foreach arg, index in argList {
       print( index, arg );
@@ -113,7 +114,7 @@ pub fn __main( argList:&List<str> ) : int {
 #+END_SRC
 
 
-The following is a sample execution result.
+Below is a sample execution result.
 #+BEGIN_SRC txt
 $ lnsc -shebang mini.lns a b c 
 1	mini.lns
@@ -127,36 +128,36 @@ To transcompile this code, run the following command:
 : lnsc mini.lns save
 
 
-This will output a mini.lua.
+This will output mini.lua.
 
-When I run this mini.lua, it looks like this:
+Running this mini.lua gives:
 #+BEGIN_SRC txt
 $ lua5.3 mini.lua a b c
 #+END_SRC
 
 
-*What this means is that the __main () function has not been called.*
+*What this means is that "the __main() function is not called".*
 
-If you run lnsc with the -shebang option, it runs the __main () function defined in the .lns file. On the other hand, the transcompiled lua code does not output the code that executes __main (), so this is the behavior.
+When lnsc is run with the -shebang option, it runs the __main() function defined in the .lns file. On the other hand, the transcompiled lua code doesn't emit any code to do __main() , which is why it behaves this way.
 
-To run __main () in transcompiled lua code, you need one of the following:
-- Create your own code to execute __main ()
-- Specify =--main= option when transcompiling
+To run the __main() of your transcompiled lua code, you need either:
+- Create your own code to execute __main()
+- Specify the =--main= option when transcompiling
 
 
 ** =--main= option
 
-By specifying the =--main= option when transcompiling, the process to execute the =__main()= function is output to the specified module.
+By specifying the =--main= option when transcompiling, the processing that executes the =__main()= function is output to the specified module.
 
-The following is a sample of the =--main= options.
+Below is a sample =--main= option.
 : $ lnsc mini.lns save --main mini
 
 
-Where =--main mini='s mini is the module name that contains __main () to run.
+where mini in =--main mini= is the module name containing the __main() to run.
 
-This will output code to execute __main () in mini.lua.
+This will output the code to run __main() in mini.lua.
 
-The following is the execution result of mini.lua generated by specifying =--main mini=.
+Below is the execution result of mini.lua generated with =--main mini= specified.
 #+BEGIN_SRC txt
 $ lua5.3 mini.lua a b c
 1	mini.lua
@@ -166,4 +167,4 @@ $ lua5.3 mini.lua a b c
 #+END_SRC
 
 
-*It should be noted here that the first argument of argList when executed with shebang of lnsc contains the path of .lns, while the first argument of argList after transcompiling to lua is the path of .lua. There is a difference that is included.*
+*Note that the first argument of argList when executed with lnsc's shebang contains the path of .lns, while the first argument of argList after transpiling to lua contains the path of .lua is the difference.*

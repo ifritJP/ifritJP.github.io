@@ -1,4 +1,4 @@
-#+TITLE: A. Why Lua's transcompiler LuneScript was developed
+#+TITLE: A. Reason for developing Lua transcompiler LuneScript
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
@@ -6,259 +6,259 @@
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="http://www.pirilampo.org/styles/readtheorg/css/htmlize.css"/>
 #+HTML_HEAD: <style type="text/css"> <!-- pre.src { color: #ffffff; background-color: #101010; } --> </style>
 
-Lua is a lightweight, high-performance language. Lua's name recognition is low compared to the same scripting languages such as Ruby, Python, and JavaScript, but it can be said to be one of the most major and easy-to-embed languages that can be used to extend the system. In fact, there are many systems that incorporate Lua.
+Lua is a lightweight language with high execution performance. Lua's name recognition is low compared to the same scripting languages such as Ruby, Python, and JavaScript, but it can be said that it is one of the most major languages that can be used for system expansion and is easy to embed. In fact, there are many systems that embed Lua.
 
-Also, in terms of execution performance, it is in the high-speed category as a scripting language. Without DSP-like processing, it is unlikely to become a system performance bottleneck.
+In terms of execution performance, it is also one of the fastest scripting languages. If you don't do DSP-like processing, it's unlikely to become a system performance bottleneck.
 
-I myself have experience in developing some software (both hobbies and business) using Lua, and it is one of the languages I often use.
-
-
-* Why Lua's transcompiler LuneScript was developed
-
-Lua is one of my favorite languages. However, for the following reasons, I stopped writing Lua code directly and started thinking about developing it using the transcompiler LuneScript.
-- I want to write comfortably and safely
-- Lua has problems specific to dynamically typed languages
-  - Cannot static error check
-  - Difficult to grasp the contents of other people's code
-  - Large risk of maintenance, function addition, and refactoring
-  - Complementation at the time of coding is not good
-  - Field access control in the table is not possible
-- Dissatisfied with Lua's functionality
-  - nil unsafe
-  - No macro
-- There are few alternatives to Lua's characteristics of built-in ease and high execution performance.
-- Already use Lua on many systems
-Each will be described below.
+I myself have experience in developing some software (for both hobby and business) using Lua, and it is one of my favorite languages.
 
 
-** I want to write comfortably and safely
+* Why we developed Lua transcompiler LuneScript
+
+Lua is one of my favorite languages. However, for the following reasons, I stopped writing Lua code directly and started thinking about developing using the transcompiler LuneScript.
+- Have fun and write safely
+- Lua has problems unique to dynamically typed languages
+  - No static error checking
+  - It is difficult to understand the contents of other people's code
+  - High risk of maintenance, feature addition, and refactoring
+  - Completion when coding is not cool
+  - Field access control in table is not possible
+- Dissatisfied with Lua functionality
+  - not nil safe
+  - no macros
+- There are few alternatives for the ease of embedding and high execution performance that are characteristics of Lua
+- Many systems already use Lua
+Each of these will be described below.
+
+
+** Have fun and write safely
 
 Yukihiro Matsumoto of Ruby wants Ruby to be fun.
 
-I don't want LuneScript to be fun. No, I want to have more fun than I want.
+I'm not looking for fun in LuneScript. No, I think that I want to be "easy" rather than seeking "fun".
 
-Of course, it's better to have fun doing anything. I personally enjoy software development as a hobby (free of charge) in my private time.
+Of course, whatever you do should be fun. I personally enjoy software development, so I do software development as a hobby (free of charge) in my private time.
 
-Nowadays, even pure software stores that cannot be sold can get jobs that can receive guarantees using services like CrowdWorks. In such an era, the motivation to spend private time and develop free software is nothing but "fun".
+Nowadays, even pure software stores that can't do business can use services like Crowdworks to get guaranteed jobs. In such an era, the motivation to kill your private time and develop free software is nothing but "fun".
 
-However, software development itself is fun, but weird bug fixing and test code creation are not fun. The reason why such unpleasant work is necessary is that bugs are easy to get into software development, and the software will not work properly unless the bugs are removed.
+However, software development itself is fun, but bug-fixing and test code creation are not fun. The reason why such unpleasing work is necessary is that software development is prone to bugs, and unless the bugs are removed, the software will not work properly.
 
-Again, this task is not fun. It may be fun for some people, but at least for me it's a penance. Well, there is a sense of accomplishment that I've done it, but I don't want to bother to kill my private time, regardless of work.
+Again, this work is not fun. It might be fun for some people, but at least for me it's a torture. Well, the sense of accomplishment of "I've done it" isn't lacking, but I don't want to go out of my way to waste my private time, let alone work.
 
-I want to enjoy and secure software development without doing such unpleasant work as much as possible.
+I want to enjoy safe software development without doing such unpleasant work as much as possible.
 
-Perl author Larry Wall cites "laziness, impatience, and arrogance" as the three major virtues of a programmer. I think "fun and safe software development" is quite similar to this.
+Perl's creator Larry Wall lists "lazyness, impatience and arrogance" as the three great virtues of a programmer. I think "fun and safe software development" is pretty similar to this.
 
-Lua does not provide a mechanism for easy and secure software development. If it's not provided, you can just make it yourself.
+Lua does not provide a mechanism to make software development fun and safe. If it's not provided, just make your own.
 
-I spare no effort to make it easier.
+I spare no effort to make it easy.
 
-This is the number one reason I develop LuneScript.
-
-
-** Problems specific to dynamically typed languages
-
-I'm not denying dynamically typed languages.
-
-I myself often write processes in dynamically typed languages, and I don't want to use statically typed languages when writing simple processes that are less than 100 lines.
-
-The problem with dynamically typed languages here is when using dynamically typed languages for scripts that may be developed by an unspecified number of people, rather than scripts created by individuals and maintained by themselves. , It is mentioned that it tends to be a problem.
+This is the main reason I develop LuneScript.
 
 
-*** Cannot static error check
+** Issues specific to dynamically typed languages
+
+I'm not against dynamically typed languages.
+
+I myself often write processes in a dynamically typed language, and I don't want to use a statically typed language when writing a simple process that doesn't even reach 100 lines.
+
+The problem with dynamic typed language here is that it is not a script that an individual creates and maintains alone, but a script that may be developed by an unspecified number of people. , points out that it is likely to be a problem.
+
+
+*** No static error checking
 
 Humans make mistakes.
 
-If you're a software engineer coding full-time, you'll probably have countless experiences passing the wrong type of data as an argument with both hands and feet. A common mistake is when you pass a parsed result of a numeric string input to a function, the function asks for a numeric value, but passes the parsed string data as is, for example. When I think about it, I can think of many other things.
+If you're a full-time software engineer coding, you've probably passed in the wrong type of data in an argument countless times. A common mistake is to pass the result of parsing a numeric string input to a function, and pass the parsed string data as is, even though the function expects a numeric value. When I think about it, many other things come to mind.
 
-When developing with multiple members, the probability of making mistakes due to communication mistakes etc. further increases.
+When developing with multiple members, the probability of mistakes occurring due to miscommunication etc. increases further.
 
-If it is a statically typed language, you will notice a mistake at compile time or at coding time with a type mismatch error.
+If it is a statically typed language, the mistake will be noticed as a type mismatch error at compilation time, or at coding time.
 
-But in a dynamically typed language, you can't tell until you actually run it. In some cases, it does not occur simply by moving it, but it occurs only at a specific path or at a specific timing.
+However, in a dynamically typed language, you don't know until you actually run it. Also, in some cases, it does not occur simply by moving it, and it may even occur only at a specific path or at a specific timing.
 
-Simple mistakes often cause serious problems later on, and often require a great deal of cost to reach the cause.
+A simple mistake can cause serious problems later on, and it often costs a lot of money to get to the cause.
 
-I think there is an idea that "tests can cover it", but writing tests is not free. As I wrote at the beginning, I don't enjoy writing tests. If the compiler guarantees me without writing tests, I'll take that one.
+I think there is an idea that "tests can cover it", but writing tests is not free. As I said at the beginning, I don't enjoy writing tests. If the compiler guarantees it without writing tests, I'd go with that.
 
-It is possible to do some static checking on code written in a dynamically typed language. However, it is much more expensive and less accurate than that of statically typed languages.
+It is possible to perform static checks to some extent on code written in a dynamically typed language. However, it is much more expensive and less precise than statically typed languages.
 
-With a statically typed language, at least type-related mistakes can be reliably parsed statically.
+With a statically typed language, at least type-related mistakes can be reliably analyzed statically.
 
-Of course, it can't be parsed if you make it an arbitrary type like void * in c or Object in java, or if you use forced type conversion.
+Of course, it is not possible to analyze if it is a type that can be anything like void * in c or Object in java, or if forced type conversion is used.
 
-In the future, I believe that static analysis technology will evolve through technologies such as deep learning, making it easier to develop software. And I think it's a statically typed language that supports such development, not a dynamically typed language.
+I believe that deep learning and other technologies will advance static analysis techniques in the future, making software development even more enjoyable. And I think it's statically typed languages, not dynamically typed languages, that support such development.
 
 Well, maybe it's a different paradigm.
 
 
-*** Difficult to grasp the contents of other people's code
+*** It is difficult to understand the contents of other people's code
 
-Other people's code is harder to grasp than the code I wrote. This is natural.
+Other people's code is harder to understand than the code you have written yourself. This is a matter of course.
 
-That's not what I want to say here.
+That's not what I mean here.
 
-Nor is it a low level of indentation, non-compliance with coding conventions, or anything else.
+Also, it's not a low-level thing like the indentation isn't aligned or the coding conventions aren't followed.
 
-No matter how well-known engineers write, if Sole is written in a dynamically typed language, it's harder to understand than code written in a statically typed language.
+No matter how well-known engineers write it, if it's written in a dynamically typed language, it's harder to grasp than the code written in a statically typed language.
 
-This is because the type information of data, which is an important factor of the program, is hardly written. If some engineers say that type information is not very important, it is better to re-unit the "algorithm and data structure".
+The reason is that the data type information, which is an important factor of the program, is hardly written. If there are engineers who say that type information etc. are not so important, it is better to take the unit of "algorithms and data structures" again.
 
-The type can be predicted from the symbol name. Also, the symbol name should be given as such.
+Note that the type can be inferred from the symbol name. Also, symbols should be named as such.
 
-However, this is just an expectation, not a fact. When developing software, I don't want to rely on detective games.
+However, this is just a guess, not a fact. When I develop software, I don't want to rely on guessing games.
 
-Others may argue that the type information is included in the comments or documentation and should be checked. However, comments and documentation often deviate from the implementation, and if you can understand it at a glance and if you can't understand it without looking at the code + α, I can understand it at a glance. Better.
+Also, some people may say that type information is described in comments or documentation, so you should check it. However, the comments and documentation often differ from the implementation. Better.
 
-As I say many times, I want to have fun.
-
-
-*** Large risk of maintenance, function addition, and refactoring
-
-It's rare that you don't modify any code once you've created it.
-
-There are many reasons why the OS you are running has changed, you need to add features, or you have found a potential bug, but there are many opportunities to modify existing code.
-
-When modifying such existing code, dynamically typed languages are more risky than statically typed languages.
-
-Again, some might say, "If you write the test well, there's no problem." However, although the answer is half correct, it is half lost.
-
-"Modifying" is synonymous with "behavior changes". There is a difference in the degree of change, but there is no difference in the change. And if the behavior changes, it is not safe to have a test.
-
-The reason is that the test is to confirm that the behavior is correct, and since the behavior changes, the test cannot be used as it is. Of course, not everything can be used, but it can be limited to changes in behavior.
-
-Now, let's return to the topic of dynamically typed and statically typed languages.
-
-Why is a dynamically typed language more risky when modifying existing code than a statically typed language? The reason is that it is difficult to completely correct the affected parts by modifying them.
-
-If it is a statically typed language, it can be said that the correction is almost completed as long as it is compiled. On the other hand, in dynamically typed languages, it is often said that even if you try to run a test after correcting everything, it will not work properly due to an error due to omission of correction. After crushing the errors one by one, it is finally completed.
-
-Considering which takes longer to deal with compile errors or test errors, it's overwhelmingly test errors. If it's a compile error, you can just correct the line of the compile error, but if it's a test error, it adds extra work to identify the cause of the error. Furthermore, if there is a leak in the existing test itself, it may not be possible to find the correction leak itself.
-
-Also, it is still good if the worker who modifies the module is the module creator himself, but it is not uncommon for a completely different person to handle it. In that case, the risk is further increased by the synergistic effect of "it is difficult to grasp the contents of the code of another person" mentioned earlier.
-
-I made many design changes during the development of LuneScript, but it's a chill to imagine if I was doing this in a dynamically typed language.
+All I can say is that I want to have a good time.
 
 
-*** Complementation at the time of coding is not good
+*** High risk of maintenance, feature addition, and refactoring
 
-A decent complementary feature is essential to make coding easier.
+It's rare that any piece of code is written once and left untouched.
 
-Nowadays, even in dynamically typed languages, the coding completion function is working quite hard. But don't you have a disappointing experience with the candidates listed by that complement? Or isn't there something that should be listed in the first place not listed at all?
+There are various reasons such as the OS being run has changed, the need to add functions, or the discovery of latent bugs, but there are many opportunities to modify existing code.
 
-Complementing dynamically typed languages is quite difficult. This is because the completion function recognizes completion candidates based on the type information, but it is difficult for dynamically typed languages to recognize them statically.
+Dynamically typed languages are more risky than statically typed languages when modifying such existing code.
 
-In a statically typed language, type information can be determined statically, so type-related completion can be achieved accurately.
+Again, some might say, "If you write the tests well, there's no problem." However, it is half right and half wrong.
 
-Of course, LuneScript also provides completion.
+"Adding a hand" is synonymous with "behavior changes." Even if there is a difference in the degree of change, there is no difference in change. And if the behavior changes, even if there is a test, it can not be said that it is safe.
+
+This is because the test is for confirming that the behavior is correct, and since the behavior changes, the test cannot be used as it is. Of course, it doesn't mean that everything can't be used.
+
+Now, let's get back to the topic of dynamically typed and statically typed languages.
+
+Why is it that dynamically typed languages are more risky when modifying existing code than statically typed languages? That's because it's difficult to correct without omission the affected parts by adding hands.
+
+If it is a statically typed language, it can be said that the correction is almost complete as long as it is compiled. On the other hand, in dynamically typed languages, even if you try to run the test after correcting everything, it is often said that it will not work properly due to an error due to omission of correction. Eliminate the errors one by one and finally complete.
+
+If you think about which takes more time to deal with compile errors or test errors, it's overwhelmingly test errors. If it's a compile error, you can fix the compile error line, but if it's a test error, you'll have to work extra to identify the cause of the error. Furthermore, if there is an omission in the existing test itself, there is a possibility that the omission of correction itself cannot be found.
+
+Also, it would be fine if the person who modified the module was the person who created the module, but it is not uncommon for a completely different person to handle it. In that case, the synergistic effect of "difficult to grasp the contents of other people's code" mentioned earlier will further increase the risk.
+
+During the development of LuneScript, design changes were made many times, but it is chilling to imagine if this was done in a dynamically typed language.
+
+
+*** Completion when coding is not cool
+
+A decent completion function is essential to make coding easier.
+
+Recently, even in dynamically typed languages, the coding completion function works quite hard. But have you ever been disappointed by the suggestions that the completion feature lists? Or maybe things that should be listed in the first place aren't listed at all?
+
+Completing a dynamically typed language is rather difficult. This is because the completion function recognizes completion candidates based on type information, but it is difficult to recognize them statically in dynamically typed languages.
+
+With a statically typed language, type information can be determined statically, so type-related completion can be implemented accurately.
+
+Of course, LuneScript also offers completion.
 
 See the next article for details.
 
 [[../completion]]
 
 
-*** Field access control in the table is not possible
+*** Field access control in table is not possible
 
 Access control is important.
 
-This is because it is possible to specify which data / function can be accessed.
+This is because it is possible to clearly state which data/functions can be accessed.
 
-As a major premise at the time of design, it is common sense to disclose functions and data that can be used from the outside, and to keep functions and data that cannot be guaranteed to operate when used from the outside.
+As a major premise at the time of design, it is common sense to disclose functions and data that can be used from the outside, and to keep functions and data that cannot be guaranteed to work when used from the outside.
 
 However, Lua does not allow this for table fields.
 
-Perhaps dynamic control is possible with metatable, but at least static control is not possible.
+Perhaps, if you make full use of metatable, dynamic control may be possible, but at least static control is not possible.
 
-As I say many times, it is only better to detect an error dynamically than it can detect an error statically, which is overwhelmingly inconvenient.
+As I said many times, the ability to detect errors dynamically is just better than the ability to detect errors, and it is overwhelmingly inconvenient compared to being able to detect errors statically.
 
-Even in languages with access restrictions, you may be able to access functions and data that were kept private by using the reflection function, but this is not a problem.
+Even in languages with access restrictions, it is possible to access functions and data that have been kept private by using reflection, but I don't see this as a problem.
 
-This is because access control clearly indicates the intention of the module designer, and when another person uses the module and accesses it without understanding the intention, the access deviates from the designer's intention. Because I think the purpose is to inform you.
+This is because access control clearly indicates the intention of the module designer, and if another person accesses the module without understanding the intention when using the module, the access deviates from the intention of the designer. This is because I believe that the purpose is to inform the public.
 
-Especially when writing test code, it may be required to be able to access private functions / data, so having a means to access private functions / data is not a problem in itself.
+Especially when writing test code, it is sometimes required to be able to access private functions and data, so having access to private functions and data is not a problem per se.
 
 The problem is that there is no such control and everything is accessible.
 
 
-** Dissatisfied with Lua's functionality
+** Dissatisfied with Lua features
 
-Lua is a compact and powerful language, but there are many features that plain Lua doesn't support.
+Lua is a compact and powerful language, but there are many features not supported in plain Lua.
 
-One of the purposes of the transcompiler is to support functions that are not supported by plain Lua without modifying Lua.
+One of the purposes of developing the transcompiler is to support functions not supported by plain Lua without modifying Lua.
 
 
-*** nil unsafe
+*** not nil safe
 
-Lua's nil is a useful value, but it also causes dynamic errors. Many engineers are plagued by this nil-related error.
+Lua's nil is a useful value, but it also causes dynamic errors. Many engineers are plagued by this nil -related error.
 
-It is nil safe to solve that problem.
+The solution to that problem is nil-safety.
 
-Many of the essential features of today's programming have already been realized since the days of Lisp. For example, GC, lambda calculus, closures, etc. have been around for decades.
+Many features that are indispensable in modern programming have already been realized since the days of Lisp. For example, GC, lambda expressions, closures, etc. have been around for decades.
 
 In other words, it can be said that it has hardly evolved since that time.
 
-"Almost not evolved" also means "somewhat evolved", and nil safety may be included in one of the evolutions. It's that important.
+"Hardly evolved" also means "somewhat evolved," and nil-safety can be included in that evolution. That's how important it is.
 
-However, Lua doesn't support nil safety, which is a significant deduction for Imadoki's language.
+However, Lua does not support nil-safety, and as a modern language, it can be said that this is a considerable deduction target.
 
-By the way, Rust addresses the danger of nil (null) with the concept of lifetime and ownership. When I first saw this approach, I was very interested in "Is there such a way?"
+On a side note, Rust addresses the danger of nil (null) with the concept of lifetime and ownership. When I saw this approach for the first time, I was very interested in thinking, "Is there such a pattern?"
 
-In addition, Rust solves various problems such as memory management and data access contention as well as nil security by lifetime and ownership.
+In addition, Rust solves various problems such as memory management and data access races, as well as nil-safety through lifetimes and ownership.
 
-If you've never touched Rust, be sure to check out Lifetime and Ownership.
+If you've never touched Rust before, be sure to check out lifetimes and ownership.
 
-Quiet talk break.
+Quiet topic.
 
-LuneScript manages nilable, which can take nil, and non-nilable, which cannot take nil, as different types to prevent nil errors from occurring at unintended timings.
+In LuneScript, nilable types that can take nil and non-nilable types that cannot take nil are managed as separate types to prevent nil errors from occurring at unintended timing.
 
-It also supports unwrapping of nilable to non-nilable type conversions and the nil conditional operator for easy access to multi-tiered nilable data, making nil error handling easier and safer. ..
+In addition, by supporting unwrap processing for conversion from nilable to non-nilable types, and nil conditional operators for easy access to multilevel nilable data, nil errors can be handled easily and safely. .
 
 
-*** No macro
+*** no macros
 
-Speaking of macros, Lisp has very powerful macros and can be said to be representative of languages that have macros. It is no exaggeration to say that macros underpin the appeal of Lisp.
+Speaking of macros, Lisp has very powerful macros and can be said to be the representative of languages with macros. It's no exaggeration to say that macros underpin Lisp's fascination.
 
 However, I feel that many relatively new languages do not support macros.
 
-Why does even C language have "what a macro"?
+Even the C language has "Nanchatte macros", so why is that?
 
-Well, even if the language itself doesn't have macros, it may be safe to say that macros are unnecessary if a separate engineer creates a script that automatically generates code from some data.
+Well, even if the language itself doesn't have macros, if an engineer creates a separate script that automatically generates code from some data, it might be possible to say that macros are unnecessary.
 
-However, doing so would flood "some data" and "automatically generated scripts."
+However, doing so would result in a flood of "some data" and "automatically generated scripts".
 
-I think macros are necessary to prevent this from happening.
+I think that macros are necessary to prevent such things from happening.
 
-However, macros as sophisticated as Lisp are difficult to implement, and users need some learning.
+However, macros as sophisticated as Lisp are difficult to implement, and require a certain amount of learning on the part of those who use them.
 
-With LuneScript, we have prepared macros that are easy to implement, have no burden on the user, and are easy for anyone to use and effective.
+LuneScript provides macros that are easy to implement, easy to learn, and effective for anyone to use.
 
-I also use macros in LuneScript's self-hosting, but I feel once again that macros are an integral part of programming languages.
+I use macros in self-hosting of LuneScript, but I feel once again that macros are indispensable for programming languages.
 
 
-** There are few alternatives to Lua's characteristics of built-in ease and high execution performance.
+** There are few alternatives for the ease of embedding and high execution performance that are characteristics of Lua
 
 As mentioned earlier, Lua is one of the easiest languages to integrate into your system.
 
-In particular, its compactness and the ability to compile with only standard C functions are very useful for embedding.
+In particular, its compactness and the fact that it can be compiled using only standard C functions are extremely useful for embedding.
 
-There are several other languages that are conscious of embedding, but I don't know any language that goes beyond Lua in terms of embedding.
+There are several other embedded languages, but I don't know any language that surpasses Lua in terms of embedding.
 
 
-** Already use Lua on many systems
+** Many systems already use Lua
 
-There are many systems that incorporate Lua.
+There are many systems that embed Lua.
 
-Once incorporated into a system, the Lua stays alive, as long as the system is alive.
+Once incorporated into a system, Lua will continue to live as long as the system is alive.
 
 Just because you don't like it doesn't mean you can change it.
 
 
-* Finally
+* lastly
 
-LuneScript is being developed to make up for Lua's shortcomings.
+LuneScript is developed to compensate for the shortcomings of Lua.
 
-This isn't because Lua isn't a language that can't be used, but because it's a shame to leave Lua's shortcomings and flirt with other languages.
+This is not because Lua is a language that cannot be used, but because it is a shame to leave Lua's shortcomings and flirt with other languages.
 
-If you have a chance to consider embedded languages in the future, please consider that Lua has LuneScript.
+If you have an opportunity to consider embedded languages in the future, please consider the fact that Lua has LuneScript.
 
-Again, Lua is a lightweight, high-performance language. And keep in mind that Lua also has an option called LuneScript.
+As I said many times, Lua is a lightweight language with high execution performance. And keep in mind that Lua also has a LuneScript option.

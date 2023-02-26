@@ -1,4 +1,4 @@
-#+TITLE: 04. Value
+#+TITLE: 04. Values
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
@@ -8,57 +8,58 @@
 This time, I will explain the values that can be handled by LuneScript.
 
 
-* Value type
+* value type
 
-The correspondence table between the value types that can be handled by LuneScript and the Lua values after transcompiler is shown.
+Here is a correspondence table between the value types that can be handled by LuneScript and the Lua values after the transcompiler.
 |-|-|-|-|-|
-| LuneScript | Lua | go | Use | How to define in LuneScript | 
+| LuneScript | Lua | go | Usage | How to define in LuneScript | 
 |-+-+-+-+-|
 | nil, null | nil | nil | nil | nil | 
-| int | Numerical value | LnsInt | integer | 0 1 2 3 ?A 0x10 -100 | 
-| real | Numerical value | LnsReal | Real number | 0.0 1.0 0.001 | 
-| str | String | string | String, binary data | "abc" 'def'  ```hij``` | 
-| bool | Boolean value | bool | Boolean value | true false | 
+| int | numerical value | LnsInt | integer | 0 1 2 3 ?A 0x10 -100 | 
+| real | numerical value | LnsReal | real number | 0.0 1.0 0.001 | 
+| str | string | string | string, binary data | "abc" 'def'  ```hij``` | 
+| bool | boolean | bool | boolean | true false | 
 | List | table | LnsList | list | [1, 2, 3 ] | 
-| +Array+ | +table+ | +Array (fixed length)+ | +[@ 1, 2, 3 ]+ | 
+| +Array+ | +table+ | +array (fixed length)+ | +[@ 1, 2, 3 ]+ | 
 | Map | table | LnsMap | map | { "A":1, "BC": 100 } | 
 | Set | table | LnsSet | set | (@ 1, 2, 3) | 
+| Tuple | table | []LnsAny | tuple | (= 1, 2, 3) | 
 | class | table | struct | class | class Test {} | 
 | interface | table | interface | interface | interface Test {} | 
 | fn | function | func | function | fn func() {} | 
-| enum | Numbers, strings | const | enum | enum Test { } | 
-| alge | table | struct | Algebraic data | alge Test { } | 
-| Luaval | Lua value | Lns_luaValue | The value of Lua itself | 
-| stem | value | LnsAny | A type that can hold all values except nil | 
+| enum | number, string | const | enum | enum Test { } | 
+| alge | table | struct | algebraic data | alge Test { } | 
+| Luaval | Lua value | Lns_luaValue | Lua value itself | 
+| stem | value | LnsAny | A type that can hold any non-nil value | 
 
-*2019/3 Set added. 2020/10 Luaval added*
+*2019/3 Set added. 2020/10 Luaval added 2023/1 Tuple added*
 
 As mentioned above, LuneScript subdivides Lua values and treats each as a separate type.
 
-The intent of the subdivision is to improve Lua's next specification:
-- All Lua numbers are real numbers, and if you are not familiar with them, problems will occur due to the fact that the numbers are real numbers. For example, Lua's calculation for ~10/3~ is 3.3333 instead of 3.
-- Lua's table is divided into a sequence in which all keys are natural numbers and a non-sequence in which keys are not natural numbers.
-  - Due to this difference, the functions for enumerating the data in the table are divided into ipairs and pairs, and it is necessary to use them properly.
-    - It can be said that there is no problem if only pairs are used. .. ..
-  - The ~#~ operator, which gets the size of a table, is confusing because it returns the size of the sequence, not the size of the non-sequence.
+The intention of the subdivision is to improve the following specifications of Lua.
+- Numerical values in Lua are all real numbers, and if you are not used to it, problems due to the numerical values being real numbers will occur. For example, the Lua calculation result for ~10/3~ is 3.3333 instead of 3.
+- Lua tables are divided into sequences whose keys are all natural numbers and non-sequence whose keys are not natural numbers.
+  - Due to this difference, the functions for enumerating data in the table are divided into ipairs and pairs, and it is necessary to use them properly.
+    - Although it can be said that there is no problem if only pairs are used. . .
+  - The ~#~ operator to get the size of a table is confusing because it returns the size of sequences and not the size of non-sequences.
 
 
 ** nil
 
-nil is the same as Lua's nil.
+nil is the same as nil in Lua.
 
 Null is also available in LuneScript.
 
 null is an alias for nil.
 
-Null support allows LuneScript to handle JSON out of the box.
+Null support allows you to work with JSON as-is in LuneScript.
 
 
-** Integer, real number
+** integer, real
 
 LuneScript treats integers and real numbers separately.
 
-This makes 10/3 3 and 10 / 3.0 3.3333 ...
+So 10/3 becomes 3 and 10/3.0 becomes 3.3333...
 
 The model names are as follows.
 #+BEGIN_SRC lns
@@ -69,52 +70,52 @@ let val2:real = 1.5;  // 実数 real
 
 
 
-*** Numeric literal
+*** numeric literal
 
-Numeric literals are C89-like.
+C89-like numeric literals are used.
 - Integers support decimal and hexadecimal representations
-- Real numbers are exponential notation in decimal and e.
+- A real number is a decimal number and exponential representation by e.
 
 
 *** letter
 
-LuneScript can use ~?~ to treat the code of the character following ~?~ as an immediate value of type int.
+Using ~?~ allows LuneScript to treat the code of the character following ~?~ as an immediate value of type int .
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( ?a ); // 97  (0x61)
 #+END_SRC
 
 
-If you want to get the character code of'or', you need to escape it with \ like? \'.
+Note that to get the code of a ' or " character, you need to escape it with \ like ?\' .
 
-Only 1 byte of code can be retrieved this way. For example, if the character following? Is a multibyte code such as UTF-8, the first byte is fetched, the second and subsequent bytes are parsed as LuneScript code, and a parse error occurs.
+Only one byte of code is available this way. For example, if the character following ? is a multi-byte code such as UTF-8, the first byte is acquired and the second and subsequent bytes are parsed as LuneScript code, resulting in a parse error.
 
 
 *** Four arithmetic operations
 
-The four arithmetic operations of numbers are the same as Lua.
+The four arithmetic operations of numerical values adopt the same ones as Lua.
 
-The type of the result of the binary operation changes as follows.
-- The result of the operation of int and int is int.
-- The result of the operation of real and real is real.
-- The result of the operation of int and real is real.
-However, if the result of the operation of int and int is out of the range of int, the internal value at runtime will be real, but the type on LuneScript will remain int. To round the result to an int, it must be cast with ~@@int~.
+The result of a binary operation changes type as follows:
+- The operation result of int and int is int.
+- The operation result of real and real becomes real.
+- The result of an operation between int and real is real.
+However, if the operation result of int and int is outside the range of int, the internal value at runtime will be real, but the type in LuneScript will remain int. To round the result of an operation to an int, you need to cast with ~@@int~.
 
-When transcompiled to go, it remains int internally.
+When transcompiled to go, it's still an int internally.
 
 
-*** Bit operation
+*** bit operation
 
-Supports bit operations. Not available in Lua 5.1.
+Supports bitwise operations. Not available in Lua5.1.
 
-The bit length is 32 bits for Lua5.2. The bit length of Lua5.3 depends on the environment.
+The bit length is 32bit in Lua5.2. The bit length of Lua5.3 depends on the environment.
 - Logical AND (&)
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( 1 & 3 == 1 );
 #+END_SRC
 
-- OR (|)
+- Logical OR (|)
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( 1 | 2 == 3 );
@@ -126,19 +127,19 @@ print( 1 | 2 == 3 );
 print( 1 ~ 3 == 2 );
 #+END_SRC
 
-- Logical shift (left) (| <<)
+- Logical shift left (|<<)
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( 1 |<< 2 == 4 );
 #+END_SRC
 
-- Logical shift (right) (| >>)
+- Logical shift right (|>>)
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( 0x10 |>> 2 == 4 );
 #+END_SRC
 
-- Bit inversion (~)
+- Bit reversal (~)
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( ~2 == 0xfffffffd );
@@ -146,15 +147,15 @@ print( ~2 == 0xfffffffd );
 
 
 
-** String
+** string
 
-Enclose it in "or" to make a string. You can use'in "" and "in".
+If you surround it with " or ', it becomes a string. You can use ' inside "", and you can use " inside ''.
 
-Note that "",'' cannot include line breaks. Use "" to include line breaks.
+Note that "", '' cannot contain newlines. Use " " to include line breaks.
 
-  Use `` `to define a multi-line string without using. Inside `` `` `` is a string as it is, not a line break.
+  Use ``` to define a multi-line string without using . The characters in `````` are converted to strings as they are instead of newlines.
 
-Use [N] to get the character at a specific position in the string. The N specified here indicates that the string starts with 1.
+Use [N] to get the character at a specific position in the string. The N specified here indicates 1 at the beginning of the string.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let txt = "abc";
@@ -162,7 +163,7 @@ print( txt[ 2 ] );  // 98
 #+END_SRC
 
 
-*The behavior when N exceeds the string length is undefined.*
+*The behavior is undefined if N exceeds the string length.*
 
 Get the string length with #.
 #+BEGIN_SRC lns
@@ -179,11 +180,35 @@ let val:str = "abc"; // 文字列 str
 
 
 
-** False value (bool)
+*** Linking
 
-It has true and false.
+String concatenation is done with =..=.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+print( "abc" .. "efg" );  // abcdefg
+#+END_SRC
 
-The model name is bool as follows.
+
+
+*** format string
+
+You can generate a string by specifying the format below.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+print( "%s %d %d" ("abc", 1, 2) ); // abc 1 2
+#+END_SRC
+
+
+Specify the value with () immediately after the string literal.
+
+See Lua's =string.format= API for information on formatting.
+
+
+** boolean
+
+Has true and false.
+
+The type name is bool as follows:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val:bool = true; // bool
@@ -193,7 +218,7 @@ let val:bool = true; // bool
 
 ** list
 
-Lists are types to which you can add or remove values.
+A list is a type that can add and remove values.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut list:List<int> = [];
@@ -205,15 +230,15 @@ print( list[1] ); // 1
 #+END_SRC
 
 
-*Access the elements of the list with [index]. The index at the top of the list is 1. The behavior when accessing outside the range of the list is undefined.*
+*Elements of the list are accessed by [index]. The index at the beginning of the list is 1. The behavior is undefined if you access outside the scope of the list.*
 
-//The original LuneScript was developed as a lua transcompiler, so//I set the index from 1 to emphasize compatibility with lua,//I think this was a failure now. ..//
+//Original LuneScript was developed as a lua transcompiler, so//I focused on compatibility with lua and set the index from 1,//I now believe this was a failure. .//
 
-It is ~#~ that gets the length of the list. For example, ~#list~ gets the length of the list type variable list.
+It's ~#~ to get the length of the list. For example, ~#list~ gets the length of the list type variable list.
 
-The addition of the value is the same as Lua, =insert()=, and the deletion is =remove()=.
+Add value is =insert()= same as Lua, delete =remove()=.
 
-The type name is List <T> as follows. Where T indicates the type of element that the list holds.
+The type name is List<T> as follows: where T indicates the type of elements the list holds.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val:List<int> = [1,2];
@@ -225,7 +250,7 @@ let val:List<int> = [1,2];
 
 Map literals are an extension of the JSON format.
 
-You can work with the JSON format as follows:
+You can handle the JSON format like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let map = {
@@ -238,7 +263,7 @@ print( map.val1, map.val2, map.val3 ); // 1 2 3
 
 
 It differs from JSON in the following ways:
-- All values except nil can be used for keys and values
+- All non-nil values are allowed for keys and values
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut test:Map<int,int> = {};
@@ -251,7 +276,7 @@ print( map[ 1 ], map[ 2.0 ], map[ test ] ); // val1 val2 val3
 #+END_SRC
 
 
-Also, since null is an alias of nil, JSON itself can be handled.
+Also, since null is aliased to nil, JSON itself can be handled.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut map:Map<str,int> = {};
@@ -260,9 +285,9 @@ map.xyz = 10;
 #+END_SRC
 
 
-Access the Map elements with [key]. If the key type is str, you can also access it as .key.
+Elements of the Map are accessed by [key]. If key is of type str , it can also be accessed as .key .
 
-For example, the following ["abc"] and .abc access the same element, so print in the following example prints true.
+For example, [ "abc" ] and .abc access the same element, so print in the following example prints true .
 #+BEGIN_SRC lns
 // @lnsFront: skip
 print( map[ "abc" ] == map.abc ); // true
@@ -271,7 +296,7 @@ print( map[ "abc" ] == map.abc ); // true
 
 Note that you cannot use the ~#~ operator on maps.
 
-The model name of Map is Map <K, V> as follows. Where K is the key type and V is the value type associated with the key.
+The type name of Map is Map<K,V> as follows: where K is the key type and V is the value type associated with the key.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val:Map<str,int> = { "abc":123 };
@@ -279,10 +304,49 @@ let val:Map<str,int> = { "abc":123 };
 
 
 
-*** Map notes
+*** Delete value
 
-Keep the following in mind when working with Maps:
-- Map keys cannot distinguish between int and real.
+As mentioned earlier, a Map cannot have nil values. By using this and setting the value to nil , we can remove it from the Map .
+
+For example, the following will set abc to nil for val with 123 registered for key "abc": This will remove abc from val.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:Map<str,int> = { "abc":123 };
+val.abc = nil;
+let mut total = 0;
+foreach _ in val {
+    total = total + 1;
+}
+print( total ); // 1
+#+END_SRC
+
+
+
+*** a set of nilables
+
+Assigning non-nil nilable values to Map is discouraged. It will be an error in the future.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let val:Map<str,int> = { "abc":123 };
+fn func( work:int! ) {
+   val.abc = work;  // warrning
+}
+func( 1 );
+#+END_SRC
+
+
+This is because setting a Map to nilable makes it ambiguous whether it is a set of values or a deletion.
+
+Note that setting immediate to nil itself will still be supported.
+
+
+*** Notes on Maps
+
+Note the following when working with Maps:
+
+
+**** Map keys cannot distinguish between int and real .
+
 *Specifically, it is undefined what ~map[1]~ and ~map[1.0]~ return in the example below.*
 #+BEGIN_SRC lns
 // @lnsFront: ok
@@ -294,13 +358,16 @@ print( map[ 1 ], map[ 1.0 ] );
 #+END_SRC
 
 
-This is a limitation derived from the Lua specification.
+This is a limitation from the Lua specification.
 
-Note that when transcompiled to go, int and real are distinguished.
-- Key equivalent judgment when a key other than int, real, str is used
-In the following example, list1 and list2 are both lists with an int 1 as an element. Using this list1 as a key, register "aaa" in the map.
+Note that int and real are distinguished when transcompiled to go.
 
-And if you get the values from map with list1 and list2 as keys, the result will be aaa and nil.
+
+**** Key equivalence judgment when using keys other than int, real, str
+
+In the following example, both list1 and list2 are lists with int 1 as an element. Using this list1 as a key, register "aaa" in map.
+
+And if you get values from map with list1, list2 as keys, the result will be aaa and nil .
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut map:Map<&List<int>,str> = {};
@@ -313,9 +380,12 @@ print( map[ list1 ], map[ list2 ] );  // aaa nil
 
 This is because list1 and list2 are determined as different keys.
 
-If you use anything other than int, real, or str for a map key, the keys must be equal or not for the same object.
-- nilable
-As mentioned above, access to Map elements is as follows.
+If you use anything other than int, real, or str as a map key, the keys must be the same object for equality.
+
+
+**** nilable
+
+As mentioned earlier, accessing the elements of a Map can be done like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let map = {
@@ -327,15 +397,13 @@ print( map.val1, map.val2, map.val3 ); // 1 2 3
 #+END_SRC
 
 
-Here, map.val1 becomes nilable and cannot be treated as 1 of the original data int as it is.
+*Here, map.val1 becomes nilable and cannot be treated as 1 of int which is original data as it is.*
 
-That is, you cannot run =map.val1 + 1= as follows:
+In other words, you cannot run =map.val1 + 1= like this:
 : print( map.val1 +1 )
 
 
-This is because when you access an element of the map, the result is nilable.
-
-See below for nilable.
+For nilable see below.
 
 [[../nilable]]
 
@@ -344,16 +412,25 @@ See below for nilable.
 
 Handles a set of values.
 
-See the following article for more information.
+See the following article for details.
 
 [[../set/]]
+
+
+** Tuple
+
+Handles value combinations.
+
+See the following article for details.
+
+[[../tuple/]]
 
 
 ** generics
 
 List, Array and Map support generics.
 
-For example, declare as follows.
+For example, declare each of the following:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let list:List<int> = [];  // int を要素に持つリスト
@@ -363,7 +440,7 @@ let map:Map<str,int> = {}; // str をキー、int を値に持つマップ
 
 
 
-** Collection type
+** collection type
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let list = [ 1, 2, 3 ];
@@ -371,15 +448,15 @@ let map = { "A": 10, "B": 11, "C": 12 };
 #+END_SRC
 
 
-Collection such as lists and maps can declare literals as above. The types of lists and maps generated at this time are determined by the constituent values.
+Collections such as lists and maps can declare literals as shown above. The type of list and map generated at this time is determined by the configured value.
 
-If all the values used in the constructor of a collection are of the same type, the type of the collection will be the type of that value.
+If the values used in a collection's constructor are all of the same type, the collection's type is that value's type.
 
-For example, ~[ 1, 2, 3 ]~ in the above sample is List <int>.
+For example, ~[ 1, 2, 3 ]~ in the above sample becomes =List<int>=.
 
-If the values used in the collection's constructor are different, the collection's type will be stem.
+If the values used in the collection's constructor are different, then the collection's type is stem .
 
-Specifically, it looks like this:
+Specifically:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let list1 = [ 1, 2, 3 ];			// List<int>
@@ -393,13 +470,13 @@ let map4 = { "a": 1, "b": 'Z' };		// Map<str,stem>
 
 
 
-** Constructor for a collection with a mixture of inherited classes
+** Constructor of a collection containing multiple classes with inheritance relationships
 
-Constructors for collections with a mixture of inherited classes can fail because type inference cannot be resolved.
+Constructors of collections that include multiple classes with inheritance relationships may cause an error due to inability to resolve type inference.
 
-In that case, specify the type.
+If so, please specify the type.
 
-The following sample is shown.
+Here is a sample:
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
@@ -415,21 +492,21 @@ class Sub extend Test {
 #+END_SRC
 
 
-Here, val1 using type inference will result in an error. On the other hand, val2, which specifies the type, is OK. Since val3 and val4 do not have a mixture of classes, type inference is possible.
+Here, val1 using type inference is an error. On the other hand, val2 with an explicit type is OK. Since val3 and val4 do not mix classes, they can be type inferred.
 
 
 ** enum
 
 LuneScript supports enums.
 
-See tomorrow's article for more details.
+See the article linked below for details.
 
 [[../enum/]]
 
 
 ** Luaval
 
-LuneScript can execute Lua code. The execution result of Lua code is converted internally for int, real, bool, str, but other values are processed as Lua values without conversion.
+LuneScript can execute Lua code. Execution results of Lua code convert int, real, bool and str internally, but other values are treated as Lua values without conversion.
 
 Luaval holds the value of that Lua.
 
@@ -440,17 +517,23 @@ See below for details.
 
 ** stem
 
-stem is a type that can hold all values except nil.
+A stem is a type that can hold any non-nil value.
 
-LuneScript is a statically typed language, and if you give it a value different from the expected type, a compilation error will occur.
+LuneScript is a statically typed language, and if you give a value different from the expected type, you will get a compilation error.
 
-On the other hand, the stem type is a type that can handle all types other than nil, so no compile error will occur even if any value other than nil is given.
+On the other hand, the stem type is a type that can handle all types other than nil, so no compilation error will occur even if any value other than nil is given.
 
 stem! is a type that can handle all values including nil. You can think of it as a Lua variable itself.
+
+Note that once converted to the stem type, a cast is required to convert back to the original type.
+
+Please refer to the following link for casting.
+
+[[../cast/]]
 
 
 ** form
 
 form is a type that handles function objects.
 
-The function will be described later.
+We'll talk about functions later.

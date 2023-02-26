@@ -1,18 +1,18 @@
-#+TITLE: 19. generics edition
+#+TITLE: 19. generics
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-This section describes the generics that LuneScript supports.
+Here we describe the generics that LuneScript supports.
 
-LuneScript initially supported Generics only for built-in Lists / Arrays / Maps, but it also supports Generics for user-defined functions and classes.
+LuneScript originally supported generics only for the built-in types List/Array/Map, but now supports generics for user-defined functions and classes as well.
 
 
 * function
 
-The function Generics is declared as follows:
+Declare the generics for the function like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func<T>( val:T ) : Set<T> {
@@ -21,11 +21,11 @@ fn func<T>( val:T ) : Set<T> {
 #+END_SRC
 
 
-As you can see from the above sample, when declaring a function, declare it with the function name + ~<Temporary parameter>~.
+As you can probably understand by looking at the above sample, when declaring a function, declare it with the function name + ~<formal type parameter>~.
 
-Where func <T> () is a function that creates a Set <T> with an argument value.
+where func<T>() is a function that produces a Set<T> with the values of its arguments.
 
-You can specify multiple formal parameters.
+You can specify multiple formal type parameters.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func<T1,T2>( val1:T1, val2:T2 ) : Set<T1>, List<T2> {
@@ -37,9 +37,9 @@ fn func<T1,T2>( val1:T1, val2:T2 ) : Set<T1>, List<T2> {
 
 * nilable, mutable
 
-Formal parameters have the same concept of nilable and mutable as regular types.
+Formal type parameters have the same concept of nilable and mutable as ordinary types.
 
-This allows you to write the following process:
+This allows you to write something like:
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func1<T>( val:T ) : T {
@@ -59,12 +59,12 @@ let mut test3 = func3( [ 1, 2 ] );
 test3.insert( 1 ); // error test3 is nilable
 #+END_SRC
 
-- func1 returns the argument as is of type T.
-- func2 returns the argument as immutable type & T.
-- func3 returns the argument as nilable type T !.
-This allows =test1.insert()=, but test2 and test3 will result in compilation errors.
+- func1 returns its argument in plain type T .
+- func2 returns its argument in immutable type &T.
+- func3 returns its argument as nilable type T!.
+As a result, =test1.insert()= is possible, but test2 and test3 will result in compilation errors.
 
-One thing to keep in mind here is that you can use nilable and mutable when using formal parameters, but not when declaring formal parameter names. In other words, ~func1<T!>~ like the following will result in an error.
+Note that nilable and mutable can be used when using formal type parameters, but cannot be used when declaring formal type parameter names. In other words, ~func1<T!>~ like this is an error:
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func1<T!>( val:T ) : T {
@@ -73,7 +73,7 @@ fn func1<T!>( val:T ) : T {
 #+END_SRC
 
 
-Also, nilable is not available for formal parameters. That is, you will get an error if:
+Also, nilable cannot be used for formal type parameters. In other words, it will error if:
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func1<T>( val:T ) : T {
@@ -84,9 +84,9 @@ print( func1( val ) ); // error type mismatch
 #+END_SRC
 
 
-In this example, func1 (val) gives int! to func1 (), but ~func1<T>(val:T)~'s val is T and the formal parameter is an error because nilable is not available.
+In this example, func1( val ) gives an int! to func1() , but the val of ~func1<T>(val:T)~ is T , and the formal type parameter cannot be nilable, so it is an error.
 
-If you want to do this, declare it as follows:
+If you want to do something like this, declare it like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func1<T>( val:T! ) : T {
@@ -97,16 +97,16 @@ print( func1( val ) ); // ok
 #+END_SRC
 
 
-In other words, ~fn func1<T>( val:T! )~ declares that the argument of func1 () is nilable.
+In other words, ~fn func1<T>( val:T! )~ declares that the argument of func1() is nilable.
 
-However, it can be inconvenient if you can't handle the value of nilable. Nilable <T> is available for such cases.
+However, not being able to handle nilable values can be inconvenient. We provide Nilable<T> for such cases.
 
-This will be explained separately at a later date.
+We will discuss this separately at a later date.
 
 
 ** sample
 
-By using Generics, you can write the following processing.
+Using generics, you can write something like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func<T>( val:T ) : Set<T> {
@@ -121,14 +121,14 @@ foreach val in func( 1 ) {
 #+END_SRC
 
 
-func ("foo") produces a Set <str> of (@ "foo"), and func (1) produces a Set <int> of (@ 1).
+func( "foo" ) produces a Set<str> of (@ "foo" ) and func( 1 ) produces a Set<int> of (@ 1 ) .
 
-As you can see from the above, the type parameters are determined according to the called argument.
+As you can see above, the type parameters are determined according to the arguments called.
 
 
 *** effect
 
-By using stem instead of generics, you can write similar processing as follows.
+By using stem instead of generics, similar processing can be described as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( val:stem ) : Set<stem> {
@@ -143,16 +143,16 @@ foreach val in func( 1 ) {
 #+END_SRC
 
 
-However, in this case, type information such as str and int will be rounded to stem. You will need to cast ~@@str~ or ~@@int~ as it will be rounded to stem.
+However, in this case, type information such as str and int will be rounded to stem . Casting ~@@str~ or ~@@int~ is necessary because it will be rounded to the stem.
 
-Casting is inconvenient and above all very dangerous.
+Casting is inconvenient and, above all, extremely dangerous.
 
-By using Generics, you can access it safely without using a cast.
+Generics allow safe access without casts.
 
 
 * class
 
-The generics for the class are declared as follows:
+Declare your class's Generics like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test<T> {
@@ -164,9 +164,9 @@ class Test<T> {
 #+END_SRC
 
 
-For classes, specify formal parameters when specifying the name of the class declaration.
+For classes, specify the formal type parameters when specifying the name of the class declaration.
 
-When declaring a method outside the class declaration, it is not necessary to declare a formal parameter as shown below.
+When declaring a method outside the class declaration, declaration of formal type parameters is unnecessary as follows.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 pub fn Test.func2() : Set<T> {
@@ -175,28 +175,28 @@ pub fn Test.func2() : Set<T> {
 #+END_SRC
 
 
-Create an instance of the Generics class as follows:
+Create an instance of the Generics class like this:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 let test = new Test<str>( "abc" );
 #+END_SRC
 
 
-If all formal parameters are used in the arguments of the constructor, it is possible to omit the actual type parameters as follows.
+In addition, if all formal parameters are used for the arguments of the constructor, it is possible to omit the actual type parameters as follows.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 let test = new Test( "abc" );
 #+END_SRC
 
 
-*The interface does not support generics.*
+*The interface is not generics aware.*
 
 
-* Method
+* method
 
-A method can have both a class formal parameter and a method formal parameter.
+A method can have both class formal type parameters and method formal type parameters.
 
-In the following sample, the =Test.func()= method has a class formal parameter T and a method formal parameter T2.
+The following sample =Test.func()= method has a class formal type parameter T and a method formal type parameter T2.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test<T> {
@@ -216,24 +216,69 @@ foreach val, key in test.func( "ABC" ) {
 
 
 
-* Type parameter constraints
+** Overriding methods with type parameters as return values
 
-All types except nil can be specified for the actual type parameter.
+It is not possible to override a method func whose return value has a type parameter like the following.
+#+BEGIN_SRC lns
+// @lnsFront: error
+class Super<T> {
+   let val:T;
+   pub fn func():T {
+      return self.val;
+   }
+}
+class Sub extend Super<int> {
+   pub override fn func(): int { // error
+      return 1;
+   }
+}
+#+END_SRC
 
-For this reason, processing for values of formal parameter types within generics classes and functions is limited to type-independent operations such as ~==~ and =~==.
 
-If this is the case, you will not be able to write effective processing in the processing in Generics.
+Overriding such a method requires a special declaration of the type parameter of the inheriting class.
 
-Therefore, we will use the constraint of the type parameter.
+For example:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+class Super<T> {
+   let val:T;
+   pub fn func():T {
+      return self.val;
+   }
+}
+class Sub extend Super<A=int> {  // A=int
+   pub override fn func(): A {
+      return 1;
+   }
+}
+#+END_SRC
+
+
+In this example, the Sub class inherits from =Super<T>= as =Super<A=int>=.
+
+This =Super<A=int>= declares that the type parameter int is used as the A type. And specify A as the return type of the overriding func().
+
+This allows you to override methods that have type parameters as return values.
+
+
+* Constraints on type parameters
+
+An actual type parameter can be any type except nil .
+
+For this reason, operations on formal parameter type values within generics classes and functions are limited to type-independent operations such as ~==~ and =~==.
+
+With this, it is not possible to write effective processing in the processing within Generics.
+
+So we use type parameter constraints.
 
 
 ** sample
 
-The following is a sample type parameter constraint.
+Here is a sample type parameter constraint:
 
-Here, by declaring ~class Test<T:Val>~, the formal parameters of the Test class are limited to the Val class.
+Here, the declaration ~class Test<T:Val>~ restricts the formal type parameter of the Test class to the Val class.
 
-This allows you to call the Val class method =func()= for the value of val within the =Test.sub()= method.
+This allows you to call the method =func()= of the Val class on the value of val within the =Test.sub()= method.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 abstract class Val {
@@ -248,7 +293,7 @@ class Test<T:Val> {
 #+END_SRC
 
 
-The following is a sample using this Test class.
+Here is an example using this Test class.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 abstract class Val {
@@ -285,19 +330,19 @@ func2( new Test( new Val2() ) );  // this is val2
 #+END_SRC
 
 
-The configuration of this sample is as follows.
-- The Val1 and Val2 classes are classes that inherit from the Val class.
-- The =func()= function has a Test type argument test and calls the =test.sub()= method.
-- ~new Test( new Val1() )~ and ~new Test( new Val2() )~ instantiate the test type of the actual parameters of Val1 and Val2 and call the =func()= function.
+The configuration for this sample is:
+- Val1 and Val2 classes are classes that inherit Val class
+- The =func()= function has an argument test of type Test and calls the =test.sub()= method.
+- ~new Test( new Val1() )~ and ~new Test( new Val2() )~ generate Test type instances of the real type parameters of Val1 and Val2 and call the =func()= function.
 As a result, =Val1.func()= and =Val2.func()= are called and ~this is val1~ and ~this is val2~ are output.
 
-Note that T in ~Test<T:Val>~ must be Val, so a specification such as ~new Test<"abc">~ will result in an error.
+Note that T of ~Test<T:Val>~ must be Val, so specifying ~new Test<"abc">~, for example, will result in an error.
 
-Because "abc" is of type str, str is not of type Val.
+Because "abc" is of type str and str is not of type Val.
 
-By the way, the syntax of the formal parameter constraint is the same as the extend of class.
+By the way, the syntax of formal type parameter constraint is the same as extend of class.
 
-That is, it looks like this:
+So:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 class Hoge<T:SuperClass(IF,...)> {
@@ -305,22 +350,22 @@ class Hoge<T:SuperClass(IF,...)> {
 #+END_SRC
 
 
-Where SuperClass is a class and IF is an interface.
+where SuperClass is the class and IF is the interface.
 
-SuperClass and IF can be omitted respectively.
+SuperClass and IF are optional.
 
 
 * Mapping of generics class
 
-LuneScript has a Mapping feature that transforms an instance of a class into a Map object.
+LuneScript has a Mapping function that converts class instances to Map objects.
 
-For mapping, refer to the following article.
+Regarding Mapping, please refer to the following article:
 
 [[../classmapping]]
 
-To map a class, that class must extend the Mapping interface.
+To map a class, the class must extend the Mapping interface.
 
-The following is a simple example.
+Here is a simple example.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test<T> extend (Mapping) {
@@ -338,11 +383,11 @@ if! let test2 = Test<int>._fromMap( map ) {
 #+END_SRC
 
 
-The Test <T> class extends Mapping. This allows the Test <T> class to be mapped.
+The Test<T> class extends Mapping. This makes the Test<T> class Mappable.
 
-In the above case, nothing is different from the case of a regular class that is not generics. This is because it is not included in the members of the formal parameter type.
+The above case is no different from normal non-Generics classes. This is because it does not have a formal parameter type member.
 
-If you have a member of the formal parameter type as shown below, an error will occur.
+It is an error to have a member of a formal type parameter type as follows.
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test<T> extend (Mapping) {
@@ -351,9 +396,9 @@ class Test<T> extend (Mapping) {
 #+END_SRC
 
 
-This is because in order for a class to extend Mapping, all members held by that class must be able to map, whereas the formal parameter T, which is the type of member txt, is of all types except nilable. Because it can be.
+This is because, in order for a class to extend Mapping, all members of the class must be mappable, whereas the formal type parameter T, which is the type of member txt, can be any type other than nilable. because it can be
 
-To avoid this, set a Mapping constraint on the formal parameter used as the member type.
+To avoid this, place a Mapping constraint on the formal type parameter that you use as the type of the member.
 
 Specifically, it is ~Test<T:(Mapping)>~ as follows.
 #+BEGIN_SRC lns
@@ -370,4 +415,4 @@ if! let test2 = Test<str>._fromMap( map ) {
 #+END_SRC
 
 
-This allows the Generics class to be mapped.
+This makes the Generics class Mappable.

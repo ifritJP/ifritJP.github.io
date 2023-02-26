@@ -1,18 +1,18 @@
-#+TITLE: 09. Repeated syntax
+#+TITLE: 09. Repetition Syntax
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-This time, I will explain the iterative syntax of LuneScript.
+This time I will explain the repeat syntax of LuneScript.
 
 
 * Syntax list
 
-LuneScript supports the following iterative syntax:
+LuneScript supports the following repeat syntaxes:
 - while
-- repeat (to be deleted in the future)
+- repeat (to be removed in the future)
 - for
 - apply
 - foreach
@@ -21,7 +21,7 @@ LuneScript supports the following iterative syntax:
 
 ** while, repeat
 
-While and repeat are used as follows.
+Use while, repeat like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut val = 1;
@@ -40,18 +40,18 @@ print( val ); // 20
 #+END_SRC
 
 
-while processes the block while the expression holds, and repeat processes the block while the expression fails.
+while will process the block while the expression is true, and repeat will process the block while the expression is false.
 
-Variables in scope inside the block are available in repeat expressions.
+A repeat expression can make use of variables scoped inside the block.
 
-*Repeat will be deleted in the future.*
+*Note that repeat will be removed in the future.*
 
 
 ** infinite loop
 
-If you want to use an infinite loop, use while true {}. Where true must be an immediate value.
+Use while true {} for infinite loops. Here true should be an immediate value.
 
-For example, if you use a variable instead of an immediate value as shown below, it will loop infinitely in processing, but it will not be treated as an infinite loop in flow analysis.
+For example, if a variable is used instead of an immediate value as shown below, it will loop infinitely in terms of processing, but it will not be treated as an infinite loop in flow analysis.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 let flag = true;
@@ -60,9 +60,9 @@ while flag {
 #+END_SRC
 
 
-The problem with not being considered an infinite loop is that you can't do the intended flow analysis.
+The problem with not being regarded as an infinite loop is that the intended flow analysis cannot be performed.
 
-For example, LuneScript determines that the =print()= statement after an infinite loop is not processed in the following cases:
+For example, LuneScript determines that the =print()= statement after an infinite loop is not processed if:
 #+BEGIN_SRC lns
 // @lnsFront: error
 while true {
@@ -71,20 +71,20 @@ print( "hoge" );
 #+END_SRC
 
 
-However, if true above is not an immediate value, we assume that it is not an infinite loop and that the =print()= statement may be processed.
+However, if the above true is not the immediate value, then it is determined that it is not an infinite loop and the =print()= statement may be processed.
 
-If something that should not be processed is determined to be processed, what originally causes a compile error does not become an error, and you may miss a code defect.
+If something that should not be processed is judged as processed, what should be a compilation error will not become an error, and there is a possibility that a defect in the code will be overlooked.
 
-Be sure to use immediate true for infinite loops.
+Always use immediate true for infinite loops.
 
 Note that repeat {} false is also not treated as an infinite loop.
 
-I thought it would be better to prepare an instruction dedicated to infinite loops like Rust, but at present it is this specification.
+I thought it would be better to prepare an instruction dedicated to infinite loops like Rust, but the current specification is this.
 
 
 ** for
 
-Use it as follows.
+Use it like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 for count = 1, 10, 1 {
@@ -93,11 +93,11 @@ for count = 1, 10, 1 {
 #+END_SRC
 
 
-It has basically the same specifications as Lua. The above example processes the block by incrementing count by 1 from 1 to 10.
+It is basically the same specification as Lua. The above example increments count from 1 to 10 by 1 and processes the block.
 
-Note that the values 1, 10, 1 are evaluated only once at the start of for.
+Note that the values 1, 10, 1 are only evaluated once at the start of for .
 
-In other words, if you do something like this, it will behave differently than you expected.
+In other words, doing something like the following will not work as expected:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut addVal = 1;
@@ -108,14 +108,14 @@ for count = 1, 10, addVal {
 #+END_SRC
 
 
-*If the value to be incremented is omitted, 1 is used.*
+*If the increment value is omitted, 1 will be used.*
 
 
 ** apply
 
-apply is a Lua for in compatibility instruction.
+apply is a compatibility instruction with Lua's for in.
 
-Use it as follows.
+Use it like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 apply txt of string.gmatch( "hoge.foo.bar", '[^%.]+' ) {
@@ -124,14 +124,14 @@ apply txt of string.gmatch( "hoge.foo.bar", '[^%.]+' ) {
 #+END_SRC
 
 
-Note that the expression given to exp in ~apply val of exp {}~ must be a function call. This is the current limit.
+Note that the expression given to exp in ~apply val of exp {}~ must be a function call. This is a current limitation.
 
 
 ** foreach
 
-foreach is a function that enumerates the elements of lists, arrays, and maps.
+foreach is a function that enumerates the elements of lists, arrays and maps.
 
-Use it as follows.
+Use it like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 foreach val, index in [ 1, 2, 3 ] {
@@ -149,9 +149,9 @@ foreach val in (@ 1, 2, 3 ) {
 #+END_SRC
 
 
-*Set enumerates only values*
+*Set only enumerates values*
 
-The list, array index, and map key can be omitted as follows.
+List, array index, and map key can be omitted as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 foreach val in [ 1, 2, 3 ] {
@@ -166,9 +166,9 @@ foreach val in { "a":100, "b":200, "c":300 } {
 #+END_SRC
 
 
-*It is prohibited to change the enumerated objects during the loop processing of foreach and forsort. The behavior when changed is undefined.*
+*It is prohibited to change the enumerated objects during loop processing of foreach and forsort. If changed, the behavior is undefined.*
 
-For example, the following is prohibited.
+For example, the following are prohibited:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 let mut list = [ 1, 2, 3 ];
@@ -181,9 +181,9 @@ foreach val, index in list {
 
 ** forsort
 
-*If you enumerate the elements with Foreach in Set and Map, the enumeration order of the elements is indefinite.*
+*If the elements of Set or Map are enumerated by foreach, the enumeration order of the elements is undefined.*
 
-When enumerating the elements of Set and Map, forsort enumerates them in the order sorted by key (ascending order).
+forsort enumerates the elements of Set and Map in the order sorted by key (ascending order).
 #+BEGIN_SRC lns
 // @lnsFront: ok
 forsort val, key in { "b":200, "c":300, "a":100 } {
@@ -195,7 +195,7 @@ forsort val in (@ 2, 4, 1, 0 ) {
 #+END_SRC
 
 
-Map forsort can omit the key.
+Map's forsort can omit the key.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 forsort val in { "b":200, "c":300, "a":100 } {
@@ -204,22 +204,22 @@ forsort val in { "b":200, "c":300, "a":100 } {
 #+END_SRC
 
 
-*Since forsort does clone and sort internally, there is some overhead.*
+*forsort internally clones and sorts, so there is overhead for that.*
 
-Also, if the Set type and Map key type are not sortable types, an error will occur.
+Also, if the type of the Set , or the key type of the Map is not a sortable type, an error will occur.
 
 
 ** break
 
-break breaks the innermost iterative control statement.
+break exits the innermost repeat control statement.
 
 There is no continue.
 
 
 * summary
 
-The general control syntax of LuneScript is basically the same as Lua.
+LuneScript's general control syntax is basically the same as Lua's.
 
-The main difference is that we have added foreach and forsort to process lists etc.
+The main difference is the addition of foreach, forsort to handle lists etc.
 
-Next time, I will explain the function.
+I'll explain the functions next time.

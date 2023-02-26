@@ -5,36 +5,36 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-This time, I'll change the schedule a little and explain the cross-compilation of LuneScript.
+This time I will change the schedule a little and explain LuneScript cross-compilation.
 
 
-* Cross-compile
+* cross compilation
 
-"Cross-compilation" here means "cross-compilation" between versions of Lua.
+"Cross-compiling" here means "cross-compiling" between versions of Lua.
 
-When transcompiling to Lua, LuneScript transcompiles according to the version of Lua running LuneScript.
+When LuneScript transcompiles to Lua, it will transcompile according to the Lua version running LuneScript.
 
-For example, the following control is performed.
-- When running on Lua5.2, bitwise operations use the bit32 library.
-- When running on Lua5.3, bitwise operations use Lua's built-in operators.
-Cross-compiling transcompiles the output Lua code to the specified Lua version instead of the version of Lua running LuneScript.
+For example, the following controls are performed.
+- When running on Lua5.2, bit operations use the bit32 library.
+- When running in Lua5.3, bitwise operations make use of Lua's built-in operators.
+Cross-compiling will transcompile the Lua code you emit to the specified Lua version instead of the Lua version running your LuneScript.
 
-This allows you to:
+This allows you to do things like:
 
-  "Run LuneScript on Lua5.3 and transcompile to Lua5.1"
+  "Run LuneScript with Lua5.3 and transcompile to Lua5.1"
 
 
 ** how to use  
 
-To use it, simply specify the version with the -ol option as follows:
+To use it, just specify the version with the -ol option as follows:
 #+BEGIN_SRC sh
 $ lnsc src.lns lua -ol 51
 #+END_SRC
 
 
-The above example transcompiles src.lns for lua5.1 and prints the result to stdout.
+The above example will transcompile src.lns for lua5.1 and print the result to stdout.
 
-The values specified for the -ol option are as follows:
+The values specified for the -ol option are as follows.
 |-|-|
 | option | version | 
 |-+-|
@@ -45,46 +45,46 @@ The values specified for the -ol option are as follows:
 The -ol option can be specified with save and lua.
 
 
-* LuneScript for Lua5.1
+* Lua5.1 support for LuneScript
 
-Until now, LuneScript required Lua5.2 and Lua5.3 to execute, but with the above cross-compilation support, it can now be executed with Lua5.1 as well.
+Until now, LuneScript required Lua5.2 and Lua5.3 to run, but with the above cross-compiling support, Lua5.1 can now run.
 
-Since LuneScript is self-hosting that develops itself in LuneScript, it is compatible with Lua5.1 by cross-compiling LuneScript itself.
+Since LuneScript itself is self-hosting developed with LuneScript, Lua5.1 is supported by cross-compiling LuneScript itself.
 
-*By developing with LuneScript, in addition to "increasing productivity", there is an advantage that "it can absorb the difference in Lua version to some extent".*
+*Developing with LuneScript has the advantage of being able to "absorb Lua version differences to some extent" in addition to "increasing productivity".*
 
-*However, it can only be absorbed to some extent.*
+*However, it can only be absorbed to a certain extent.*
 
-Lua5.1 has the limitations described in the next section.
+Lua5.1 has limitations that are explained in the next section.
 
 
-** Lua5.1 Limits
+** Limitations of Lua5.1
 
-Transcompiling LuneScript code to Lua5.1 has the following restrictions:
+Transpiling LuneScript code to Lua5.1 has the following limitations:
 
-//It's more of a Lua5.1 limitation than a LuneScript limitation. ..//
-- The class destructor cannot be used.
-- Bitwise operations cannot be used.
-- % G is not available for character classes such as =find()=.
-- When% s and% q are specified in the =string.format()= format, only character strings can be specified.
-In the above, for destructors and bit operations, an error is output at compile time, but for% g,% s,% q, an error is not output at compile time, so be careful.
+//It's more of a Lua5.1 limitation than a LuneScript limitation. .//
+- Class destructor not available.
+- Bit operations cannot be used.
+- %g is not available for character classes such as =find()=.
+- If you specify %s, %q in the =string.format()= format, you cannot specify anything other than a character string.
+In the above, regarding destructors and bit operations, an error will be output during compilation, but regarding %g, %s, %q, an error will not be output during compilation, so be careful.
 
-However, regarding% s and% q, the following pattern avoids an error by adding =tostring()= at the time of transcompiling.
+However, regarding %s and %q, the following pattern avoids errors by adding =tostring()= during transcompiling.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 print( string.format( "%d,%s,%s,%s",  1, 1.0, {}, [] ) );
 #+END_SRC
 
 
-As mentioned above, the format format using a literal string looks at% s and the corresponding data type, and if it is not str, adds =tostring()= as follows.
+As above, the format format using a literal string looks at the %s and the corresponding data type, and appends =tostring()= as follows if it's not a str.
 #+BEGIN_SRC lua
 print( string.format( "%d,%s,%s,%s", 1, tostring( 1.0), tostring( {}), tostring( {}) ) )
 #+END_SRC
 
 
-This conversion is possible only when using literal strings.
+This conversion is only possible when using literal strings.
 
-For example, the following cases cannot be converted.
+For example, the following cannot be converted.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let formatTxt = "%d,%s,%s,%s";
@@ -97,8 +97,8 @@ print( string.format( formatTxt,  1, 1.0, {}, [] ) );
 
 LuneScript supports cross-compilation between versions of Lua.
 
-This will support execution on Lua5.1, Lua5.2, Lua5.3.
+This supports running on Lua5.1, Lua5.2 and Lua5.3.
 
-However, Lua5.1 has its limitations.
+However, Lua5.1 has limitations.
 
-Next time, I will talk about classes.
+Next time, I will explain the class.

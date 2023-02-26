@@ -1,0 +1,110 @@
+#+TITLE: 80.4 WebAssembly support for LuneScript
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+There are two ways to run code created in LuneScript on a web browser.
+- Transcompile from LuneScript to Lua and run the Lua code with fengari etc.
+- Transcompile from LuneScript to go and convert that go code to WebAssemly
+Here's how to convert from go to WebAssemly.
+
+
+* Converting from go to Web Assemblies
+
+Converting from go to WebAssemly takes advantage of go functionality.
+
+For the basic flow of how to use WebAssembly in go, please refer to the following official document.
+
+<https://github.com/golang/go/wiki/WebAssembly>
+
+Here we are talking about LuneScript specific.
+
+
+** Lua runtime uses gopherlua
+
+To convert your LuneScript code to a go app, you need a Lua runtime.
+
+LuneScript supports two runtimes for Lua:
+- Official Lua runtime
+- gopherlua
+Here, the "official Lua runtime" is not available for WebAssembly, so gopherlua will be used.
+
+Therefore, the command for converting from go to WebAssembly will specify =-tags gopherlua= as follows.
+: $ GOOS=js GOARCH=wasm go build -tags gopherlua -o main.wasm
+
+
+
+** Cooperation between JavaScript and LuneScript
+
+Interaction between JavaScript and LuneScript is possible while main() is running.
+
+Conversely, in order to work with LuneScript asynchronously from JavaScript, it is necessary to wait without finishing LuneScript processing.
+
+There are two ways to achieve this waiting process.
+- go process in external module
+- Make use of __AsyncItem
+I will explain below.
+
+
+*** go process in external module
+- Create a go channel and read data from that channel.
+- Define this process as an external module of go, and execute that module with a LuneScript module declaration, etc.
+
+
+*** Make use of __AsyncItem
+- Use LuneScript's __AsyncItem interface to create a pipe and read data from that pipe.
+- Define your own class that extends the __AsyncItem interface and create a pipe from that class.
+- Use the put and get methods of this pipe.
+- In the following sample, loop() is the waiting process, and notify() is the data writing process to the pipe.
+- By using this notify(), you can receive asynchronous messages from JavaScript.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+pub class AsyncItem extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+let queue = __lns.Sync._createPipe( AsyncItem, 0 );
+
+fn loop() {
+  when! queue {
+    while true {
+       let! item = queue.get() {
+          break;
+       };
+       print( item.$val );
+    }
+  }
+}
+pub fn notify( val:str ) {
+   when! queue {
+      queue.put( new AsyncItem( val ) );
+   }
+}
+#+END_SRC
+
+
+
+** Asynchronous processing in LuneScript
+
+In the current state of WebAssembly, asynchronous processing within LuneScript behaves the same as when the following is specified:
+: GOMAXPROCS=1
+
+
+In other words, while one process is running, the other process is not running.
+
+Processing switches at the timing of waiting for __asyncLock or pipe.
+
+Except for __asyncLock and pipe, if any process blocks, the whole process will stop until that block is exited.
+
+
+* tinygo
+
+There are two ways to convert from go to WebAssembly: using official go and using tinygo.
+
+It seems that using tinygo makes it easier to work with WebAssembly size and JavaScript.
+
+However, at the moment, the latest tinygo v0.22.0 does not support packages used by LuneScript, so tinygo cannot be used.
+
+that's all.

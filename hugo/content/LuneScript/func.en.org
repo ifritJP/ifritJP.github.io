@@ -5,11 +5,11 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-This time, I will explain the functions of LuneScript.
+This time, I will explain the function of LuneScript.
 
 
 * Function definition
-The LuneScript function is defined as follows:
+LuneScript functions are defined like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn add_sub( val1:int, val2:int ): int, int {
@@ -19,37 +19,37 @@ print( add_sub( 1, 2 ) ); // 3, -1
 #+END_SRC
 
 
-The above example defines the following function:
+The example above defines the following functions:
 |-|
-| Definition | 
+| definition | 
 |-|
-| Function name | add_sub | 
+| function name | add_sub | 
 | First argument name | val1 | 
 | First argument type | int | 
 | Second argument name | val2 | 
 | Second argument type | int | 
-| First return type | int | 
-| Second return type | int | 
+| primary return type | int | 
+| Secondary return type | int | 
 
 LuneScript can return multiple return values.
 
 
 *** Return value
 
-Use the return statement for the return value of the function.
+Function return values use the return statement.
 
-The function can return multiple values.
+Functions can return multiple values.
 
-See below for multi-valued return values.
+See below for multi-value return values.
 
 [[../multipleretval]]
 
 
-* Function that does not return
+* Functions that do not return
 
-Some functions do not return processing.
+Some functions do not return.
 
-Here is an example:
+For example:
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func(): __ {
@@ -61,15 +61,15 @@ print( 1 ); // error
 #+END_SRC
 
 
-In this example, =func()= is an infinite loop. Therefore, =func()= will not return any processing.
+In this example, =func()= is an infinite loop. Therefore, =func()= will not return processing.
 
-To make this clear, the return type of =func()= is ~__~. ~__~ indicates that it is a function that does not return processing.
+To make this explicit, the return type of =func()= is ~__~. ~__~ indicates that the function does not return.
 
-This tells us that the next =print()= statement after =func()= will not be processed, resulting in an error.
+This will tell us that the =print()= statement following =func()= is not processed and will result in an error.
 
-Note that a function whose return type is ~__~ must not return processing.
+Note that functions with a return type of ~__~ must not return.
 
-For example, if you break as follows, the process will be returned from =func()= because the loop will be broken. In such a case, an error will occur.
+For example, if you break as follows, the loop will be exited, so the process will return from =func()=. An error will occur in such cases.
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func(val:int): __ {
@@ -83,18 +83,18 @@ fn func(val:int): __ {
 
 
 
-* Variadic argument, return value
+* variable length arguments, return value
 
-Variadic arguments and return values can be used.
+Variable length arguments and return values are available.
 
 See the following article for details.
 
 [[../arg]]
 
 
-* Definition location
+* definition location
 
-Functions can be defined wherever a statement can be written. Specifically, it can be defined in the block as follows.
+Functions can be defined anywhere a statement can be written. Specifically, you can define it inside a block like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn sub():int {
@@ -123,9 +123,9 @@ print( sub() ); // 6
 Functions with the same name can be defined in different scopes.
 
 
-* Public function
+* public function
 
-Functions, like variables, can be exposed to the outside world using pub.
+Functions, like variables, can be exposed externally using pub.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 pub fn func(): int {
@@ -134,7 +134,7 @@ pub fn func(): int {
 #+END_SRC
 
 
-By specifying pub, it becomes a function that can be accessed from the outside.
+Specifying pub makes the function accessible from the outside.
 
 global is also available.
 #+BEGIN_SRC lns
@@ -145,20 +145,20 @@ global fn func(): int {
 #+END_SRC
 
 
-The global declaration of a function has the same restrictions as the global declaration of a variable.
+Global declarations of functions have the same restrictions as global declarations of variables.
 
-*"A function declared global is valid when the module that declares the function is imported."*
+*"A function declared global becomes effective when the module that declares it is imported."*
 
-External exposure of functions has the following restrictions:
+Exposing functions externally has the following restrictions:
 
-*"Externally exposed functions must be declared in the top-level scope of the script."*
+*"Functions exposed to the outside world must be declared at the topmost scope of the script"*
 
 
 * form type
 
-*LuneScript can handle function objects as values. You can use form as the type of a special function object.*
+*LuneScript can treat function objects as values. You can use form as a special function object type.*
 
-The following is an example of using form.
+Here's an example of using form:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn test() {
@@ -172,12 +172,12 @@ sub( test ); // hoge
 
 
 This example has the following configuration:
-- Define function test
+- Define a function test
 - The function sub has an argument of type form
-- Execute sub with test as an argument
-This will run test inside sub and print hoge.
+- Execute sub with test as argument
+This will run test inside sub and print hoge .
 
-The form type is treated as the following function.
+In addition, the form type is treated as the following functions.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 fn func(...):... {}
@@ -185,15 +185,15 @@ fn func(...):... {}
 
 
 
-** Function type that can be assigned to form type
+** A function type that can be assigned to a form type
 
-As mentioned above, form is synonymous with ~fn func(...):... {}~.
+As above, form is synonymous with ~fn func(...):... {}~.
 
-Also, =...= represents zero or more =stem!=s.
+Also, =...= represents zero or more =stem!=.
 
-That is, functions with stem! Arguments can be assigned to form types, and functions with non-stem! Arguments cannot be assigned.
+This means that functions with arguments of type stem! are assignable to type form , and functions with arguments of non-stem! are unassignable.
 
-If it can be assigned, the next call to func2 (nil) will call func (nil), which will result in incorrect behavior.
+If it can be assigned, the next call to func2( nil ) will call func( nil ), resulting in incorrect behavior.
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func( val:int ) {
@@ -204,7 +204,7 @@ func2( nil );
 #+END_SRC
 
 
-The following are examples of substitutable and non-substitutable cases.
+Here are examples of substitutable and non-substitutable cases.
 #+BEGIN_SRC lns
 // @lnsFront: error
 let form1:form = fn ( val1:stem! ) { };
@@ -214,14 +214,14 @@ let form4:form = fn ( val1:stem!, val2:stem ) { }; // error
 #+END_SRC
 
 
-The above form1 and form3 can be assigned, and form2 and form4 cannot be assigned.
+The above form1 and form3 are assignable, but form2 and form4 are not assignable.
 
 
 ** form declaration
 
-As mentioned above, form can handle only some types of functions.
+As mentioned above, only some types of functions can be handled by form.
 
-To handle a function that cannot be handled by form, declare the form as follows.
+To handle functions that cannot be handled by form, declare form as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 form funcform( val:int ):int;
@@ -232,16 +232,16 @@ sub( fn ( val:int ):int { return val + 1; } ); // 3
 #+END_SRC
 
 
-In this example, funcform is declared as form.
+This example declares funcform as a form .
 
-The form declaration makes funcform a functional type with an int type val as an argument and an int type as a return value.
+The form declaration makes funcform a function type with an int type val as an argument and an int type return value.
 
 
 * anonymous function
 
-An anonymous function defines a function that has no name.
+An anonymous function defines a function without a name.
 
-The following is an example of an anonymous function.
+Here is an example of an anonymous function:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn sub( func:form ) {
@@ -253,39 +253,39 @@ sub( fn ( val:stem! ) { print( val ); } );  // 1
 
 This example defines the anonymous function ~fn ( val:int ) { print( val ); }~.
 
-By passing this anonymous function as an argument to =sub()=, the anonymous function will be executed within =sub()=.
+By passing this anonymous function to the argument of =sub()=, the anonymous function will be executed in =sub()=.
 
-Anonymous function declarations are expressions.
-
-
-* Function call
-
-Adding ~()~ to a function object will execute that function.
-
-The types of the formal and actual arguments of the function must match. The omitted actual argument is treated as nil. If the formal argument corresponding to the omitted actual argument is not nilable, an error will occur.
+An anonymous function declaration is an expression.
 
 
-** Omission of arguments
+* function call
 
-Check the following article for omission of arguments.
+Attaching ~()~ to a function object causes that function to be executed.
+
+The types of function formal and actual arguments must match. Note that omitted actual arguments are treated as nil. It is an error if the dummy argument corresponding to the omitted actual argument is not nilable.
+
+
+** Omitting Arguments
+
+Please check the following article about omitting arguments.
 
 [[../defaultarg]]
 
 
-* Function restrictions
+* Function limits
 
-LuneScript functions cannot be overloaded due to different arguments.
+LuneScript functions cannot be overloaded with different arguments.
 
 
 * summary
 
-To summarize the LuneScript functions,
+Summarizing the functions in LuneScript,
 - Declare with fn
-- Can have multiple return values
-- Has variable length arguments and return values
+- can have multiple return values
+- Can have variable length arguments and return values
 - Publish functions to external modules with pub, global
-- Function object types use form types and form declarations
-- There is an anonymous function
-- The omitted actual argument contains nil
-- No function overload
-Next time, I will talk about nilable.
+- Function object type uses form type and form declaration
+- have anonymous functions
+- Omitted actual argument contains nil
+- no function overloads
+Next time, I will explain nilable.

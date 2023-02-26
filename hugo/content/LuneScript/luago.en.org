@@ -1,4 +1,4 @@
-#+TITLE: 82. Collaboration with Lua
+#+TITLE: 82. Linking with Lua
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
@@ -7,26 +7,26 @@
 
 LuneScript can execute Lua code.
 
-This feature is preserved after transcompiling to the go language, but there are a few things to keep in mind.
+This feature is preserved even after transpiling to the go language, but there are some caveats.
 
-Be especially careful with the combination of asynchronous processing and lua code execution.
+Be particularly careful when combining asynchronous processing with lua code execution.
 
 
 * Luaval
 
-*As already explained in the link, the result executed by lua is managed by Luaval type.*
+*As already explained in the link destination, the result of lua is managed by Luaval type.*
 
 [[../lua]]
 
 This Luaval type data has the following restrictions.
 
-*The Lua VM that you run to get the data dataA of type Luaval and the Lua VM that you run to access that dataA must be the same Lua VM.*
+*The Lua VM executed when retrieving a certain Luaval type data dataA and the Lua VM executed when accessing that dataA must be the same Lua VM.*
 
 *The behavior is undefined if this limit is not met.*
 
-If you do not handle Luaval in asynchronous processing, you need to be aware of which Lua VM is used because only one Lua VM is used.
+If Luaval is not handled in asynchronous processing, the number of Lua VMs that are used is limited to one, so there is no need to be aware of which Lua VM is used.
 
-*Note that "access to Luaval type data" does not include assignments between variables. In other words, the next ~work = val~ is not "access to Luaval type data", so you don't need to be aware of the Lua VM.*
+*Note that "access to Luaval type data" does not include assignment between variables. In other words, the following ~work = val~ is not "Access to Luaval type data", so you don't need to be aware of Lua VM.*
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( val:&Luaval<&List<int>> ) {
@@ -36,38 +36,38 @@ fn func( val:&Luaval<&List<int>> ) {
 
 
 
-* Lua VM type
+* Types of Lua VMs
 
 There are two types of Lua VMs:
 - Lua VM running with __noasync
-- Lua VM running on __async
+- Lua VM running with __async
   - Lua VM for __async exists for each asynchronous thread
 
-When you run lua, you need to control which Lua VMs you access.
+When running lua, you need to control which Lua VMs are accessed.
 
-*The lua access block controls this.*
+*The lua access block provides this control.*
 
 
-* lua access block
+* block lua access
 
-*There are the following types of lua access blocks: Also, the lua access block to use depends on whether the function to be accessed is __async or __noasync.*
+*The types of lua access blocks are: Also, the lua access block to be used differs depending on whether the accessing function is __async or __noasync.*
 - __luago
-  - Used when accessing lua from the __noasync function
-  - This is a Lua VM for __noasync to access lua.
+  - Used to access lua from __noasync functions
+  - This accesses lua with the Lua VM for __noasync.
 - __luaLock
   - Used when accessing lua from __async functions
   - This is equivalent to the combination of __asyncLock and __luago.
 - __luaDepend
   - Used when accessing lua from __async functions
-  - It is accessed by lua for the Lua VM associated with the currently running thread.
-  - That is, if the currently running thread is __noasync, it will be accessed by the __noasync Lua VM, and if the currently running thread is __async, it will be accessed by the __async Lua VM.
+  - This is accessed by lua for the Lua VM associated with the currently executing thread.
+  - In other words, if the currently executing thread is __noasync, it will be accessed with the Lua VM for __noasync, and if the currently executing thread is __async, it will be accessed with the Lua VM for __async.
 
-*__luaDepend requires great care as the Lua VM used is determined at run time.*
+*__luaDepend is tricky because the Lua VM used is determined at runtime.*
 
 
 ** sample
 
-Below is a sample that executes the lua code.
+Below is a sample that runs the lua code.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 __luago {
@@ -88,29 +88,29 @@ return { val1 = 10, val2 = 20 }
 #+END_SRC
 
 
-The code =return { val1 = 10, val2 = 20 }= of lua assigned to the variable code is executed, and the resulting Map is enumerated and output by foreach.
+The lua code =return { val1 = 10, val2 = 20 }= assigned to the variable code is executed, and the resulting Map is enumerated and output using foreach.
 
-At the beginning of this, we declare __luago.
-
-
-** Use of lua access block properly
-
-As mentioned above, in order to access Lua from asynchronous processing, it is necessary to use __luaLock and __luaDepend of the lua access block properly.
-
-However, you shouldn't use __luaDepend unless you're doing a lot of Lua's heavy work asynchronously.
-
-By limiting to __luago and __luaLock instead of using __luaDepend, you may be able to minimize the load process in the Lua VM, reduce memory usage, and result in more efficient processing than running asynchronously.
-
-*Also, if you use __luaDepend, you need to be careful about the lua VM used, and if you make a mistake, you will get uncertain results at run time.*
-
-In order to use __luaDepend, it is necessary to carefully consider the advantages and disadvantages of asynchronous processing.
+At the top of this, we declare __luago .
 
 
-*** Cases where it is better to use __luaDepend
+** Proper use of lua access block
 
-=string.gmatch()= requires a lua access block to access lua.
+As mentioned above, to access Lua from asynchronous processing, it is necessary to use __luaLock and __luaDepend of the lua access block properly.
 
-At this time, the Luaval data handled by =string.gmatch()= is closed in the apply block, so it is more efficient and safe to use __luaDepend.
+However, you shouldn't use __luaDepend unless you're doing heavy Lua work asynchronously.
+
+By limiting to __luago and __luaLock without using __luaDepend , the load processing in the Lua VM can be minimized, memory usage can be reduced, and as a result processing can be performed more efficiently than asynchronous execution.
+
+*Also, when using __luaDepend, you have to be careful with the lua VM used, getting it wrong can lead to undefined results at runtime.*
+
+To use __luaDepend, it is necessary to consider the advantages and disadvantages of asynchronous processing.
+
+
+*** When to use __luaDepend
+
+=string.gmatch()= needs lua access block to access lua.
+
+At this time, the Luaval data handled by =string.gmatch()= is closed in the apply block, so using __luaDepend is more efficient and safer.
 #+BEGIN_SRC lns
 // @lnsFront: skip
    let mut list:List<str> = [];

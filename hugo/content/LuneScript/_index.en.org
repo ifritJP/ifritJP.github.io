@@ -1,4 +1,4 @@
-#+TITLE: Making Lua easier with the transcompiler LuneScript !!
+#+TITLE: Easier Lua development with the transcompiler LuneScript!!
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+DATE: 2020/1/1
@@ -6,55 +6,61 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-*There is TypeScriptToLua that converts from TypeScript to Lua.*
+*There is TypeScriptToLua to convert from TypeScript to Lua.*
 
 <https://typescripttolua.github.io/>
 
+*See below for the future of LuneScript.*
+
+<https://ifritjp.github.io/blog2/public/posts/2021/2021-05-26-lunescript-plan/>
+
 -----
 
-Lua is a very compact language with high potential.
+Lua is a very compact language, yet a language with high potential.
 
-It can be said that it is one of the easiest languages to use as a language to be incorporated into a program.
+I think it's safe to say that it is one of the easiest languages to use when it comes to programming.
 
-However, although it is "easy to use as a language to be incorporated into a program", it is a fact that there are various points of concern compared to the language of Imadoki.
+However, although it is "easy to use as a language to be incorporated into a program", it is also true that there are various things to worry about when compared to modern languages.
 
-On the other hand, the evolution of features to bring Lua closer to the language of Imadoki could be a trade-off with one of Lua's major features of being "compact."
+On the other hand, functional evolution to bring Lua closer to the modern language may be a trade-off with one of the major features of Lua, which is "compactness".
 
-Therefore, I will introduce the transcompiler LuneScript that can cover the parts of Lua that you care about without modifying Lua itself.
+Therefore, I would like to introduce a transcompiler LuneScript that can cover the parts of Lua that you are interested in without modifying Lua itself.
 
 
 * What is LuneScript
 
-LuneScript is a language that covers Lua's concerns as mentioned above, and is a transcompiler that can convert code developed with LuneScript into Lua code.
+LuneScript is a language that covers the concerns of Lua as mentioned above, and is a transcompiler that can convert the code developed in LuneScript into Lua code.
 
-LuneScript has the following features.
-- NULL safety.
-- Since it is a statically typed language, simple mistakes can be found at compile time by type checking.
-- Type inference minimizes the effort of type declaration.
-- With generics, it is possible to process while preserving type information.
-- Supports class definition as language grammar.
+LuneScript has the following characteristics.
+- null safety.
+- Since it is a statically typed language, simple mistakes can be found at compile time through type checking.
+- Minimize the effort of type declaration by type inference.
+- generics allows processing while preserving type information.
+- Support class definition as language grammar.
 - Supports pattern matching. (match)
-- Reduced load time due to lazy loading.
-- Mutual conversion between structured and unstructured data. (Mapping)
-- With macros, it is possible to realize designs that do not rely on dynamic processing such as polymorphism.
-- Detects variable initialization omission
-- Transcompile to Lua and go.
-- Supports JSON-compatible data representation.
-- The transcompiled Lua code can operate independently without assuming an external library.
-- The transcompiled Lua code outputs the processing written in LuneScript as it is, so there is no performance degradation.
-- Existing Lua external modules available from LuneScript.
-- LuneScript runs on Lua and requires only Lua standard modules, so it's easy to deploy.
-  - With the go version of LuneScript, transcompile time can be reduced to 1/20.
+- Faster load times with lazy loading.
+- Conversion between structured and unstructured data. (Mapping)
+- Macros can realize designs that do not rely on dynamic processing such as polymorphism.
+- Detect missing initialization of variables
+- Error delegation of functions with the =!= operator
+  - [[./error]]
+- Transcompiling to Lua and go.
+- Supports data representation compatible with JSON.
+- Transcompiled Lua code can work independently without any external libraries.
+- Transcompiled Lua code is output as it is written in LuneScript, so there is no performance degradation.
+- Existing Lua external modules can be used from LuneScript.
+- LuneScript runs on Lua and does not require anything other than Lua standard modules, so it is easy to introduce.
+  - Transcompile time can be reduced to 1/20 by using the go version of LuneScript.
 - Lua modules converted from LuneScript can be used from other Lua modules.
-- Supports Lua5.1 ~ 5.4.
-  - See below for Lua5.1.
+- Supports Lua5.1 to 5.4.
+  - For Lua5.1 see:
   - [[./crosscompile]]
-- LuneScript is self-hosted.
+- LuneScript is developed by self-hosting.
 - Supports code completion in emacs
-- Supports tag jump by lnstags
+- Support for tag jumps with lnstags
   - [[./lnstags]]
 - Supports automatic generation of glue code
-- The learning cost is low because it is based on the syntax of Lua and C.
+- Learning cost is low because it is based on Lua and C syntax.
 
 
 * How to use LuneScript
@@ -72,7 +78,7 @@ Please refer to the following for the installation method.
 
 Installing LuneScript installs the lnsc command.
 
-For information on how to use the lnsc command, refer to the following article.
+For information on how to use the lnsc command, please refer to the following article:
 - Hello world
   - [[./tutorial3.hello]]
 
@@ -89,10 +95,10 @@ LuneScript supports cross-compilation between versions of Lua. Please refer to t
 This section describes the specifications of LuneScript.
 
 
-** Value and type
+** value and type
 
-Please refer to the following article for the values and types handled by LuneScript.
-- Value edition
+Please refer to the following article for values and types handled in LuneScript.
+- value
   - [[value]]
 - enum edition
   - [[enum]]
@@ -100,7 +106,7 @@ Please refer to the following article for the values and types handled by LuneSc
 
 ** comment
 
-Comments adopt C ++ style. One-line comment ~//~ and multi-line comment ~/* */~ can be specified.
+Comments use C++ style. Single-line comment ~//~ and multi-line comment ~/* */~ can be specified.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 // 行末までコメント
@@ -112,41 +118,41 @@ Comments adopt C ++ style. One-line comment ~//~ and multi-line comment ~/* */~ 
 
 ** operator
 
-In principle, use the same operator as Lua.
+In principle, operators use the same ones as Lua.
 
-Note that // (truncate division) in Lua5.3 is a one-line comment in LuneScript.
+Note that Lua5.3's // (truncated division) is a one-line comment in LuneScript.
 
-In LuneScript, / between ints is automatically truncated and divided.
+In LuneScript, / between ints is automatically rounded down and divided.
 
 
 ** Variable declaration
 
 Please refer to the following article for LuneScript variables.
-- Variable edition
+- variable
   - [[variable]]
 
 
 ** General control statement
 
-Please refer to the following for the control statement of LuneScript.
+Please refer to the following for LuneScript control statements.
 - General branch
   - [[branch]]
-- Repeated syntax
+- Repeat syntax
   - [[loop]]
 
 
-** Function declaration
+** function declaration
 
-For LuneScript functions, refer to the following.
-- Function
+For LuneScript functions, please refer to the following.
+- Functions
   - [[func]]
 
 
 ** nilable
 
-LuneScript is a nil-safe (null-safe) language.
+LuneScript is a nil-safe (NULL-safe) language.
 
-For nilables that provide LuneScript nil safety, see:
+Please refer to the following for nilable which realizes nil safety of LuneScript.
 - nilable edition
   - [[nilable]]
 
@@ -155,24 +161,24 @@ For nilables that provide LuneScript nil safety, see:
 
 LuneScript supports classes for object-oriented programming.
 
-LuneScript classes have the following restrictions:
+Classes in LuneScript have the following constraints:
 - Does not support multiple inheritance.
-- +Does not support generics.+
-- All are methods that can be overridden.
-  - Overrides cannot be suppressed.
-- You cannot define a method with the same name that has different arguments between inheritances.
-  - The exception is the constructor, which has the same name (__init).
+- +generics are not supported.+
+- All are overridable methods.
+  - You cannot suppress overrides.
+- A method with the same name with different arguments cannot be defined between inheritances.
+  - The only exception is that the constructor has the same name ( __init ).
 
 Please refer to the following article.
-- Class basics
+- Basic class
   - [[class1]]
 - accessor edition
   - [[class2accessor]]
-- Class inheritance
+- class inheritance
   - [[classinherit]]
-- Class advertise edition
+- class advertise
   - [[classadvertise]]
-- Class override
+- Class override edition
   - [[classoverride]]
 - Interface
   - [[interface]]
@@ -180,13 +186,13 @@ Please refer to the following article.
 
 *** prototype declaration
 
-LuneScript parses the script in order from the top.
+LuneScript parses the script from top to bottom.
 
-The symbols referenced in the script must be predefined. For example, to declare a variable of type TEST, you need to define the class TEST in advance.
+Symbols referenced in scripts must be previously defined. For example, before declaring a variable of type TEST, the class TEST must be defined.
 
-Also, in order to define classes that refer to each other, it is necessary to declare one of them as a prototype.
+Also, to define classes that refer to each other, one of them must be prototyped.
 
-The following is an example when ClassA and ClassB cross-reference each.
+The following is an example when ClassA and ClassB cross-reference each other.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 pub class Super {
@@ -201,9 +207,9 @@ pub class ClassB extend Super{
 #+END_SRC
 
 
-proto declares as above.
+Declare proto as above.
 
-You must declare the same thing, such as pub or extend, in the prototype declaration and the actual definition.
+The prototype declaration and the actual definition must declare the same things such as pub and extend.
 
 
 ** Mapping
@@ -219,7 +225,7 @@ Please refer to the following for Mapping.
 
 ** Generics
 
-LuneScript supports Generics.
+LuneScript supports generics.
 
 See below for details.
 - generics edition
@@ -228,34 +234,34 @@ See below for details.
 
 ** nil conditional operator
 
-It supports the nil conditional operator as an easy way to work with nilable values.
-- nil conditional operator edition
+It supports the nil conditional operator as an easy way to handle nilable values.
+- nil conditional operator
   - [[nilcond]]   
 
 
 ** module
 
-For information on LuneScript module management, refer to the following.
-- import / provide
+For LuneScript module management, please refer to the following.
+- import/provide edition
   - [[import]]
-- require / module edition
+- require/module edition
   - [[require]]
 
 
-* Build
+* build
 
-For information on how to build a project using LuneScript, please refer to the following.
-- Build edition
+Please refer to the following for how to build a project using LuneScript.
+- build
   - [[make]]  
 
 
 ** _lune.lua module
 
-As mentioned above, a file transcompiled to Lua with LuneScript can be executed as is with the Lua command. At this time, no external module is required.
+As mentioned above, files transcompiled to Lua with LuneScript can be executed as-is with the Lua command. At this time, no external module is required.
 
-This means that the transcompiled Lua code contains all the code needed for processing.
+This indicates that you have included all the code necessary for processing within the transcompiled Lua code.
 
-For example, if you transcompile the following processing code,
+For example, if you transcompile the following processing code:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( val:int! ):int {
@@ -264,7 +270,7 @@ fn func( val:int! ):int {
 #+END_SRC
 
 
-The Lua code is quite long, like this:
+The Lua code is much longer, like this:
 #+BEGIN_SRC lua -n
 --mini.lns
 local _moduleObj = {}
@@ -293,9 +299,9 @@ return _moduleObj
 #+END_SRC
 
 
-The 4th to 18th lines are the processing required for unwrap. Note that this code will be output to all Lua files.
+Lines 4 to 18 are the processing required for unwrap. Note that this code is output to all Lua files.
 
-*Since this code itself is a common process, you can require it as a separate module and combine the common processes by specifying the -r option when transcompiling.*
+*Since this code itself is a common process, by specifying the -r option when transcompiling, you can require it as a separate module and combine common processes.*
 
 Specifically, specify the -r option as follows.
 #+BEGIN_SRC txt
@@ -303,7 +309,7 @@ $ lua lune/base/base.lua -r src.lns save
 #+END_SRC
 
 
-With this -r option, the above code is translated as follows, which is pretty neat.
+With this -r option, the above code would be transformed into the following, much cleaner.
 #+BEGIN_SRC lua
 --mini.lns
 local _moduleObj = {}
@@ -317,38 +323,38 @@ return _moduleObj
 #+END_SRC
 
 
-Note that require ("lune.base._lune") will be inserted, so this module must be set so that it can be loaded. You don't need to be aware of this if you are in an environment where the transcompiler works, but you need to be careful if you run the converted Lua source in some other environment.
+Note that require( "lune.base._lune" ) will be inserted, so you need to set this module so that it can be loaded. You don't need to be aware of this if the transcompiler operates in an environment, but you need to be careful when executing the converted Lua source in some other environment.
 
 
 ** macro
 
-LuneScript uses simple macros.
+LuneScript employs simple macros.
 
 
 *** Significance of macro
 
-Macros have some limitations compared to regular functions. In addition, processing that can be performed by macros can often be realized by making full use of object orientation.
+Macros have some restrictions compared to ordinary functions. In addition, most of the processing that can be performed by macros can be realized by making full use of object orientation.
 
 So what's the point of using macros?
 
-That is, "the operation is statically determined by using a macro".
+That is, "the operation is statically determined by using macros".
 
-If the same process is realized in an object-oriented manner, it will be a dynamic process. On the other hand, if it is realized by a macro, it will be a static process.
+If the same processing is implemented in an object-oriented manner, it becomes dynamic processing. On the other hand, if implemented by a macro, it becomes a static process.
 
-What makes you happy about this?
+What do you enjoy about this?
 
-It is the same as that statically typed languages are superior to dynamically typed languages.
+It's the same advantage statically typed languages have over dynamically typed languages.
 
-By statically processing the statically determined information, it can be analyzed statically.
+Static analysis is possible by statically processing statically determined information.
 
-For example, most object-oriented function overrides can be resolved statically by using macros. Making static function calls rather than dynamic function overrides makes it easier to follow the source code.
+For example, most object-oriented function overrides can be resolved statically through the use of macros. By using static function calls instead of dynamic function overrides, it becomes easier to follow the source code.
 
-It is not good to use macros indiscriminately, but it is not ideal to easily use dynamic processing such as function overriding.
+It is not good to use macros recklessly, but it is also not ideal to make dynamic processing such as function overriding easily.
 
-It is necessary to use dynamic processing and macros properly.
+Dynamic processing and macros need to be used properly.
 
 
-*** Macro definition
+*** macro definition
 
 Please refer to the following article for macro definition.
 - Macro edition
@@ -357,12 +363,12 @@ Please refer to the following article for macro definition.
 
 ** supplement
 
-For supplementary articles, we will add links here.
-- Introducing Lua's transcompiler LuneScript 2
-  - Introduction of subfile, module, nil conditional operators
+Links to supplementary articles will be added here.
+- Introduction to Lua Transcompiler LuneScript 2
+  - Introducing subfile, module and nil conditional operators
   - [[introduce2]]
-- Let's have more fun with Lua's transcompiler LuneScript's crazy development environment
+- Let's have more fun with Lua's transcompiler LuneScript's modern development environment
   - Completion, syntax checking, subfile search
   - [[completion]]
 
-For articles that are not linked from this page, please follow them from the sidebar.
+For articles not linked from this page, follow them from the sidebar.

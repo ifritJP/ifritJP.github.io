@@ -1,43 +1,43 @@
-#+TITLE: Transcompile to Z. Go language (under consideration)
+#+TITLE: Z. Transcompile to Go language (exploratory stage)
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-For transcompiling support for Go language, refer to the following article.
+For information on transcompiling to Go language, please refer to the following article.
 
 [[../go]]
 
-*The information here is out of date, but I'll leave it for reference only.*
+*The information here is old, but I'll keep it for reference.*
 
 Considering transcompiling from LuneScript to Go language.
 
-Here, the content under consideration is recorded.
+This is where you record what you are discussing.
 
 
 * aim
 
-The aim of transcompiling from LuneScript to the Go language is as follows.
-- Speed up LuneScript
-  - LuneScript supports code completion, but large code is heavy and unusable.
-  - By speeding up, the usability of LuneScript's code completion function will be improved.
-- Upgrade work efficiency of LuneScript itself by speeding up
-  - LuneScript's self-hosted build and test time is currently less than 2 minutes.
-  - It's painful to take 2 minutes for each change, so go for speed.
-  - We were working on transcompiling to C, but the GC implementation in C didn't go as planned, so we'll go ahead with Go, which supports GC at the language level.
+The goals of transcompiling from LuneScript to Go language are as follows.
+- Speeding up LuneScript
+  - LuneScript supports the code completion function, but it becomes heavy and inconvenient for large-scale code.
+  - Improve the usability of LuneScript's code completion feature by speeding it up.
+- Improved efficiency of LuneScript version upgrade work by speeding up
+  - LuneScript's self-hosted build/test time currently takes less than 2 minutes.
+  - It takes 2 minutes for each change, so I try to speed it up with Go.
+  - We were working on transcompiling to C language, but the implementation of GC in C language did not proceed as expected, so Go, which supports GC at the language level, will be supported first.
 
 
 * value
 |-|-|-|
-| LuneScript type | Go type | Type in Lns lantern for Go | 
+| Types in LuneScript | Go types | type in Lns Random for Go | 
 |-+-+-|
 | nil, null | interface{} | nil | 
 | int | int | LnsInt (alias) | 
 | real | float64 | LnsReal(alias) | 
 | str | string | LnsStr (alias) | 
 | bool | bool | LnsBool(alias) | 
-| List | Unique structure | LnsList | 
+| List | unique structure | LnsList | 
 | Array | arrangement | LnsArray | 
 | Map | map | LnsMap | 
 | Set | map (put item in key) | LnsSet | 
@@ -49,9 +49,9 @@ The aim of transcompiling from LuneScript to the Go language is as follows.
 | nilable | interface{} | 
 
 
-** Handling of int / real
+** Handling int/real
 
-LuneScript int / real is defined using go's type alias as follows:
+LuneScript int/real is defined using go's type alias as follows:
 #+BEGIN_SRC go
 type LnsInt = int
 type LnsReal = float64
@@ -59,38 +59,38 @@ type LnsReal = float64
 
 
 
-** Handling of nilable
+** Handling nilables
 
-LuneScript nilable cannot be treated as the original value as it is. However, you can check if they are equal. This is the same as go and LuneScript.
-
-
-** Handling of false values
-
-LuneScript has nil and false false, otherwise true. Since go needs to be judged by true / false, prepare a conditional conversion function for LuneScript.
+LuneScript's nilable cannot be treated as the original value as is. However, you can still check for equality. This is the same as go and LuneScript.
 
 
-** Handling of and / or
+** Dealing with boolean values
 
-LuneScript's and / or is not a logical operation, it controls the evaluation of expressions, and the evaluation result is not bool. The evaluation result of go is bool.
+LuneScript is false for nil and false and true otherwise. Since go requires judgment by true/false, prepare a condition conversion function for LuneScript.
+
+
+** Handling and/or
+
+LuneScript's and/or is not a logical operation, it controls the evaluation of expressions, and the evaluation result is not bool. go evaluates to bool.
 
 
 ** Handling of generics
 
-Since go does not have Generics, all Generics types are handled by interface {}.
+Since go does not have generics, all types of generics are handled with interface{}.
 
 
-** Handling of Set
+** Dealing with Sets
 
-Since go does not have Set, Map is used instead.
+Since go doesn't have Set, we use Map instead.
 
 
-* Multi-value return
+* return multiple values
 
-Multi-valued return of go and LuneScript behaves differently.
+Multi-value returns in go and LuneScript behave differently.
 
-When =hoge()= is a multi-valued return function that returns x and y, the actions are as follows.
+When =hoge()= is a multi-value return function that returns x and y, the behavior is as follows.
 |-|-|-|
-| code | LuneScript deployment result | go deployment result | 
+| code | LuneScript expansion result | go expansion result | 
 |-+-+-|
 | (hoge()) | x | x, y | 
 | hoge(), val | x, val | x, y, val | 
@@ -118,13 +118,13 @@ func carIntN( multi ...interface{} ) interface{} {
 
 
 
-* Classes and inheritance
+* classes and inheritance
 
 Go has structs and receivers, but no inheritance.
 
-LuneScript has inheritance, so you need to implement inheritance in Go.
+LuneScript has inheritance, so we need to implement inheritance in Go.
 
-Here's how to support the following LuneScript class in Go.
+Shows how to support the following LuneScript classes in Go.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 interface IF {
@@ -158,9 +158,9 @@ class SubSub extend Sub {
 
 
 
-** Equivalent code by Go
+** Equivalent code in Go
 
-Show the equivalent code by Go
+Show equivalent code in Go
 #+BEGIN_SRC go
 package main
 
@@ -303,12 +303,12 @@ func Lns_init() {
 
 
 
-** Inheritance realization method
+** Inheritance implementation method
 
 
 *** Parent class
 
-First, the Parent class will be described.
+First, we will explain the Parent class.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Parent {
@@ -323,7 +323,7 @@ class Parent {
 
 **** data structure
 
-To represent the Parent class, define the following structure and interface.
+Define the following structure and interface to represent the Parent class.
 #+BEGIN_SRC go
 type ParentMtd interface {
     sub1 () int
@@ -340,16 +340,16 @@ func (obj *Parent ) ToParent() *Parent {
 }
 #+END_SRC
 
-- The ParentMtd interface has the following roles:
-  - Define methods for Parent class
-  - Expressing the morimorphism of the Parent class
-- Parent structure has members and ParentMtd
-- ParentDownCast is defined per class for downcast
+- The ParentMtd interface is responsible for
+  - Define a method in the Parent class
+  - Express the morphism of the Parent class
+- A Parent struct has a member and a ParentMtd
+- ParentDownCast is defined per class for downcasting
 
 
-**** Method
+**** method
 
-To represent the method of Parent class, define the following receiver function.
+Define the following receiver function to represent the method of the Parent class.
 #+BEGIN_SRC go
 func (self *Parent) sub1() int {
     return self.val1
@@ -360,7 +360,7 @@ func (self *Parent) sub1() int {
 
 **** constructor
 
-Define the following as the constructor of the Parent class.
+Define the following as a constructor of Parent class.
 #+BEGIN_SRC go
 func NewParent(val1 int) *Parent {
     super := &Parent{ val1, nil }
@@ -371,20 +371,20 @@ func NewParent(val1 int) *Parent {
 
 
 This constructor does the following:
-- Member initialization
+- member initialization
 - FP settings
 
 
 **** How to use the Parent class
 
-Parent is used as follows.
+Parent is used like this:
 #+BEGIN_SRC go
 parent := NewParent( 1 )
 print( parent.FP.sub1() )
 #+END_SRC
 
 
-When calling a method, be sure to call it through the FP interface.
+When calling a method, always call it through the FP interface.
 
 
 *** Sub class
@@ -407,7 +407,7 @@ class Sub extend Parent {
 
 **** data structure
 
-To represent the Sub class, define the following structure and interface.
+Define the following structure and interface to represent the Sub class.
 #+BEGIN_SRC go
 type SubMtd interface {
     ParentMtd
@@ -434,9 +434,9 @@ func (obj *Sub ) ToParent() *Parent {
 - The Sub structure declares the data of the Parent structure and the members defined in Sub.
 
 
-**** Method
+**** method
 
-To represent the method of Sub class, define the following receiver function.
+Define the following receiver function to represent the method of the Sub class.
 #+BEGIN_SRC go
 func (self *Sub) sub1() int {
     return self.val2
@@ -450,7 +450,7 @@ func (self *Sub) sub2() int {
 
 **** constructor
 
-Define the following as the constructor of the Sub class.
+Define the following as a constructor of Sub class.
 #+BEGIN_SRC go
 func newSub(val1,val2 int) *Sub {
     sub := &Sub{ Parent{ val1, nil }, val2, nil }
@@ -462,15 +462,15 @@ func newSub(val1,val2 int) *Sub {
 
 
 This constructor does the following:
-- Member initialization
+- member initialization
 - FP settings
-  - The super FP is also set here
-  - Achieve polymorphism by setting & sub instead of & super in the FP of this super
+  - FP of super is also set here
+  - Set the FP of this super to &sub instead of &super to achieve polymorphism
 
 
 *** SubSub class
 
-Describes the SubSub class.
+Describe the SubSub class.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 class SubSub extend Sub {
@@ -488,7 +488,7 @@ class SubSub extend Sub {
 
 **** data structure
 
-To represent the SubSub class, define the following structure and interface.
+Define the following structure and interface to represent the SubSub class.
 #+BEGIN_SRC go
 type SubSubMtd interface {
     SubMtd
@@ -514,14 +514,14 @@ func (obj *SubSub ) ToParent() *Parent {
 }
 #+END_SRC
 
-- The SubSubMtd interface declares the methods defined in SubSub.
+- The SubSubMtd interface declares the methods defined by SubSub.
   - Do not include Sub methods
-- The SubSub structure declares the data of the Sub structure and the members defined in SubSub.
+- The SubSub structure declares the data of the Sub structure and the members defined by SubSub.
 
 
-**** Method
+**** method
 
-To represent the method of SubSub class, define the following receiver function.
+Define the following receiver function to represent the methods of the SubSub class.
 #+BEGIN_SRC go
 func (self *SubSub) sub1() int {
     return self.val3
@@ -536,16 +536,16 @@ func (self *SubSub) sub3() int {
 
 
 
-***** Method definition not overridden
+***** Method definition without overriding
 
-Of note above is the fact that the sub2 () method calls =self.Sub.sub2()=.
+It should be noted that the sub2() method calls =self.Sub.sub2()=.
 
-The SubSub class does not override the sub2 method. In other words, the sub2 method of SubSub will use the method of the Sub class. Therefore, we are calling the Sub.sub2 method.
+The SubSub class does not override the sub2 method. In other words, the sub2 method of SubSub uses the method of the Sub class. So we are calling the Sub.sub2 method.
 
 
 **** constructor
 
-Define the following as the constructor of the SubSub class.
+Define the following as a constructor of SubSub class.
 #+BEGIN_SRC go
 func newSubSub(val1,val2,val3 int) *SubSub {
     subsub := &SubSub{ Sub{ Parent{ val1, nil }, val2, nil }, val3, nil }
@@ -558,10 +558,10 @@ func newSubSub(val1,val2,val3 int) *SubSub {
 
 
 This constructor does the following:
-- Member initialization
+- member initialization
 - FP settings
-  - Parent and Sub FPs are also set here
-  - Achieve polymorphism by setting & subsub in the FP of Parent and Sub
+  - Also set the FP of Parent and Sub here
+  - Implement polymorphism by setting &subsub to FP of Parent and Sub
 
 
 *** IF interface
@@ -576,7 +576,7 @@ interface IF {
 
 **** data structure
 
-The LuneScript interface uses the Go interface as it is.
+LuneScript's interface uses Go's interface as it is.
 #+BEGIN_SRC go
 interface IF {
   pub fn sub1():int;
@@ -585,9 +585,9 @@ interface IF {
 
 
 
-*** Method call
+*** method call
 
-To call a method of the Parent class:
+To call a method of the Parent class, do the following:
 #+BEGIN_SRC go
 func test(parent *Parent) int {
   print( parent.FP.sub1() )
@@ -597,28 +597,28 @@ func test(parent *Parent) int {
 
 
 
-**** Difference between parent.FP.sub1 () and parent.sub1 ()
+**** Difference between parent.FP.sub1() and parent.sub1()
 
-There are two patterns of method calls:
+There are two patterns for method calls:
 - parent.FP.sub1()
-  - Method call corresponding to polymorphism
+  - Method calls that support polymorphism
 - parent.sub1()
   - Method call defined in Parent class
-    - Not compatible with polymorphism
+    - No support for polymorphism
 
 
 **** overhead
 - Method calls that support polymorphism have a large overhead.
-- Method calls that support polymorphism should be limited to cases where polymorphism is required.
-- There is currently no definition in LuneScript as to whether polymorphism is needed.
-  - Need to introduce final declarations in classes and methods to make it clear that polymorphism is not needed
+- Method calls that support polymorphism should be limited to cases where polymorphism is necessary.
+- Whether or not polymorphism is required is currently not defined in LuneScript.
+  - It is necessary to introduce final declarations for classes and methods so that polymorphism can be clearly stated.
 
 
 *** up-cast / down-cast
 - up-cast is achieved by accessing the embedded pointer
-  - Up-cast to an interface uses the interface type held by the object
-- down-cast implements interface with type assertions.
-  - Define a DownCast interface for each class, cast to that interface, and then execute the cast function to the desired class.
+  - up-casting to an interface uses the interface type held by the object
+- A down-cast implements an interface with a type assertion.
+  - Define a DownCast interface for each class, cast to that interface, and then execute the cast function to the target class
 #+BEGIN_SRC go
 var ifObj IF = obj.FP // インタフェースをセットする
 parent := &obj.Parent // アップキャスト
@@ -627,7 +627,7 @@ parent := &obj.Parent // アップキャスト
 
 
 
-** Class summary
+** Summary of Classes
 - Declare an interface that defines the methods of the class
   - Embed the interface of the method defined in the Super class
 #+BEGIN_SRC go
@@ -637,8 +637,8 @@ type TestMtd interface {
 }
 #+END_SRC
 
-- Declare a structure that holds the members of the class and the interface above
-  - Inheritance embeds the inherited type
+- Declare a struct to hold the members of the class and the above interface
+  - Inheritance embeds the inheriting type
 #+BEGIN_SRC go
 type Test struct {
     Super
@@ -647,7 +647,7 @@ type Test struct {
 }
 #+END_SRC
 
-- Define an interface for downcasting
+- Define interface for downcast
 #+BEGIN_SRC go
 type TestDownCast interface {
     ToTest() *Test
@@ -662,26 +662,26 @@ func (obj *SubSub) ToSub() *Sub {
 }
 #+END_SRC
 
-- Declare a receiver that defines the behavior of the methods in the class
-  - The receiver declares including the methods of the Super class
-  - Functions that are not overridden call the methods of the structure that defines the method.
+- Declare receivers that define the behavior of the methods of the class
+  - Declare the receiver including the methods of the Super class
+  - A non-overridden function calls the method of the struct that defines it
 #+BEGIN_SRC go
 func (self *Test) method() int {
     return self.super.method()
 }
 #+END_SRC
 
-- Initialize the members and interface FP in the constructor
-  - The interface is initialized to include the interface FP of the Super class.
-- Method calls are made via interface FP
-  - Polymorphism Invalid method call calls the method of the structure directly
+- Initialize members and interface FP in the constructor
+  - interface initializes including the interface FP of the Super class
+- Method calls are called via interface FP
+  - Method calls without polymorphism call the struct's methods directly
 #+BEGIN_SRC go
 obj.FP.method() // ポリモーフィズム有効
 obj.method()    // ポリモーフィズム無効
 #+END_SRC
 
-- up-cast is realized by accessing the pointer of the member Super class.
-  - Up-cast to an interface uses the interface type held by the object
+- up-casting is accomplished by accessing the member's Super class pointer
+  - up-casting to an interface uses the interface type held by the object
 - down-cast implements an interface with a type assertion and an interface for downcasting.
 #+BEGIN_SRC go
 var ifObj IF = obj.FP // インタフェースをセットする
@@ -693,24 +693,24 @@ super := &obj.super // アップキャスト
   - Use interface FP when up-casting from a class object to an interface
 
 
-* Symbol name
+* symbol name
 
-The LuneScript and go symbol names differ significantly in the following ways:
-- Namespace
+Symbol names in LuneScript and go differ significantly in the following ways.
+- namespace
   - LuneScript is in the same file (module)
   - go is in the same directory (package)
-- Public / private control method
-  - LuneScript is controlled by pub / pro etc.
-  - go is controlled by the case of the first letter of the symbol
-This difference causes the following problems.
-- When different files FileA.lns and FileB.lns are defined with the same name symbol sym in LuneScript, when converting this to go, if the symbol sym with the same name is defined in FileA.go and FileB.go with the same configuration. , The symbol sym results in a duplicate definition error.
-- Symbols that are publicly defined in lowercase in LuneScript are private in go.
-  - Symbols that are defined privately in uppercase in LuneScript are made public in go.
-To address this issue, we process symbol names as follows:
+- Public/private control method
+  - LuneScript is controlled by pub/pro etc.
+  - go controls the case of the first letter of a symbol
+This difference causes the following problems:
+- When defining a symbol sym with the same name in different files FileA.lns and FileB.lns in LuneScript, when converting this to go, if you define a symbol sym with the same name in FileA.go and FileB.go with the same configuration , the symbol sym will result in a duplicate definition error.
+- Symbols defined publicly in lowercase in LuneScript become private in go.
+  - Symbols defined privately in uppercase in LuneScript are public in go.
+To work around this problem, handle symbol names as follows:
 
-Add the file name to the beginning of the symbol of the function or class to be controlled as public or private. If it is public, add G (G of GLOBAL), and if it is private, add l (l of local).
+Add the file name to the beginning of the symbol of the function or class that is subject to public/private control. Add G (G for GLOBAL) if it is public, and l (l for local) if it is private.
 
-So if you want to convert the following LuneScript source to go,
+In other words, if you convert the following LuneScript source to go,
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func() {
@@ -722,27 +722,27 @@ pub class Class {
 #+END_SRC
 
 
-The relationship between the LuneScript and go symbols is as follows.
+The relationship between LuneScript and go symbols is as follows.
 |-|-|-|
-| Public / Private | lns | go | 
+| public/private | lns | go | 
 |-+-+-|
 | private | func | lfile_func | 
 | Release | Class | Gfile_Class | 
 | private | val1 | lval1 | 
 | Release | val2 | Gval2 | 
 
-Since there is no difference in scope between LuneScript and go for arguments and local variables, they are basically converted as they are.
+Arguments and local variables are basically converted as they are because there is no difference in scope between LuneScript and go.
 
 
 * Lua VM
 
-The current LuneScript uses Lua VM when deploying Macro. There are two ways to use the Lua VM with Go:
+In the current LuneScript, Lua VM is used during Macro expansion. There are two ways to use the Lua VM with Go:
 - Use gopher-lua, a port of Lua to Go
-- Use liblua
-Using gopher-lua makes it easier to work with Lua VMs, but with the following limitations:
+- use liblua
+Using gopher-lua makes dealing with the Lua VM easier, but it has the following limitations:
 - Lua VM version becomes Lua5.1
 - Slow compared to liblua
-  - According to the information on the official Wiki (<https://github.com/yuin/gopher-lua/wiki/Benchmarks>), the execution time of fib (35) is as follows.
+  - According to the information on the official Wiki (<https://github.com/yuin/gopher-lua/wiki/Benchmarks>), the execution time of fib(35) is next.
     - lua5.1.4 :: 1.71sec
     - Gopherlua :: 5.40sec
 From the above, the LuneScript transcompiler uses liblua.
@@ -754,7 +754,7 @@ Use cgo to use liblua from Go.
 
 cgo is a package for calling C language libraries from Go.
 
-The C code written in the comment before import "C" is parsed and extracted into the C package so that it can be accessed from Go as follows.
+The C code written in the comment before import "C" is parsed and expanded into a C package so that it can be accessed by Go, like this:
 #+BEGIN_SRC go
 // #include <stdlib.h>
 // #cgo CFLAGS: -I/usr/include/lua
@@ -788,7 +788,7 @@ func main() {
 #+END_SRC
 
 
-*Since cgo does not support the #define macro function, the following macro-defined functions must be expanded and written by themselves.*
+*Since cgo does not support #define macro functions, functions with macro definitions such as the following must be expanded and processed by yourself.*
 #+BEGIN_SRC c
 #define luaL_dostring(L, s) \
 	(luaL_loadstring(L, s) || lua_pcall(L, 0, LUA_MULTRET, 0))

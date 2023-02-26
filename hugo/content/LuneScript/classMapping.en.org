@@ -5,23 +5,23 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-LuneScript supports mutual conversion between class instances and maps.
+LuneScript supports converting instances of classes to and from maps.
 
 
 * mapping
 
-LuneScript supports mutual conversion between class instances and map objects.
+LuneScript supports converting instances of classes to and from map objects.
 
 Specifically, you can:
-- Creating a map object from an instance of a class
+- Create map object from class instance
 - Creating an instance of a class from a map object
-This allows you, for example, to generate JSON data from an instance of a class, or vice versa.
+This allows you, for example, to generate JSON data from class instances and vice versa.
 
 This feature is called mapping.
 
-To use mapping, you need to declare Mapping as the interface to implement when declaring the class.
+To make use of mapping , we need to declare Mapping as an interface to implement when declaring the class.
 
-Here is an example:
+For example:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test extend (Mapping){
@@ -36,16 +36,16 @@ print( test2.$val1, test2.$val2 ); // 1 abc
 #+END_SRC
 
 
-In the above example, the class Test declares a Mapping implementation.
+In the example above, class Test declares a Mapping implementation.
 
-This will generate the following method internally:
+This will internally generate the following methods:
 - fn _toMap():&Map<str,&stem>
 - static fn _fromMap(map:&Map<str,&stem>):Test!,str!
 =_toMap()= is a method that creates a map object from an instance, and =_fromMap()= is a class method that creates an instance from a map object.
 
-Note that =_fromMap()= returns nil if the map object does not meet the conditions for instantiation.
+Note that =_fromMap()= returns nil if the map object does not meet the conditions for creating an instance.
 
-Specifically, if you pass the following map object to =_fromMap()= in Test above, an instance will be created, but
+Specifically, if you pass the following map object to =_fromMap()= of the above Test, an instance will be generated,
 #+BEGIN_SRC js
 {
    "val1": 1,
@@ -54,7 +54,7 @@ Specifically, if you pass the following map object to =_fromMap()= in Test above
 #+END_SRC
 
 
-If you pass the following map object, no instance will be created.
+If you pass the following map object, it will not be instantiated.
 #+BEGIN_SRC js
 {
    "val1": 1,
@@ -63,22 +63,22 @@ If you pass the following map object, no instance will be created.
 #+END_SRC
 
 
-In the case of the above map object, val2 should be str, but it is int and it becomes inconsistent.
+In the case of the above map object, originally val2 should be str, but it is int and it becomes inconsistent.
 
-Also note that =_fromMap()= checks for member type inconsistencies, but not ranges.
+A further caveat to =_fromMap()= is that =_fromMap()= checks for member type inconsistencies, but not for range.
 
-For example, even if it is a value that cannot be taken originally, it will be instantiated as long as it has the same type. However, for enums, if the value of the map object is not defined in the enum, it returns nil.
+For example, an instance can be generated even from a value that cannot be obtained originally, as long as the type is correct. However, for enums, it returns nil if the value of the map object is not defined in the enum.
 
 
-** Mapping restrictions
+** Limitations of mappings
 
-Classes that implement mapping have the following restrictions on their members:
+A class that implements mapping has the following restrictions on its members:
 - If you have a class instance as a member, the class must be mappable.
 - If you have a map object as a member, the key must be int, real, or str.
 
 
 * summary
 
-Mapping makes it easy to generate JSON data from an instance of a class.
+mapping makes it easy to do things like generate JSON data from class instances.
 
-Next time, I'll talk about the nil conditional operator.
+Next time, I'll explain the nil conditional operator.

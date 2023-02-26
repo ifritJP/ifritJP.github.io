@@ -86,8 +86,8 @@ clean-trans:
 trans: $(EN_SRCS)
 
 %.en.org: %.ja.org
-	../../trans-orgmode/trans-orgmode trans \
-		-c ../../trans-org-accesstoken.json $< > $@ -m
+	../../trans-orgmode/trans-orgmode -m trans \
+		-c ../../trans-org-accesstoken.json $< > $@
 
 concat_all:
 	@echo $(SRCS) | sed 's@ @\n@g' | sort > dump.list

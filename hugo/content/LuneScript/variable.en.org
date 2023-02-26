@@ -5,25 +5,25 @@
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-This time, I will explain the variables of LuneScript.
+This time, I will explain about LuneScript variables.
 
 
 * variable
 
-LuneScript is a statically typed language, and variables have types.
+LuneScript is a statically typed language and variables have types.
 
-Declare the variable with let as follows:
+Variables are declared with let like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val:int = 1;
 #+END_SRC
 
 
-The above example declares a variable val with an int of 1 as the initial value.
+The above example declares a variable val with an int of 1 as its initial value.
 
 After the variable name, specify the type.
 
-If the initial value is set to 1.0, which is real instead of 1, which is int, a compile error will occur because the type is different.
+Note that if the initial value is set to real 1.0 instead of int 1, a compilation error will occur because the types are different.
 #+BEGIN_SRC lns
 // @lnsFront: error
 let val:int = 1.0;  // error
@@ -32,18 +32,18 @@ let val:int = 1.0;  // error
 
 +Also, variable declarations now require an initial value.+
 
-+This is to prevent access to uninitialized variables.++In the future, let flow analysis determine if a variable holds a value,++I am thinking of eliminating the need for initial values.+
++This is to prevent access to uninitialized variables.++In the future, let flow analysis determine if a variable holds a value,++I'm thinking of making the initial value unnecessary.+
 
-Initialization at the time of variable declaration is not mandatory. If you refer to a variable that has not been initialized, a compile error will occur. Details will be described later.
+Initialization when declaring variables is not required. A compile error will occur if a variable that has not been initialized is referenced. More on that later.
 
-In addition, type inference is possible even if it is not initialized when the variable is declared.
+Also, type inference is possible even if the variable is not initialized when declared.
 
 
-** Type inference
+** type inference
 
 LuneScript supports type inference.
 
-You can determine the type of a variable from the initial value you set for that variable. This allows you to declare a variable without specifying a type as follows:
+You can determine the type of a variable from the initial value you set to it. This allows you to declare variables without specifying their type, like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val1 = 1; // int 
@@ -52,23 +52,23 @@ let val3 = "abc"; // str
 #+END_SRC
 
 
-In this case, treat val1 as an int, val2 as a real, and val3 as a str.
+In this case, val1 is treated as int, val2 as real, and val3 as str.
 
-You may need to specify the type, for example:
-- Set nil to the initial value of a variable of type nilable
+Examples of when you need to specify the type are:
+- Set the initial value of a nilable type variable to nil
 : let mut val:int! = nil;
 
-- Set an immediate empty value (=[]=, ={}=, etc.) to the initial value of the list type or map type variable.
+- Set an immediate empty value (=[]=, ={}=, etc.) to the initial value of a list type or map type variable
 : let mut val:List<int> = [];
 
-- When setting an instance of a subclass to a variable of the following class type, if you want to set the variable type to the superclass type
+- When setting a subclass instance to a class type variable such as the following, if you want the variable type to be the superclass type
 : let val:Super = new Sub();
 
 
 
-** Variable initialization
+** Initializing variables
 
-Accessing uninitialized variables will result in a compilation error.
+Referencing an uninitialized variable will result in a compilation error.
 #+BEGIN_SRC lns
 // @lnsFront: error
 {
@@ -78,14 +78,14 @@ Accessing uninitialized variables will result in a compilation error.
 #+END_SRC
 
 
-In =print()= above, I am accessing an uninitialized val, but I get a compile error here.
+In =print()= above, an uninitialized val is accessed, which causes a compilation error.
 
 
 *** Flow analysis
 
-Variable initialization parses the flow and checks for variable uninitialized paths.
+Variable Initialization parses the flow and checks for paths with variable uninitialization.
 
-For example, in the following cases, an error will occur.
+For example, the following will result in an error:
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func( flag:bool )
@@ -99,9 +99,9 @@ fn func( flag:bool )
 #+END_SRC
 
 
-The cause of the above error is that if flag is true, val is initialized, but if false, val is not initialized.
+The reason for the above error is that if flag is true then val will be initialized, but if it is false then val will not.
 
-All paths must be initialized before they can be accessed, as follows:
+All paths need to be initialized before access, like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( flag:bool )
@@ -118,9 +118,9 @@ fn func( flag:bool )
 #+END_SRC
 
 
-Note that this process is an initialization for the variable val, not a rewrite for the val, so there is no need to declare the mut, which will be described later.
+Note that this process is an initialization for the variable val, not a rewrite for val, so there is no need for the mut declaration described later.
 
-By the way, the flow is also analyzed in the following slightly complicated cases.
+By the way, even if it is a little complicated like the following, we will analyze the flow.
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func( kind:int )
@@ -148,9 +148,9 @@ fn func( kind:int )
 #+END_SRC
 
 
-It may be a little difficult to understand, but since the initialization of val is missing at the time of else at the position of * above, the val reference of print will result in an error.
+I think it's a little hard to understand, but at the position of * above, the val reference in print is an error because the initialization of val is missing when else.
 
-In the following cases, an error will occur at print (val).
+Note that an error will also occur at print( val ) in the following cases.
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func( flag:bool )
@@ -165,16 +165,16 @@ fn func( flag:bool )
 #+END_SRC
 
 
-Originally, val is initialized when executing =sub()=, so it should not be an error, but this is the current specification.
+Normally val is initialized when running =sub()=, so it shouldn't be an error, but this is the current design.
 
 
-*** Type inference
+*** type inference
 
-Type inference is possible even if it is not initialized when the variable is declared.
+Type inference is possible even if the variable is not initialized when declared.
 
-However, type inference uses the first type assigned in the flow analysis.
+However, type inference uses the first type assigned in flow analysis.
 
-For example, in the following cases
+For example, if
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn func( flag:bool )
@@ -190,9 +190,9 @@ fn func( flag:bool )
 #+END_SRC
 
 
-In the first ~val = 1~, val is of type int. Then, at the next ~val = 1.0~, an error will occur because you are trying to assign real 1.0 to an int type val.
+At the first ~val = 1~ val is of type int. Then, at the next ~val = 1.0~, an error occurs because it is trying to assign 1.0 of real to int type val.
 
-In the above cases, you can avoid the error by declaring the type when declaring the variable as follows.
+In the above case, the error can be avoided by declaring the type when declaring the variable as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func( flag:bool )
@@ -209,14 +209,14 @@ fn func( flag:bool )
 #+END_SRC
 
 
-In addition to stem, there are other cases where you need to declare a type. For example, you may want to use a variable of type superclass, or you may want to use a variable of type nilable.
+There are other cases besides stem where types must be declared. For example, there are cases where you want to use a variable of the superclass type, or you want to use a nilable type variable.
 
 
 ** shadowing
 
 LuneScript prohibits variable declarations with the same name.
 
-Here, the same name means not only the same name within the same scope but also the same name within an accessible scope.
+The same name here refers not only to the same name within the same scope, but also to the same name within the accessible scope.
 
 Specifically, the following variable declaration will result in an error.
 #+BEGIN_SRC lns
@@ -230,21 +230,21 @@ Specifically, the following variable declaration will result in an error.
 #+END_SRC
 
 
-I think there are pros and cons to this specification, but I've made it to the safety side.
+I think there are pros and cons to this specification, but I'm sticking to the safe side and making it this specification.
 
 
-** Access control
+** access control
 
-The declared variable is treated as a local variable.
+Declared variables are treated as local variables.
 
-If you want to publish to an external module, declare it with pub as follows.
+If you want to publish it to an external module, declare it with pub appended like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 pub let val = 1;
 #+END_SRC
 
 
-To access an externally exposed variable, use import as follows:
+If you want to access variables exposed externally, use import like this:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 import SubModule;
@@ -252,11 +252,11 @@ print( SubModule.val );
 #+END_SRC
 
 
-Where SubModule is the LuneScript module (SubModule.lns) that declares ~pub let val = 1;~.
+where SubModule is the LuneScript module (SubModule.lns) that declares ~pub let val = 1;~.
 
-If you want to access this val, you can access it by typing SubModule.val.
+If you want to access this val, you can access it with SubModule.val.
 
-The basic way to expose variables to external modules is pub, but you can also use global.
+pub is the basic way to expose variables to external modules, but you can also use global .
 #+BEGIN_SRC lns
 // @lnsFront: ok
 pub let val1 = 1;
@@ -266,7 +266,7 @@ global let val2 = 2;
 
 The difference between pub and global is the namespace difference.
 
-As you can see from the following example, this is a sample of accessing val1 and val2 from the outside.
+It's easy to understand if you look at the following example, but this is a sample that accesses the above val1 and val2 from the outside.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 import SubModule;
@@ -275,17 +275,17 @@ print( val2 );
 #+END_SRC
 
 
-val1 is accessed as SubModule.val1 as a variable in the SubModule namespace, while val2 is accessed as a variable in the top-level namespace.
+val1 is accessed as a variable in SubModule's namespace as SubModule.val1 , but val2 is accessed as a variable in the top-level namespace.
 
-When developing a system with LuneScript alone, it is unlikely that you will use global (or you should avoid using global), but when working with other Lua modules, use global. I think there are times when you have to do it.
+When developing a system with only LuneScript, I don't think you should use global (or rather, you should avoid using global ), but when processing in conjunction with other Lua modules, use global I think there are times when you have to.
 
-Global is supported for the purpose of maintaining such compatibility.
+For that compatibility, we support global .
 
-The global restrictions are as follows.
+There are the following global restrictions.
 
-*"A variable declared global is valid when you import a module that declares the variable."*
+*"Variables declared as global become effective when the module that declares them is imported."*
 
-For example, in the following example, val2 seems to exist in SubModule for nothing,
+For example, in the following example val2 seems to exist in SubModule without any relation,
 #+BEGIN_SRC lns
 // @lnsFront: skip
 import SubModule;
@@ -294,18 +294,18 @@ print( val2 );
 #+END_SRC
 
 
-In the following case, since SubModule has not been imported, val2 does not exist and an error occurs.
+In the following case, an error occurs because val2 does not exist because SubModule is not imported.
 #+BEGIN_SRC lns
 // @lnsFront: skip
 print( val2 );
 #+END_SRC
 
 
-In addition, variables that are exposed to the outside have the following restrictions.
+Also, the variables to be exposed to the outside have the following restrictions.
 
-*"Variables exposed to the outside must be declared in the highest scope of the script."*
+*"Variables exposed externally must be declared in the topmost scope of the script"*
 
-For example, the following val2 will result in an error because it is not the highest scope.
+For example, val2 below is an error because it is not in the topmost scope.
 #+BEGIN_SRC lns
 // @lnsFront: error
 pub let val = 1;
@@ -320,7 +320,7 @@ pub let val = 1;
 
 A variable that is simply declared is treated as a variable that cannot be changed.
 
-For example, the following ~val = 2~ will result in an error.
+For example, ~val = 2~ below is an error.
 #+BEGIN_SRC lns
 // @lnsFront: error
 let val = 1;
@@ -328,7 +328,7 @@ val = 2; // error
 #+END_SRC
 
 
-If it is a mutable variable, declare it with mut as follows.
+If you want to make it a variable variable (mutable), declare it with mut as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut val = 1;
@@ -336,7 +336,7 @@ val = 2;
 #+END_SRC
 
 
-You can also assign the initial value after declaring the immutable variable as follows.
+It is also possible to assign an initial value after declaring an immutable variable as follows.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let val;
@@ -344,7 +344,7 @@ val = 1;
 #+END_SRC
 
 
-However, if you set an additional value after substituting the initial value as shown below, an error will occur.
+However, if you set another value after assigning the initial value as follows, an error will occur.
 #+BEGIN_SRC lns
 // @lnsFront: error
 let val;
@@ -354,9 +354,9 @@ val = 2; // error
 
 
 
-*** immutable type
+*** immutable types
 
-*As mentioned above, variables that are not declared mut are immutable. In addition, type inferred types without a mut declaration are also immutable. For example, in the following case, list1 is declared mut, so it is possible to insert the List, but list2 is immutable without declaring mut, so the operation to change the List is an error.*
+*As mentioned above, variables that are not declared mut are immutable. Inferred types without a mut declaration are also immutable. For example, in the following case, since list1 is declared mut , it is possible to change List (insert), but list2 is immutable without mut declaration, so the change operation of List will result in an error.*
 #+BEGIN_SRC lns
 // @lnsFront: error
 let mut list1 = [1];
@@ -366,9 +366,9 @@ list2.insert( 2 ); // error
 #+END_SRC
 
 
-Immutable types are represented as & T by adding & to the original type T. For example, =&List<int>= represents a list <int> that cannot be modified. You cannot change it, but you can refer to it such as foreach.
+An immutable type is denoted as &T by appending & to the original type T. For example, =&List<int>= represents a list List<int> that cannot be modified. In addition, change operation is not possible, but reference operation such as foreach is possible.
 
-=&List<List<int>>= is an immutable list with =List<int>= as an element. Where =List<int>= is mutable because it does not have a &. That is, it looks like this:
+=&List<List<int>>= is an immutable list whose elements are =List<int>= . Here =List<int>= is mutable because there is no &. So it looks like this:
 #+BEGIN_SRC lns
 // @lnsFront: error
 let list:&List<List<int>> = [[100],[]];
@@ -380,13 +380,13 @@ list.insert( [10] ); // error
 
 *** Type inference and mutable
 
-As mentioned above, the type of variable that is not declared mut is immutable.
+As mentioned above, the type of a variable that is not declared mut is immutable.
 
-However, this is the case when using type inference.
+But this is with type inference.
 
-Variables that are not mut-declared depend on the mutable declaration for that type, if the type is explicitly stated.
+Even a variable that is not declared mut depends on the mutable declaration of that type if the type is specified.
 
-For example, in the following cases
+For example:
 #+BEGIN_SRC lns
 // @lnsFront: error
 let list1:List<int> = [1,2];
@@ -400,20 +400,20 @@ list4.insert( 3 ); // error
 #+END_SRC
 
 
-=list2.insert( 3 );= and =list4.insert( 3 );= are in error because list2 and list4 are immutable & List <int>.
+=list2.insert( 3 );= and =list4.insert( 3 );= fail because list2 and list4 become immutable &List<int> .
 
-In addition, this specification has a problem before, and it has been fixed in ver 1.2.0. Previously, even if the type was specified, it was an immutable type if mut was not declared, but its behavior was inferior in variables, members, and arguments, so it has been corrected to the current specification.
+There was a bug in this specification before, which has been fixed in ver 1.2.0. Previously, even if the type was specified, the type was immutable if mut was not declared, but the behavior was inferior for variables, members, and arguments, so it has been corrected to the current specification.
 
-If you want to revert to the specifications of ver 1.2.0 or earlier, specify the option --legacy-mutable-control.
+If you want to return to the specification before ver 1.2.0, please specify the option --legacy-mutable-control .
 
 However, this option may be deprecated in the future.
 
 
-** Multiple declarations
+** multiple declarations
 
-LuneScript, like Lua, can return multiple values for a function's return value.
+LuneScript is the same as Lua and can return multiple values in function return values.
 
-To use this return value as the initial value of the variable declaration, declare as follows.
+To make this return value the initial value of a variable declaration, declare it like this:
 #+BEGIN_SRC lns
 // @lnsFront: skip
 let val1, val2 = func();
@@ -421,18 +421,18 @@ let mut val3, mut val4 = func();
 #+END_SRC
 
 
-mut is declared before each variable name.
+Declare mut before each variable name.
 
 
-** Access check
+** access check
 :PROPERTIES:
 :CUSTOM_ID: access_check
 :END:
 
 
-If you do not refer to the declared local variable after setting the value, a warning is output. On the other hand, class members and function arguments are not subject to access checks.
+If you declare a local variable and do not refer to it after setting its value, you will get a warning. On the other hand, class members and function arguments are not subject to access checks.
 
-The following sample is an example of using only the second value without using the first value for multivalued returns. In this case, it warns that val1, which stores the first value, is not being used.
+The following sample is an example of using only the second value without using the first value of the multi-value return. In this case, warn that val1 containing the first value is not used.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn sub(): int, int {
@@ -445,7 +445,7 @@ fn func() {
 #+END_SRC
 
 
-To avoid warning for variables declared only to access the second and subsequent values of such multivalued returns, use the'_' symbol as follows:
+To suppress warnings for variables declared only to access the second and subsequent values of such a multi-value return, use the '_' symbol, like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn sub(): int, int {
@@ -458,7 +458,7 @@ fn func() {
 #+END_SRC
 
 
-Note that variables declared with the'_'symbol cannot be accessed. An error will occur if you access it.
+Note that variables declared with the '_' symbol cannot be accessed. Accessing it will result in an error.
 #+BEGIN_SRC lns
 // @lnsFront: error
 fn sub(): int, int {
@@ -472,9 +472,9 @@ fn func() {
 #+END_SRC
 
 
-The access check is also performed after updating the value of the variable.
+Access checks are also performed after updating the value of a variable.
 
-For example, val1 is warned if:
+For example, val1 will be warned if:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func() {
@@ -485,14 +485,14 @@ fn func() {
 #+END_SRC
 
 
-This is because print (val1) references val1 after setting val1 to 1, but then =val1 = 2= updates val1 and then does not reference val1.
+This is because val1 is referenced by print( val1 ) after setting 1 to val1, but val1 is not referenced after updating val1 with =val1 = 2=.
 
 
-*** Closure access check
+*** Closure access checks
 
 This access check also works with closures.
 
-The following sample does not warn after =val1 = 2=, judging that it refers to val1 due to the call of =sub()=.
+In the following sample, =val1 = 2= is followed by a =sub()= call, which determines that val1 is being referenced and does not warn.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 fn func() {
@@ -507,29 +507,29 @@ fn func() {
 
 
 However, there are the following restrictions.
-- Treat as if there was a value reference at the time of reference, not a closure function call
-  - For example, it processes when a closure function is assigned to a variable or passed to an argument of another function.
-- Access by closure does not distinguish between reference and setting
-  - Even if it is set only in the closure function, it is treated as a reference.
+- Treat it as if there was a reference to the value at the point of reference, not the function call of the closure
+  - For example, assigning a closure function to a variable or passing it as an argument to another function.
+- Closure access does not distinguish between references and settings
+  - Even if it is only set in the closure function, it is treated as a reference.
 Closure access checking is an experimental feature.
 
 
-** Special symbol
+** special symbol
 
-The following symbols point to special values.
+The following symbols refer to special values.
 |-|-|
 | symbol | value | 
 |-+-|
 | ~__mod__~ | Module name | 
-| ~__func__~ | Current function name | 
-| ~__line__~ | Current line number | 
+| ~__func__~ | current function name | 
+| ~__line__~ | current line number | 
 
-*The format of the names expanded by ~__mod__~ and ~__func__~ may change in the future.*
+*Note that the format of names expanded by ~__mod__~ and ~__func__~ may change in the future.*
 
 
 * Type conversion (cast)
 
-All values except nil can be assigned to variables of type stem.
+Any value other than nil can be assigned to a variable of type stem .
 
 It has an implicit type conversion.
 #+BEGIN_SRC lns
@@ -543,7 +543,7 @@ val = [@];
 #+END_SRC
 
 
-On the other hand, assigning a stem type value to a different type will result in an error.
+On the other hand, it is an error to assign a stem type value to a different type.
 #+BEGIN_SRC lns
 // @lnsFront: error
 let val1:stem = 1;
@@ -551,7 +551,7 @@ let val2:int = val1; // error
 #+END_SRC
 
 
-If you need explicit type conversion, see the following articles:
+If you need explicit type conversions, see the following articles:
 
 [[../cast]]
 
@@ -560,7 +560,7 @@ If you need explicit type conversion, see the following articles:
 
 Variables hold object references except for some (int, real, nil).
 
-For example, in the following cases
+For example:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut list1 = [ 10 ];
@@ -572,13 +572,13 @@ foreach val in list2 {
 }
 #+END_SRC
 
-- Set list1 to a reference to a List <int> type list (=[ 10 ]=) object
-- Set list2 to the reference held by list1
-- Insert 20, 30 into the list object referenced by list1
-- =print()= for each value of the list object referenced by list2
-*Here, list1 and list2 refer to the same list object, so if you insert 20, 30 into list1, print (val) foreaching list2 will print 10 20 30.*
+- Set List<int> type list (=[ 10 ]=) object reference to list1
+- Set the reference held by list1 to list2
+- insert 20, 30 into the list object referenced by list1
+- =print()= each value of the list object referenced by list2
+*Here, list1 and list2 refer to the same list object, so if you insert 20, 30 into list1 , print( val ) foreaching list2 will print 10 20 30 .*
 
-*Also, if you insert 40 into list2 as follows, print (val) prints 10 20 30 40 because you insert 40 into the same list object.*
+*Also, if you insert 40 into list2 like this, print( val ) will print 10 20 30 40 because you are inserting 40 into the same list object.*
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut list1 = [ 10 ];
@@ -592,7 +592,7 @@ foreach val in list2 {
 #+END_SRC
 
 
-If you set list1 to a new list object (=[ 100]=), print (val) prints 10 20 30 40 because the list object referenced by list1 and the list object referenced by list2 are different.
+If you set list1 to a new list object (=[ 100]=), print( val ) will print 10 20 30 40 because the list object referenced by list1 and the list object referenced by list2 are different.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut list1 = [ 10 ];
@@ -607,7 +607,7 @@ foreach val in list2 {
 #+END_SRC
 
 
-This is also the case for List <List <int >>.
+The same is true for List<List<int>>.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 let mut list = [ 10, 20 ];
@@ -622,18 +622,18 @@ print( wrapList[ 3 ][ 1 ], wrapList[ 3 ][ 2 ] ); // 100 200
 #+END_SRC
 
 
-I've added a list to the 1st and 2nd of the wrapList, and a new list object to the 3rd of the wrapList. After that, after incrementing list [1], the contents of wrapList are output.
+Add list to wrapList 1st and 2nd, and add new list object to wrapList 3rd. After that, increment list[1] and output the contents of wrapList.
 
-Here, wrapList [1] [1] and wrapList [2] [1] point to the same list [1], so the incremented value is output. Since wrapList [3] will be a new list object, it will not be affected by the increment.
+Here, wrapList[1][1] and wrapList[2][1] point to the same list[1], so the incremented value is output. wrapList[3] is a new list object, so the increment has no effect.
 
 
 * summary
 
-LuneScript variables incorporate the following elements:
-- Type inference
-- Access control
+Variables in LuneScript incorporate the following elements:
+- type inference
+- access control
 - mutable
-- Multiple declarations
-I'm going to have the minimum functionality needed to handle Lua with static cleanup.
+- multiple declarations
+It is intended to meet the minimum functionality required when dealing with Lua with static cleanup.
 
 Next time, I will explain the branch control of LuneScript.

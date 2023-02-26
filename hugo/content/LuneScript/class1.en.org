@@ -1,17 +1,17 @@
-#+TITLE: 12. Class Basics
+#+TITLE: 12. Class basics
 # -*- coding:utf-8 -*-
 #+AUTHOR: ifritJP
 #+STARTUP: nofold
 #+OPTIONS: ^:{}
 #+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
 
-LuneScript supports object-oriented programming with classes.
+LuneScript supports object-oriented programming through classes.
 
 
-* Class specifications
+* Class specification
 
-LuneScript classes support the following:
-- Access control
+Classes in LuneScript support:
+- access control
 - accessor
 - Inheritance
 - abstract
@@ -19,12 +19,12 @@ LuneScript classes support the following:
 - advertise
 - Mapping
 - interface  
-This time, I will explain the basic class definition.
+Here is a basic class definition.
 
 
-* Minimum class definition
+* minimal class definition
 
-The minimum class definition is as follows.
+A minimal class definition looks like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -32,16 +32,16 @@ class Test {
 #+END_SRC
 
 
-It defines a class called Test.
+This defines a class called Test.
 
 +Note that the class definition must be done in the highest scope.+
 
-*(2019/6/24) Added support for class definition in functions. However, classes that can be exposed to the outside must be declared in the highest scope.*
+*(2019/6/24) Supported to define a class even in a function. However, exposing classes must be declared at the highest scope.*
 
 
-** External disclosure
+** Public disclosure
 
-To expose the class to an external module, add pub as follows:
+To publish a class to an external module, append pub like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 pub class Test {
@@ -50,9 +50,9 @@ pub class Test {
 
 
 
-* Instance generation
+* instantiation
 
-Instantiation of a class uses the new operator as follows:
+Class instantiation uses the new operator as follows:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -62,9 +62,9 @@ let test = new Test();
 
 
 
-* Method definition
+* method definition
 
-The method definition is almost the same as the function definition.
+A method definition is almost the same as a function definition.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -77,9 +77,9 @@ test.func();  // Test.func
 #+END_SRC
 
 
-Note that the method cannot be set to form type.
+Note that the method cannot be set on the form type.
 
-For example, the following ~sub( test.func )~ will fail.
+For example, ~sub( test.func )~ below will error.
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
@@ -96,7 +96,7 @@ sub( test.func );  // error
 #+END_SRC
 
 
-To avoid this error, create an anonymous function and pass it to =sub()= as follows:
+To avoid this error, create an anonymous function and pass it to =sub()= like this:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -114,15 +114,15 @@ sub( fn() { test.func(); } );
 
 
 
-** Access control
+** access control
 
 There are three types of access control:
 |-|-|
 | kinds | meaning | 
 |-+-|
-| pub | External disclosure | 
+| pub | Public disclosure | 
 | local | Published in the same module | 
-| pro | Publish to subclass | 
+| pro | Exposed to subclasses | 
 | pri | private | 
 
 If not specified, the default is pri.
@@ -130,11 +130,11 @@ If not specified, the default is pri.
 
 ** self symbol
 
-You can use the self symbol in the method.
+Inside the method, you can use the self symbol.
 
 The self symbol represents an instance of itself.
 
-In the following example, the public method sub calls the private method =func()= using self.
+In the following example, the public method sub calls the private method =func()= using self .
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -151,11 +151,11 @@ test.sub();  // Test.func
 
 
 
-** Separatism
+** Separation definition
 
-The method can be defined separately from the class definition.
+Methods can be defined separately from the class definition.
 
-The method definition above can also be written as follows.
+The method definition above can also be written as:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -168,20 +168,20 @@ test.func();  // Test.func
 #+END_SRC
 
 
-However, the method of the class defined in another module cannot be defined in the module being imported.
+However, it is not possible to define a method of a class defined in another module within the importing module.
 
 
 ** prototype declaration
 
-Method definitions can also separate the actual definition by declaring only the type within the class definition.
+A method definition can also declare only the type within the class definition and separate the actual definition.
 
 The following example prototypes =func()= and separates the actual definition.
 
-Prototyping =func()= allows you to call =func()= within = sub () =.
+By prototyping =func()=, it becomes possible to call =func()= within =sub()=.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
-   fn func();
+   pub fn func();
    pub fn sub() {
       self.func();
    }
@@ -194,14 +194,14 @@ test.sub();  // Test.func
 #+END_SRC
 
 
-Of course, the prototype declaration and the actual method type must match.
+Naturally, the type of the prototype declaration and the actual definition of the method must match.
 
 
-** Class method definition
+** class method definition
 
-Normal methods cannot be executed without an instance because they are associated with an instance, but class methods associated with a class can be executed without an instance.
+A normal method is tied to an instance and cannot be executed without an instance, but a class method tied to a class can be executed without an instance.
 
-To define a class method, simply add static to the method definition.
+Defining a class method is as simple as adding static to the method definition.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -213,17 +213,17 @@ Test.sfunc(); // Test.sfunc
 #+END_SRC
 
 
-*Class methods are only available in classes defined in the highest scope.*
+*Class methods are only available in classes defined at the topmost scope.*
 
 
-* Member definition
+* member definition
 
-Member definitions are similar to variable definitions, with the following differences:
-- Initial value cannot be set at the time of declaration
-- Access control added
+A member definition is almost the same as a variable definition, with the following differences.
+- Can't set initial value when declaring
+- Added access control
 - accessor can be specified
 
-The following is an example of member definition.
+Here is an example member definition:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -240,24 +240,24 @@ test.func(); // 1 2 3
 #+END_SRC
 
 
-Class Test has val1, val2, val3 as members.
+Class Test has members val1, val2, val3.
 
 The definition of val1 is ~pri let val1:int;~.
 
-I don't think this is a problem because it's just a regular variable declaration with pri.
+I don't think this is a problem because it's just a normal variable declaration with pri attached.
 
 pri is access control and has the same meaning as the method definition.
 
 
-* mutable
+* =mutable=
 
-Members and methods also have mutable and immutable.
+Members and methods also have =mutable= and =immutable=.
 
-The differences between the methods mutable and immutable are as follows:
-- A mutable method is a method whose members can be changed.
-- Immutable methods are methods whose members cannot be changed
+The differences between methods =mutable= and =immutable= are as follows:
+- =mutable= methods are methods whose members can be changed
+- =immutable= methods are methods whose members are immutable
 
-The following are examples of mutable members and methods.
+Examples of =mutable= members and methods are shown below.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -277,13 +277,13 @@ test.func(); // 11 2
 #+END_SRC
 
 
-In this example, val1 is mutable and val2 is immutable. Also, =func()= is immutable and =add()= is mutable.
+In this example, val1 is =mutable= and val2 is =immutable=. Also, =func()= is =immutable= and =add()= is =mutable=.
 
-*Mutable methods declare mut after the argument is declared.*
+*=mutable= methods declare mut after declaring arguments.*
 
-The mutable method =add()= sets the value in member val1. It can be built without error.
+Method =add()= of =mutable= sets a value in member val1. This builds without errors.
 
-So what happens if you remove the mut declaration of method =add()= as follows?
+Then, what happens when the mut declaration of method =add()= is removed as follows.
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
@@ -301,9 +301,9 @@ class Test {
 
 The above example will result in an error.
 
-If you try to change a member from within a method that is not mutable, you will get an error.
+It is an error to attempt to change a member from within a method that is not =mutable=.
 
-You will also get an error if:
+I also get an error if:
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
@@ -318,14 +318,14 @@ class Test {
 #+END_SRC
 
 
-In the above example, =func()= calls =increment()=, but immutable methods cannot call mutable methods.
+In the above example, =func()= calls =increment()=, but =immutable= method cannot call =mutable= method.
 
 
 * allmut member
 
-As mentioned earlier, if a class member is mutable, but the instance of that class is immutable, then that member is immutable.
+As mentioned above, if a member of a class is =mutable=, but an instance of that class is =immutable=, the member will be =immutable=.
 
-In the following example, the mutable member val is accessed from within the =func()= method, but since the =func()= method is immutable, the val is also immutable and an error occurs.
+The following example accesses the member val of =mutable= from within the =func()= method, but since the =func()= method is =immutable=, val is also =immutable=, causing an error.
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
@@ -337,23 +337,23 @@ class Test {
 #+END_SRC
 
 
-mutablity is a necessary concept to prevent unintended changes in value. On the other hand, it is a very strict rule that no member can be changed from an immutable method.
+Mutablity is a necessary concept to prevent the value from changing at unintended timing. On the other hand, it's a very strict rule that you can't change any member from a =immutable= method.
 
-If this rule is applied, it will be difficult to design in the following cases, for example.
-- Consider a class Data that manages read-only data by associating it with a key
+If this rule is applied, the design will become difficult in the following cases, for example.
+- Consider a class Data that manages read-only data associated with a key
 - In the Data class, define a method =get()= that returns the associated data when a key is given as an argument.
-- The Data instance that registered all the data to be managed should be immutable to prevent unnecessary changes.
-I think this is a general idea.
+- Data instance that registers all data to be managed shall be =immutable= to prevent unnecessary changes.
+I think this is a common idea.
 
-Then, suppose that the following specifications are added after the development progresses.
-- In order to speed up the processing of the above =get()= method, the previous argument key and the data associated with that key are cached.
-This process of "cache the previous argument key and the data associated with that key" will rewrite the data. That is, it must be mutable, not immutable.
+Then, as development progresses, you add the following specification:
+- In order to speed up the processing of the above =get()= method, cache the previous argument key and the data associated with that key
+This process of "cache the previous argument key and the data associated with that key" will rewrite the data. That is, it should be =mutable=, not =immutable=.
 
-On the other hand, Data instances have already been declared immutable in many places. In other words, it cannot be cached.
+On the other hand, the Data instance is already declared as =immutable= in many places. In other words, it cannot be cached.
 
-Allmut is used in such cases. allmut declares a member mutablity and is always mutable independent of the instance mutablity.
+Allmut is used in such cases. allmut declares the member's mutability to always be =mutable=, independent of the instance's mutability.
 
-The following is a sample of allmut.
+Here is an example of allmut.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -365,31 +365,31 @@ class Test {
 #+END_SRC
 
 
-By declaring ~pri let allmut val:int;~ in this way, val will always be mutable. This makes it possible to rewrite val from the immutable method =func()=.
+By declaring ~pri let allmut val:int;~ like this, val will always be =mutable=. This makes it possible to rewrite val from =immutable= and =func()= methods.
 
-*However, allmut is just a remedy and should not be overused.*
+*However, allmut is only a remedy and should not be overused.*
 
-*In particular, when performing asynchronous programming with go described later, safety is not guaranteed if allmut is present.*
+*In particular, when doing asynchronous programming in go, which will be described later, safety cannot be guaranteed if allmut is present.*
 
 
-* Constructor definition
+* constructor definition
 
-The constructor can be defined with __init.
+Constructors can be defined in =__init=.
 
 Constructors differ from method definitions in the following ways:
-- The constructor name must be __init.
-- The return type cannot be specified.
-- The constructor definition must come after all member definitions.
-- If you inherit from a class, you must first execute the constructor for that class.
-  - Execution of the constructor of the super class uses =super()=.
-- The constructor must initialize all members.
-  - If you do not explicitly initialize members of type nilable, the default value is nil.
-- The method defined in the class can be accessed only after all the members have been initialized by the process in the constructor.
-  - However, static methods and methods of super class can be accessed.
+- The constructor name must be =__init=.
+- A return type cannot be specified.
+- Constructor definitions must come after all member definitions.
+- If you inherit from a class, you must run the constructor for that class first.
+  - Execution of super class constructor uses =super()=.
+- Constructor must initialize all members.
+  - If you don't explicitly initialize a member of a nilable type, it has the initial value nil.
+- You cannot access the methods defined in the class unless all members are initialized in the constructor.
+  - However, static methods and super class methods are accessible.
   - Also, the method can be accessed from the function object defined in the constructor.
-- You cannot call a method that just declares a prototype from within the constructor.
-- You cannot return in the constructor.
-The following is an example of the constructor.
+- A method with only a prototype declaration cannot be called from within the constructor.
+- You cannot return inside the constructor.
+Here is an example constructor:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -404,12 +404,12 @@ let test = new Test();
 #+END_SRC
 
 
-The constructor can also set initial values for immutable members.
+Note that the constructor can also set initial values for =immutable= members.
 
 
-** Constructor arguments
+** constructor arguments
 
-The constructor can have arguments. This argument is given by the new operator.
+Constructors can have arguments. This argument is given by the new operator.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -431,7 +431,7 @@ test.func(); // 11 12
 
 ** Default constructor
 
-If you do not define a constructor, a constructor that sets all members is automatically generated. This constructor is called the default constructor.
+If you don't define a constructor, a constructor is automatically generated to set all members. This constructor is called the default constructor.
 
 The default constructor has arguments to set all members. The order of the arguments is the order in which the members of the class are declared.
 
@@ -455,17 +455,17 @@ Its default constructor is defined as:
 #+END_SRC
 
 
-The default constructor access control is pub.
+The access control of the default constructor is pub.
 
 
-*** Default constructor for derived classes
+*** Default constructor of derived class
 
-There are two types of default constructors for derived classes: old and current.
+There are two types of default constructors for derived classes: the old style and the current style.
 
 
-**** Current format
+**** present form
 
-The current form default constructor for a derived class Sub is:
+The current form default constructor of the derived class Sub is
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -482,12 +482,12 @@ sub.func(); // 1, 2
 #+END_SRC
 
 
-Like ~new Sub( 1, 2 )~ above, it is an argument of the constructor of the super class + all members of the derived class.
+Like ~new Sub( 1, 2 )~ above, it will be the argument of the constructor of the super class + all members of the derived class.
 
 
-**** Old format
+**** old format
 
-The old-style default constructor for a derived class Sub is:
+An old-style default constructor for a derived class Sub such as
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -505,16 +505,16 @@ sub.func(); // nil, 2
 #+END_SRC
 
 
-It will be all members of the derived class, as in ~new Sub( 2 )~ above.
+All members of the derived class, like ~new Sub( 2 )~ above.
 
-In the old format, all arguments of the super class must be nilable. You also need to declare in ~_lune_control default__init_old;~ that you want to use the old-style default constructor. This declaration must be declared after declaring all members.
+Note that in the old style, all arguments of the super class must be nilable. You also need to declare ~_lune_control default__init_old;~ to use the old-style default constructor. This declaration must be declared after all members have been declared.
 
 
 *** Explicit default constructor
 
-The default constructor is generated internally if you do not define a constructor.
+A default constructor is generated internally if you don't define a constructor.
 
-However, this behavior becomes a problem when writing the following processing.
+But this behavior becomes a problem when you write something like this:
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
@@ -526,13 +526,13 @@ class Test {
 #+END_SRC
 
 
-The above instantiates the Test class within the =create()= method, but fails with no constructor declaration.
+The above creates an instance of the Test class within the =create()= method, but an error occurs because the constructor is not declared.
 
-Originally, the default constructor is generated because there is no constructor definition, but since the timing to define the default constructor is done at the end of the class definition, the =create()= method in the class definition does not have a constructor.
+Originally, the default constructor is generated because there is no constructor definition, but the timing of defining the default constructor is done at the end of the class definition, so there is no constructor in the =create()= method in the class definition.
 
 In such cases, explicitly declare to use the default constructor.
 
-Here is an example:
+For example:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -545,20 +545,63 @@ class Test {
 #+END_SRC
 
 
-By declaring ~_lune_control default__init;~, you can specify the use of the default constructor, and the default constructor will be generated at this time.
+By declaring ~_lune_control default__init;~, you can specify the use of the default constructor, and the default constructor will be generated at this timing.
 
-Note that ~_lune_control default__init;~ must be declared after all members, just like a regular constructor.
+Note that ~_lune_control default__init;~ must be declared after all members, just like a normal constructor.
+
+*This old-style constructor declaration may be desupported in the future.*
 
 
-* Class members
+* destructor
 
-Just as a method has a class method, a member has a class member.
+You can define what happens when an instance of your class is released.
+
+
+** Definition method
+
+Define the destructor in the =__free()= method.
+#+BEGIN_SRC lns
+// @lnsFront: skip
+class Hoge {
+   fn __free() {
+      print( __func__ );
+   }
+}
+{
+   let hoge = new Hoge();
+}
+collectgarbage(); // print Hoge
+#+END_SRC
+
+
+
+** execution timing
+
+Destructors are automatically executed when an instance of the class is released.
+
+*Conversely, destructors cannot be called explicitly.*
+
+
+** important point
+
+*Destructors have a few caveats.*
+- When the instance is freed is up to GC
+- Limited Lua versions available
+  - lua5.1, not available in fengari
+  - access control must be pri
+    - pri so =override= can't
+    - cannot be called with =super()= from the derived destination
+
+
+* class member
+
+Just like methods have class methods, members have class members.
 
 Just add static to the class member definition.
 
-Class members are initialized in the __init block.
+Initialize class members in the __init block.
 
-The following is an example of a class member definition.
+Here is an example class member definition:
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
@@ -573,25 +616,25 @@ class Test {
 #+END_SRC
 
 
-The __init block has the following restrictions:
-- The __init block definition must come after all class member definitions.
-  - If you do not explicitly initialize members of type nilable, the default value is nil.
-- The __init block must initialize all members.
-- You cannot return inside the __init block.
-- You can call class methods from the __init block, but the class methods you call must be declared before the __init block.
+The =__init= block has the following limitations:
+- Definitions of =__init= blocks must follow all class member definitions.
+  - If you don't explicitly initialize a member of a nilable type, it has the initial value nil.
+- The =__init= block must initialize all members.
+- Cannot return in =__init= block.
+- A class method can be called from a =__init= block, but the class method to be called must be declared before the =__init= block.
 
 
 * summary
 
-LuneScript class definitions support the following:
+Class definitions in LuneScript support:
 - Define a class with the keyword class
-- Instance creation is new
-- Access control possible
-- Access yourself with the self symbol
-- Separate class definition and method definition
+- instantiation is new
+- Access controllable
+- access itself with the self symbol
+- Class definition and method definition can be separated
 - prototype declaration
-- Static class methods, class members
-- The constructor is __init
-- If you do not create a constructor, a default constructor will be created
+- Class methods, class members in static
+- Constructor is =__init=
+- If you don't create a constructor, a default constructor will be created.
 
-Next time, I will explain how to generate an accessor.
+Next time, I will explain how to create accessors.
