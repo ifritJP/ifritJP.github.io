@@ -29,6 +29,7 @@ SRCS += classOverride.ja.org
 SRCS += interface.ja.org
 SRCS += classMapping.ja.org
 SRCS += generics.ja.org
+SRCS += generics-go.ja.org
 SRCS += nilcond.ja.org
 SRCS += import.ja.org
 SRCS += require.ja.org

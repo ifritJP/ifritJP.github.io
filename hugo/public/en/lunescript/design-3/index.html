@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Y.3 LuneScript Development (Scopes and Symbols) - tech</title>
+<meta name="generator" content="Hugo 0.109.0">
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/design-3/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Y.3 LuneScript Development (Scopes and Symbols)" />
+<meta property="og:description" content="Continuation of LuneScript development.
+Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation.
+scope LuneScript is a common lexical scope.
+Also, there are the following types of scopes:
+built-in scope global scope In-module scope The built-in scope manages built-in type symbols such as int and str , and built-in function symbols such as print() and string." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/design-3/" /><meta property="article:section" content="LuneScript" />
+
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Y.3 LuneScript Development (Scopes and Symbols)"/>
+<meta name="twitter:description" content="Continuation of LuneScript development.
+Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation.
+scope LuneScript is a common lexical scope.
+Also, there are the following types of scopes:
+built-in scope global scope In-module scope The built-in scope manages built-in type symbols such as int and str , and built-in function symbols such as print() and string."/>
+<meta itemprop="name" content="Y.3 LuneScript Development (Scopes and Symbols)">
+<meta itemprop="description" content="Continuation of LuneScript development.
+Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation.
+scope LuneScript is a common lexical scope.
+Also, there are the following types of scopes:
+built-in scope global scope In-module scope The built-in scope manages built-in type symbols such as int and str , and built-in function symbols such as print() and string.">
+
+<meta itemprop="wordCount" content="386">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Y.3 LuneScript Development (Scopes and Symbols)</h1>
+
+<p>
+Continuation of LuneScript development.</p>
+<p>
+Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation.</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+scope
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+LuneScript is a common lexical scope.</p>
+<p>
+Also, there are the following types of scopes:</p>
+<ul>
+<li>built-in scope</li>
+<li>global scope</li>
+<li>In-module scope</li>
+</ul>
+<p>The built-in scope manages built-in type symbols such as int and str , and built-in function symbols such as <code class="verbatim">print()</code> and <code class="verbatim">string.format()</code> .</p>
+<p>
+The global scope manages lua &#39;s global symbol compatible symbols.</p>
+<p>
+Basically, all symbols of modules created by the user are managed within the module scope.</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+Scope structure
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+The scope has a tree structure, and each scope holds the following elements.</p>
+<ul>
+<li>parent scope</li>
+<li>list of symbols belonging to scope</li>
+</ul>
+<p>For example, in <code class="verbatim">Test.lns</code> below,</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+A scope consists of two things:</p>
+<ul>
+<li><code class="verbatim">@Test</code> scope</li>
+<li><code class="verbatim">func</code> scope</li>
+</ul>
+<p><code class="verbatim">@Test</code> scope is the scope that manages the module of Test.lns. A .lns file always has its own scope.</p>
+<p>
+Note that LuneScript modules manage modules with relative paths from the current directory.</p>
+<p>
+A module with relative path dir/Test.lns has @Test scope inside @dir scope.</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+Classes in LuneScript
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+The scope is managed by the <code class="verbatim">Ast.Scope</code> class.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+symbol
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+A scope manages the symbols belonging to that scope.</p>
+<p>
+For example, for the following sources:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+User-defined <code class="verbatim">func</code> function symbols are registered in this @Test.</p>
+<p>
+The <code class="verbatim">val1</code> and <code class="verbatim">val2</code> variable symbols are registered in the <code class="verbatim">func</code> scope.</p>
+<p>
+The scope and symbols at this time become the following tree.</p>
+<div class="src src-dot">
+<pre tabindex="0"><code class="language-dot" data-lang="dot">digraph G {
+rankdir=RL;
+
+builtin[label=&#34;&lt;builtin&gt;&#34;];
+global[label=&#34;&lt;global&gt;&#34;];
+dir[label=&#34;@dir&#34;];
+dir_sym[shape=&#34;box&#34;];
+Test[label=&#34;@Test&#34;];
+Test_sym[shape=&#34;box&#34;];
+func_sym[shape=&#34;box&#34;];
+func;
+val1_sym[shape=&#34;box&#34;];
+val2_sym[shape=&#34;box&#34;];
+
+global-&gt;builtin
+dir_sym-&gt;global
+dir-&gt;dir_sym
+Test_sym-&gt;dir
+Test-&gt;Test_sym
+func-&gt;func_sym
+func_sym-&gt;Test
+val1_sym-&gt;func
+val2_sym-&gt;func
+}</code></pre>
+</div>
+<p>
+<img src="../lunescript_scope.png" alt="../lunescript_scope.png" title="../lunescript_scope.png" /></p>
+<p>
+Here, the ellipse is the scope and the square is the symbol.</p>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+Composition of symbols
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+A symbol consists of the following attributes:</p>
+<ul>
+<li>access restrictions</li>
+<li>name</li>
+<li>type</li>
+<li>mutable/immutable</li>
+</ul>
+<p>For example, for the code below:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+// Test.lns
+fn func( val1:int ) {
+  let val2 = val1 + 10;
+}
+func( 1 );</code></pre>
+</div>
+<p>
+Each symbol is:</p>
+<table>
+<thead>
+<tr>
+<th>access restrictions</th>
+<th>name</th>
+<th>type</th>
+<th>mut/imut</th>
+<th class="align-right"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>local</td>
+<td>func</td>
+<td>fn (int)</td>
+<td>imut</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>local</td>
+<td>val1</td>
+<td>int</td>
+<td>imut</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>local</td>
+<td>val2</td>
+<td>int</td>
+<td>imut</td>
+<td class="align-right"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+Classes in LuneScript
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+The scope is managed by the <code class="verbatim">Ast.SymbolInfo</code> class.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/design-2/" title="Y.2 Development of LuneScript (type information management)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Y.2 Development of LuneScript (type information management)</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/go_study/" title="Z. Transcompile to Go language (exploratory stage)">Next - Z. Transcompile to Go language (exploratory stage) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Easier Lua development with the transcompiler LuneScript!!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/">01. Introduction</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tuple/">04.3 Tuples</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repetition Syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-value return values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omitting Arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic Arguments and Return Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closures</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/error/">10.6. Error handling</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class Inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import/provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require/module</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Lazy Loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects using LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">80. Transcompiling to Go Language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">80.2 Packages when transpiling to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_wasm/">80.4 WebAssembly support for LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">81. Safe Asynchronous Processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">81.1 Asynchronous processing (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">82. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/ebnf/">A. BNF</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Reason for developing Lua transcompiler LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Recommendations for transcompiler development</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jumping with lnstags (source code tagging system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A.Let&#39;s have more fun in a modern development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">Lua runtime when transpiling to 80.3 Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. The Importance of Self-Hosting and Test Design in Language Development Quality Control</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design/">Y.1 How to develop LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-2/">Y.2 Development of LuneScript (type information management)</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/design-3/">Y.3 LuneScript Development (Scopes and Symbols)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Z. Transcompile to Go language (exploratory stage)</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

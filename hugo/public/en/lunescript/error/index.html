@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>10.6. Error handling - tech</title>
+<meta name="generator" content="Hugo 0.109.0">
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/error/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="10.6. Error handling" />
+<meta property="og:description" content="This section describes LuneScript error handling.
+error handling Currently LuneScript does not support global exits.
+If any error occurs, the error should be notified in the return value of the function.
+There are two main methods of error notification:
+Use nilable and represent errors with nil. Use the alge type __Ret. When to use nilable By using nilable as the return value of a function, you can express the error of that function." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/error/" /><meta property="article:section" content="LuneScript" />
+
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="10.6. Error handling"/>
+<meta name="twitter:description" content="This section describes LuneScript error handling.
+error handling Currently LuneScript does not support global exits.
+If any error occurs, the error should be notified in the return value of the function.
+There are two main methods of error notification:
+Use nilable and represent errors with nil. Use the alge type __Ret. When to use nilable By using nilable as the return value of a function, you can express the error of that function."/>
+<meta itemprop="name" content="10.6. Error handling">
+<meta itemprop="description" content="This section describes LuneScript error handling.
+error handling Currently LuneScript does not support global exits.
+If any error occurs, the error should be notified in the return value of the function.
+There are two main methods of error notification:
+Use nilable and represent errors with nil. Use the alge type __Ret. When to use nilable By using nilable as the return value of a function, you can express the error of that function.">
+
+<meta itemprop="wordCount" content="1432">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>10.6. Error handling</h1>
+
+<p>
+This section describes LuneScript error handling.</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+error handling
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+Currently LuneScript does not support global exits.</p>
+<p>
+If any error occurs, the error should be notified in the return value of the function.</p>
+<p>
+There are two main methods of error notification:</p>
+<ul>
+<li>Use nilable and represent errors with nil.</li>
+<li>Use the alge type __Ret.</li>
+</ul>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+When to use nilable
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+By using nilable as the return value of a function, you can express the error of that function.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): str! {
+   if not flag {
+       return nil;
+   }
+   return &#34;hoge&#34;;
+}</code></pre>
+</div>
+<p>
+The above functions return <code class="verbatim">str</code> on success and <code class="verbatim">nil</code> on failure.</p>
+<p>
+This method has the advantage of being simple to implement, but has the disadvantage of not being able to show information about what kind of error has occurred.</p>
+<p>
+To cover this shortcoming, you can cover this shortcoming by returning a multi-value indicating the error content as follows.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): str!, str! {
+   if not flag {
+       return nil, &#34;error&#34;;
+   }
+   return &#34;hoge&#34;, nil;
+}</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+When using alge type __Ret
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+You can use the following alge type __Ret to indicate the contents of the error without using multi-value return.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+alge __Ret&lt;T1,T2&gt; {
+  Ok(val:T1),
+  Err(val:T2),
+}</code></pre>
+</div>
+<p>
+<strong>The alge type __Ret is available since v1.5.2.</strong></p>
+<p>
+For example, the above <code class="verbatim">func()</code> can be expressed using __Ret as follows:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func(flag:bool): __Ret&lt;str,str&gt; {
+   if not flag {
+       return .Err(&#34;error&#34;);
+   }
+   return .Ok( &#34;hoge&#34; );
+}</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+<code class="verbatim">!</code> operator
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+In a function that returns an error, if a sub-function that is executed within the processing of that function returns an error, it is necessary to determine the error for each sub-function, which complicates the processing.</p>
+<p>
+For example, next we have a sub-function <code class="verbatim">sub()</code> and we have <code class="verbatim">func()</code> which calls this function three times.</p>
+<p>
+<code class="verbatim">func()</code> requires error determination processing three times.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val &gt; 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let! work1 = self.sub( val + 1 ) {  // check error
+         return nil;
+      };
+      let! work2 = self.sub( val + 2 ) { // check error
+         return nil;
+      };
+      let! work3 = self.sub( val + 3 ) { // check error
+         return nil;
+      };
+      return &#34;%s&#34; (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( &#34;%s&#34; (hoge.func( 0 )) );
+print( &#34;%s&#34; (hoge.func( 1 )) );</code></pre>
+</div>
+<p>
+The <code class="verbatim">!</code> operator simplifies the above error checking.</p>
+<p>
+Before explaining the specifications of the <code class="verbatim">!</code> operator, it is easier to imagine what happens when the above code is rewritten using the <code class="verbatim">!</code> operator, so the code is shown below.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int! {
+      if val &gt; 3 {
+	 return nil;
+      }
+      return val;
+   }
+   pub fn func( val:int ) : str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return &#34;%s&#34; (work1 + work2 + work3);
+   }
+}
+let hoge = new Hoge();
+print( &#34;%s&#34; (hoge.func( 0 )) );
+print( &#34;%s&#34; (hoge.func( 1 )) );</code></pre>
+</div>
+<p>
+You can see that the code using <code class="verbatim">!</code> has simplified error determination processing.</p>
+<p>
+If you want to return two values like this:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : int!, str! {
+      if val &gt; 3 {
+	 return nil, &#34;err&#34;;
+      }
+      return val, nil;
+   }
+   pub fn func( val:int ) : int!, str! {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return work1 + work2 + work3, nil;
+   }
+}
+let hoge = new Hoge();
+print( &#34;%s,%s&#34; ( hoge.func( 0 )) );
+print( &#34;%s,%s&#34; ( hoge.func( 1 )) );</code></pre>
+</div>
+<p>
+If you use <code class="verbatim">__Ret</code> instead of nilable it will be:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+class Hoge {
+   fn sub( val:int ) : __Ret&lt;int,__Er&gt; {
+      if val &gt; 3 {
+	 return .Err( __serr( &#34;err&#34; ) );
+      }
+      return .Ok( val );
+   }
+   pub fn func( val:int ) : __Ret&lt;str,__Er&gt; {
+      let work1 = self.sub( val + 1 )!;
+      let work2 = self.sub( val + 2 )!;
+      let work3 = self.sub( val + 3 )!;
+      return .Ok( &#34;%s&#34; (work1 + work2 + work3) );
+   }
+}
+let hoge = new Hoge();
+for count = 0, 1 {
+   match hoge.func( count ) {
+      case .Ok( val ) {
+         print( &#34;ok&#34;, val );
+      }
+      case .Err( err ) {
+         print( &#34;ng&#34;, err.$txt );
+      }
+   }
+}</code></pre>
+</div>
+<div id="outline-container-headline-5" class="outline-4">
+<h4 id="headline-5">
+Specification of <code class="verbatim">!</code> operator
+</h4>
+<div id="outline-text-headline-5" class="outline-text-4">
+<p>
+<strong>To use the <code class="verbatim">!</code> operator, the following specifications must be met.</strong></p>
+<ul>
+<li>
+<p><code class="verbatim">!</code> The type T of the value just before the operator is nilable or __Ret type.</p>
+<ul>
+<li><code class="verbatim">!</code> If T is nilable, there may be a type T2 following T.</li>
+</ul>
+</li>
+<li>
+<p>The return type R of a function containing a statement using the <code class="verbatim">!</code> operator satisfies the following:</p>
+<ul>
+<li>
+<p>If T is nilable, then R is also nilable.</p>
+<ul>
+<li>If there is T2, then there is R2, and R2 is assignable to T2.</li>
+</ul>
+</li>
+<li>
+<p>If T is <code class="verbatim">__Ret&lt;T1,T2&gt;</code> then R is <code class="verbatim">__Ret&lt;R1,R2&gt;</code>.</p>
+<ul>
+<li>Here R2 must be a type to which T2 can be assigned.</li>
+<li>T1 and R1 can be of any type.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>In the above example using <code class="verbatim">pub fn func( val:int ) : int!, str!</code>,</p>
+<ul>
+<li>The return value of func() is <code class="verbatim">int!, str!</code>.</li>
+<li>The type of the value sub() immediately before the <code class="verbatim">!</code> operator is <code class="verbatim">int!, str!</code>.</li>
+<li>That is, <code class="verbatim">T1 = int!</code>, <code class="verbatim">T2 = str!</code>, <code class="verbatim">R1 = int!</code>, <code class="verbatim">R2 = str!</code>.</li>
+<li>Therefore, it becomes <code class="verbatim">T2=R2=str!</code> and the <code class="verbatim">!</code> operator can be used.</li>
+</ul>
+<p>Also, in the sample using __Ret above,</p>
+<ul>
+<li>The return value of func() is <code class="verbatim">__Ret&lt;str,__Er&gt;</code>.</li>
+<li>The type of the value sub() immediately before the <code class="verbatim">!</code> operator is <code class="verbatim">__Ret&lt;int,__Er&gt;</code>.</li>
+<li>That is, <code class="verbatim">T1 = int</code>, <code class="verbatim">T2 = __Er</code>, <code class="verbatim">R1 = str</code>, <code class="verbatim">R2 = __Er</code>.</li>
+<li>Therefore, it becomes <code class="verbatim">T2=R2=__Er</code> and the <code class="verbatim">!</code> operator can be used.</li>
+</ul>
+<p>If the above specifications are met, the <code class="verbatim">!</code> operator behaves as follows.</p>
+<ul>
+<li>If the value immediately before the <code class="verbatim">!</code> operator is .Err, set that value to the return value of the function containing that code and return.</li>
+<li>If the value immediately preceding the <code class="verbatim">!</code> operator is .Ok, continue processing with the result of evaluating the <code class="verbatim">!</code> operator as the value .Ok.</li>
+</ul>
+<p>Also, the place where the <code class="verbatim">!</code> operator can be used is limited to the following statement shown in <a href="../ebnf">../ebnf</a>.</p>
+<ul>
+<li>stmt_exp</li>
+<li>if</li>
+<li>decl_var</li>
+</ul>
+<p>For statements other than the above, we will respond at any time.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+__Er type
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+The __Er type is added as a type that indicates information at the time of <code class="verbatim">__Ret</code> error.</p>
+<p>
+This type is the following interface:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub interface __Er {
+   fn get_txt():str;
+}</code></pre>
+</div>
+<p>
+In addition, the following <code class="verbatim">__serr()</code> function is provided as a function that creates an instance of __Er type.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn __err(mess:str): __Er;</code></pre>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+Error handling of multi-value return function using tuple
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+By using tuples, error handling of multi-value return functions is possible.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn sub(flag:bool) : (int,str)!,str! {
+   if flag {
+      return (= 1,&#34;abc&#34;), nil;
+   }
+   return nil, &#34;err&#34;;
+}
+
+fn func(flag:bool) : (int,str)!,str! {
+   let val1, val2 = sub(flag)!...;
+   let val3, val4 = sub(flag)!...;
+   print( val1, val2, val3, val4 );
+   return (= val1 + val3, val2 .. val4 ), nil;
+}
+
+foreach cond in [true,false] {
+   let tuple, err = func( cond );
+   when! tuple {
+      let val1,val2 = tuple...;
+      print( &#34;ok&#34;, val1, val2 );
+   } else {
+      print( &#34;ng&#34;, err );
+   }
+}</code></pre>
+</div>
+<div id="outline-container-headline-8" class="outline-4">
+<h4 id="headline-8">
+When using __Ret
+</h4>
+<div id="outline-text-headline-8" class="outline-text-4">
+<p>
+<code class="verbatim">__Ret</code> is an alge type representing values between Ok and Err. It is a value of one type that can hold both Ok and Err.</p>
+<p>
+LuneScript can use multi-value return, but only one __Ret can be returned when used for error handling purposes.</p>
+<p>
+Therefore, by using a tuple for the type held by __Ret, error handling can be performed in the same way as multi-value return.</p>
+<p>
+Below is an example of processing a combination of __Ret and a tuple.</p>
+<p>
+Running sub() inside <code class="verbatim">func()</code>. At this time, <code class="verbatim">!</code> is used to transfer errors, and a tuple is used to achieve the same processing as multi-value return.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn sub(flag:bool) : __Ret&lt;(int,str),__Er&gt; {
+   if flag {
+      return .Ok( (= 1,&#34;abc&#34;) );
+   }
+   return .Err( __serr( &#34;err&#34; ));
+}
+
+fn func(flag:bool) : __Ret&lt;int,__Er&gt; {
+   let val1, val2 = sub(flag)!...;
+   let val3, val4 = sub(flag)!...;
+   print( val1, val2, val3, val4 );
+   return .Ok( val1 + val3 );
+}
+
+foreach cond in [true,false] {
+   match func( cond ) {
+      case .Ok( val ) {
+         print( &#34;ok&#34;, val );
+      }
+      case .Err( val ) {
+         print( &#34;ng&#34;, val.$txt );
+      }
+   }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/closure/" title="10.5. Closures"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 10.5. Closures</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/nilable/" title="11. nilable">Next - 11. nilable <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Easier Lua development with the transcompiler LuneScript!!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/">01. Introduction</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tuple/">04.3 Tuples</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repetition Syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-value return values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omitting Arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic Arguments and Return Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closures</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/error/">10.6. Error handling</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class Inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import/provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require/module</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Lazy Loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects using LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">80. Transcompiling to Go Language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">80.2 Packages when transpiling to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_wasm/">80.4 WebAssembly support for LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">81. Safe Asynchronous Processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">81.1 Asynchronous processing (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">82. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/ebnf/">A. BNF</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Reason for developing Lua transcompiler LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Recommendations for transcompiler development</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jumping with lnstags (source code tagging system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A.Let&#39;s have more fun in a modern development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">Lua runtime when transpiling to 80.3 Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. The Importance of Self-Hosting and Test Design in Language Development Quality Control</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design/">Y.1 How to develop LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-2/">Y.2 Development of LuneScript (type information management)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-3/">Y.3 LuneScript Development (Scopes and Symbols)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Z. Transcompile to Go language (exploratory stage)</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Y.2 Development of LuneScript (type information management) - tech</title>
+<meta name="generator" content="Hugo 0.109.0">
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/design-2/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Y.2 Development of LuneScript (type information management)" />
+<meta property="og:description" content="Continuation of LuneScript development. Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation. type information Data types are important in programming. Especially since LuneScript is a statically typed language, you can understand the importance of data type management. Note that Ast.lns manages LuneScript data types. Some people may quibble about why the type management source is" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/design-2/" /><meta property="article:section" content="LuneScript" />
+
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Y.2 Development of LuneScript (type information management)"/>
+<meta name="twitter:description" content="Continuation of LuneScript development. Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation. type information Data types are important in programming. Especially since LuneScript is a statically typed language, you can understand the importance of data type management. Note that Ast.lns manages LuneScript data types. Some people may quibble about why the type management source is"/>
+<meta itemprop="name" content="Y.2 Development of LuneScript (type information management)">
+<meta itemprop="description" content="Continuation of LuneScript development. Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation. type information Data types are important in programming. Especially since LuneScript is a statically typed language, you can understand the importance of data type management. Note that Ast.lns manages LuneScript data types. Some people may quibble about why the type management source is">
+
+<meta itemprop="wordCount" content="833">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Y.2 Development of LuneScript (type information management)</h1>
+
+<p>
+Continuation of LuneScript development.</p>
+<p>
+Since the overview of each process in the flow has already been explained, this time we will go into a little internal explanation.</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+type information
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+Data types are important in programming.</p>
+<p>
+Especially since LuneScript is a statically typed language, you can understand the importance of data type management.</p>
+<p>
+Note that <code class="verbatim">Ast.lns</code> manages LuneScript data types.</p>
+<p>
+Some people may quibble about why the type management source is called <code class="verbatim">Ast.lns</code>, but don&#39;t worry about it.</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+Type of mold
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+Quickly, how many types are there in the following code?</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+fn func() {
+  print( &#34;hello world&#34; );
+}</code></pre>
+</div>
+<p>
+The answer is the following three.</p>
+<ul>
+<li>the functional form of func</li>
+<li>Functional form of print</li>
+<li>String type for &#34;hello world&#34;</li>
+</ul>
+<p>It can be seen that the above type information includes types representing functions and types representing strings.</p>
+<p>
+Of course, LuneScript supports various other types such as integer type, real number type, and class.</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+type attribute
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+Furthermore, types can be divided into the following two types.</p>
+<ul>
+<li>type of builtin that is pre-installed in the system</li>
+<li>Types such as user-defined functions and classes</li>
+</ul>
+<p>The problem here is user-defined types.</p>
+<p>
+If there are only builtin types, all the type information can be hard-coded, but supporting user-defined types means that &#34;what types are defined by the user?&#34; This means that it must be managed systematically.</p>
+<p>
+For example, the following user-defined function func is</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+pub fn func&lt;T&gt;( val:T ) : &amp;List&lt;T&gt; {
+  return [ val ];  
+}</code></pre>
+</div>
+<p>
+It consists of the following.</p>
+<ul>
+<li>
+<p>function name</p>
+<ul>
+<li>func</li>
+</ul>
+</li>
+<li>
+<p>access restrictions</p>
+<ul>
+<li>pub</li>
+</ul>
+</li>
+<li>
+<p>Type parameters </p>
+<ul>
+<li>T</li>
+</ul>
+</li>
+<li>
+<p>argument</p>
+<ul>
+<li>name val</li>
+<li>Type T</li>
+</ul>
+</li>
+<li>
+<p>return type</p>
+<ul>
+<li>&amp;List&lt;T&gt;</li>
+</ul>
+</li>
+</ul>
+<p>In this way, even if it is simply called a function, it is composed of a lot of attribute information.</p>
+<p>
+Although not shown in the above example, there are other attributes such as abstract, static, and mutable.</p>
+<p>
+Type information manages this configuration information.</p>
+<p>
+This type information is managed by the <code class="verbatim">Ast.TypeInfo</code> class in LuneScript.</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+Variation of type information
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+Please see the following code.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let list1:List&lt;int&gt;;
+let list2:&amp;List&lt;int&gt;;
+let list3:List&lt;int&gt;!;
+let list4:&amp;List&lt;int&gt;!;</code></pre>
+</div>
+<p>
+This code declares variables list1 to list4.</p>
+<p>
+Each variable has the following four types.</p>
+<ul>
+<li>List&lt;int&gt;</li>
+<li>List&lt;int&gt; immutable</li>
+<li>nilable of List&lt;int&gt;</li>
+<li>List&lt;int&gt; immutable nilable</li>
+</ul>
+<p>This is a variation on List&lt;int&gt;.</p>
+<p>
+This variation exists for basically all types.</p>
+<p>
+And since each is a different type, it is necessary to manage them as different type information.</p>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+Methods of TypeInfo
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+As mentioned above, there are immuttable and nilable types for all types.</p>
+<p>
+And for easy access to that type, TypeInfo has the following methods:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+   /**この TypeInfo に対する immutable な型を取得  */
+   pub fn get_imutType(): &amp;TypeInfo;
+   /**この TypeInfo に対する nilable な型を取得  */
+   pub fn get_nilableTypeInfo(): &amp;TypeInfo;
+   /**この TypeInfo に対する nonnilable な型を取得  */
+   pub fn get_nonnilableType(): &amp;TypeInfo;
+   /**この TypeInfo に対する mutable な型を取得  */
+   pub fn get_srcTypeInfo(): &amp;TypeInfo;</code></pre>
+</div>
+<p>
+For example, if you execute <code class="verbatim">get_imutType()</code> of TypeInfo that manages <code class="verbatim">List&lt;int&gt;</code>, you can get <code class="verbatim">TypeInfo</code> that manages <code class="verbatim">&amp;List&lt;int&gt;</code>.</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+substitutable decision
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+In the arguments of the function:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+fn func( mut list1:List&lt;int&gt;, mut list2:&amp;List&lt;int&gt;, 
+         mut list3:List&lt;int&gt;!, mut list4:&amp;List&lt;int&gt;! )</code></pre>
+</div>
+<p>
+Arguments list1 to list4 have the following assignability relation.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+list1 = list2; // error
+list1 = list3; // error
+list1 = list4; // error
+
+list2 = list1;
+list2 = list3; // error
+list2 = list4; // error
+
+list3 = list1;
+list3 = list2; // error
+list3 = list4; // error
+
+list4 = list1;
+list4 = list2;
+list4 = list3;</code></pre>
+</div>
+<p>
+Simply put, there are two.</p>
+<ul>
+<li>No assignment from immutable to mutable</li>
+<li>No assignment from nilable to non-nilable</li>
+</ul>
+<p>The type information also performs such prohibition control.</p>
+<p>
+Naturally, assignment control between data of different types is similarly performed. (For example, when assigning function type data to integer type)</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+generics 
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+If you declare List type variables list1 and list2 that have a certain class Hoge as an element,</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let mut list1:List&lt;Hoge&gt;;
+let mut list2:List&lt;&amp;Hoge&gt;;</code></pre>
+</div>
+<p>
+list1 and list2 have the following relationship.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+list1 = list2; // error
+list2 = list1;</code></pre>
+</div>
+<p>
+And this needs to be controlled in combination with the variations of the type information mentioned earlier.</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+class
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<p>
+When there is an inheritance relationship of the following classes,</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+class Super {
+}
+class Sub extend Super {
+}</code></pre>
+</div>
+<p>
+Variables of each type have the following relationships:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
+let super = new Super();
+let sub = new Sub();
+
+super = sub;
+sub = super; // error</code></pre>
+</div>
+<p>
+And this also requires control in combination with variation of type information.</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
+<h3 id="headline-9">
+Class that manages nilable and immutable
+</h3>
+<div id="outline-text-headline-9" class="outline-text-3">
+<p>
+In LuneScript, the following classes manage nilable and immutable type information. The following classes are subclasses of <code class="verbatim">TypeInfo</code>.</p>
+<ul>
+<li>
+<p><code class="verbatim">Ast.ModifierTypeInfo</code></p>
+<ul>
+<li>Class that manages immutable</li>
+</ul>
+</li>
+<li>
+<p><code class="verbatim">Ast.NilableTypeInfo</code></p>
+<ul>
+<li>A class that manages nilables</li>
+</ul>
+</li>
+</ul>
+<p>As described above, the main role of TypeInfo is to manage type information.</p>
+</div>
+</div>
+</div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/design/" title="Y.1 How to develop LuneScript"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Y.1 How to develop LuneScript</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/design-3/" title="Y.3 LuneScript Development (Scopes and Symbols)">Next - Y.3 LuneScript Development (Scopes and Symbols) <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Easier Lua development with the transcompiler LuneScript!!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/">01. Introduction</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tuple/">04.3 Tuples</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repetition Syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-value return values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omitting Arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic Arguments and Return Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closures</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/error/">10.6. Error handling</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class Inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import/provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require/module</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Lazy Loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects using LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">80. Transcompiling to Go Language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">80.2 Packages when transpiling to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_wasm/">80.4 WebAssembly support for LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">81. Safe Asynchronous Processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">81.1 Asynchronous processing (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">82. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/ebnf/">A. BNF</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Reason for developing Lua transcompiler LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Recommendations for transcompiler development</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jumping with lnstags (source code tagging system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A.Let&#39;s have more fun in a modern development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">Lua runtime when transpiling to 80.3 Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. The Importance of Self-Hosting and Test Design in Language Development Quality Control</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design/">Y.1 How to develop LuneScript</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/design-2/">Y.2 Development of LuneScript (type information management)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-3/">Y.3 LuneScript Development (Scopes and Symbols)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Z. Transcompile to Go language (exploratory stage)</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

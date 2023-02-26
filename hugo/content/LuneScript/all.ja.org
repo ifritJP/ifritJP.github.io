@@ -7155,6 +7155,202 @@ if! let test2 = Test<str>._fromMap( map ) {
 これにより、 Generics クラスが Mapping 可能になります。
 
 -----
+* *generics (2つの collection 型) 編*
+:PROPERTIES:
+:CUSTOM_ID: generics-go_ja
+:END:
+
+# -*- coding:utf-8 -*-
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+LuneScript v1.6.0 から collection 型の generics の扱いが増えました。
+
+これは主に go へ変換したときに影響があるもので、
+lua への変換を利用している場合は影響ありません。
+
+新しい collection 型の説明をする前に、
+従来の collection 型の説明をします。
+
+** 従来型の collection 型
+
+LuneScript は 2019 年に generics をサポートしました。
+
+一方、go が generics をサポートしたのは version 1.18 (2022年)からです。
+
+そして、 LuneScript が go へのトランスコンパイルをサポートしたのは 2020 年で、
+このころは go 1.15 の時代。
+
+<https://twitter.com/DwarfJp/status/1317681809895780352?ref_src=twsrc>
+
+では、 generics を対応していない go 1.15 、
+でどのように LuneScript の generics を実現していたか？というと、
+
+*『go の interface{} 型(現在の any 型)でデータを扱い、*
+*アクセスする際に interface{} からキャストして使っていた』* 
+
+ということです。
+
+
+具体的には、 LuneScript の collection 型には以下がありあす。
+
+- List<T>
+- Set<T>
+- Map<K,V>
+
+これらは、 go で扱う場合に次の型として定義しています。
+
+#+BEGIN_SRC go
+// List<T>
+type LnsList struct {
+	Items       []LnsAny
+	lnsItemKind int
+}
+// Set<T>
+type LnsSet struct {
+	Items map[LnsAny]bool
+}
+// Map<K,V>
+type LnsMap struct {
+	Items map[LnsAny]LnsAny
+}
+#+END_SRC
+
+ここで =LnsAny= は =interface{}= です。
+
+** 新しい collection 型
+
+LuneScript v1.6.0 から、次の新しい collection 型を導入しています。
+
+- __List<T>
+- __Set<T>
+- __Map<K,V>
+
+*新しい collection 型は、prefix に __ を付加します。*
+
+これらは、 go で扱う場合に次の型として定義しています。
+
+#+BEGIN_SRC go
+// __List<T>
+type LnsList2_[T any] struct {
+	Items       []T
+	lnsItemKind int
+}
+// __Set<T>
+type LnsSet2_[T comparable] struct {
+	Items map[T]bool
+}
+// __Map<K,V>
+type LnsMap2_[K comparable,V any] struct {
+	Items map[K]V
+}
+#+END_SRC
+
+見ての通り、新しい collection 型では、
+go の collection 型を利用しています。
+
+
+** それぞれの型の特徴
+
+ここでは、従来型と新しい型の特徴について説明します。
+
+*** 従来型の特徴
+
+**** 処理の柔軟性
+
+従来型は any でデータを扱うので、動的に変換して処理を行ないます。
+これによって、次のような事が可能です。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let list:&List<str> = [ "abc" ];
+let list2:&List<&stem> = list;
+let list3:&List<str> = list2@@List<str>;
+#+END_SRC
+
+- &List<str> 型の list から &List<&stem> 型への代入が可能です。
+- &List<&stem> 型の list から &List<str> 型へのキャストが可能です。
+
+上記の処理が可能なのは、データを格納する際は any で扱い、
+実際に格納されたデータにアクセスする際にキャストして利用しているためです。
+
+
+また、この特徴によって、
+LuneScript と Lua 間とで collection 型のデータのやりとりが
+簡単に出来るようになっています。
+
+例えば次のコードで =obj@@Map<str,int>= のキャストを行なっていますが、
+このキャストが出来るのも、この特徴によるものです。
+
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func() {
+   let code = ```
+return { abc = 123 }
+```;
+   let obj:&stem!;
+   __luago {
+      if! let loaded = _load( code ## ) {
+         let work = loaded(##);
+         obj = expandLuavalMap( work );
+      } else {
+         obj = nil;
+      }
+   }
+   when! obj {
+      let map = obj@@Map<str,int>;
+      foreach val, key in map {
+         print( key, val );
+      }
+   }
+}
+func();
+#+END_SRC
+
+=expandLuavalMap()= は、
+Lua から取得した値を LuneScript の値に変換する関数です。
+
+=expandLuavalMap()= は、与えられた値がテーブルだった場合、
+=&Map<&stem,&stem>= で生成して返します。
+
+この =&Map<&stem,&stem>= で扱うのは不便なので、
+=Map<str,int>= へのキャストを行なっています。
+
+このように、 collection 型の要素の型を動的に切り替えられる、
+というのは、従来型の特徴です。
+
+
+**** オーバーヘッド
+
+上記の通り、データを格納する際に any として格納し、
+格納されたデータにアクセスする際にキャストします。
+
+上記の処理がオーバーヘッドとなります
+
+*** 新しい collection 型の特徴
+
+**** 少ないオーバーヘッド
+
+新しい collection 型では、
+go の generics を利用します。
+
+この go の generics により、
+データアクセス時の明示的なキャストが不要になり、
+オーバーヘッドが削減されています。
+
+**** 処理の柔軟性が無くなる
+
+従来の collection 型の特徴で挙げた以下の処理が、
+新しい collection 型では出来ません。
+
+#+BEGIN_SRC lns
+// @lnsFront: error
+let list:&__List<str> = [ "abc" ];
+let list2:&__List<&stem> = list; // error
+let list3:&__List<str> = list2@@List<str>; // error
+#+END_SRC
+-----
 * *nil 条件演算子 編*
 :PROPERTIES:
 :CUSTOM_ID: nilcond_ja

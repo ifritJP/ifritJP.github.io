@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>80.4 WebAssembly support for LuneScript - tech</title>
+<meta name="generator" content="Hugo 0.109.0">
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/go_wasm/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="80.4 WebAssembly support for LuneScript" />
+<meta property="og:description" content="There are two ways to run code created in LuneScript on a web browser.
+Transcompile from LuneScript to Lua and run the Lua code with fengari etc. Transcompile from LuneScript to go and convert that go code to WebAssemly Here&#39;s how to convert from go to WebAssemly.
+Converting from go to Web Assemblies Converting from go to WebAssemly takes advantage of go functionality.
+For the basic flow of how to use WebAssembly in go, please refer to the following official document." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/go_wasm/" /><meta property="article:section" content="LuneScript" />
+
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="80.4 WebAssembly support for LuneScript"/>
+<meta name="twitter:description" content="There are two ways to run code created in LuneScript on a web browser.
+Transcompile from LuneScript to Lua and run the Lua code with fengari etc. Transcompile from LuneScript to go and convert that go code to WebAssemly Here&#39;s how to convert from go to WebAssemly.
+Converting from go to Web Assemblies Converting from go to WebAssemly takes advantage of go functionality.
+For the basic flow of how to use WebAssembly in go, please refer to the following official document."/>
+<meta itemprop="name" content="80.4 WebAssembly support for LuneScript">
+<meta itemprop="description" content="There are two ways to run code created in LuneScript on a web browser.
+Transcompile from LuneScript to Lua and run the Lua code with fengari etc. Transcompile from LuneScript to go and convert that go code to WebAssemly Here&#39;s how to convert from go to WebAssemly.
+Converting from go to Web Assemblies Converting from go to WebAssemly takes advantage of go functionality.
+For the basic flow of how to use WebAssembly in go, please refer to the following official document.">
+
+<meta itemprop="wordCount" content="501">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>80.4 WebAssembly support for LuneScript</h1>
+
+<p>
+There are two ways to run code created in LuneScript on a web browser.</p>
+<ul>
+<li>Transcompile from LuneScript to Lua and run the Lua code with fengari etc.</li>
+<li>Transcompile from LuneScript to go and convert that go code to WebAssemly</li>
+</ul>
+<p>Here&#39;s how to convert from go to WebAssemly.</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+Converting from go to Web Assemblies
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+Converting from go to WebAssemly takes advantage of go functionality.</p>
+<p>
+For the basic flow of how to use WebAssembly in go, please refer to the following official document.</p>
+<p>
+&lt;<a href="https://github.com/golang/go/wiki/WebAssembly">https://github.com/golang/go/wiki/WebAssembly</a>&gt;</p>
+<p>
+Here we are talking about LuneScript specific.</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+Lua runtime uses gopherlua
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+To convert your LuneScript code to a go app, you need a Lua runtime.</p>
+<p>
+LuneScript supports two runtimes for Lua:</p>
+<ul>
+<li>Official Lua runtime</li>
+<li>gopherlua</li>
+</ul>
+<p>Here, the &#34;official Lua runtime&#34; is not available for WebAssembly, so gopherlua will be used.</p>
+<p>
+Therefore, the command for converting from go to WebAssembly will specify <code class="verbatim">-tags gopherlua</code> as follows.</p>
+<pre class="example">
+$ GOOS=js GOARCH=wasm go build -tags gopherlua -o main.wasm
+</pre>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+Cooperation between JavaScript and LuneScript
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+Interaction between JavaScript and LuneScript is possible while main() is running.</p>
+<p>
+Conversely, in order to work with LuneScript asynchronously from JavaScript, it is necessary to wait without finishing LuneScript processing.</p>
+<p>
+There are two ways to achieve this waiting process.</p>
+<ul>
+<li>go process in external module</li>
+<li>Make use of __AsyncItem</li>
+</ul>
+<p>I will explain below.</p>
+<div id="outline-container-headline-4" class="outline-4">
+<h4 id="headline-4">
+go process in external module
+</h4>
+<div id="outline-text-headline-4" class="outline-text-4">
+<ul>
+<li>Create a go channel and read data from that channel.</li>
+<li>Define this process as an external module of go, and execute that module with a LuneScript module declaration, etc.</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-4">
+<h4 id="headline-5">
+Make use of __AsyncItem
+</h4>
+<div id="outline-text-headline-5" class="outline-text-4">
+<ul>
+<li>Use LuneScript&#39;s __AsyncItem interface to create a pipe and read data from that pipe.</li>
+<li>Define your own class that extends the __AsyncItem interface and create a pipe from that class.</li>
+<li>Use the put and get methods of this pipe.</li>
+<li>In the following sample, loop() is the waiting process, and notify() is the data writing process to the pipe.</li>
+<li>By using this notify(), you can receive asynchronous messages from JavaScript.</li>
+</ul>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+pub class AsyncItem extend (__AsyncItem,Mapping) {
+   let val:str {pub};
+}
+
+let queue = __lns.Sync._createPipe( AsyncItem, 0 );
+
+fn loop() {
+  when! queue {
+    while true {
+       let! item = queue.get() {
+          break;
+       };
+       print( item.$val );
+    }
+  }
+}
+pub fn notify( val:str ) {
+   when! queue {
+      queue.put( new AsyncItem( val ) );
+   }
+}</code></pre>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+Asynchronous processing in LuneScript
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+In the current state of WebAssembly, asynchronous processing within LuneScript behaves the same as when the following is specified:</p>
+<pre class="example">
+GOMAXPROCS=1
+</pre>
+<p>
+In other words, while one process is running, the other process is not running.</p>
+<p>
+Processing switches at the timing of waiting for __asyncLock or pipe.</p>
+<p>
+Except for __asyncLock and pipe, if any process blocks, the whole process will stop until that block is exited.</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
+<h2 id="headline-7">
+tinygo
+</h2>
+<div id="outline-text-headline-7" class="outline-text-2">
+<p>
+There are two ways to convert from go to WebAssembly: using official go and using tinygo.</p>
+<p>
+It seems that using tinygo makes it easier to work with WebAssembly size and JavaScript.</p>
+<p>
+However, at the moment, the latest tinygo v0.22.0 does not support packages used by LuneScript, so tinygo cannot be used.</p>
+<p>
+that&#39;s all.</p>
+</div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/go_package/" title="80.2 Packages when transpiling to Go"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 80.2 Packages when transpiling to Go</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/async/" title="81. Safe Asynchronous Processing">Next - 81. Safe Asynchronous Processing <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Easier Lua development with the transcompiler LuneScript!!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/">01. Introduction</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tuple/">04.3 Tuples</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repetition Syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-value return values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omitting Arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic Arguments and Return Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closures</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/error/">10.6. Error handling</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class Inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import/provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require/module</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Lazy Loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects using LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">80. Transcompiling to Go Language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">80.2 Packages when transpiling to Go</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/go_wasm/">80.4 WebAssembly support for LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">81. Safe Asynchronous Processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">81.1 Asynchronous processing (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">82. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/ebnf/">A. BNF</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Reason for developing Lua transcompiler LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Recommendations for transcompiler development</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jumping with lnstags (source code tagging system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A.Let&#39;s have more fun in a modern development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">Lua runtime when transpiling to 80.3 Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. The Importance of Self-Hosting and Test Design in Language Development Quality Control</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design/">Y.1 How to develop LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-2/">Y.2 Development of LuneScript (type information management)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-3/">Y.3 LuneScript Development (Scopes and Symbols)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Z. Transcompile to Go language (exploratory stage)</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
