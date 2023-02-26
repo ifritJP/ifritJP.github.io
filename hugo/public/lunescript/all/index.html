@@ -32,7 +32,7 @@
 <meta itemprop="name" content="全文検索用結合ファイル">
 <meta itemprop="description" content="全文検索し易いように、LuneScript 解説ドキュメントを結合したものです。 LuneScript 入門リファレンス トランスコンパイラ LuneScript で Lua の開発をもっと楽に!">
 
-<meta itemprop="wordCount" content="118879">
+<meta itemprop="wordCount" content="119372">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -8373,10 +8373,10 @@ if! let test2 = Test&lt;str&gt;._fromMap( map ) {
 <p>
 LuneScript v1.6.0 から collection 型の generics の扱いが増えました。</p>
 <p>
-これは主に go へ変換したときに影響があるもので、
-lua への変換を利用している場合は影響ありません。</p>
+これは主に go へ変換するときに影響があるもので、
+<strong>lua への変換を利用している場合は影響ありません。</strong></p>
 <p>
-新しい collection 型の説明をする前に、
+この新しい collection 型の説明をする前に、
 従来の collection 型の説明をします。</p>
 <div id="outline-container-headline-262" class="outline-3">
 <h3 id="headline-262">
@@ -8393,11 +8393,13 @@ LuneScript は 2019 年に generics をサポートしました。</p>
 <p>
 &lt;<a href="https://twitter.com/DwarfJp/status/1317681809895780352?ref_src=twsrc">https://twitter.com/DwarfJp/status/1317681809895780352?ref_src=twsrc</a>&gt;</p>
 <p>
-では、 generics を対応していない go 1.15 、
-でどのように LuneScript の generics を実現していたか？というと、</p>
+つまり、 generics に対応していない go 1.15 で
+LuneScript の generics を動かしていた、ということです。</p>
+<p>
+では、でどのように LuneScript の generics を実現していたか？というと、</p>
 <p>
 <strong>『go の interface{} 型(現在の any 型)でデータを扱い、</strong>
-<strong>アクセスする際に interface{} からキャストして使っていた』</strong> </p>
+<strong>アクセスする毎に interface{} からキャストして使っていた』</strong> </p>
 <p>
 ということです。</p>
 <p>
@@ -8489,8 +8491,8 @@ let list2:&amp;List&lt;&amp;stem&gt; = list;
 let list3:&amp;List&lt;str&gt; = list2@@List&lt;str&gt;;</code></pre>
 </div>
 <ul>
-<li>&amp;List&lt;str&gt; 型の list から &amp;List&lt;&amp;stem&gt; 型への代入が可能です。</li>
-<li>&amp;List&lt;&amp;stem&gt; 型の list から &amp;List&lt;str&gt; 型へのキャストが可能です。</li>
+<li><code class="verbatim">&amp;List&lt;str&gt;</code> 型のリストから <code class="verbatim">&amp;List&lt;&amp;stem&gt;</code> 型への代入が可能です。</li>
+<li><code class="verbatim">&amp;List&lt;&amp;stem&gt;</code> 型のリストから <code class="verbatim">&amp;List&lt;str&gt;</code> 型へのキャストが可能です。</li>
 </ul>
 <p>上記の処理が可能なのは、データを格納する際は any で扱い、
 実際に格納されたデータにアクセスする際にキャストして利用しているためです。</p>
@@ -8586,11 +8588,80 @@ let list:&amp;__List&lt;str&gt; = [ &#34;abc&#34; ];
 let list2:&amp;__List&lt;&amp;stem&gt; = list; // error
 let list3:&amp;__List&lt;str&gt; = list2@@List&lt;str&gt;; // error</code></pre>
 </div>
+<p>
+これは欠点と言えば欠点ですが、
+そもそも多くの静的型付け言語の generics には、このような制限があるので、
+従来型の方が例外的だった。と言えるかもしれません。</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-271" class="outline-3">
+<h3 id="headline-271">
+使用方法
+</h3>
+<div id="outline-text-headline-271" class="outline-text-3">
+<p>
+特に意識をしない限り、従来型の collection を使っているだけで良いです。</p>
+<p>
+一方で、 go へのトランスコンパイルを利用し、
+なおかつ、少しでも実行パフォーマンスを改善したい場合は、
+新しい collection 型を利用します。</p>
+<p>
+新しい collection 型を利用するには <code class="verbatim">__List</code> などの <code class="verbatim">__</code> prefix を付加するだけですが、
+全ての型宣言に追加をするのは大変です。
+そこで、デフォルトで新しい collection を利用できるようにする方法を提供しています。</p>
+<p>
+以下をコードの先頭に記載することで、
+そのコード内で <code class="verbatim">List</code> を宣言した場合、 <code class="verbatim">__List</code> が指定されたものとして動作します。</p>
+<pre class="example">
+_lune_control default_strict_generics;
+</pre>
+<p>
+この時、従来型の collection を利用するにはどうすれば良いかというと、
+<code class="verbatim">_List</code> (&#34;_&#34; が 1つ)を使用します。</p>
+<p>
+まとめると、以下です。</p>
+<table>
+<thead>
+<tr>
+<th>default_strict_generics 宣言の有無</th>
+<th>List</th>
+<th>_List</th>
+<th>__List</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>無し</td>
+<td>_List と同義</td>
+<td>従来型</td>
+<td>新型</td>
+</tr>
+<tr>
+<td>有り</td>
+<td>__List と同義</td>
+<td>従来型</td>
+<td>新型</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-headline-272" class="outline-3">
+<h3 id="headline-272">
+まとめ
+</h3>
+<div id="outline-text-headline-272" class="outline-text-3">
+<p>
+LuneScript の collection 型で、 go の generics を利用できるように対応しました。</p>
+<p>
+この機能は実験的な要素の強い機能です。</p>
+<p>
+多くの場合は、従来通りの collection 型を使うだけで問題ありません。</p>
 <hr>
-</div>
-</div>
-</div>
-</div>
 </div>
 </div>
 </div>
@@ -8602,11 +8673,11 @@ let list3:&amp;__List&lt;str&gt; = list2@@List&lt;str&gt;; // error</code></pre>
 <div id="outline-text-nilcond_ja" class="outline-text-2">
 <p>
 今回は LuneScript の nil 条件演算子について説明します。</p>
-<div id="outline-container-headline-272" class="outline-3">
-<h3 id="headline-272">
+<div id="outline-container-headline-274" class="outline-3">
+<h3 id="headline-274">
 Map アクセス
 </h3>
-<div id="outline-text-headline-272" class="outline-text-3">
+<div id="outline-text-headline-274" class="outline-text-3">
 <p>
 例えば次のような Map のデータがあった場合、</p>
 <div class="src src-lns">
@@ -8654,11 +8725,11 @@ print( (unwrap (unwrap (unwrap (unwrap (unwrap json.lv1).lv2).lv3).lv4).lv5).val
 nil 条件演算子です。</p>
 </div>
 </div>
-<div id="outline-container-headline-273" class="outline-3">
-<h3 id="headline-273">
+<div id="outline-container-headline-275" class="outline-3">
+<h3 id="headline-275">
 nil 条件演算子
 </h3>
-<div id="outline-text-headline-273" class="outline-text-3">
+<div id="outline-text-headline-275" class="outline-text-3">
 <p>
 nil 条件演算子を使って上記の lv5 の val にアクセスすると、
 次のようになります。</p>
@@ -8699,11 +8770,11 @@ nil 条件演算子を利用してアクセスしています。
 これにより、 unwrap せずにアクセスすることが出来ます。</p>
 </div>
 </div>
-<div id="outline-container-headline-274" class="outline-3">
-<h3 id="headline-274">
+<div id="outline-container-headline-276" class="outline-3">
+<h3 id="headline-276">
 注意
 </h3>
-<div id="outline-text-headline-274" class="outline-text-3">
+<div id="outline-text-headline-276" class="outline-text-3">
 <p>
 nil 条件アクセスを使用すると、必ずその評価結果は nilable になります。</p>
 <p>
@@ -8728,11 +8799,11 @@ sub( new Test( 10 ) ); // 11</code></pre>
 この時 <code>test$.val</code> の評価結果は int ではなく int! となります。</p>
 </div>
 </div>
-<div id="outline-container-headline-275" class="outline-3">
-<h3 id="headline-275">
+<div id="outline-container-headline-277" class="outline-3">
+<h3 id="headline-277">
 まとめ
 </h3>
-<div id="outline-text-headline-275" class="outline-text-3">
+<div id="outline-text-headline-277" class="outline-text-3">
 <p>
 nil 条件アクセスにより、 深いネストの unwrap が簡単に出来ます。</p>
 <p>
@@ -8749,11 +8820,11 @@ nil 条件アクセスにより、 深いネストの unwrap が簡単に出来�
 <div id="outline-text-import_ja" class="outline-text-2">
 <p>
 今回は LuneScript のモジュール管理について説明します。</p>
-<div id="outline-container-headline-277" class="outline-3">
-<h3 id="headline-277">
+<div id="outline-container-headline-279" class="outline-3">
+<h3 id="headline-279">
 モジュール
 </h3>
-<div id="outline-text-headline-277" class="outline-text-3">
+<div id="outline-text-headline-279" class="outline-text-3">
 <p>
 LuneScript のモジュール管理は、基本的に Lua と同じです。</p>
 <p>
@@ -8801,11 +8872,11 @@ pub fn func(): str, str {
 これによって、このモジュールの <code class="verbatim">func()</code> 関数が外部から利用できるようになります。</p>
 </div>
 </div>
-<div id="outline-container-headline-278" class="outline-3">
-<h3 id="headline-278">
+<div id="outline-container-headline-280" class="outline-3">
+<h3 id="headline-280">
 import
 </h3>
-<div id="outline-text-headline-278" class="outline-text-3">
+<div id="outline-text-headline-280" class="outline-text-3">
 <p>
 import は、外部モジュールの利用を宣言します。</p>
 <p>
@@ -8841,11 +8912,11 @@ print( Test.func() ); // work.Test	Test.func</code></pre>
 なお、複数モジュールを import する時に、
 アクセス名が同じになる場合は(例えば foo.bar と hoge.bar を import する場合)、
 次に説明する as を利用してください。</p>
-<div id="outline-container-headline-279" class="outline-4">
-<h4 id="headline-279">
+<div id="outline-container-headline-281" class="outline-4">
+<h4 id="headline-281">
 import as
 </h4>
-<div id="outline-text-headline-279" class="outline-text-4">
+<div id="outline-text-headline-281" class="outline-text-4">
 <p>
 import as は、 import 後のアクセス名を指定します。</p>
 <p>
@@ -8860,11 +8931,11 @@ print( foo.func() ); // work.Test	Test.func</code></pre>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-280" class="outline-3">
-<h3 id="headline-280">
+<div id="outline-container-headline-282" class="outline-3">
+<h3 id="headline-282">
 LuneScript でトランスコンパイルしたモジュールを Lua から require() する
 </h3>
-<div id="outline-text-headline-280" class="outline-text-3">
+<div id="outline-text-headline-282" class="outline-text-3">
 <p>
 LuneScript は、Lua のトランスコンパイラです。
 つまり、 LuneScript で書いたモジュールは、
@@ -8902,11 +8973,11 @@ Lua からこのソースを <code class="verbatim">require()</code> すると�
 このような Lua モジュールとの互換を可能にする仕組みが、 provide です。</p>
 </div>
 </div>
-<div id="outline-container-headline-281" class="outline-3">
-<h3 id="headline-281">
+<div id="outline-container-headline-283" class="outline-3">
+<h3 id="headline-283">
 provide
 </h3>
-<div id="outline-text-headline-281" class="outline-text-3">
+<div id="outline-text-headline-283" class="outline-text-3">
 <p>
 provide は、既存の Lua モジュールとの互換性を提供するものです。</p>
 <p>
@@ -8951,11 +9022,11 @@ provide func;</code></pre>
 immediate な値を指定することは出来ません。</p>
 </div>
 </div>
-<div id="outline-container-headline-282" class="outline-3">
-<h3 id="headline-282">
+<div id="outline-container-headline-284" class="outline-3">
+<h3 id="headline-284">
 まとめ
 </h3>
-<div id="outline-text-headline-282" class="outline-text-3">
+<div id="outline-text-headline-284" class="outline-text-3">
 <p>
 LuneScript は、簡単にモジュールを作成でき、既存の Lua モジュールとの互換性もあります。</p>
 <p>
@@ -8972,11 +9043,11 @@ LuneScript は、簡単にモジュールを作成でき、既存の Lua モジ�
 <div id="outline-text-require_ja" class="outline-text-2">
 <p>
 今回は LuneScript から Lua モジュールを扱う方法について説明します。</p>
-<div id="outline-container-headline-284" class="outline-3">
-<h3 id="headline-284">
+<div id="outline-container-headline-286" class="outline-3">
+<h3 id="headline-286">
 require
 </h3>
-<div id="outline-text-headline-284" class="outline-text-3">
+<div id="outline-text-headline-286" class="outline-text-3">
 <p>
 Lua モジュールを扱う場合、 <code class="verbatim">require()</code> を使用します。</p>
 <p>
@@ -8985,11 +9056,11 @@ Lua モジュールを扱う場合、 <code class="verbatim">require()</code> �
 適宜キャストが必要になります。</p>
 </div>
 </div>
-<div id="outline-container-headline-285" class="outline-3">
-<h3 id="headline-285">
+<div id="outline-container-headline-287" class="outline-3">
+<h3 id="headline-287">
 module
 </h3>
-<div id="outline-text-headline-285" class="outline-text-3">
+<div id="outline-text-headline-287" class="outline-text-3">
 <p>
 上記の通り、=require()= は stem を返します。</p>
 <p>
@@ -9046,11 +9117,11 @@ module 宣言したモジュールは、モジュール名でアクセスしま�
 <pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: skip
 print( Test.val, Test.func1( 10 ), Test.func2( 20 ) );</code></pre>
 </div>
-<div id="outline-container-headline-286" class="outline-4">
-<h4 id="headline-286">
+<div id="outline-container-headline-288" class="outline-4">
+<h4 id="headline-288">
 LuneScript が builtin していない lua の API
 </h4>
-<div id="outline-text-headline-286" class="outline-text-4">
+<div id="outline-text-headline-288" class="outline-text-4">
 <p>
 LuneScript では、
 セルフホストするために最低限必要な Lua の標準 API を built-in しています。</p>
@@ -9071,11 +9142,11 @@ print( Math.pi, Math.sin(Math.pi/2) );  // 3.1415926535898	1.0</code></pre>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-287" class="outline-4">
-<h4 id="headline-287">
+<div id="outline-container-headline-289" class="outline-4">
+<h4 id="headline-289">
 module 宣言の制限
 </h4>
-<div id="outline-text-headline-287" class="outline-text-4">
+<div id="outline-text-headline-289" class="outline-text-4">
 <p>
 module 宣言には、次の制限があります。</p>
 <ul>
@@ -9091,11 +9162,11 @@ module 宣言には、次の制限があります。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-288" class="outline-3">
-<h3 id="headline-288">
+<div id="outline-container-headline-290" class="outline-3">
+<h3 id="headline-290">
 まとめ
 </h3>
-<div id="outline-text-headline-288" class="outline-text-3">
+<div id="outline-text-headline-290" class="outline-text-3">
 <ul>
 <li>LuneScript は、Lua モジュールを扱えます。</li>
 <li>Lua モジュールを扱う方法には <code class="verbatim">require()</code> と module 宣言があります。</li>
@@ -9131,11 +9202,11 @@ LuneScript で module 宣言したモジュールの glue コードを自動生�
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">swig:		C/C++ ==&gt; glue
 </span></span><span class="line"><span class="cl">LuneScript:	Lns   ==&gt; glue</span></span></code></pre></div>
 </div>
-<div id="outline-container-headline-290" class="outline-3">
-<h3 id="headline-290">
+<div id="outline-container-headline-292" class="outline-3">
+<h3 id="headline-292">
 使用方法
 </h3>
-<div id="outline-text-headline-290" class="outline-text-3">
+<div id="outline-text-headline-292" class="outline-text-3">
 <p>
 glue を生成するには、 module 定義時に glue キーワードを指定する。</p>
 <p>
@@ -9334,11 +9405,11 @@ LuneScript は Lua のコードを実行できます。</p>
 しかし、Lua コードを実行するには幾つかの点で注意が必要です。</p>
 <p>
 以降では、 LuneScript 上で Lua コードを実行する際の注意点を説明します。</p>
-<div id="outline-container-headline-292" class="outline-3">
-<h3 id="headline-292">
+<div id="outline-container-headline-294" class="outline-3">
+<h3 id="headline-294">
 Lua コードの実行
 </h3>
-<div id="outline-text-headline-292" class="outline-text-3">
+<div id="outline-text-headline-294" class="outline-text-3">
 <p>
 LuneScript では、
 <code class="verbatim">_load()</code> 関数などを利用することで LuneScript 内から Lua のコードを実行できます。</p>
@@ -9386,11 +9457,11 @@ forsort val, key in func() {
 このように、 LuneScript と Lua は連携して動作することが出来ます。</p>
 </div>
 </div>
-<div id="outline-container-headline-293" class="outline-3">
-<h3 id="headline-293">
+<div id="outline-container-headline-295" class="outline-3">
+<h3 id="headline-295">
 Lua → LuneScript のデータ変換
 </h3>
-<div id="outline-text-headline-293" class="outline-text-3">
+<div id="outline-text-headline-295" class="outline-text-3">
 <p>
 LuneScript から Lua のコードを実行したとき、
 その Lua コードの実行結果は Luaval 型になります。</p>
@@ -9440,11 +9511,11 @@ when! loaded {
 LuneScript の Map と同様に
 foreach や <code class="verbatim">[]</code> を使用した要素アクセスなどで、Map 内のデータを参照できます。
 ただし参照は出来ますが、 <strong>変更は出来ません。</strong></p>
-<div id="outline-container-headline-294" class="outline-4">
-<h4 id="headline-294">
+<div id="outline-container-headline-296" class="outline-4">
+<h4 id="headline-296">
 相互変換可能な型
 </h4>
-<div id="outline-text-headline-294" class="outline-text-4">
+<div id="outline-text-headline-296" class="outline-text-4">
 <p>
 Lua コード内のデータの型が次の場合、
 Luaval 型とはならずにそのままの型になります。</p>
@@ -9457,11 +9528,11 @@ Luaval 型とはならずにそのままの型になります。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-295" class="outline-3">
-<h3 id="headline-295">
+<div id="outline-container-headline-297" class="outline-3">
+<h3 id="headline-297">
 Luaval 型のキャスト
 </h3>
-<div id="outline-text-headline-295" class="outline-text-3">
+<div id="outline-text-headline-297" class="outline-text-3">
 <p>
 Luaval 型のキャストには制限があります。</p>
 <p>
@@ -9498,11 +9569,11 @@ Luaval =&gt; stem =&gt; Luaval
 </pre>
 <p>
 本来とは異なる型にキャストした時の動作は <strong>未定義</strong> です。</p>
-<div id="outline-container-headline-296" class="outline-4">
-<h4 id="headline-296">
+<div id="outline-container-headline-298" class="outline-4">
+<h4 id="headline-298">
 expandLuavalMap
 </h4>
-<div id="outline-text-headline-296" class="outline-text-4">
+<div id="outline-text-headline-298" class="outline-text-4">
 <p>
 Lua コード内の collection のデータは、 Luaval として扱います。</p>
 <p>
@@ -9557,11 +9628,11 @@ Map&lt;str,int&gt; として処理しています。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-297" class="outline-3">
-<h3 id="headline-297">
+<div id="outline-container-headline-299" class="outline-3">
+<h3 id="headline-299">
 Luaval 型の型変換
 </h3>
-<div id="outline-text-headline-297" class="outline-text-3">
+<div id="outline-text-headline-299" class="outline-text-3">
 <p>
 ある nilable 型の T! を保持する Luaval 型は、 Luaval&lt;T&gt;! になります。
 Luaval&lt;T!&gt; にはなりません。</p>
@@ -9569,11 +9640,11 @@ Luaval&lt;T!&gt; にはなりません。</p>
 また、 Luaval&lt;T&gt; の Immutable は Luaval&lt;&amp;T&gt; になります。</p>
 </div>
 </div>
-<div id="outline-container-headline-298" class="outline-3">
-<h3 id="headline-298">
+<div id="outline-container-headline-300" class="outline-3">
+<h3 id="headline-300">
 Luaval 型の関数、Luaval 型オブジェクトのメソッド
 </h3>
-<div id="outline-text-headline-298" class="outline-text-3">
+<div id="outline-text-headline-300" class="outline-text-3">
 <p>
 関数型の Luaval は、その引数、戻り値も Luaval 型になります。</p>
 <p>
@@ -9590,11 +9661,11 @@ Luaval&lt;Process&gt; 型の From であり、
 </div>
 </div>
 </div>
-<div id="outline-container-headline-299" class="outline-3">
-<h3 id="headline-299">
+<div id="outline-container-headline-301" class="outline-3">
+<h3 id="headline-301">
 LuneScript → Lua のデータ変換
 </h3>
-<div id="outline-text-headline-299" class="outline-text-3">
+<div id="outline-text-headline-301" class="outline-text-3">
 <p>
 Lua の関数に LuneScript の値を渡す時は、Luaval 型の値を渡す必要があります。</p>
 <p>
@@ -9658,11 +9729,11 @@ LuneScript をトランスコンパイルするには、以下の方法があり
 <li>バッチビルド</li>
 </ul>
 <p>バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。</p>
-<div id="outline-container-headline-301" class="outline-3">
-<h3 id="headline-301">
+<div id="outline-container-headline-303" class="outline-3">
+<h3 id="headline-303">
 個別ビルド
 </h3>
-<div id="outline-text-headline-301" class="outline-text-3">
+<div id="outline-text-headline-303" class="outline-text-3">
 <p>
 Lua へトランスコンパイルするには、次のコマンドを実行します。</p>
 <div class="src src-txt">
@@ -9683,11 +9754,11 @@ Lua へトランスコンパイルするには、次のコマンドを実行し�
 ただし、 .lns ファイルが多い場合、これだと効率が悪いです。</p>
 </div>
 </div>
-<div id="outline-container-headline-302" class="outline-3">
-<h3 id="headline-302">
+<div id="outline-container-headline-304" class="outline-3">
+<h3 id="headline-304">
 バッチビルド
 </h3>
-<div id="outline-text-headline-302" class="outline-text-3">
+<div id="outline-text-headline-304" class="outline-text-3">
 <p>
 バッチビルドは、複数の .lns ファイルを一括でトランスコンパイルします。</p>
 <p>
@@ -9703,18 +9774,18 @@ stdin に渡す .lns ファイルパスは、1 行につき 1 ファイル出力
 現時点で、これが最も高速に処理できる方法です。</p>
 </div>
 </div>
-<div id="outline-container-headline-303" class="outline-3">
-<h3 id="headline-303">
+<div id="outline-container-headline-305" class="outline-3">
+<h3 id="headline-305">
 参考情報
 </h3>
-<div id="outline-text-headline-303" class="outline-text-3">
+<div id="outline-text-headline-305" class="outline-text-3">
 <p>
 <strong>以降は参考情報です。</strong>  </p>
-<div id="outline-container-headline-304" class="outline-4">
-<h4 id="headline-304">
+<div id="outline-container-headline-306" class="outline-4">
+<h4 id="headline-306">
 メタ情報ファイル
 </h4>
-<div id="outline-text-headline-304" class="outline-text-4">
+<div id="outline-text-headline-306" class="outline-text-4">
 <p>
 メタ情報ファイルとは、モジュールが公開しているクラスや、
 そのモジュールが import している他のモジュールの依存関係などの情報を
@@ -9757,11 +9828,11 @@ LuneScript はモジュールを import する際、
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-305" class="outline-4">
-<h4 id="headline-305">
+<div id="outline-container-headline-307" class="outline-4">
+<h4 id="headline-307">
 依存関係
 </h4>
-<div id="outline-text-headline-305" class="outline-text-4">
+<div id="outline-text-headline-307" class="outline-text-4">
 <p>
 2 つのモジュール mod1, mod2 があった時、
 mod1 が mod2 を import していると、「mod1 が mod2 に依存する」ことになります。</p>
@@ -9793,11 +9864,11 @@ depends/mod1.d に mod1.lns の依存関係情報を出力します。</p>
 <p>
 この依存関係情報を Makefile に取り込むことで、
 手動で依存関係を定義することなく、簡単に make によるビルド制御が可能になります。</p>
-<div id="outline-container-headline-306" class="outline-5">
-<h5 id="headline-306">
+<div id="outline-container-headline-308" class="outline-5">
+<h5 id="headline-308">
 サンプル
 </h5>
-<div id="outline-text-headline-306" class="outline-text-5">
+<div id="outline-text-headline-308" class="outline-text-5">
 <p>
 例えば次のようなモジュールをもつプロジェクトを作成したとします。</p>
 <div class="src src-txt">
@@ -9937,11 +10008,11 @@ import の依存関係に応じたビルドが可能になります。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-307" class="outline-3">
-<h3 id="headline-307">
+<div id="outline-container-headline-309" class="outline-3">
+<h3 id="headline-309">
 まとめ
 </h3>
-<div id="outline-text-headline-307" class="outline-text-3">
+<div id="outline-text-headline-309" class="outline-text-3">
 <p>
 make コマンドを使うことで、
 LuneScript プロジェクトのビルド制御を簡単に実現できます。</p>
@@ -9957,11 +10028,11 @@ LuneScript プロジェクトのビルド制御を簡単に実現できます。
 <div id="outline-text-macro_ja" class="outline-text-2">
 <p>
 今回は LuneScript のマクロについて説明します。</p>
-<div id="outline-container-headline-309" class="outline-3">
-<h3 id="headline-309">
+<div id="outline-container-headline-311" class="outline-3">
+<h3 id="headline-311">
 マクロ
 </h3>
-<div id="outline-text-headline-309" class="outline-text-3">
+<div id="outline-text-headline-311" class="outline-text-3">
 <p>
 LuneScript は、マクロを対応します。</p>
 <p>
@@ -9980,11 +10051,11 @@ LuneScript は、マクロを対応します。</p>
 マクロで一番メジャーなプログラミング言語と言えば Lisp だと思いますが、
 LuneScript のマクロは Lisp ほど高機能ではありません。
 しかし、 C 言語のマクロほど限定的でもありません。</p>
-<div id="outline-container-headline-310" class="outline-4">
-<h4 id="headline-310">
+<div id="outline-container-headline-312" class="outline-4">
+<h4 id="headline-312">
 マクロの基本
 </h4>
-<div id="outline-text-headline-310" class="outline-text-4">
+<div id="outline-text-headline-312" class="outline-text-4">
 <p>
 マクロは実行時ではなく <strong>コンパイル時に展開</strong> されるものです。</p>
 <p>
@@ -9992,11 +10063,11 @@ LuneScript のマクロは Lisp ほど高機能ではありません。
 マクロを書く時は必ず意識しておいてください。</p>
 </div>
 </div>
-<div id="outline-container-headline-311" class="outline-4">
-<h4 id="headline-311">
+<div id="outline-container-headline-313" class="outline-4">
+<h4 id="headline-313">
 簡単なマクロの例
 </h4>
-<div id="outline-text-headline-311" class="outline-text-4">
+<div id="outline-text-headline-313" class="outline-text-4">
 <p>
 次に簡単なマクロの例を示します。</p>
 <div class="src src-lns">
@@ -10033,11 +10104,11 @@ _Hello(); // hello world</code></pre>
 以降では、意味のあるマクロを定義する方法を説明します。</p>
 </div>
 </div>
-<div id="outline-container-headline-312" class="outline-4">
-<h4 id="headline-312">
+<div id="outline-container-headline-314" class="outline-4">
+<h4 id="headline-314">
 マクロの例
 </h4>
-<div id="outline-text-headline-312" class="outline-text-4">
+<div id="outline-text-headline-314" class="outline-text-4">
 <p>
 少し実用的なマクロの例を次に示します。</p>
 <p>
@@ -10088,11 +10159,11 @@ fn func10():int {
 このマクロについて、以降で説明します。</p>
 </div>
 </div>
-<div id="outline-container-headline-313" class="outline-4">
-<h4 id="headline-313">
+<div id="outline-container-headline-315" class="outline-4">
+<h4 id="headline-315">
 マクロの書き方
 </h4>
-<div id="outline-text-headline-313" class="outline-text-4">
+<div id="outline-text-headline-315" class="outline-text-4">
 <p>
 マクロの定義の syntax は次になります。</p>
 <div class="src src-lns">
@@ -10128,11 +10199,11 @@ macro name( arg ) {
 マクロの定義方法を理解するには、
 expand-statement を先に理解した方が分かり易いので、
 macro-statement ブロックの説明の前に、expand-statement を説明します。</p>
-<div id="outline-container-headline-314" class="outline-5">
-<h5 id="headline-314">
+<div id="outline-container-headline-316" class="outline-5">
+<h5 id="headline-316">
 引数
 </h5>
-<div id="outline-text-headline-314" class="outline-text-5">
+<div id="outline-text-headline-316" class="outline-text-5">
 <p>
 マクロ専用の引数の型として、以下を利用できます。</p>
 <ul>
@@ -10141,31 +10212,31 @@ macro-statement ブロックの説明の前に、expand-statement を説明し�
 <li>__exp</li>
 <li>__block</li>
 </ul>
-<div id="outline-container-headline-315" class="outline-6">
-<h6 id="headline-315">
+<div id="outline-container-headline-317" class="outline-6">
+<h6 id="headline-317">
 sym
 </h6>
-<div id="outline-text-headline-315" class="outline-text-6">
+<div id="outline-text-headline-317" class="outline-text-6">
 <p>
 sym は、シンボルを格納できる型です。</p>
 <p>
 シンボルは、関数、変数、メンバ、クラス、全てのシンボルとして利用できます。</p>
 </div>
 </div>
-<div id="outline-container-headline-316" class="outline-6">
-<h6 id="headline-316">
+<div id="outline-container-headline-318" class="outline-6">
+<h6 id="headline-318">
 stat
 </h6>
-<div id="outline-text-headline-316" class="outline-text-6">
+<div id="outline-text-headline-318" class="outline-text-6">
 <p>
 stat は、文を格納できる型です。</p>
 </div>
 </div>
-<div id="outline-container-headline-317" class="outline-6">
-<h6 id="headline-317">
+<div id="outline-container-headline-319" class="outline-6">
+<h6 id="headline-319">
 __exp
 </h6>
-<div id="outline-text-headline-317" class="outline-text-6">
+<div id="outline-text-headline-319" class="outline-text-6">
 <p>
 __exp は、全ての式を格納できる型です。</p>
 <p>
@@ -10173,11 +10244,11 @@ __exp は、全ての式を格納できる型です。</p>
 ただし、マクロをコールする時点でエラーなく評価可能な式である必要があります。</p>
 </div>
 </div>
-<div id="outline-container-headline-318" class="outline-6">
-<h6 id="headline-318">
+<div id="outline-container-headline-320" class="outline-6">
+<h6 id="headline-320">
 __block
 </h6>
-<div id="outline-text-headline-318" class="outline-text-6">
+<div id="outline-text-headline-320" class="outline-text-6">
 <p>
 __block は、ブロック文 <code class="verbatim">{}</code> を格納できる型です。</p>
 <p>
@@ -10186,11 +10257,11 @@ __exp 同様、マクロをコールする時点でエラーなく評価可能�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-319" class="outline-5">
-<h5 id="headline-319">
+<div id="outline-container-headline-321" class="outline-5">
+<h5 id="headline-321">
 expand-statement
 </h5>
-<div id="outline-text-headline-319" class="outline-text-5">
+<div id="outline-text-headline-321" class="outline-text-5">
 <p>
 expand-statement は、マクロを展開した後のコードを書きます。</p>
 <p>
@@ -10239,11 +10310,11 @@ expand-statement には、次の制限を満せば、いかなるコードも書
 また、expand-statement には複数の文を書くことも出来ます。</p>
 </div>
 </div>
-<div id="outline-container-headline-320" class="outline-5">
-<h5 id="headline-320">
+<div id="outline-container-headline-322" class="outline-5">
+<h5 id="headline-322">
 macro-statement
 </h5>
-<div id="outline-text-headline-320" class="outline-text-5">
+<div id="outline-text-headline-322" class="outline-text-5">
 <p>
 macro-statement ブロックには、 expand-statement で利用する変数を定義します。
 expand-statement で利用する変数は、
@@ -10383,11 +10454,11 @@ macro name( arg ) {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-321" class="outline-5">
-<h5 id="headline-321">
+<div id="outline-container-headline-323" class="outline-5">
+<h5 id="headline-323">
 macro-statement で利用できる関数
 </h5>
-<div id="outline-text-headline-321" class="outline-text-5">
+<div id="outline-text-headline-323" class="outline-text-5">
 <p>
 macro-statement では、次の関数が利用できます。</p>
 <ul>
@@ -10397,22 +10468,22 @@ macro-statement では、次の関数が利用できます。</p>
 そのモジュールを返します。</p>
 </div>
 </div>
-<div id="outline-container-headline-322" class="outline-5">
-<h5 id="headline-322">
+<div id="outline-container-headline-324" class="outline-5">
+<h5 id="headline-324">
 マクロ展開
 </h5>
-<div id="outline-text-headline-322" class="outline-text-5">
+<div id="outline-text-headline-324" class="outline-text-5">
 <p>
 マクロを展開する方法は、関数コールと同じです。</p>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-323" class="outline-4">
-<h4 id="headline-323">
+<div id="outline-container-headline-325" class="outline-4">
+<h4 id="headline-325">
 公開マクロ
 </h4>
-<div id="outline-text-headline-323" class="outline-text-4">
+<div id="outline-text-headline-325" class="outline-text-4">
 <p>
 マクロは外部モジュールに公開できます。</p>
 <p>
@@ -10425,11 +10496,11 @@ pub macro _Hello() {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-324" class="outline-4">
-<h4 id="headline-324">
+<div id="outline-container-headline-326" class="outline-4">
+<h4 id="headline-326">
 少し実用的なマクロの例
 </h4>
-<div id="outline-text-headline-324" class="outline-text-4">
+<div id="outline-text-headline-326" class="outline-text-4">
 <p>
 次は少し実用的なマクロの例です。</p>
 <p>
@@ -10521,11 +10592,11 @@ forsort で JSON の要素を列挙する</li>
 リストなどはサポートしていません。</p>
 </div>
 </div>
-<div id="outline-container-headline-325" class="outline-4">
-<h4 id="headline-325">
+<div id="outline-container-headline-327" class="outline-4">
+<h4 id="headline-327">
 マクロ間共通 Map
 </h4>
-<div id="outline-text-headline-325" class="outline-text-4">
+<div id="outline-text-headline-327" class="outline-text-4">
 <p>
 マクロは、コンパイル時に実行される処理です。
 また、マクロの実行はそれぞれ独立しています。
@@ -10588,11 +10659,11 @@ _test1() マクロで <code class="verbatim">__var[ &#34;hoge&#34; ]</code> の�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-326" class="outline-3">
-<h3 id="headline-326">
+<div id="outline-container-headline-328" class="outline-3">
+<h3 id="headline-328">
 まとめ
 </h3>
-<div id="outline-text-headline-326" class="outline-text-3">
+<div id="outline-text-headline-328" class="outline-text-3">
 <p>
 LuneScript は、関数と同じ感覚でマクロを定義することが出来ます。</p>
 <p>
@@ -10618,11 +10689,11 @@ LuneScript は、 3 つのタイプのキャストを提供します。</p>
 <li><code>@@@</code></li>
 <li><code>@@=</code></li>
 </ul>
-<div id="outline-container-headline-328" class="outline-3">
-<h3 id="headline-328">
+<div id="outline-container-headline-330" class="outline-3">
+<h3 id="headline-330">
 <code>@@</code>  
 </h3>
-<div id="outline-text-headline-328" class="outline-text-3">
+<div id="outline-text-headline-330" class="outline-text-3">
 <p>
 <code>@@</code> は、変換元の値の型を実行時にチェックせずに強制的に型変換します。</p>
 <div class="src src-lns">
@@ -10674,11 +10745,11 @@ let val2 = 1@@str;  // error</code></pre>
 クラス型へのキャストは <code>@@@</code> か <code>@@=</code> を使用してください。</p>
 </div>
 </div>
-<div id="outline-container-headline-329" class="outline-3">
-<h3 id="headline-329">
+<div id="outline-container-headline-331" class="outline-3">
+<h3 id="headline-331">
 <code>@@@</code>
 </h3>
-<div id="outline-text-headline-329" class="outline-text-3">
+<div id="outline-text-headline-331" class="outline-text-3">
 <p>
 <code>@@@</code> は、動的に変換元の型をチェックして型変換します。</p>
 <p>
@@ -10707,11 +10778,11 @@ str 型でなければ nil を返します。</p>
 <code>func( &#34;abc&#34; )</code> は str:abc を出力します。</p>
 <p>
 <code class="verbatim">@@@</code> は、 キャスト元が nilable でもキャスト可能です。</p>
-<div id="outline-container-headline-330" class="outline-4">
-<h4 id="headline-330">
+<div id="outline-container-headline-332" class="outline-4">
+<h4 id="headline-332">
 <code>@@@</code> の制限 1
 </h4>
-<div id="outline-text-headline-330" class="outline-text-4">
+<div id="outline-text-headline-332" class="outline-text-4">
 <p>
 real 型の値から int への @@@ キャストは nil を返すべきですが、
 成功するケースがあります。</p>
@@ -10743,11 +10814,11 @@ func( 2.5 );</code></pre>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-331" class="outline-4">
-<h4 id="headline-331">
+<div id="outline-container-headline-333" class="outline-4">
+<h4 id="headline-333">
 <code>@@@</code> の制限 2
 </h4>
-<div id="outline-text-headline-331" class="outline-text-4">
+<div id="outline-text-headline-333" class="outline-text-4">
 <p>
 @@@ が利用できるのは、 int/real/str/class/interface だけです。</p>
 <p>
@@ -10758,11 +10829,11 @@ enum などは利用できません。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-332" class="outline-3">
-<h3 id="headline-332">
+<div id="outline-container-headline-334" class="outline-3">
+<h3 id="headline-334">
 <code>@@=</code>
 </h3>
-<div id="outline-text-headline-332" class="outline-text-3">
+<div id="outline-text-headline-334" class="outline-text-3">
 <p>
 <code>@@=</code> は、メソッドを持たないクラスを変換する際に利用します。
 メソッドを持つクラスや、クラス以外を指定した場合はコンパイルエラーします。</p>
@@ -10772,11 +10843,11 @@ enum などは利用できません。</p>
 <code>@@=</code> は、型チェックに時間がかかるような場合に限り使用するべきです。</p>
 </div>
 </div>
-<div id="outline-container-headline-333" class="outline-3">
-<h3 id="headline-333">
+<div id="outline-container-headline-335" class="outline-3">
+<h3 id="headline-335">
 まとめ
 </h3>
-<div id="outline-text-headline-333" class="outline-text-3">
+<div id="outline-text-headline-335" class="outline-text-3">
 <p>
 int、 real 間の変換以外は、 <strong>出来るだけキャストは避けるべきです。</strong>
 generics や、 alge などを利用することで
@@ -10811,11 +10882,11 @@ generics や、 alge などを利用することで
 <p>
 LuneScript は、原則 1 モジュール = 1 ファイルであるが、
 サブファイル化した場合は、1 モジュール = 複数ファイルとなる。</p>
-<div id="outline-container-headline-335" class="outline-3">
-<h3 id="headline-335">
+<div id="outline-container-headline-337" class="outline-3">
+<h3 id="headline-337">
 サブファイル構成
 </h3>
-<div id="outline-text-headline-335" class="outline-text-3">
+<div id="outline-text-headline-337" class="outline-text-3">
 <p>
 サブファイルは 1 つの main と、複数の sub で構成される。</p>
 <div class="src src-text">
@@ -10828,11 +10899,11 @@ LuneScript は、原則 1 モジュール = 1 ファイルであるが、
 </div>
 </div>
 </div>
-<div id="outline-container-headline-336" class="outline-3">
-<h3 id="headline-336">
+<div id="outline-container-headline-338" class="outline-3">
+<h3 id="headline-338">
 使用方法
 </h3>
-<div id="outline-text-headline-336" class="outline-text-3">
+<div id="outline-text-headline-338" class="outline-text-3">
 <p>
 次のように foo/bar ディレクトリ以下に、
 main.lns, sub.lns が存在し sub.lns が main.lns のサブファイルの場合、</p>
@@ -10857,11 +10928,11 @@ subfile owner foo.bar.main;</code></pre>
 これにより、
 指定したモジュール(上記の例では foo.bar.sub)を分割されたサブファイルとして扱い、
 sub.lns は main.lns のモジュールの一部として処理する。</p>
-<div id="outline-container-headline-337" class="outline-4">
-<h4 id="headline-337">
+<div id="outline-container-headline-339" class="outline-4">
+<h4 id="headline-339">
 制限
 </h4>
-<div id="outline-text-headline-337" class="outline-text-4">
+<div id="outline-text-headline-339" class="outline-text-4">
 <p>
 モジュールの宣言は、スクリプトの先頭で行なう必要がある。
 ただし、コメントは除く。</p>
@@ -11006,11 +11077,11 @@ func_C, subC_1 〜 subC_3 が無駄になります。</p>
 この無駄なロード処理は無視できなくなります。</p>
 <p>
 このロード処理の無駄を無くすのが遅延ロードです。</p>
-<div id="outline-container-headline-339" class="outline-3">
-<h3 id="headline-339">
+<div id="outline-container-headline-341" class="outline-3">
+<h3 id="headline-341">
 遅延ロード
 </h3>
-<div id="outline-text-headline-339" class="outline-text-3">
+<div id="outline-text-headline-341" class="outline-text-3">
 <p>
 遅延ロードは、起動時に関連する全てのモジュールをロードするのではなく、
 モジュールが必要になったタイミングでロードする処理方式です。</p>
@@ -11022,11 +11093,11 @@ func_C, subC_1 〜 subC_3 はロードされません。</p>
 <p>
 これにより、ロード処理の時間、
 ロードしたデータを格納しておくメモリ領域を無駄にしません。</p>
-<div id="outline-container-headline-340" class="outline-4">
-<h4 id="headline-340">
+<div id="outline-container-headline-342" class="outline-4">
+<h4 id="headline-342">
 遅延ロードの実現方法
 </h4>
-<div id="outline-text-headline-340" class="outline-text-4">
+<div id="outline-text-headline-342" class="outline-text-4">
 <p>
 遅延ロードは、モジュールにアクセスしたタイミングでロード済みかどうかを判断し、
 ロードしていなければロードし、
@@ -11044,22 +11115,22 @@ func_C, subC_1 〜 subC_3 はロードされません。</p>
 遅延ロードを利用する場合、このようなケースの考慮が必要です。</p>
 </div>
 </div>
-<div id="outline-container-headline-341" class="outline-4">
-<h4 id="headline-341">
+<div id="outline-container-headline-343" class="outline-4">
+<h4 id="headline-343">
 遅延ロードの影響
 </h4>
-<div id="outline-text-headline-341" class="outline-text-4">
+<div id="outline-text-headline-343" class="outline-text-4">
 <p>
 前述している通り、遅延ロードには僅かなオーバーヘッドがあります。</p>
 <p>
 しかし、それが影響することはほとんどないでしょう。</p>
 <p>
 それよりも影響する可能性が高いと考えられるのが、実行順序の違いです。</p>
-<div id="outline-container-headline-342" class="outline-5">
-<h5 id="headline-342">
+<div id="outline-container-headline-344" class="outline-5">
+<h5 id="headline-344">
 ロード方式の違いによる実行順序の影響
 </h5>
-<div id="outline-text-headline-342" class="outline-text-5">
+<div id="outline-text-headline-344" class="outline-text-5">
 <p>
 モジュールのトップスコープに書いた処理は、
 そのモジュールがロードされた時に実行されます。</p>
@@ -11120,11 +11191,11 @@ Hoge.func();</code></pre>
 <p>通常ロードと遅延ロードには、このような違いが起る。</p>
 </div>
 </div>
-<div id="outline-container-headline-343" class="outline-5">
-<h5 id="headline-343">
+<div id="outline-container-headline-345" class="outline-5">
+<h5 id="headline-345">
 ロード方式の違いによる global の影響
 </h5>
-<div id="outline-text-headline-343" class="outline-text-5">
+<div id="outline-text-headline-345" class="outline-text-5">
 <p>
 LuneScript のアクセス制御には pub/pro/pri/local の他に、global があります。</p>
 <p>
@@ -11142,11 +11213,11 @@ global を使うケースは少ないと思いますが、注意してくださ�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-344" class="outline-3">
-<h3 id="headline-344">
+<div id="outline-container-headline-346" class="outline-3">
+<h3 id="headline-346">
 使用方法
 </h3>
-<div id="outline-text-headline-344" class="outline-text-3">
+<div id="outline-text-headline-346" class="outline-text-3">
 <p>
 遅延ロードは次の命令で利用できます。</p>
 <ul>
@@ -11227,11 +11298,11 @@ import, module は遅延ロードになります。</p>
 <div id="outline-text-shebang_main_ja" class="outline-text-2">
 <p>
 LuneScript は shebang に対応しています。</p>
-<div id="outline-container-headline-346" class="outline-3">
-<h3 id="headline-346">
+<div id="outline-container-headline-348" class="outline-3">
+<h3 id="headline-348">
 shebang 対応
 </h3>
-<div id="outline-text-headline-346" class="outline-text-3">
+<div id="outline-text-headline-348" class="outline-text-3">
 <p>
 shebang とは、シェルスクリプト等で良く見られるスクリプトファイルの最初の行に、
 使用するインタプリタをコメントに指定することで、
@@ -11269,11 +11340,11 @@ LuneScript では、次のように指定します。</p>
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-347" class="outline-3">
-<h3 id="headline-347">
+<div id="outline-container-headline-349" class="outline-3">
+<h3 id="headline-349">
 コマンドライン引数
 </h3>
-<div id="outline-text-headline-347" class="outline-text-3">
+<div id="outline-text-headline-349" class="outline-text-3">
 <p>
 shebang で起動された場合や、 go へトランスコンパイルした場合など、
 コマンドライン引数を処理したいケースがあります。</p>
@@ -11288,11 +11359,11 @@ pub fn __main( argList:&amp;List&lt;str&gt; ):int</code></pre>
 <p>
 __main 関数の型は、
 引数名 argList 以外、必ず上記の型での宣言が必要です。</p>
-<div id="outline-container-headline-348" class="outline-4">
-<h4 id="headline-348">
+<div id="outline-container-headline-350" class="outline-4">
+<h4 id="headline-350">
 __main の実行順
 </h4>
-<div id="outline-text-headline-348" class="outline-text-4">
+<div id="outline-text-headline-350" class="outline-text-4">
 <p>
 この __main 関数の実行順序は、トップスコープの処理終了後に行なわれます。
 つまり、次のスクリプトの場合、</p>
@@ -11315,11 +11386,11 @@ pub fn __main( argList:&amp;List&lt;str&gt; ):int {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-349" class="outline-4">
-<h4 id="headline-349">
+<div id="outline-container-headline-351" class="outline-4">
+<h4 id="headline-351">
 __main の引数
 </h4>
-<div id="outline-text-headline-349" class="outline-text-4">
+<div id="outline-text-headline-351" class="outline-text-4">
 <p>
 <code class="verbatim">__main</code> の引数は <code class="verbatim">&amp;List&lt;str&gt;</code> です。</p>
 <p>
@@ -11338,11 +11409,11 @@ pub fn __main( argList:&amp;List&lt;str&gt; ):int {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-350" class="outline-3">
-<h3 id="headline-350">
+<div id="outline-container-headline-352" class="outline-3">
+<h3 id="headline-352">
 lua へトランスコンパイルした時の __main() 関数の動作
 </h3>
-<div id="outline-text-headline-350" class="outline-text-3">
+<div id="outline-text-headline-352" class="outline-text-3">
 <p>
 次の LuneScript のコードはコマンドラインオプションを出力します。</p>
 <div class="src src-lns">
@@ -11388,11 +11459,11 @@ lnsc に -shebang オプションを指定して実行した場合、
 <li>__main() を実行するコードを別途自前で作成する</li>
 <li>トランスコンパイルする際に <code class="verbatim">--main</code> オプションを指定する</li>
 </ul>
-<div id="outline-container-headline-351" class="outline-4">
-<h4 id="headline-351">
+<div id="outline-container-headline-353" class="outline-4">
+<h4 id="headline-353">
 <code class="verbatim">--main</code> オプション
 </h4>
-<div id="outline-text-headline-351" class="outline-text-4">
+<div id="outline-text-headline-353" class="outline-text-4">
 <p>
 トランスコンパイルする際に <code class="verbatim">--main</code> オプションを指定することで、
 指定のモジュールに <code class="verbatim">__main()</code> 関数を実行する処理を出力します。</p>
@@ -11438,11 +11509,11 @@ LuneScript は lua と go へのトランスコンパイルをサポートしま
 <p>
 ここでは、どちらの言語のディレクトリ管理においても問題なく使えるようにするための
 推奨ディレクトリ構成について説明します。</p>
-<div id="outline-container-headline-353" class="outline-3">
-<h3 id="headline-353">
+<div id="outline-container-headline-355" class="outline-3">
+<h3 id="headline-355">
 前提
 </h3>
-<div id="outline-text-headline-353" class="outline-text-3">
+<div id="outline-text-headline-355" class="outline-text-3">
 <p>
 ここでは以下の github リポジトリで開発することを前提として説明します。</p>
 <pre class="example">
@@ -11458,11 +11529,11 @@ foo.bar.lib
 </pre>
 </div>
 </div>
-<div id="outline-container-headline-354" class="outline-3">
-<h3 id="headline-354">
+<div id="outline-container-headline-356" class="outline-3">
+<h3 id="headline-356">
 基本構成
 </h3>
-<div id="outline-text-headline-354" class="outline-text-3">
+<div id="outline-text-headline-356" class="outline-text-3">
 <p>
 ディレクトリの基本構成を示します。</p>
 <div class="src src-txt">
@@ -11475,11 +11546,11 @@ foo.bar.lib
 </div>
 <p>
 go.mod, lune.js, foo/ を、 PROJ ディレクトリ直下に配置します。</p>
-<div id="outline-container-headline-355" class="outline-4">
-<h4 id="headline-355">
+<div id="outline-container-headline-357" class="outline-4">
+<h4 id="headline-357">
 lune.js
 </h4>
-<div id="outline-text-headline-355" class="outline-text-4">
+<div id="outline-text-headline-357" class="outline-text-4">
 <p>
 lune.js は、以下の内容で作成します。</p>
 <pre class="example">
@@ -11487,11 +11558,11 @@ lune.js は、以下の内容で作成します。</p>
 </pre>
 </div>
 </div>
-<div id="outline-container-headline-356" class="outline-4">
-<h4 id="headline-356">
+<div id="outline-container-headline-358" class="outline-4">
+<h4 id="headline-358">
 go.mod
 </h4>
-<div id="outline-text-headline-356" class="outline-text-4">
+<div id="outline-text-headline-358" class="outline-text-4">
 <p>
 この時の go.mod の構成を示します。
 なお、 go.mod は go へのトランスコンパイルを行なわない場合は不要です。</p>
@@ -11502,11 +11573,11 @@ go.mod
 </div>
 </div>
 </div>
-<div id="outline-container-headline-357" class="outline-4">
-<h4 id="headline-357">
+<div id="outline-container-headline-359" class="outline-4">
+<h4 id="headline-359">
 メインとサブモジュール
 </h4>
-<div id="outline-text-headline-357" class="outline-text-4">
+<div id="outline-text-headline-359" class="outline-text-4">
 <p>
 リポジトリは、   
 <strong>メイン</strong> のプログラムを管理するケースと、
@@ -11539,11 +11610,11 @@ go.mod
 </div>
 </div>
 </div>
-<div id="outline-container-headline-358" class="outline-4">
-<h4 id="headline-358">
+<div id="outline-container-headline-360" class="outline-4">
+<h4 id="headline-360">
 環境変数 GOPATH
 </h4>
-<div id="outline-text-headline-358" class="outline-text-4">
+<div id="outline-text-headline-360" class="outline-text-4">
 <p>
 go へトランスコンパイルする場合、
 上記 PROJ ディレクトリを次の場所に配置する必要があります。</p>
@@ -11582,11 +11653,11 @@ LuneScript のセルフホスティングに必要な機能に限定したサポ
 とはいえ、LuneScript のセルフホスティング自体が、
 LuneScript のほとんどの機能を使用しているので、
 普通に使う分には問題なく対応出来ています。</p>
-<div id="outline-container-headline-360" class="outline-3">
-<h3 id="headline-360">
+<div id="outline-container-headline-362" class="outline-3">
+<h3 id="headline-362">
 go 言語へのトランスコンパイル方法
 </h3>
-<div id="outline-text-headline-360" class="outline-text-3">
+<div id="outline-text-headline-362" class="outline-text-3">
 <p>
 go 言語へのトランスコンパイルは、
 LuneScript のコマンドラインオプション save あるいは SAVE 時に
@@ -11594,11 +11665,11 @@ LuneScript のコマンドラインオプション save あるいは SAVE 時に
 .go 拡張子のファイルに go へのトランスコンパイル結果を出力します。</p>
 </div>
 </div>
-<div id="outline-container-headline-361" class="outline-3">
-<h3 id="headline-361">
+<div id="outline-container-headline-363" class="outline-3">
+<h3 id="headline-363">
 Lua との連携動作
 </h3>
-<div id="outline-text-headline-361" class="outline-text-3">
+<div id="outline-text-headline-363" class="outline-text-3">
 <p>
 go 言語へのトランスコンパイルを行なう場合、
 Lua との連携動作を行なう際に特別な型を使用する必要があります。</p>
@@ -11608,11 +11679,11 @@ Lua との連携動作を行なう際に特別な型を使用する必要があ�
 <a href="#lua">#lua</a></p>
 </div>
 </div>
-<div id="outline-container-headline-362" class="outline-3">
-<h3 id="headline-362">
+<div id="outline-container-headline-364" class="outline-3">
+<h3 id="headline-364">
 Go 言語へのトランスコンパイル後の構成
 </h3>
-<div id="outline-text-headline-362" class="outline-text-3">
+<div id="outline-text-headline-364" class="outline-text-3">
 <p>
 LuneScript は Lua へのトランスコンパイラであり、
 LuneScript から Lua のコードを直接利用できるという特徴があります。</p>
@@ -11676,11 +11747,11 @@ _profile( fib_lns( step ) );</code></pre>
 最初の code 変数で定義しているのが lua のコードで、
 それをロードするのが <code class="verbatim">loadLua()</code> 関数で、ロードされた Lua の関数が fib_lua です。
 そして、後半の <code class="verbatim">fib_lns()</code> 関数は フィボナッチの計算を行なう LuneScript の関数です。</p>
-<div id="outline-container-headline-363" class="outline-4">
-<h4 id="headline-363">
+<div id="outline-container-headline-365" class="outline-4">
+<h4 id="headline-365">
 Lua へトランスコンパイルした場合
 </h4>
-<div id="outline-text-headline-363" class="outline-text-4">
+<div id="outline-text-headline-365" class="outline-text-4">
 <p>
 上記コードを Lua にトランスコンパイルして動かすと、次が出力されます。</p>
 <div class="src src-txt">
@@ -11755,11 +11826,11 @@ LuneScript で書いた <code class="verbatim">fib_lns()</code> と Lua の <cod
 よって、=fib_lns()= と <code class="verbatim">fib_lua()</code> が同程度時間がかかるのは当然と言えます。</p>
 </div>
 </div>
-<div id="outline-container-headline-364" class="outline-4">
-<h4 id="headline-364">
+<div id="outline-container-headline-366" class="outline-4">
+<h4 id="headline-366">
 go へトランスコンパイルした場合
 </h4>
-<div id="outline-text-headline-364" class="outline-text-4">
+<div id="outline-text-headline-366" class="outline-text-4">
 <p>
 一方、 go へトランスコンパイルした場合、実行結果は次の通りです。</p>
 <div class="src src-txt">
@@ -11852,11 +11923,11 @@ Lns_getVM().RunLoadedfunc(miniGo_fib_lua,Lns_2DDD(miniGo_step))
 このように、=fib_lns()= と <code class="verbatim">fib_lua()</code> では全く処理が異なることが分かります。</p>
 </div>
 </div>
-<div id="outline-container-headline-365" class="outline-4">
-<h4 id="headline-365">
+<div id="outline-container-headline-367" class="outline-4">
+<h4 id="headline-367">
 ビルド
 </h4>
-<div id="outline-text-headline-365" class="outline-text-4">
+<div id="outline-text-headline-367" class="outline-text-4">
 <p>
 go へトランスコンパイルしてビルドするには次の step が必要です。</p>
 <ul>
@@ -11871,11 +11942,11 @@ go へトランスコンパイルしてビルドするには次の step が必�
 「 .lns から .go を生成する」以降の処理を繰り返し実行します。</p>
 <p>
 各 step を説明します。</p>
-<div id="outline-container-headline-366" class="outline-5">
-<h5 id="headline-366">
+<div id="outline-container-headline-368" class="outline-5">
+<h5 id="headline-368">
 go.mod を生成する
 </h5>
-<div id="outline-text-headline-366" class="outline-text-5">
+<div id="outline-text-headline-368" class="outline-text-5">
 <p>
 lune.js があるディレクトリで、以下のコマンドを実行します。</p>
 <pre class="example">
@@ -11883,11 +11954,11 @@ $ go mod init test # &lt;--- test は環境に合せて指定してください
 </pre>
 </div>
 </div>
-<div id="outline-container-headline-367" class="outline-5">
-<h5 id="headline-367">
+<div id="outline-container-headline-369" class="outline-5">
+<h5 id="headline-369">
 LuneScript ランタイムを go.mod に登録する
 </h5>
-<div id="outline-text-headline-367" class="outline-text-5">
+<div id="outline-text-headline-369" class="outline-text-5">
 <p>
 以下のコマンドで、LuneScript のランタイムを go.mod に登録します。</p>
 <pre class="example">
@@ -11897,11 +11968,11 @@ $ go get github.com/ifritJP/LuneScript/src@latest
 以降の作業で go mod tidy を実行しますが、必ず go get を先に実行してください。</p>
 </div>
 </div>
-<div id="outline-container-headline-368" class="outline-5">
-<h5 id="headline-368">
+<div id="outline-container-headline-370" class="outline-5">
+<h5 id="headline-370">
 main.go を生成する
 </h5>
-<div id="outline-text-headline-368" class="outline-text-5">
+<div id="outline-text-headline-370" class="outline-text-5">
 <p>
 go には、エントリ関数の <code class="verbatim">main()</code> が必要です。</p>
 <p>
@@ -11919,11 +11990,11 @@ go にトランスコンパイルする場合、 __main 関数を定義するモ
 lns のランタイムを初期化するコードが含まれます。</p>
 </div>
 </div>
-<div id="outline-container-headline-369" class="outline-5">
-<h5 id="headline-369">
+<div id="outline-container-headline-371" class="outline-5">
+<h5 id="headline-371">
 .lns から .go を生成する
 </h5>
-<div id="outline-text-headline-369" class="outline-text-5">
+<div id="outline-text-headline-371" class="outline-text-5">
 <p>
 以下のコマンドで .go を生成します。</p>
 <pre class="example">
@@ -11947,11 +12018,11 @@ $ lnsc foo/bar/hoge.lns save -langGo --main foo.bar.hoge
 LuneScript を go にトランスコンパイルする場合、__main 関数が必要です。</p>
 </div>
 </div>
-<div id="outline-container-headline-370" class="outline-5">
-<h5 id="headline-370">
+<div id="outline-container-headline-372" class="outline-5">
+<h5 id="headline-372">
 go.mod を更新する
 </h5>
-<div id="outline-text-headline-370" class="outline-text-5">
+<div id="outline-text-headline-372" class="outline-text-5">
 <p>
 以下のコマンドで go.mod を更新します。    </p>
 <pre class="example">
@@ -11959,11 +12030,11 @@ $ go mod tidy
 </pre>
 </div>
 </div>
-<div id="outline-container-headline-371" class="outline-5">
-<h5 id="headline-371">
+<div id="outline-container-headline-373" class="outline-5">
+<h5 id="headline-373">
 go build する
 </h5>
-<div id="outline-text-headline-371" class="outline-text-5">
+<div id="outline-text-headline-373" class="outline-text-5">
 <p>
 全ての lns ファイルの変換と main.go の生成ができたら、go build を実行します。</p>
 <pre class="example">
@@ -11980,11 +12051,11 @@ $ go build -tags gopherlua
 </div>
 </div>
 </div>
-<div id="outline-container-headline-372" class="outline-4">
-<h4 id="headline-372">
+<div id="outline-container-headline-374" class="outline-4">
+<h4 id="headline-374">
 go へトランスコンパイル後は Lua ライブラリのリンクが必要
 </h4>
-<div id="outline-text-headline-372" class="outline-text-4">
+<div id="outline-text-headline-374" class="outline-text-4">
 <blockquote>
 <p>追記</p>
 <p>
@@ -12026,11 +12097,11 @@ liblua5.3.so へのリンクが必要になります。</p>
 <div id="outline-text-go_package_ja" class="outline-text-2">
 <p>
 go でパッケージ管理されているモジュールを LuneScript から利用できます。</p>
-<div id="outline-container-headline-374" class="outline-3">
-<h3 id="headline-374">
+<div id="outline-container-headline-376" class="outline-3">
+<h3 id="headline-376">
 go のパッケージ管理概要
 </h3>
-<div id="outline-text-headline-374" class="outline-text-3">
+<div id="outline-text-headline-376" class="outline-text-3">
 <p>
 go は go.mod でパッケージを管理します。</p>
 <p>
@@ -12047,11 +12118,11 @@ github 上のパッケージを go で利用するには、次のように書き
 これと同じ感覚で、 LuneScript は go のモジュールにアクセスできます。</p>
 </div>
 </div>
-<div id="outline-container-headline-375" class="outline-3">
-<h3 id="headline-375">
+<div id="outline-container-headline-377" class="outline-3">
+<h3 id="headline-377">
 import
 </h3>
-<div id="outline-text-headline-375" class="outline-text-3">
+<div id="outline-text-headline-377" class="outline-text-3">
 <p>
 go のパッケージ内にある .lns ファイルを LuneScript で import するには、
 次のように書きます。</p>
@@ -12085,11 +12156,11 @@ go.mod に記載されているモジュールの TAG 情報から取得しま�
 つまり、事前に go mod tidy を実施しておく必要があります。</p>
 </div>
 </div>
-<div id="outline-container-headline-376" class="outline-3">
-<h3 id="headline-376">
+<div id="outline-container-headline-378" class="outline-3">
+<h3 id="headline-378">
 module
 </h3>
-<div id="outline-text-headline-376" class="outline-text-3">
+<div id="outline-text-headline-378" class="outline-text-3">
 <p>
 go のモジュールを LuneScript から利用するには、 module 宣言が必要です。</p>
 <p>
@@ -12134,11 +12205,11 @@ module servlet require &#34;go/github:com.ifritJP.lnshttpd.servlet&#34; of &#34;
 </tr>
 </tbody>
 </table>
-<div id="outline-container-headline-377" class="outline-4">
-<h4 id="headline-377">
+<div id="outline-container-headline-379" class="outline-4">
+<h4 id="headline-379">
 利用可能な言語
 </h4>
-<div id="outline-text-headline-377" class="outline-text-4">
+<div id="outline-text-headline-379" class="outline-text-4">
 <p>
 トランスコンパイル先の言語と、
 module で利用可能な言語の組み合わせには制限があります。</p>
@@ -12165,11 +12236,11 @@ module で利用可能な言語の組み合わせには制限があります。<
 </table>
 </div>
 </div>
-<div id="outline-container-headline-378" class="outline-4">
-<h4 id="headline-378">
+<div id="outline-container-headline-380" class="outline-4">
+<h4 id="headline-380">
 型の互換性
 </h4>
-<div id="outline-text-headline-378" class="outline-text-4">
+<div id="outline-text-headline-380" class="outline-text-4">
 <p>
 module 宣言で go モジュールを LuneScript から利用可能です。</p>
 <p>
@@ -12249,11 +12320,11 @@ Lua ランタイムは環境依存の少ない構成であるが、
 <p>
 そこで、 Native Lua ランタイムをリンクしなくても
 トランスコンパイル後のコードを実行できるよう対応している。</p>
-<div id="outline-container-headline-380" class="outline-3">
-<h3 id="headline-380">
+<div id="outline-container-headline-382" class="outline-3">
+<h3 id="headline-382">
 gopher-lua の利用
 </h3>
-<div id="outline-text-headline-380" class="outline-text-3">
+<div id="outline-text-headline-382" class="outline-text-3">
 <p>
 gopher-lua は、 go で実装された Lua ランタイムである。
 gopher-lua を利用することで、 Native Lua ランタイムとのリンクを回避する。</p>
@@ -12265,11 +12336,11 @@ go build -tags gopherlua
 <p>
 このオプションを指定することで、
 Lua ランタイムが Native Lua から gopher-lua に切り替わる。</p>
-<div id="outline-container-headline-381" class="outline-4">
-<h4 id="headline-381">
+<div id="outline-container-headline-383" class="outline-4">
+<h4 id="headline-383">
 gopher-lua の注意点
 </h4>
-<div id="outline-text-headline-381" class="outline-text-4">
+<div id="outline-text-headline-383" class="outline-text-4">
 <p>
 gopher-lua を利用する場合、
 Lua ランタイムの仕様が gopher-lua の仕様によって制限される。</p>
@@ -12288,11 +12359,11 @@ Native Lua と gopher-lua とでは違いがあることは認識しておく必
 </div>
 </div>
 </div>
-<div id="outline-container-headline-382" class="outline-3">
-<h3 id="headline-382">
+<div id="outline-container-headline-384" class="outline-3">
+<h3 id="headline-384">
 他の Lua ランタイム
 </h3>
-<div id="outline-text-headline-382" class="outline-text-3">
+<div id="outline-text-headline-384" class="outline-text-3">
 <p>
 go で実装された Lua ランタイムには幾つか種類がある。</p>
 <p>
@@ -12345,11 +12416,11 @@ LuneScript から go 言語へのトランスコンパイル対応したのを�
 LuneScript による非同期処理を対応しました。</p>
 <p>
 静的にデータ競合を排除する簡易機能を持ちます。</p>
-<div id="outline-container-headline-384" class="outline-3">
-<h3 id="headline-384">
+<div id="outline-container-headline-386" class="outline-3">
+<h3 id="headline-386">
 __Runner インタフェース
 </h3>
-<div id="outline-text-headline-384" class="outline-text-3">
+<div id="outline-text-headline-386" class="outline-text-3">
 <p>
 LuneScript で非同期処理を行なうには、 __Runner インタフェースを実装します。</p>
 <p>
@@ -12385,11 +12456,11 @@ foreach hoge in list {
    __join( hoge );
 }</code></pre>
 </div>
-<div id="outline-container-headline-385" class="outline-4">
-<h4 id="headline-385">
+<div id="outline-container-headline-387" class="outline-4">
+<h4 id="headline-387">
 __run() 関数
 </h4>
-<div id="outline-text-headline-385" class="outline-text-4">
+<div id="outline-text-headline-387" class="outline-text-4">
 <p>
 <code class="verbatim">__run()</code> 関数は、 __Runner クラスの非同期実行を開始するための関数です。</p>
 <p>
@@ -12439,11 +12510,11 @@ pub fn __run( runner:__Runner, mode: RunMode, name:str ) : bool</code></pre>
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-386" class="outline-4">
-<h4 id="headline-386">
+<div id="outline-container-headline-388" class="outline-4">
+<h4 id="headline-388">
 __join() 関数
 </h4>
-<div id="outline-text-headline-386" class="outline-text-4">
+<div id="outline-text-headline-388" class="outline-text-4">
 <p>
 <code class="verbatim">__join()</code> 関数は、 __Runner の非同期処理の終了を待つ関数です。</p>
 <div class="src src-lns">
@@ -12454,11 +12525,11 @@ pub fn __join( runner:__Runner )</code></pre>
 lua にトランスコンパイルした場合、非同期処理はないため何もしません。</p>
 </div>
 </div>
-<div id="outline-container-headline-387" class="outline-4">
-<h4 id="headline-387">
+<div id="outline-container-headline-389" class="outline-4">
+<h4 id="headline-389">
 コンストラクタの引数の制限
 </h4>
-<div id="outline-text-headline-387" class="outline-text-4">
+<div id="outline-text-headline-389" class="outline-text-4">
 <p>
 __Runner を extend するクラスのコンストラクタの引数は、
 以下の型に制限されます。</p>
@@ -12497,11 +12568,11 @@ class Hoge extend (__Runner) {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-388" class="outline-3">
-<h3 id="headline-388">
+<div id="outline-container-headline-390" class="outline-3">
+<h3 id="headline-390">
 __async, __noasyc 属性
 </h3>
-<div id="outline-text-headline-388" class="outline-text-3">
+<div id="outline-text-headline-390" class="outline-text-3">
 <p>
 __Runner インタフェースの <code class="verbatim">run()</code> メソッドの定義を見ると、
 __async が追加されているのが分かります。</p>
@@ -12528,11 +12599,11 @@ LuneScript は、スレッドが一つだけで動作する従来の同期処理
 デフォルトを __async として扱える方法を用意しています。</p>
 </div>
 </div>
-<div id="outline-container-headline-389" class="outline-3">
-<h3 id="headline-389">
+<div id="outline-container-headline-391" class="outline-3">
+<h3 id="headline-391">
 __async 宣言された関数の制限
 </h3>
-<div id="outline-text-headline-389" class="outline-text-3">
+<div id="outline-text-headline-391" class="outline-text-3">
 <p>
 <strong>__async 宣言された関数には、以下の制限があります。</strong></p>
 <ul>
@@ -12564,11 +12635,11 @@ LuneScript では、 Rust ほど高度な <strong>排他制御</strong> を実�
 <p>
 なお、後述する <strong>__asyncLock</strong> を利用することで、
 <strong>__async から __noasync をアクセスすることが可能</strong> になります。</p>
-<div id="outline-container-headline-390" class="outline-4">
-<h4 id="headline-390">
+<div id="outline-container-headline-392" class="outline-4">
+<h4 id="headline-392">
 __async 宣言された関数内から __noasync 宣言された関数は実行できない。
 </h4>
-<div id="outline-text-headline-390" class="outline-text-4">
+<div id="outline-text-headline-392" class="outline-text-4">
 <p>
 これは、以下のケースがエラーになることを指します。</p>
 <div class="src src-lns">
@@ -12586,11 +12657,11 @@ class Test {
 このとき、 __async の func2 から __noasync の func1 はアクセスできません。</p>
 </div>
 </div>
-<div id="outline-container-headline-391" class="outline-4">
-<h4 id="headline-391">
+<div id="outline-container-headline-393" class="outline-4">
+<h4 id="headline-393">
 __async 宣言された関数内から、スコープ外の mutable な変数にアクセスできない。
 </h4>
-<div id="outline-text-headline-391" class="outline-text-4">
+<div id="outline-text-headline-393" class="outline-text-4">
 <p>
 これは、以下のケースがエラーになることを指します。</p>
 <div class="src src-lns">
@@ -12620,11 +12691,11 @@ class Test {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-392" class="outline-3">
-<h3 id="headline-392">
+<div id="outline-container-headline-394" class="outline-3">
+<h3 id="headline-394">
 __async:__noasyc == N:1
 </h3>
-<div id="outline-text-headline-392" class="outline-text-3">
+<div id="outline-text-headline-394" class="outline-text-3">
 <p>
 LuneScript では、 非同期(<code class="verbatim">__async</code>)で動作するスレッドが複数(N)あり、
 <code class="verbatim">__noasync</code> で動作するスレッドは 1 つになるように設計しています。</p>
@@ -12633,11 +12704,11 @@ LuneScript では、 非同期(<code class="verbatim">__async</code>)で動作�
 <code class="verbatim">__noasync</code> のスレッドが一つなのは当然ですね。</p>
 </div>
 </div>
-<div id="outline-container-headline-393" class="outline-3">
-<h3 id="headline-393">
+<div id="outline-container-headline-395" class="outline-3">
+<h3 id="headline-395">
 __async の制限を一時的に解除する方法。 (__asyncLock)
 </h3>
-<div id="outline-text-headline-393" class="outline-text-3">
+<div id="outline-text-headline-395" class="outline-text-3">
 <p>
 前述の通り、 __async 宣言された関数には制限があります。</p>
 <p>
@@ -12664,11 +12735,11 @@ class Test {
 <p>
 func2 は __async なので、__noasync である func2 に本来はアクセスできませんが、
 __asyncLock ブロック内では __async の制限が解除されます。</p>
-<div id="outline-container-headline-394" class="outline-4">
-<h4 id="headline-394">
+<div id="outline-container-headline-396" class="outline-4">
+<h4 id="headline-396">
 __asyncLock と __noasync の関係
 </h4>
-<div id="outline-text-headline-394" class="outline-text-4">
+<div id="outline-text-headline-396" class="outline-text-4">
 <p>
 __asyncLock は、 __async 宣言された関数を一時的に __noasync として動作させます。</p>
 <p>
@@ -12680,11 +12751,11 @@ __noasync スレッドが実行中は、実行停止まで待ち、
 __noasync スレッドの実行停止後に _asyncLock のブロックを実行します。</p>
 <p>
 他の __asyncLock のブロック実行中も __noasync スレッド実行中と同様に扱います。</p>
-<div id="outline-container-headline-395" class="outline-5">
-<h5 id="headline-395">
+<div id="outline-container-headline-397" class="outline-5">
+<h5 id="headline-397">
 関数を跨いだ __asyncLock のネスト
 </h5>
-<div id="outline-text-headline-395" class="outline-text-5">
+<div id="outline-text-headline-397" class="outline-text-5">
 <p>
 次のケースでは、 func3 -&gt; func2 -&gt; func1 とコールしています。</p>
 <p>
@@ -12730,11 +12801,11 @@ class Test {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-396" class="outline-4">
-<h4 id="headline-396">
+<div id="outline-container-headline-398" class="outline-4">
+<h4 id="headline-398">
 __asyncLock のオーバーヘッド
 </h4>
-<div id="outline-text-headline-396" class="outline-text-4">
+<div id="outline-text-headline-398" class="outline-text-4">
 <p>
 前述の通り、 __asyncLock は排他制御を行ないます。</p>
 <p>
@@ -12764,11 +12835,11 @@ class Test {
 どの範囲を __asyncLock するかは慎重に判断する必要があります。</p>
 </div>
 </div>
-<div id="outline-container-headline-397" class="outline-4">
-<h4 id="headline-397">
+<div id="outline-container-headline-399" class="outline-4">
+<h4 id="headline-399">
 __asyncLock の制限 
 </h4>
-<div id="outline-text-headline-397" class="outline-text-4">
+<div id="outline-text-headline-399" class="outline-text-4">
 <p>
 __asyncLock には以下の制限があります。</p>
 <ul>
@@ -12814,11 +12885,11 @@ class Test {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-398" class="outline-3">
-<h3 id="headline-398">
+<div id="outline-container-headline-400" class="outline-3">
+<h3 id="headline-400">
 デフォルトを __async にする
 </h3>
-<div id="outline-text-headline-398" class="outline-text-3">
+<div id="outline-text-headline-400" class="outline-text-3">
 <p>
 何も宣言していない関数は __noasync です。</p>
 <p>
@@ -12831,11 +12902,11 @@ _lune_control default_async_all
 その .lns ファイル内では デフォルト __async になります。</p>
 </div>
 </div>
-<div id="outline-container-headline-399" class="outline-3">
-<h3 id="headline-399">
+<div id="outline-container-headline-401" class="outline-3">
+<h3 id="headline-401">
 ソフトウェアデザイン
 </h3>
-<div id="outline-text-headline-399" class="outline-text-3">
+<div id="outline-text-headline-401" class="outline-text-3">
 <p>
 これまでの特徴をまとめると以下になります。</p>
 <ul>
@@ -12851,11 +12922,11 @@ _lune_control default_async_all
 というデザインをするのが基本となります。</p>
 </div>
 </div>
-<div id="outline-container-headline-400" class="outline-3">
-<h3 id="headline-400">
+<div id="outline-container-headline-402" class="outline-3">
+<h3 id="headline-402">
 安全に非同期制御を行なうためのメカニズム
 </h3>
-<div id="outline-text-headline-400" class="outline-text-3">
+<div id="outline-text-headline-402" class="outline-text-3">
 <p>
 LuneScript では、以下によって排他制御の抜け漏れを防止しています。</p>
 <ul>
@@ -12910,11 +12981,11 @@ mutable であるためコンパイルエラーになりますが、
 <p>
 これをガードするために、
 __Runner を extend したコンストラクタには制限が付きます。</p>
-<div id="outline-container-headline-401" class="outline-4">
-<h4 id="headline-401">
+<div id="outline-container-headline-403" class="outline-4">
+<h4 id="headline-403">
 不完全な制限
 </h4>
-<div id="outline-text-headline-401" class="outline-text-4">
+<div id="outline-text-headline-403" class="outline-text-4">
 <p>
 前述している通り LuneScript の排他制御は、不完全です。</p>
 <p>
@@ -12969,11 +13040,11 @@ LuneScript による非同期処理を対応しました。</p>
 ただし、これは非常に実験的な内容なので参考程度にしてください。</p>
 <p>
 <strong>1.3.0 から廃止。 このドキュメントは過去ログとして保持しておきます。</strong></p>
-<div id="outline-container-headline-403" class="outline-3">
-<h3 id="headline-403">
+<div id="outline-container-headline-405" class="outline-3">
+<h3 id="headline-405">
 LuneScript のランタイム
 </h3>
-<div id="outline-text-headline-403" class="outline-text-3">
+<div id="outline-text-headline-405" class="outline-text-3">
 <p>
 LuneScript には、LuneScript の言語仕様とトランスコンパイル先の言語仕様との
 差を埋めるためのランタイムがあります。</p>
@@ -13016,11 +13087,11 @@ LuneScript を非同期処理に対応する場合、
 以降では、今回導入した非同期処理の方法について説明します。</p>
 </div>
 </div>
-<div id="outline-container-headline-404" class="outline-3">
-<h3 id="headline-404">
+<div id="outline-container-headline-406" class="outline-3">
+<h3 id="headline-406">
 LnsThread クラスの導入と制限
 </h3>
-<div id="outline-text-headline-404" class="outline-text-3">
+<div id="outline-text-headline-406" class="outline-text-3">
 <p>
 LuneScript で非同期処理を行なう場合、 LnsThread クラスを継承します。</p>
 <p>
@@ -13145,11 +13216,11 @@ for _ = 1, 100000 {
 }
 print( async.$count, async2.$count );</code></pre>
 </div>
-<div id="outline-container-headline-405" class="outline-4">
-<h4 id="headline-405">
+<div id="outline-container-headline-407" class="outline-4">
+<h4 id="headline-407">
 非同期処理の制限
 </h4>
-<div id="outline-text-headline-405" class="outline-text-4">
+<div id="outline-text-headline-407" class="outline-text-4">
 <p>
 次の処理を行なった場合の動作は未定義です。</p>
 <ul>
@@ -13183,11 +13254,11 @@ LuneScript は Lua のコードを実行できます。</p>
 幾つかの点で注意が必要です。</p>
 <p>
 特に非同期処理と lua コード実行の組み合わせには要注意です。</p>
-<div id="outline-container-headline-407" class="outline-3">
-<h3 id="headline-407">
+<div id="outline-container-headline-409" class="outline-3">
+<h3 id="headline-409">
 Luaval
 </h3>
-<div id="outline-text-headline-407" class="outline-text-3">
+<div id="outline-text-headline-409" class="outline-text-3">
 <p>
 既にリンク先で説明している通り、 lua で実行した結果は <strong>Luaval 型</strong> で管理します。</p>
 <p>
@@ -13217,11 +13288,11 @@ fn func( val:&amp;Luaval&lt;&amp;List&lt;int&gt;&gt; ) {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-408" class="outline-3">
-<h3 id="headline-408">
+<div id="outline-container-headline-410" class="outline-3">
+<h3 id="headline-410">
 Lua VM の種類
 </h3>
-<div id="outline-text-headline-408" class="outline-text-3">
+<div id="outline-text-headline-410" class="outline-text-3">
 <p>
 Lua VM には次の 2 つの種類があります。</p>
 <ul>
@@ -13239,11 +13310,11 @@ lua を実行する際、どの Lua VM にアクセスするか制御が必要�
 この制御を行なうのが <strong>lua アクセスブロック</strong> です。</p>
 </div>
 </div>
-<div id="outline-container-headline-409" class="outline-3">
-<h3 id="headline-409">
+<div id="outline-container-headline-411" class="outline-3">
+<h3 id="headline-411">
 lua アクセスブロック
 </h3>
-<div id="outline-text-headline-409" class="outline-text-3">
+<div id="outline-text-headline-411" class="outline-text-3">
 <p>
 <strong>lua アクセスブロック</strong> には、以下の種類があります。
 また、アクセスする関数が __async なのか __noasync なのかによって、
@@ -13275,11 +13346,11 @@ lua アクセスブロック
 </ul>
 <p>
 <strong>__luaDepend は、使用される Lua VM が実行時に決定されるため細心の注意が必要です。</strong></p>
-<div id="outline-container-headline-410" class="outline-4">
-<h4 id="headline-410">
+<div id="outline-container-headline-412" class="outline-4">
+<h4 id="headline-412">
 サンプル
 </h4>
-<div id="outline-text-headline-410" class="outline-text-4">
+<div id="outline-text-headline-412" class="outline-text-4">
 <p>
 以下は、 lua コードを実行するサンプルです。</p>
 <div class="src src-lns">
@@ -13307,11 +13378,11 @@ return { val1 = 10, val2 = 20 }
 この先頭で、 __luago を宣言しています。</p>
 </div>
 </div>
-<div id="outline-container-headline-411" class="outline-4">
-<h4 id="headline-411">
+<div id="outline-container-headline-413" class="outline-4">
+<h4 id="headline-413">
 lua アクセスブロックの使い分け
 </h4>
-<div id="outline-text-headline-411" class="outline-text-4">
+<div id="outline-text-headline-413" class="outline-text-4">
 <p>
 前述している通り、非同期処理から Lua にアクセスするには、
 lua アクセスブロックの __luaLock と __luaDepend を使い分ける必要があります。</p>
@@ -13328,11 +13399,11 @@ Lua VM 内のロード処理を最低限にし、使用メモリを抑えられ�
 <p>
 __luaDepend を利用するには、
 非同期に処理を行なうメリットと、デメリットを良く考える必要があります。</p>
-<div id="outline-container-headline-412" class="outline-5">
-<h5 id="headline-412">
+<div id="outline-container-headline-414" class="outline-5">
+<h5 id="headline-414">
 __luaDepend を使った方が良いケース
 </h5>
-<div id="outline-text-headline-412" class="outline-text-5">
+<div id="outline-text-headline-414" class="outline-text-5">
 <p>
 <code class="verbatim">string.gmatch()</code> は lua にアクセスするため lua アクセスブロックが必要です。</p>
 <p>
@@ -13371,11 +13442,11 @@ Go 言語へのトランスコンパイル対応については、次の記事�
 LuneScript から Go 言語へのトランスコンパイルを検討中。</p>
 <p>
 ここでは、検討中の内容を記録する。</p>
-<div id="outline-container-headline-414" class="outline-3">
-<h3 id="headline-414">
+<div id="outline-container-headline-416" class="outline-3">
+<h3 id="headline-416">
 ねらい
 </h3>
-<div id="outline-text-headline-414" class="outline-text-3">
+<div id="outline-text-headline-416" class="outline-text-3">
 <p>
 LuneScript から Go 言語へのトランスコンパイルの狙いは次の通り。</p>
 <ul>
@@ -13400,11 +13471,11 @@ C 言語での GC 実装が思うように進まなかったので、
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-415" class="outline-3">
-<h3 id="headline-415">
+<div id="outline-container-headline-417" class="outline-3">
+<h3 id="headline-417">
 値
 </h3>
-<div id="outline-text-headline-415" class="outline-text-3">
+<div id="outline-text-headline-417" class="outline-text-3">
 <table>
 <thead>
 <tr>
@@ -13491,11 +13562,11 @@ C 言語での GC 実装が思うように進まなかったので、
 </tr>
 </tbody>
 </table>
-<div id="outline-container-headline-416" class="outline-4">
-<h4 id="headline-416">
+<div id="outline-container-headline-418" class="outline-4">
+<h4 id="headline-418">
 int/real の扱い
 </h4>
-<div id="outline-text-headline-416" class="outline-text-4">
+<div id="outline-text-headline-418" class="outline-text-4">
 <p>
 LuneScript int/real は、 go の type alias を使用して次のように定義する。</p>
 <div class="src src-go">
@@ -13504,62 +13575,62 @@ LuneScript int/real は、 go の type alias を使用して次のように定�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-417" class="outline-4">
-<h4 id="headline-417">
+<div id="outline-container-headline-419" class="outline-4">
+<h4 id="headline-419">
 nilable の扱い
 </h4>
-<div id="outline-text-headline-417" class="outline-text-4">
+<div id="outline-text-headline-419" class="outline-text-4">
 <p>
 LuneScript の nilable は、そのままでは元の値として扱えない。
 しかし、等しいかどうかのチェックは行なえる。
 これは go と LuneScript と同じ。</p>
 </div>
 </div>
-<div id="outline-container-headline-418" class="outline-4">
-<h4 id="headline-418">
+<div id="outline-container-headline-420" class="outline-4">
+<h4 id="headline-420">
 真偽値の扱い
 </h4>
-<div id="outline-text-headline-418" class="outline-text-4">
+<div id="outline-text-headline-420" class="outline-text-4">
 <p>
 LuneScript は nil と false が偽で、それ以外は真となる。
 go は true/false で判断が必要なので、 LuneScript 用の条件変換関数を用意する。</p>
 </div>
 </div>
-<div id="outline-container-headline-419" class="outline-4">
-<h4 id="headline-419">
+<div id="outline-container-headline-421" class="outline-4">
+<h4 id="headline-421">
 and/or の扱い
 </h4>
-<div id="outline-text-headline-419" class="outline-text-4">
+<div id="outline-text-headline-421" class="outline-text-4">
 <p>
 LuneScript の and/or は論理演算ではなく、式の評価を制御し、評価結果も bool ではない。
 go は評価結果が bool になる。</p>
 </div>
 </div>
-<div id="outline-container-headline-420" class="outline-4">
-<h4 id="headline-420">
+<div id="outline-container-headline-422" class="outline-4">
+<h4 id="headline-422">
 Generics の扱い
 </h4>
-<div id="outline-text-headline-420" class="outline-text-4">
+<div id="outline-text-headline-422" class="outline-text-4">
 <p>
 go は Generics がないので、 Generics の型は全て interface{} で扱う。</p>
 </div>
 </div>
-<div id="outline-container-headline-421" class="outline-4">
-<h4 id="headline-421">
+<div id="outline-container-headline-423" class="outline-4">
+<h4 id="headline-423">
 Set の扱い
 </h4>
-<div id="outline-text-headline-421" class="outline-text-4">
+<div id="outline-text-headline-423" class="outline-text-4">
 <p>
 go は Set がないので、 Map で代用する。   </p>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-422" class="outline-3">
-<h3 id="headline-422">
+<div id="outline-container-headline-424" class="outline-3">
+<h3 id="headline-424">
 多値返却
 </h3>
-<div id="outline-text-headline-422" class="outline-text-3">
+<div id="outline-text-headline-424" class="outline-text-3">
 <p>
 go と LuneScript の多値返却は動きが異なる。</p>
 <p>
@@ -13608,11 +13679,11 @@ go と LuneScript の多値返却は動きが異なる。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-423" class="outline-3">
-<h3 id="headline-423">
+<div id="outline-container-headline-425" class="outline-3">
+<h3 id="headline-425">
 クラスと継承
 </h3>
-<div id="outline-text-headline-423" class="outline-text-3">
+<div id="outline-text-headline-425" class="outline-text-3">
 <p>
 Go は構造体とレシーバはあるが、継承がない。</p>
 <p>
@@ -13649,11 +13720,11 @@ class SubSub extend Sub {
    }
 }</code></pre>
 </div>
-<div id="outline-container-headline-424" class="outline-4">
-<h4 id="headline-424">
+<div id="outline-container-headline-426" class="outline-4">
+<h4 id="headline-426">
 Go による等価コード
 </h4>
-<div id="outline-text-headline-424" class="outline-text-4">
+<div id="outline-text-headline-426" class="outline-text-4">
 <p>
 Go による等価コードを示す</p>
 <div class="src src-go">
@@ -13797,16 +13868,16 @@ Go による等価コードを示す</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-425" class="outline-4">
-<h4 id="headline-425">
+<div id="outline-container-headline-427" class="outline-4">
+<h4 id="headline-427">
 継承実現方法
 </h4>
-<div id="outline-text-headline-425" class="outline-text-4">
-<div id="outline-container-headline-426" class="outline-5">
-<h5 id="headline-426">
+<div id="outline-text-headline-427" class="outline-text-4">
+<div id="outline-container-headline-428" class="outline-5">
+<h5 id="headline-428">
 Parent クラス
 </h5>
-<div id="outline-text-headline-426" class="outline-text-5">
+<div id="outline-text-headline-428" class="outline-text-5">
 <p>
 まず、 Parent クラスについて説明する。</p>
 <div class="src src-lns">
@@ -13818,11 +13889,11 @@ class Parent {
    }
 }</code></pre>
 </div>
-<div id="outline-container-headline-427" class="outline-6">
-<h6 id="headline-427">
+<div id="outline-container-headline-429" class="outline-6">
+<h6 id="headline-429">
 データ構造
 </h6>
-<div id="outline-text-headline-427" class="outline-text-6">
+<div id="outline-text-headline-429" class="outline-text-6">
 <p>
 Parent クラスを表現するため、次の構造体と interface を定義する。</p>
 <div class="src src-go">
@@ -13853,11 +13924,11 @@ Parent クラスを表現するため、次の構造体と interface を定義�
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-428" class="outline-6">
-<h6 id="headline-428">
+<div id="outline-container-headline-430" class="outline-6">
+<h6 id="headline-430">
 メソッド
 </h6>
-<div id="outline-text-headline-428" class="outline-text-6">
+<div id="outline-text-headline-430" class="outline-text-6">
 <p>
 Parent クラスのメソッドを表現するため、次のレシーバ関数を定義する。</p>
 <div class="src src-go">
@@ -13867,11 +13938,11 @@ Parent クラスのメソッドを表現するため、次のレシーバ関数�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-429" class="outline-6">
-<h6 id="headline-429">
+<div id="outline-container-headline-431" class="outline-6">
+<h6 id="headline-431">
 コンストラクタ
 </h6>
-<div id="outline-text-headline-429" class="outline-text-6">
+<div id="outline-text-headline-431" class="outline-text-6">
 <p>
 Parent クラスのコンストラクタとして、次を定義する。</p>
 <div class="src src-go">
@@ -13889,11 +13960,11 @@ Parent クラスのコンストラクタとして、次を定義する。</p>
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-430" class="outline-6">
-<h6 id="headline-430">
+<div id="outline-container-headline-432" class="outline-6">
+<h6 id="headline-432">
 Parent クラスの使用方法
 </h6>
-<div id="outline-text-headline-430" class="outline-text-6">
+<div id="outline-text-headline-432" class="outline-text-6">
 <p>
 Parent は次のように使用する。</p>
 <div class="src src-go">
@@ -13906,11 +13977,11 @@ Parent は次のように使用する。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-431" class="outline-5">
-<h5 id="headline-431">
+<div id="outline-container-headline-433" class="outline-5">
+<h5 id="headline-433">
 Sub クラス
 </h5>
-<div id="outline-text-headline-431" class="outline-text-5">
+<div id="outline-text-headline-433" class="outline-text-5">
 <p>
 Sub クラスについて説明する。</p>
 <div class="src src-lns">
@@ -13925,11 +13996,11 @@ class Sub extend Parent {
    }
 }</code></pre>
 </div>
-<div id="outline-container-headline-432" class="outline-6">
-<h6 id="headline-432">
+<div id="outline-container-headline-434" class="outline-6">
+<h6 id="headline-434">
 データ構造
 </h6>
-<div id="outline-text-headline-432" class="outline-text-6">
+<div id="outline-text-headline-434" class="outline-text-6">
 <p>
 Sub クラスを表現するため、次の構造体と interface を定義する。</p>
 <div class="src src-go">
@@ -13963,11 +14034,11 @@ Sub クラスを表現するため、次の構造体と interface を定義す�
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-433" class="outline-6">
-<h6 id="headline-433">
+<div id="outline-container-headline-435" class="outline-6">
+<h6 id="headline-435">
 メソッド
 </h6>
-<div id="outline-text-headline-433" class="outline-text-6">
+<div id="outline-text-headline-435" class="outline-text-6">
 <p>
 Sub クラスのメソッドを表現するため、次のレシーバ関数を定義する。</p>
 <div class="src src-go">
@@ -13980,11 +14051,11 @@ Sub クラスのメソッドを表現するため、次のレシーバ関数を�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-434" class="outline-6">
-<h6 id="headline-434">
+<div id="outline-container-headline-436" class="outline-6">
+<h6 id="headline-436">
 コンストラクタ
 </h6>
-<div id="outline-text-headline-434" class="outline-text-6">
+<div id="outline-text-headline-436" class="outline-text-6">
 <p>
 Sub クラスのコンストラクタとして、次を定義する。</p>
 <div class="src src-go">
@@ -14011,11 +14082,11 @@ Sub クラスのコンストラクタとして、次を定義する。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-435" class="outline-5">
-<h5 id="headline-435">
+<div id="outline-container-headline-437" class="outline-5">
+<h5 id="headline-437">
 SubSub クラス
 </h5>
-<div id="outline-text-headline-435" class="outline-text-5">
+<div id="outline-text-headline-437" class="outline-text-5">
 <p>
 SubSub クラスについて説明する。</p>
 <div class="src src-lns">
@@ -14030,11 +14101,11 @@ class SubSub extend Sub {
    }
 }</code></pre>
 </div>
-<div id="outline-container-headline-436" class="outline-6">
-<h6 id="headline-436">
+<div id="outline-container-headline-438" class="outline-6">
+<h6 id="headline-438">
 データ構造
 </h6>
-<div id="outline-text-headline-436" class="outline-text-6">
+<div id="outline-text-headline-438" class="outline-text-6">
 <p>
 SubSub クラスを表現するため、次の構造体と interface を定義する。</p>
 <div class="src src-go">
@@ -14072,11 +14143,11 @@ SubSub クラスを表現するため、次の構造体と interface を定義�
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-437" class="outline-6">
-<h6 id="headline-437">
+<div id="outline-container-headline-439" class="outline-6">
+<h6 id="headline-439">
 メソッド
 </h6>
-<div id="outline-text-headline-437" class="outline-text-6">
+<div id="outline-text-headline-439" class="outline-text-6">
 <p>
 SubSub クラスのメソッドを表現するため、次のレシーバ関数を定義する。</p>
 <div class="src src-go">
@@ -14090,11 +14161,11 @@ SubSub クラスのメソッドを表現するため、次のレシーバ関数�
 </span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">self</span><span class="p">.</span><span class="nx">val3</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
-<div id="outline-container-headline-438" class="outline-7">
-<h7 id="headline-438">
+<div id="outline-container-headline-440" class="outline-7">
+<h7 id="headline-440">
 override していないメソッド定義
 </h7>
-<div id="outline-text-headline-438" class="outline-text-7">
+<div id="outline-text-headline-440" class="outline-text-7">
 <p>
 上記で注目すべきは、 sub2() メソッドで <code class="verbatim">self.Sub.sub2()</code> をコールしている点。</p>
 <p>
@@ -14105,11 +14176,11 @@ SubSub クラスは、 sub2 メソッドを override していない。
 </div>
 </div>
 </div>
-<div id="outline-container-headline-439" class="outline-6">
-<h6 id="headline-439">
+<div id="outline-container-headline-441" class="outline-6">
+<h6 id="headline-441">
 コンストラクタ
 </h6>
-<div id="outline-text-headline-439" class="outline-text-6">
+<div id="outline-text-headline-441" class="outline-text-6">
 <p>
 SubSub クラスのコンストラクタとして、次を定義する。</p>
 <div class="src src-go">
@@ -14137,22 +14208,22 @@ SubSub クラスのコンストラクタとして、次を定義する。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-440" class="outline-5">
-<h5 id="headline-440">
+<div id="outline-container-headline-442" class="outline-5">
+<h5 id="headline-442">
 IF インタフェース
 </h5>
-<div id="outline-text-headline-440" class="outline-text-5">
+<div id="outline-text-headline-442" class="outline-text-5">
 <div class="src src-lns">
 <pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
 interface IF {
   pub fn sub1():int;
 }</code></pre>
 </div>
-<div id="outline-container-headline-441" class="outline-6">
-<h6 id="headline-441">
+<div id="outline-container-headline-443" class="outline-6">
+<h6 id="headline-443">
 データ構造
 </h6>
-<div id="outline-text-headline-441" class="outline-text-6">
+<div id="outline-text-headline-443" class="outline-text-6">
 <p>
 LuneScript の interface は、 Go のインタフェースをそのまま使用する。</p>
 <div class="src src-go">
@@ -14164,11 +14235,11 @@ LuneScript の interface は、 Go のインタフェースをそのまま使用
 </div>
 </div>
 </div>
-<div id="outline-container-headline-442" class="outline-5">
-<h5 id="headline-442">
+<div id="outline-container-headline-444" class="outline-5">
+<h5 id="headline-444">
 メソッド呼び出し
 </h5>
-<div id="outline-text-headline-442" class="outline-text-5">
+<div id="outline-text-headline-444" class="outline-text-5">
 <p>
 Parent クラスのメソッドを呼び出すには、次のように行なう。</p>
 <div class="src src-go">
@@ -14177,11 +14248,11 @@ Parent クラスのメソッドを呼び出すには、次のように行なう�
 </span></span><span class="line"><span class="cl">  <span class="nb">print</span><span class="p">(</span> <span class="nx">parent</span><span class="p">.</span><span class="nf">sub1</span><span class="p">()</span> <span class="p">)</span>
 </span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
 </div>
-<div id="outline-container-headline-443" class="outline-6">
-<h6 id="headline-443">
+<div id="outline-container-headline-445" class="outline-6">
+<h6 id="headline-445">
 parent.FP.sub1() と parent.sub1() の違い
 </h6>
-<div id="outline-text-headline-443" class="outline-text-6">
+<div id="outline-text-headline-445" class="outline-text-6">
 <p>
 メソッド呼び出しには、次の 2 つのパターンがある。</p>
 <ul>
@@ -14205,11 +14276,11 @@ parent.FP.sub1() と parent.sub1() の違い
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-444" class="outline-6">
-<h6 id="headline-444">
+<div id="outline-container-headline-446" class="outline-6">
+<h6 id="headline-446">
 オーバーヘッド
 </h6>
-<div id="outline-text-headline-444" class="outline-text-6">
+<div id="outline-text-headline-446" class="outline-text-6">
 <ul>
 <li>ポリモーフィズムに対応したメソッド呼び出しは、オーバーヘッドが大きい。</li>
 <li>ポリモーフィズムに対応したメソッド呼び出しは、
@@ -14226,11 +14297,11 @@ parent.FP.sub1() と parent.sub1() の違い
 </div>
 </div>
 </div>
-<div id="outline-container-headline-445" class="outline-5">
-<h5 id="headline-445">
+<div id="outline-container-headline-447" class="outline-5">
+<h5 id="headline-447">
 up-cast / down-cast
 </h5>
-<div id="outline-text-headline-445" class="outline-text-5">
+<div id="outline-text-headline-447" class="outline-text-5">
 <ul>
 <li>
 <p>up-cast は、埋め込みのポインタにアクセスすることで実現する</p>
@@ -14257,11 +14328,11 @@ up-cast / down-cast
 </div>
 </div>
 </div>
-<div id="outline-container-headline-446" class="outline-4">
-<h4 id="headline-446">
+<div id="outline-container-headline-448" class="outline-4">
+<h4 id="headline-448">
 Class のまとめ
 </h4>
-<div id="outline-text-headline-446" class="outline-text-4">
+<div id="outline-text-headline-448" class="outline-text-4">
 <ul>
 <li>
 <p>クラスのメソッドを定義する interface を宣言する</p>
@@ -14372,11 +14443,11 @@ Class のまとめ
 </div>
 </div>
 </div>
-<div id="outline-container-headline-447" class="outline-3">
-<h3 id="headline-447">
+<div id="outline-container-headline-449" class="outline-3">
+<h3 id="headline-449">
 シンボル名
 </h3>
-<div id="outline-text-headline-447" class="outline-text-3">
+<div id="outline-text-headline-449" class="outline-text-3">
 <p>
 LuneScript と go のシンボル名は、次の点で大きく異なる。</p>
 <ul>
@@ -14462,11 +14533,11 @@ LuneScript と go のシンボルの関係は次のようになる。</p>
 基本的にそのまま変換する。</p>
 </div>
 </div>
-<div id="outline-container-headline-448" class="outline-3">
-<h3 id="headline-448">
+<div id="outline-container-headline-450" class="outline-3">
+<h3 id="headline-450">
 Lua VM
 </h3>
-<div id="outline-text-headline-448" class="outline-text-3">
+<div id="outline-text-headline-450" class="outline-text-3">
 <p>
 現状の LuneScript では、 Macro 展開時に Lua VM を使用する。
 Go で Lua VM を使用する方法として、次の 2 つがある。</p>
@@ -14498,11 +14569,11 @@ Gopherlua
 </li>
 </ul>
 <p>上記から、 LuneScript のトランスコンパイラでは liblua を利用する。</p>
-<div id="outline-container-headline-449" class="outline-4">
-<h4 id="headline-449">
+<div id="outline-container-headline-451" class="outline-4">
+<h4 id="headline-451">
 cgo
 </h4>
-<div id="outline-text-headline-449" class="outline-text-4">
+<div id="outline-text-headline-451" class="outline-text-4">
 <p>
 Go から liblua を利用するため cgo を使う。</p>
 <p>
@@ -14568,11 +14639,11 @@ LuneScript で作成したコードを Web ブラウザ上で動作させる方�
 <li>LuneScript から go にトランスコンパイルし、その go コードを WebAssemly に変換する</li>
 </ul>
 <p>ここでは、 go から WebAssemly に変換する方法について説明します。</p>
-<div id="outline-container-headline-451" class="outline-3">
-<h3 id="headline-451">
+<div id="outline-container-headline-453" class="outline-3">
+<h3 id="headline-453">
 go から Web Assemly への変換
 </h3>
-<div id="outline-text-headline-451" class="outline-text-3">
+<div id="outline-text-headline-453" class="outline-text-3">
 <p>
 go から WebAssemly への変換は、 go の機能を利用します。</p>
 <p>
@@ -14582,11 +14653,11 @@ go で WebAssembly を利用する方法の基本的な流れは、
 &lt;<a href="https://github.com/golang/go/wiki/WebAssembly">https://github.com/golang/go/wiki/WebAssembly</a>&gt;</p>
 <p>
 ここでは、 LuneScript 特有の話をします。</p>
-<div id="outline-container-headline-452" class="outline-4">
-<h4 id="headline-452">
+<div id="outline-container-headline-454" class="outline-4">
+<h4 id="headline-454">
 Lua のランタイムは gopherlua を利用する
 </h4>
-<div id="outline-text-headline-452" class="outline-text-4">
+<div id="outline-text-headline-454" class="outline-text-4">
 <p>
 LuneScript のコードを go のアプリに変換するには、 Lua のランタイムが必要になります。</p>
 <p>
@@ -14605,11 +14676,11 @@ $ GOOS=js GOARCH=wasm go build -tags gopherlua -o main.wasm
 </pre>
 </div>
 </div>
-<div id="outline-container-headline-453" class="outline-4">
-<h4 id="headline-453">
+<div id="outline-container-headline-455" class="outline-4">
+<h4 id="headline-455">
 JavaScript と LuneScript 間の連携動作
 </h4>
-<div id="outline-text-headline-453" class="outline-text-4">
+<div id="outline-text-headline-455" class="outline-text-4">
 <p>
 JavaScript と LuneScript 間の連携動作は、main() が実行されている間可能です。</p>
 <p>
@@ -14622,11 +14693,11 @@ LuneScript の処理を終わらさずに待たせる必要があります。</p
 <li>__AsyncItem を利用する  </li>
 </ul>
 <p>以下で説明します。</p>
-<div id="outline-container-headline-454" class="outline-5">
-<h5 id="headline-454">
+<div id="outline-container-headline-456" class="outline-5">
+<h5 id="headline-456">
 go 外部モジュールで処理する
 </h5>
-<div id="outline-text-headline-454" class="outline-text-5">
+<div id="outline-text-headline-456" class="outline-text-5">
 <ul>
 <li>go の channel を生成して、その channel からデータの読み出しを行なう。</li>
 <li>この処理を go の外部モジュールとして定義し、 LuneScript の module 宣言等で、
@@ -14634,11 +14705,11 @@ go 外部モジュールで処理する
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-455" class="outline-5">
-<h5 id="headline-455">
+<div id="outline-container-headline-457" class="outline-5">
+<h5 id="headline-457">
 __AsyncItem を利用する    
 </h5>
-<div id="outline-text-headline-455" class="outline-text-5">
+<div id="outline-text-headline-457" class="outline-text-5">
 <ul>
 <li>LuneScript の __AsyncItem インタフェースを利用し、 pipe を作成し、その pipe からデータ読み出しを行なう。</li>
 <li>__AsyncItem のインタフェースを extend した独自のクラスを定義し、
@@ -14675,11 +14746,11 @@ pub fn notify( val:str ) {
 </div>
 </div>
 </div>
-<div id="outline-container-headline-456" class="outline-4">
-<h4 id="headline-456">
+<div id="outline-container-headline-458" class="outline-4">
+<h4 id="headline-458">
 LuneScript 内の非同期処理
 </h4>
-<div id="outline-text-headline-456" class="outline-text-4">
+<div id="outline-text-headline-458" class="outline-text-4">
 <p>
 現状の WebAssembly では、
 LuneScript 内の非同期処理は次が指定された時と同じ動きになります。</p>
@@ -14697,11 +14768,11 @@ __asyncLock や pipe 以外で、いずれかの処理がブロックすると�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-457" class="outline-3">
-<h3 id="headline-457">
+<div id="outline-container-headline-459" class="outline-3">
+<h3 id="headline-459">
 tinygo
 </h3>
-<div id="outline-text-headline-457" class="outline-text-3">
+<div id="outline-text-headline-459" class="outline-text-3">
 <p>
 go から WebAssembly に変換する方法には、
 オフィシャルな go を使う方法と、tinygo を使う方法があります。</p>
@@ -14726,22 +14797,22 @@ tinygo を利用できません。</p>
 <div id="outline-text-lnstags_ja" class="outline-text-2">
 <p>
 LuneScript は、タグジャンプ (ソースコードタグシステム)に対応している。</p>
-<div id="outline-container-headline-459" class="outline-3">
-<h3 id="headline-459">
+<div id="outline-container-headline-461" class="outline-3">
+<h3 id="headline-461">
 タグジャンプ (ソースコードタグシステム) とは
 </h3>
-<div id="outline-text-headline-459" class="outline-text-3">
+<div id="outline-text-headline-461" class="outline-text-3">
 <p>
 タグジャンプは、ソースコードの以下の情報へのアクセスを提供する。</p>
 <ul>
 <li>シンボル(クラス、関数、変数 etc..)の <strong>定義位置</strong></li>
 <li>シンボル(クラス、関数、変数 etc..)の <strong>参照位置</strong></li>
 </ul>
-<div id="outline-container-headline-460" class="outline-4">
-<h4 id="headline-460">
+<div id="outline-container-headline-462" class="outline-4">
+<h4 id="headline-462">
 例
 </h4>
-<div id="outline-text-headline-460" class="outline-text-4">
+<div id="outline-text-headline-462" class="outline-text-4">
 <p>
 以下に例を示す。</p>
 <div class="src src-lns">
@@ -14780,11 +14851,11 @@ lnstags コマンドの使用方法についての詳細は後述する。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-461" class="outline-3">
-<h3 id="headline-461">
+<div id="outline-container-headline-463" class="outline-3">
+<h3 id="headline-463">
 lnstags の特徴
 </h3>
-<div id="outline-text-headline-461" class="outline-text-3">
+<div id="outline-text-headline-463" class="outline-text-3">
 <p>
 lnstags は一般的なタグジャンプの機能に加え、次の機能を提供する。</p>
 <ul>
@@ -14806,20 +14877,20 @@ lnstags は一般的なタグジャンプの機能に加え、次の機能を提
 </ul>
 </div>
 </div>
-<div id="outline-container-headline-462" class="outline-3">
-<h3 id="headline-462">
+<div id="outline-container-headline-464" class="outline-3">
+<h3 id="headline-464">
 使い方
 </h3>
-<div id="outline-text-headline-462" class="outline-text-3">
+<div id="outline-text-headline-464" class="outline-text-3">
 <p>
 lnstags は、次の URL で公開している。</p>
 <p>
 &lt;<a href="https://github.com/ifritJP/lnstags">https://github.com/ifritJP/lnstags</a>&gt;</p>
-<div id="outline-container-headline-463" class="outline-4">
-<h4 id="headline-463">
+<div id="outline-container-headline-465" class="outline-4">
+<h4 id="headline-465">
 ビルド方法
 </h4>
-<div id="outline-text-headline-463" class="outline-text-4">
+<div id="outline-text-headline-465" class="outline-text-4">
 <p>
 次の 2 つのビルド方法があります。</p>
 <ul>
@@ -14827,11 +14898,11 @@ lnstags は、次の URL で公開している。</p>
 <li>リポジトリを close して make する</li>
 </ul>
 <p>通常は go install で問題ありません。  </p>
-<div id="outline-container-headline-464" class="outline-5">
-<h5 id="headline-464">
+<div id="outline-container-headline-466" class="outline-5">
+<h5 id="headline-466">
 go install 
 </h5>
-<div id="outline-text-headline-464" class="outline-text-5">
+<div id="outline-text-headline-466" class="outline-text-5">
 <p>
 以下を実行すると、 $GOPATH/bin に lnstags がインストールされます。</p>
 <pre class="example">
@@ -14839,11 +14910,11 @@ go install -tags gopherlua github.com/ifritJP/lnstags@latest
 </pre>
 </div>
 </div>
-<div id="outline-container-headline-465" class="outline-5">
-<h5 id="headline-465">
+<div id="outline-container-headline-467" class="outline-5">
+<h5 id="headline-467">
 go でビルドする。
 </h5>
-<div id="outline-text-headline-465" class="outline-text-5">
+<div id="outline-text-headline-467" class="outline-text-5">
 <div class="src src-txt">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">$ git clone --depth 1 https://github.com/ifritJP/lnstags
 </span></span><span class="line"><span class="cl">$ cd lnstags
@@ -14855,11 +14926,11 @@ go でビルドする。
 </div>
 </div>
 </div>
-<div id="outline-container-headline-466" class="outline-4">
-<h4 id="headline-466">
+<div id="outline-container-headline-468" class="outline-4">
+<h4 id="headline-468">
 ソースコードの解析
 </h4>
-<div id="outline-text-headline-466" class="outline-text-4">
+<div id="outline-text-headline-468" class="outline-text-4">
 <p>
 ソースコードの解析は、
 解析対象のソースコードのプロジェクトディレクトリ上で実行する。</p>
@@ -14898,11 +14969,11 @@ lnstags は、指定された lns ファイルから import されているモ�
 ソースコードの解析結果は、 <strong>lnstags.sqlite3 ファイル</strong> に登録する。</p>
 </div>
 </div>
-<div id="outline-container-headline-467" class="outline-4">
-<h4 id="headline-467">
+<div id="outline-container-headline-469" class="outline-4">
+<h4 id="headline-469">
 DB の更新
 </h4>
-<div id="outline-text-headline-467" class="outline-text-4">
+<div id="outline-text-headline-469" class="outline-text-4">
 <p>
 <code class="verbatim">lctags build</code> による解析後にソースコードを変更すると、
 DB に登録している情報と実際のソースコードの情報に不整合が生じる。</p>
@@ -14915,11 +14986,11 @@ DB を更新するには、 <strong>次のいずれか</strong> を実行する�
 <pre class="example">
 $ lctags update
 </pre>
-<div id="outline-container-headline-468" class="outline-5">
-<h5 id="headline-468">
+<div id="outline-container-headline-470" class="outline-5">
+<h5 id="headline-470">
 lctags update
 </h5>
-<div id="outline-text-headline-468" class="outline-text-5">
+<div id="outline-text-headline-470" class="outline-text-5">
 <p>
 <code class="verbatim">lctags update</code> は、
 DB に登録されている lns のソースファルイリストを元に、
@@ -14934,11 +15005,11 @@ DB に登録されている lns のソースファルイリストを元に、
 </div>
 </div>
 </div>
-<div id="outline-container-headline-469" class="outline-4">
-<h4 id="headline-469">
+<div id="outline-container-headline-471" class="outline-4">
+<h4 id="headline-471">
 問い合わせ
 </h4>
-<div id="outline-text-headline-469" class="outline-text-4">
+<div id="outline-text-headline-471" class="outline-text-4">
 <p>
 <code class="verbatim">lnstags build</code> でソースコードを解析した後は、シンボルの情報を問い合わせる。</p>
 <p>
@@ -14948,11 +15019,11 @@ DB に登録されている lns のソースファルイリストを元に、
 <li>inq-at</li>
 <li>suffix</li>
 </ul>
-<div id="outline-container-headline-470" class="outline-5">
-<h5 id="headline-470">
+<div id="outline-container-headline-472" class="outline-5">
+<h5 id="headline-472">
 inq
 </h5>
-<div id="outline-text-headline-470" class="outline-text-5">
+<div id="outline-text-headline-472" class="outline-text-5">
 <p>
 inq は、シンボル名を指定して問い合わせを行なう。</p>
 <div class="src src-lns">
@@ -14991,11 +15062,11 @@ Foo クラスの func メソッドのシンボル名は次になる。</p>
 このコマンド <code class="verbatim">lnstags inq def</code> の <strong>def</strong> は、 <strong>定義場所</strong> の問い合わせを指定する。</p>
 </div>
 </div>
-<div id="outline-container-headline-471" class="outline-5">
-<h5 id="headline-471">
+<div id="outline-container-headline-473" class="outline-5">
+<h5 id="headline-473">
 問い合わせモード
 </h5>
-<div id="outline-text-headline-471" class="outline-text-5">
+<div id="outline-text-headline-473" class="outline-text-5">
 <p>
 問い合わせの種類は次がある。</p>
 <table>
@@ -15022,11 +15093,11 @@ Foo クラスの func メソッドのシンボル名は次になる。</p>
 </table>
 </div>
 </div>
-<div id="outline-container-headline-472" class="outline-5">
-<h5 id="headline-472">
+<div id="outline-container-headline-474" class="outline-5">
+<h5 id="headline-474">
 inq-at
 </h5>
-<div id="outline-text-headline-472" class="outline-text-5">
+<div id="outline-text-headline-474" class="outline-text-5">
 <p>
 問い合わせしたいシンボルの完全限定名が判っている場合は inq コマンドが利用できるが、
 完全限定名を調べるのが困難だったり面倒だったりする。</p>
@@ -15069,11 +15140,11 @@ bar.func();</code></pre>
 また、指定の lns ファイルの AST を解析するため、時間がかかる。</p>
 </div>
 </div>
-<div id="outline-container-headline-473" class="outline-5">
-<h5 id="headline-473">
+<div id="outline-container-headline-475" class="outline-5">
+<h5 id="headline-475">
 suffix
 </h5>
-<div id="outline-text-headline-473" class="outline-text-5">
+<div id="outline-text-headline-475" class="outline-text-5">
 <p>
 inq-at は lns ファイルの位置を指定して完全限定名を取得するが、
 suffix はシンボル名の後方一致で完全限定名のリストを取得する。</p>
@@ -15090,11 +15161,11 @@ suffix はシンボル名の後方一致で完全限定名のリストを取得�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-474" class="outline-3">
-<h3 id="headline-474">
+<div id="outline-container-headline-476" class="outline-3">
+<h3 id="headline-476">
 emacs から利用する場合
 </h3>
-<div id="outline-text-headline-474" class="outline-text-3">
+<div id="outline-text-headline-476" class="outline-text-3">
 <p>
 lisp/lnstags-conf.el をロードする。</p>
 <p>
@@ -15138,11 +15209,11 @@ M-t, M-r, M-s については、完全限定名を得るために suffix 問い�
 カーソル位置の inq-at 問い合わせを行なう。</p>
 </div>
 </div>
-<div id="outline-container-headline-475" class="outline-3">
-<h3 id="headline-475">
+<div id="outline-container-headline-477" class="outline-3">
+<h3 id="headline-477">
 解析時間
 </h3>
-<div id="outline-text-headline-475" class="outline-text-3">
+<div id="outline-text-headline-477" class="outline-text-3">
 <p>
 lnstags は、 LuneScript トランスコンパイラの AST 解析部を利用して、
 解析対象ソースコード内のシンボル情報を DB に登録している。</p>
@@ -15189,11 +15260,11 @@ DSP のような処理をさせなければ、
 <p>
 私自身、 いくつかのソフト（趣味、業務ともに）を Lua を利用して開発した経験があり、
 よく使う言語の１つである。</p>
-<div id="outline-container-headline-477" class="outline-3">
-<h3 id="headline-477">
+<div id="outline-container-headline-479" class="outline-3">
+<h3 id="headline-479">
 Lua のトランスコンパイラ LuneScript を開発した理由
 </h3>
-<div id="outline-text-headline-477" class="outline-text-3">
+<div id="outline-text-headline-479" class="outline-text-3">
 <p>
 Lua は私の良く使う言語の 1 つである。
 しかし、次の理由から Lua のコードを直接書くのは止めて、
@@ -15221,11 +15292,11 @@ Lua は私の良く使う言語の 1 つである。
 <li>既に数多くのシステムで Lua を利用している</li>
 </ul>
 <p>以降で、それぞれについて説明する。</p>
-<div id="outline-container-headline-478" class="outline-4">
-<h4 id="headline-478">
+<div id="outline-container-headline-480" class="outline-4">
+<h4 id="headline-480">
 楽して安全に書きたい
 </h4>
-<div id="outline-text-headline-478" class="outline-text-4">
+<div id="outline-text-headline-480" class="outline-text-4">
 <p>
 Ruby のまつもとゆきひろ氏は、Ruby に楽しさを求めている。</p>
 <p>
@@ -15267,11 +15338,11 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 これが、私が LuneScript を開発する一番の理由だ。</p>
 </div>
 </div>
-<div id="outline-container-headline-479" class="outline-4">
-<h4 id="headline-479">
+<div id="outline-container-headline-481" class="outline-4">
+<h4 id="headline-481">
 動的型付け言語特有の問題
 </h4>
-<div id="outline-text-headline-479" class="outline-text-4">
+<div id="outline-text-headline-481" class="outline-text-4">
 <p>
 私は動的型付け言語を否定している訳ではない。</p>
 <p>
@@ -15284,11 +15355,11 @@ Lua には、楽して安全なソフトウェア開発を行なう仕組みが�
 不特定多数が開発する可能性のあるスクリプトに
 動的型付け言語を利用した場合に、
 問題となり易いことを挙げている。</p>
-<div id="outline-container-headline-480" class="outline-5">
-<h5 id="headline-480">
+<div id="outline-container-headline-482" class="outline-5">
+<h5 id="headline-482">
 静的なエラーチェックが出来ない
 </h5>
-<div id="outline-text-headline-480" class="outline-text-5">
+<div id="outline-text-headline-482" class="outline-text-5">
 <p>
 人間は間違える。</p>
 <p>
@@ -15336,11 +15407,11 @@ parse したそのままの文字列データを渡してしまう等、
 まぁ、もっと違うパラダイムなのかもしれないが。</p>
 </div>
 </div>
-<div id="outline-container-headline-481" class="outline-5">
-<h5 id="headline-481">
+<div id="outline-container-headline-483" class="outline-5">
+<h5 id="headline-483">
 他人のコードの内容を把握し難い
 </h5>
-<div id="outline-text-headline-481" class="outline-text-5">
+<div id="outline-text-headline-483" class="outline-text-5">
 <p>
 他人のコードは、自分が書いたコードに比べれば、内容を把握し難い。
 コレは当然のことだ。</p>
@@ -15375,11 +15446,11 @@ parse したそのままの文字列データを渡してしまう等、
 なんども言うが私は楽をしたいのだ。</p>
 </div>
 </div>
-<div id="outline-container-headline-482" class="outline-5">
-<h5 id="headline-482">
+<div id="outline-container-headline-484" class="outline-5">
+<h5 id="headline-484">
 メンテナンスや機能追加、リファクタリングのリスクが大きい
 </h5>
-<div id="outline-text-headline-482" class="outline-text-5">
+<div id="outline-text-headline-484" class="outline-text-5">
 <p>
 どんなコードでも、一度作ったらそれっきり手を加えない、なんて事は滅多にない。</p>
 <p>
@@ -15429,11 +15500,11 @@ LuneScript 開発中、何度も設計変更を行ったが、
 もしこれを動的型付け言語で行っていたかと想像すると寒気がするレベルだ。</p>
 </div>
 </div>
-<div id="outline-container-headline-483" class="outline-5">
-<h5 id="headline-483">
+<div id="outline-container-headline-485" class="outline-5">
+<h5 id="headline-485">
 コーディング時の補完がイケてない
 </h5>
-<div id="outline-text-headline-483" class="outline-text-5">
+<div id="outline-text-headline-485" class="outline-text-5">
 <p>
 コーディングで楽をするには、まともな補完機能が必須である。</p>
 <p>
@@ -15455,11 +15526,11 @@ LuneScript 開発中、何度も設計変更を行ったが、
 <a href="#completion">#completion</a></p>
 </div>
 </div>
-<div id="outline-container-headline-484" class="outline-5">
-<h5 id="headline-484">
+<div id="outline-container-headline-486" class="outline-5">
+<h5 id="headline-486">
 テーブル内のフィールドアクセス制御が出来ない
 </h5>
-<div id="outline-text-headline-484" class="outline-text-5">
+<div id="outline-text-headline-486" class="outline-text-5">
 <p>
 アクセス制御は重要である。</p>
 <p>
@@ -15495,11 +15566,11 @@ LuneScript 開発中、何度も設計変更を行ったが、
 </div>
 </div>
 </div>
-<div id="outline-container-headline-485" class="outline-4">
-<h4 id="headline-485">
+<div id="outline-container-headline-487" class="outline-4">
+<h4 id="headline-487">
 Luaの機能に不満がある
 </h4>
-<div id="outline-text-headline-485" class="outline-text-4">
+<div id="outline-text-headline-487" class="outline-text-4">
 <p>
 Lua はコンパクトでパワフルな言語であるが、
 素の Lua ではサポートされていない機能も多くある。</p>
@@ -15507,11 +15578,11 @@ Lua はコンパクトでパワフルな言語であるが、
 トランスコンパイラは、Lua に手を加えずに、
 素の Lua ではサポートされていない機能をサポートすることも
 目的の一つに開発している。</p>
-<div id="outline-container-headline-486" class="outline-5">
-<h5 id="headline-486">
+<div id="outline-container-headline-488" class="outline-5">
+<h5 id="headline-488">
 nil安全でない
 </h5>
-<div id="outline-text-headline-486" class="outline-text-5">
+<div id="outline-text-headline-488" class="outline-text-5">
 <p>
 Lua の nil は便利な値ではあるが、動的エラーの原因にもなる。
 多くのエンジニアは、この nil 関連のエラーに悩まされている。</p>
@@ -15552,11 +15623,11 @@ nil を取り得ない 非 nilable を別の型として管理することで、
 nil エラーの対応を楽にかつ安全に対応できるようにしている。</p>
 </div>
 </div>
-<div id="outline-container-headline-487" class="outline-5">
-<h5 id="headline-487">
+<div id="outline-container-headline-489" class="outline-5">
+<h5 id="headline-489">
 マクロがない
 </h5>
-<div id="outline-text-headline-487" class="outline-text-5">
+<div id="outline-text-headline-489" class="outline-text-5">
 <p>
 マクロといえば、 Lisp が非常に強力なマクロを持っていて、
 マクロをもつ言語の代表格と言って良いだろう。
@@ -15587,11 +15658,11 @@ LuneScript のセルフホスティングでもマクロを使用しているが
 </div>
 </div>
 </div>
-<div id="outline-container-headline-488" class="outline-4">
-<h4 id="headline-488">
+<div id="outline-container-headline-490" class="outline-4">
+<h4 id="headline-490">
 Lua の特徴である組込みやさと実行性能の高さには代替手段が少ない
 </h4>
-<div id="outline-text-headline-488" class="outline-text-4">
+<div id="outline-text-headline-490" class="outline-text-4">
 <p>
 前述している通り、Lua はシステムに組込むには最も扱い易い言語の一つである。</p>
 <p>
@@ -15602,11 +15673,11 @@ Lua の特徴である組込みやさと実行性能の高さには代替手段�
 組込みという条件で見た場合、Lua を越える言語を私は知らない。</p>
 </div>
 </div>
-<div id="outline-container-headline-489" class="outline-4">
-<h4 id="headline-489">
+<div id="outline-container-headline-491" class="outline-4">
+<h4 id="headline-491">
 既に数多くのシステムで Lua を利用している
 </h4>
-<div id="outline-text-headline-489" class="outline-text-4">
+<div id="outline-text-headline-491" class="outline-text-4">
 <p>
 Lua を組み込んでいるシステムは多く存在する。</p>
 <p>
@@ -15618,11 +15689,11 @@ Lua を組み込んでいるシステムは多く存在する。</p>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-490" class="outline-3">
-<h3 id="headline-490">
+<div id="outline-container-headline-492" class="outline-3">
+<h3 id="headline-492">
 最後に
 </h3>
-<div id="outline-text-headline-490" class="outline-text-3">
+<div id="outline-text-headline-492" class="outline-text-3">
 <p>
 LuneScript は、Lua の欠点を補うべく開発している。</p>
 <p>
@@ -15647,11 +15718,11 @@ Lua には LuneScript があることも検討材料にして欲しい。</p>
 <p>
 LuneScript 入門のアドベントカレンダー最後の記事は、
 これまでとは趣向を変えてトランスコンパイラ開発そのものについて扱っていきます。</p>
-<div id="outline-container-headline-492" class="outline-3">
-<h3 id="headline-492">
+<div id="outline-container-headline-494" class="outline-3">
+<h3 id="headline-494">
 トランスコンパイラ開発をすゝめる理由
 </h3>
-<div id="outline-text-headline-492" class="outline-text-3">
+<div id="outline-text-headline-494" class="outline-text-3">
 <p>
 私は LuneScript というトランスコンパイラを開発しています。</p>
 <p>
@@ -15669,11 +15740,11 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 <li>コーディングルールを矯正できる  </li>
 </ul>
 <p>以降では、上記の各項目を説明していきます。</p>
-<div id="outline-container-headline-493" class="outline-4">
-<h4 id="headline-493">
+<div id="outline-container-headline-495" class="outline-4">
+<h4 id="headline-495">
 現状に対する不満を建設的に解決できる
 </h4>
-<div id="outline-text-headline-493" class="outline-text-4">
+<div id="outline-text-headline-495" class="outline-text-4">
 <p>
 皆さんは、今のソフトウェア開発に対して不満を持っていませんか？</p>
 <ul>
@@ -15706,11 +15777,11 @@ LuneScript 入門のアドベントカレンダー最後の記事は、
 <p>
 アイデアをソフトウェアで実現出来る能力を持っているからこそ
 「ソフトウェアエンジニア」ではないでしょうか？</p>
-<div id="outline-container-headline-494" class="outline-5">
-<h5 id="headline-494">
+<div id="outline-container-headline-496" class="outline-5">
+<h5 id="headline-496">
 「コンパイラ」ではなく「トランスコンパイラ」である理由
 </h5>
-<div id="outline-text-headline-494" class="outline-text-5">
+<div id="outline-text-headline-496" class="outline-text-5">
 <p>
 『なんで「コンパイラ」じゃなくて「トランスコンパイラ」なの？』
 と疑問に思う方もいるかもしれません。</p>
@@ -15746,11 +15817,11 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 <p>最終的にコンパイラを開発するのが、効率の良い方法と言えるでしょう。</p>
 </div>
 </div>
-<div id="outline-container-headline-495" class="outline-5">
-<h5 id="headline-495">
+<div id="outline-container-headline-497" class="outline-5">
+<h5 id="headline-497">
 「インタプリタ」ではなく「トランスコンパイラ」である理由
 </h5>
-<div id="outline-text-headline-495" class="outline-text-5">
+<div id="outline-text-headline-497" class="outline-text-5">
 <p>
 「コンパイラ」ではない理由は上述しました。</p>
 <p>
@@ -15773,11 +15844,11 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 わざわざ自前で作る必要はないでしょう。</p>
 </div>
 </div>
-<div id="outline-container-headline-496" class="outline-5">
-<h5 id="headline-496">
+<div id="outline-container-headline-498" class="outline-5">
+<h5 id="headline-498">
 出力結果が分かり易い
 </h5>
-<div id="outline-text-headline-496" class="outline-text-5">
+<div id="outline-text-headline-498" class="outline-text-5">
 <p>
 コンパイラと比べてトランスコンパイラの方が良いこととして、
 「トランスコンパイラの出力コードは多くの人にとって分かり易い」ことが
@@ -15816,11 +15887,11 @@ LLVM の登場で、以前と比べればコンパイラ開発のハードルは
 </div>
 </div>
 </div>
-<div id="outline-container-headline-497" class="outline-4">
-<h4 id="headline-497">
+<div id="outline-container-headline-499" class="outline-4">
+<h4 id="headline-499">
 トレンドの技術を確認できる
 </h4>
-<div id="outline-text-headline-497" class="outline-text-4">
+<div id="outline-text-headline-499" class="outline-text-4">
 <p>
 せっかく新しいトランスコンパイラを開発するのであれば、
 できるだけ使い勝手の良いものを作ろうと思うのがエンジニアの性分でしょう。</p>
@@ -15863,11 +15934,11 @@ C 言語しか知らないからいつも通りに C 言語で書くことは、
 トランスコンパイラの開発は経験として良いものだと言えます。</p>
 </div>
 </div>
-<div id="outline-container-headline-498" class="outline-4">
-<h4 id="headline-498">
+<div id="outline-container-headline-500" class="outline-4">
+<h4 id="headline-500">
 コーディングルールを矯正できる  
 </h4>
-<div id="outline-text-headline-498" class="outline-text-4">
+<div id="outline-text-headline-500" class="outline-text-4">
 <p>
 これは、いままで挙げた内容と少し方向性が違いますが、
 自分としては結構重要だと思った点です。</p>
@@ -15904,11 +15975,11 @@ Python では「インデントが揃っていないとブロックとして扱�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-499" class="outline-3">
-<h3 id="headline-499">
+<div id="outline-container-headline-501" class="outline-3">
+<h3 id="headline-501">
 最後に
 </h3>
-<div id="outline-text-headline-499" class="outline-text-3">
+<div id="outline-text-headline-501" class="outline-text-3">
 <p>
 これまでに、
 簡易的なインタプリタや、<a href="#__/lctags/">ソースコードタグシステム</a> 等を趣味で作ってきました。</p>
@@ -15968,11 +16039,11 @@ Lua のトランスコンパイラ LuneScript では、
 <li>Syntax エラーチェック機能</li>
 <li>subfile を認識した検索</li>
 </ul>
-<div id="outline-container-headline-501" class="outline-3">
-<h3 id="headline-501">
+<div id="outline-container-headline-503" class="outline-3">
+<h3 id="headline-503">
 コード補完機能
 </h3>
-<div id="outline-text-headline-501" class="outline-text-3">
+<div id="outline-text-headline-503" class="outline-text-3">
 <p>
 LuneScript は、クラスフィールドの補完機能を提供しています。</p>
 <p>
@@ -16013,11 +16084,11 @@ test のフィールドの補完が次のように行なえます。</p>
 意外に少なかったりします。</p>
 </div>
 </div>
-<div id="outline-container-headline-502" class="outline-3">
-<h3 id="headline-502">
+<div id="outline-container-headline-504" class="outline-3">
+<h3 id="headline-504">
 カーソル位置の型情報確認
 </h3>
-<div id="outline-text-headline-502" class="outline-text-3">
+<div id="outline-text-headline-504" class="outline-text-3">
 <p>
 LuneScript は、型推論を対応しています。</p>
 <p>
@@ -16040,11 +16111,11 @@ foreach val, key in { &#34;abc&#34;: 1, &#34;xyz&#34;: 10 } {
 そのシンボルの型情報を確認できます。</p>
 </div>
 </div>
-<div id="outline-container-headline-503" class="outline-3">
-<h3 id="headline-503">
+<div id="outline-container-headline-505" class="outline-3">
+<h3 id="headline-505">
 Syntax エラーチェック機能
 </h3>
-<div id="outline-text-headline-503" class="outline-text-3">
+<div id="outline-text-headline-505" class="outline-text-3">
 <p>
 LuneScript は、コンパイラなので当然 Syntax エラーチェック機能を持ちます。</p>
 <p>
@@ -16071,11 +16142,11 @@ let map = { &#34;a&#34;: 1, &#34;b&#34;:2 };</code></pre>
 このような、ちょっと見過しがちなエラーもエディタ上で簡単に確認できます。</p>
 </div>
 </div>
-<div id="outline-container-headline-504" class="outline-3">
-<h3 id="headline-504">
+<div id="outline-container-headline-506" class="outline-3">
+<h3 id="headline-506">
 subfile を認識した検索
 </h3>
-<div id="outline-text-headline-504" class="outline-text-3">
+<div id="outline-text-headline-506" class="outline-text-3">
 <p>
 LuneScript は、大きいモジュールを定義するファイルを
 複数のファイルに分割して定義する機能 subfile を持ちます。</p>
@@ -16100,11 +16171,11 @@ sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検�
 … この処理を自動で行ないます。</p>
 </div>
 </div>
-<div id="outline-container-headline-505" class="outline-3">
-<h3 id="headline-505">
+<div id="outline-container-headline-507" class="outline-3">
+<h3 id="headline-507">
 設定
 </h3>
-<div id="outline-text-headline-505" class="outline-text-3">
+<div id="outline-text-headline-507" class="outline-text-3">
 <p>
 emacs の設定です。  </p>
 <div class="src src-lisp">
@@ -16137,11 +16208,11 @@ emacs の設定です。  </p>
 flycheck, company-mode の使用を推奨します。</p>
 </div>
 </div>
-<div id="outline-container-headline-506" class="outline-3">
-<h3 id="headline-506">
+<div id="outline-container-headline-508" class="outline-3">
+<h3 id="headline-508">
 プロジェクト
 </h3>
-<div id="outline-text-headline-506" class="outline-text-3">
+<div id="outline-text-headline-508" class="outline-text-3">
 <p>
 LuneScript は、モジュールパスをプロジェクトからの相対パスで管理します。
 このため、emacs にプロジェクトのルートディレクトリを認識させる必要があります。</p>
@@ -16156,11 +16227,11 @@ LuneScript は、モジュールパスをプロジェクトからの相対パス
 <div class="src src-js">
 <div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="p">{}</span></span></span></code></pre></div>
 </div>
-<div id="outline-container-headline-507" class="outline-4">
-<h4 id="headline-507">
+<div id="outline-container-headline-509" class="outline-4">
+<h4 id="headline-509">
 モジュールのパス
 </h4>
-<div id="outline-text-headline-507" class="outline-text-4">
+<div id="outline-text-headline-509" class="outline-text-4">
 <p>
 次の位置に lune.js を作成した場合、
 proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 になります。</p>
@@ -16172,11 +16243,11 @@ proj/foo/bar/module1.lsn のモジュールのパスは foo.bar.module1 にな�
 </div>
 </div>
 </div>
-<div id="outline-container-headline-508" class="outline-3">
-<h3 id="headline-508">
+<div id="outline-container-headline-510" class="outline-3">
+<h3 id="headline-510">
 最後に
 </h3>
-<div id="outline-text-headline-508" class="outline-text-3">
+<div id="outline-text-headline-510" class="outline-text-3">
 <p>
 今回の機能は emacs 上で動作確認しています。
 ちなみに、コード補完は company-mode, auto-complete,
@@ -16209,11 +16280,11 @@ LuneScript 環境には次の2つを用意しています。</p>
 <li>fengari を利用した環境</li>
 <li>golang の wasm を利用した環境</li>
 </ul>
-<div id="outline-container-headline-510" class="outline-3">
-<h3 id="headline-510">
+<div id="outline-container-headline-512" class="outline-3">
+<h3 id="headline-512">
 fengari を利用した環境
 </h3>
-<div id="outline-text-headline-510" class="outline-text-3">
+<div id="outline-text-headline-512" class="outline-text-3">
 <p>
 <a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/">https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/</a></p>
 <p>
@@ -16235,11 +16306,11 @@ LuneScript の全ての処理が、ブラウザ上で動作しています。</p
 </ul>
 <p>LuneScript の全ての処理をブラウザ上で動作させているため、
 スマホなどでは初回実行に時間が掛ります。</p>
-<div id="outline-container-headline-511" class="outline-4">
-<h4 id="headline-511">
+<div id="outline-container-headline-513" class="outline-4">
+<h4 id="headline-513">
 技術解説
 </h4>
-<div id="outline-text-headline-511" class="outline-text-4">
+<div id="outline-text-headline-513" class="outline-text-4">
 <p>
 fengari を利用してブラウザ上で Lua VM を動かし、
 その Lua VM 上で LuneScript コンパイラを実行しています。</p>
@@ -16272,11 +16343,11 @@ LuneScript コンパイラのロードは、そこそこの時間がかかりま
 一度ロードした後は完全にブラウザ内に閉じで動作するため、
 サーバ側に負荷は掛りません。
 サーバに必要な機能は、静的コンテンツのホスティングだけです。</p>
-<div id="outline-container-headline-512" class="outline-5">
-<h5 id="headline-512">
+<div id="outline-container-headline-514" class="outline-5">
+<h5 id="headline-514">
 LuneScript の fengari 対応
 </h5>
-<div id="outline-text-headline-512" class="outline-text-5">
+<div id="outline-text-headline-514" class="outline-text-5">
 <p>
 fengari Lua VM 上で LuneScript を動かすにあたって、
 LuneScript の次の処理を修正しました。</p>
@@ -16297,11 +16368,11 @@ LuneScript では、処理の簡単化と確実性を取って <code class="verb
 </div>
 </div>
 </div>
-<div id="outline-container-headline-513" class="outline-4">
-<h4 id="headline-513">
+<div id="outline-container-headline-515" class="outline-4">
+<h4 id="headline-515">
 リファレンスのサンプルコード実行
 </h4>
-<div id="outline-text-headline-513" class="outline-text-4">
+<div id="outline-text-headline-515" class="outline-text-4">
 <p>
 この技術を使用して、 LuneScript リファレンスのサンプルコードを実行するようにしています。</p>
 <p>
@@ -16311,11 +16382,11 @@ https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/lune
 </pre>
 <p>
 <code class="verbatim">lnsFront.setup()</code>, <code class="verbatim">lnsFront.compile()</code> 関数を実行するだけです。</p>
-<div id="outline-container-headline-514" class="outline-5">
-<h5 id="headline-514">
+<div id="outline-container-headline-516" class="outline-5">
+<h5 id="headline-516">
 lnsFront.setup()
 </h5>
-<div id="outline-text-headline-514" class="outline-text-5">
+<div id="outline-text-headline-516" class="outline-text-5">
 <p>
 <code class="verbatim">lnsFront.setup()</code> は、 fengari と LuneScript をロードし、
 各 HTML element の紐付けを行ない、
@@ -16375,11 +16446,11 @@ ID を発行して紐付けます。そして、その ID が戻り値となり�
 <p>
 LuneScript のコードを入力する textarea が複数ある場合、
 <code class="verbatim">lnsFront.setup()</code> をそれぞれで実行します。</p>
-<div id="outline-container-headline-515" class="outline-6">
-<h6 id="headline-515">
+<div id="outline-container-headline-517" class="outline-6">
+<h6 id="headline-517">
 lnsFront.setup() の注意
 </h6>
-<div id="outline-text-headline-515" class="outline-text-6">
+<div id="outline-text-headline-517" class="outline-text-6">
 <p>
 <strong>一つの textarea に対して、lnsFront.setup() を複数回実行しないでください。</strong></p>
 <p>
@@ -16391,11 +16462,11 @@ executeId で登録したボタンをクリックするか、
 </div>
 </div>
 </div>
-<div id="outline-container-headline-516" class="outline-5">
-<h5 id="headline-516">
+<div id="outline-container-headline-518" class="outline-5">
+<h5 id="headline-518">
 <code class="verbatim">lnsFront.compile()</code>
 </h5>
-<div id="outline-text-headline-516" class="outline-text-5">
+<div id="outline-text-headline-518" class="outline-text-5">
 <p>
 <code class="verbatim">lnsFront.compile()</code> は、
 <code class="verbatim">lnsFront.setup()</code> で登録した textarea 内の LuneScript コードを
@@ -16433,22 +16504,22 @@ maxTime を省略した場合、デフォルトの 2 秒がリミットになり
 </div>
 </div>
 </div>
-<div id="outline-container-headline-517" class="outline-3">
-<h3 id="headline-517">
+<div id="outline-container-headline-519" class="outline-3">
+<h3 id="headline-519">
 golang の wasm を利用した環境
 </h3>
-<div id="outline-text-headline-517" class="outline-text-3">
+<div id="outline-text-headline-519" class="outline-text-3">
 <p>
 <a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/">https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/</a></p>
 <p>
 上記リンク先の UI 構成は、 fengari 利用時と同じです。</p>
 <p>
 LuneScript の実行に fengari を利用しているか、 golang の wasm を利用しているかの違いです。</p>
-<div id="outline-container-headline-518" class="outline-4">
-<h4 id="headline-518">
+<div id="outline-container-headline-520" class="outline-4">
+<h4 id="headline-520">
 技術解説
 </h4>
-<div id="outline-text-headline-518" class="outline-text-4">
+<div id="outline-text-headline-520" class="outline-text-4">
 <p>
 次に LuneScript の golang wasm を利用するサンプルコードを示します。</p>
 <div class="src src-html">
@@ -16579,11 +16650,11 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf</p>
 <p>
 今後、独自言語を開発しようと考えている方のテスト設計検討に、
 少しでも役にたてれば幸いです。</p>
-<div id="outline-container-headline-520" class="outline-4">
-<h4 id="headline-520">
+<div id="outline-container-headline-522" class="outline-4">
+<h4 id="headline-522">
 コンパイラは関数
 </h4>
-<div id="outline-text-headline-520" class="outline-text-4">
+<div id="outline-text-headline-522" class="outline-text-4">
 <p>
 コンパイラ型プログラミング言語は、
 そのプログラミング言語で書かれたコードをマシン語などに変換するのが仕事です。</p>
@@ -16604,11 +16675,11 @@ https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf</p>
 日頃作成している関数の UNIT TEST と考え方は全く同じです。</p>
 </div>
 </div>
-<div id="outline-container-headline-521" class="outline-4">
-<h4 id="headline-521">
+<div id="outline-container-headline-523" class="outline-4">
+<h4 id="headline-523">
 コンパイラのテスト
 </h4>
-<div id="outline-text-headline-521" class="outline-text-4">
+<div id="outline-text-headline-523" class="outline-text-4">
 <p>
 独自言語である LuneScript では、次のテストを実施しています。</p>
 <ul>
@@ -16722,11 +16793,11 @@ step7
 出来るだけ早い段階でセルフホスティングに移行することをオススメします。</p>
 </div>
 </div>
-<div id="outline-container-headline-522" class="outline-3">
-<h3 id="headline-522">
+<div id="outline-container-headline-524" class="outline-3">
+<h3 id="headline-524">
 それでもバグは残る
 </h3>
-<div id="outline-text-headline-522" class="outline-text-3">
+<div id="outline-text-headline-524" class="outline-text-3">
 <p>
 独自言語開発で実施しているテストについて紹介しましたが、
 テストをしても残念ながらバグは残ります。</p>
@@ -16751,11 +16822,11 @@ step7
 テストでは重要だと考えます。</p>
 </div>
 </div>
-<div id="outline-container-headline-523" class="outline-3">
-<h3 id="headline-523">
+<div id="outline-container-headline-525" class="outline-3">
+<h3 id="headline-525">
 最後に
 </h3>
-<div id="outline-text-headline-523" class="outline-text-3">
+<div id="outline-text-headline-525" class="outline-text-3">
 <p>
 独自言語の開発を続けてこられたのも、
 次のテスト方針で進めて来たことが大きいと考えています。</p>
@@ -16890,11 +16961,11 @@ step7
 <div id="outline-text-box_ja" class="outline-text-2">
 <p>
 <strong>これは、検討中の情報です。 現在は利用できません。</strong></p>
-<div id="outline-container-headline-526" class="outline-3">
-<h3 id="headline-526">
+<div id="outline-container-headline-528" class="outline-3">
+<h3 id="headline-528">
 Nilable 型
 </h3>
-<div id="outline-text-headline-526" class="outline-text-3">
+<div id="outline-text-headline-528" class="outline-text-3">
 <p>
 前述している通り、 Generics の実型パラメータに nilable は指定できません。</p>
 <p>
@@ -16927,11 +16998,11 @@ let test = new Test( val );</code></pre>
 unwrap 処理が必須となってしまい面倒です。</p>
 <p>
 そこで、 Nilable 型を利用します。</p>
-<div id="outline-container-headline-527" class="outline-4">
-<h4 id="headline-527">
+<div id="outline-container-headline-529" class="outline-4">
+<h4 id="headline-529">
 Nilable 型とは
 </h4>
-<div id="outline-text-headline-527" class="outline-text-4">
+<div id="outline-text-headline-529" class="outline-text-4">
 <p>
 Nilable 型は、 nilable の値をラッピングする型です。
 Java で言うところの int に対する Integer クラスと思ってください。</p>
@@ -16956,11 +17027,11 @@ LuneScript もそこそこの規模になってきて、
 <p>
 もちろん、他の人が LuneScript の開発に興味を持ってくれるのであれば、
 それはそれで嬉しい。</p>
-<div id="outline-container-headline-529" class="outline-3">
-<h3 id="headline-529">
+<div id="outline-container-headline-531" class="outline-3">
+<h3 id="headline-531">
 開発環境
 </h3>
-<div id="outline-text-headline-529" class="outline-text-3">
+<div id="outline-text-headline-531" class="outline-text-3">
 <p>
 LuneScript 開発は Ubuntu 上で行なっている。
 が、別に Linux 系なら多少環境を整えればビルドできるだろう。</p>
@@ -16973,20 +17044,20 @@ LuneScript 開発は Ubuntu 上で行なっている。
 普段使っている LuneScript の開発環境の Ubuntu も WSL 上の Ubuntu だったりする。</p>
 </div>
 </div>
-<div id="outline-container-headline-530" class="outline-3">
-<h3 id="headline-530">
+<div id="outline-container-headline-532" class="outline-3">
+<h3 id="headline-532">
 ビルド
 </h3>
-<div id="outline-text-headline-530" class="outline-text-3">
+<div id="outline-text-headline-532" class="outline-text-3">
 <p>
 ビルドは Make で管理している。</p>
 <p>
 後述するが、テストも Make で行なっている。</p>
-<div id="outline-container-headline-531" class="outline-4">
-<h4 id="headline-531">
+<div id="outline-container-headline-533" class="outline-4">
+<h4 id="headline-533">
 ビルド環境
 </h4>
-<div id="outline-text-headline-531" class="outline-text-4">
+<div id="outline-text-headline-533" class="outline-text-4">
 <p>
 ビルドには以下の環境が必要になる。</p>
 <ul>
@@ -17007,11 +17078,11 @@ $ cd src
 以降の記載は src ディレクトリで作業することを前提で説明する。</p>
 </div>
 </div>
-<div id="outline-container-headline-532" class="outline-4">
-<h4 id="headline-532">
+<div id="outline-container-headline-534" class="outline-4">
+<h4 id="headline-534">
 ビルド方法
 </h4>
-<div id="outline-text-headline-532" class="outline-text-4">
+<div id="outline-text-headline-534" class="outline-text-4">
 <p>
 LuneScript は、セルフホストで開発している。
 つまり、LuneScript のビルドには LuneScript のコンパイラ lnsc が必要になる。</p>
@@ -17026,11 +17097,11 @@ go でネイティブコードコンパイルする go 版がある。
 lua 版を利用してビルドするのは開発効率が悪い。</p>
 <p>
 そこで、まずは lua 版 LuneScript を利用して、 go 版の LuneScript をビルドする。</p>
-<div id="outline-container-headline-533" class="outline-5">
-<h5 id="headline-533">
+<div id="outline-container-headline-535" class="outline-5">
+<h5 id="headline-535">
 go 版 LuneScript のビルド方法
 </h5>
-<div id="outline-text-headline-533" class="outline-text-5">
+<div id="outline-text-headline-535" class="outline-text-5">
 <p>
 go 版 LuneScript は、次のコマンドでビルドできる。</p>
 <pre class="example">
@@ -17055,11 +17126,11 @@ Linux 以外の環境での実行も容易になる(はず)。</p>
 その辺りの対応は必要になるだろう。</p>
 </div>
 </div>
-<div id="outline-container-headline-534" class="outline-5">
-<h5 id="headline-534">
+<div id="outline-container-headline-536" class="outline-5">
+<h5 id="headline-536">
 go 版 LuneScript を利用したビルド方法
 </h5>
-<div id="outline-text-headline-534" class="outline-text-5">
+<div id="outline-text-headline-536" class="outline-text-5">
 <p>
 go 版 LuneScript を利用して、セルフホストするには、次のコマンドを実行する。</p>
 <pre class="example">
@@ -17116,11 +17187,11 @@ $ make -j test-comp LUA=
 </pre>
 </div>
 </div>
-<div id="outline-container-headline-535" class="outline-5">
-<h5 id="headline-535">
+<div id="outline-container-headline-537" class="outline-5">
+<h5 id="headline-537">
 テストの diff を許容する
 </h5>
-<div id="outline-text-headline-535" class="outline-text-5">
+<div id="outline-text-headline-537" class="outline-text-5">
 <p>
 上記のセルフホストビルド時のテストは、
 既存の lnsc の実行結果と、新しくビルドした lnsc の実行結果とを、
@@ -17164,11 +17235,11 @@ accept?  (y/n):
 </div>
 </div>
 </div>
-<div id="outline-container-headline-536" class="outline-3">
-<h3 id="headline-536">
+<div id="outline-container-headline-538" class="outline-3">
+<h3 id="headline-538">
 ソース構成
 </h3>
-<div id="outline-text-headline-536" class="outline-text-3">
+<div id="outline-text-headline-538" class="outline-text-3">
 <p>
 LuneScript のソースは src/lune/base 以降で管理している。</p>
 <ul>
@@ -17180,11 +17251,11 @@ lune/base/runtime_go は go 版 LuneScript のランタイム制御を置いて�
 <p>
 LuneScript 開発の大部分は、
 lune/base 内の .lns ファイルを変更することになる。</p>
-<div id="outline-container-headline-537" class="outline-4">
-<h4 id="headline-537">
+<div id="outline-container-headline-539" class="outline-4">
+<h4 id="headline-539">
 ソースのカテゴリ
 </h4>
-<div id="outline-text-headline-537" class="outline-text-4">
+<div id="outline-text-headline-539" class="outline-text-4">
 <p>
 LuneScript のソースは、その処理内容によって次のカテゴリに分けられる。</p>
 <ul>
@@ -17290,11 +17361,11 @@ LuneScript のソースは、その処理内容によって次のカテゴリに
 </div>
 </div>
 </div>
-<div id="outline-container-headline-538" class="outline-3">
-<h3 id="headline-538">
+<div id="outline-container-headline-540" class="outline-3">
+<h3 id="headline-540">
 フロー
 </h3>
-<div id="outline-text-headline-538" class="outline-text-3">
+<div id="outline-text-headline-540" class="outline-text-3">
 <p>
 処理のフローは概ね次の通り。</p>
 <ul>
@@ -17331,11 +17402,11 @@ conv -&gt; meta;
 </div>
 <p>
 <img src="../lunescript_flow.svg" alt="../lunescript_flow.svg" title="../lunescript_flow.svg" /></p>
-<div id="outline-container-headline-539" class="outline-4">
-<h4 id="headline-539">
+<div id="outline-container-headline-541" class="outline-4">
+<h4 id="headline-541">
 字句解析
 </h4>
-<div id="outline-text-headline-539" class="outline-text-4">
+<div id="outline-text-headline-541" class="outline-text-4">
 <p>
 字句解析は与えられた文字列から、予め登録された単語を切り出してトークンを生成する。</p>
 <p>
@@ -17411,11 +17482,11 @@ print( &#34;hoge&#34; );</code></pre>
 </table>
 <p>
 この処理を行なうのが、 <strong>AsyncParser.lns</strong> である。</p>
-<div id="outline-container-headline-540" class="outline-5">
-<h5 id="headline-540">
+<div id="outline-container-headline-542" class="outline-5">
+<h5 id="headline-542">
 Parser クラス
 </h5>
-<div id="outline-text-headline-540" class="outline-text-5">
+<div id="outline-text-headline-542" class="outline-text-5">
 <p>
 Parser クラスは、上記の字句解析を行うクラスである。</p>
 <div class="src src-lns">
@@ -17427,11 +17498,11 @@ getToken() メソッドを呼ぶと、 Token が取得できる。
 この getToken() を順次呼ぶことで、解析対象の Token を列挙できる。</p>
 </div>
 </div>
-<div id="outline-container-headline-541" class="outline-5">
-<h5 id="headline-541">
+<div id="outline-container-headline-543" class="outline-5">
+<h5 id="headline-543">
 PushbackParser インタフェース
 </h5>
-<div id="outline-text-headline-541" class="outline-text-5">
+<div id="outline-text-headline-543" class="outline-text-5">
 <p>
 PushbackParser インタフェースは、 <code class="verbatim">push back</code> をサポートするインタフェースである。</p>
 <p>
@@ -17459,11 +17530,11 @@ print();</code></pre>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-542" class="outline-4">
-<h4 id="headline-542">
+<div id="outline-container-headline-544" class="outline-4">
+<h4 id="headline-544">
 構文解析
 </h4>
-<div id="outline-text-headline-542" class="outline-text-4">
+<div id="outline-text-headline-544" class="outline-text-4">
 <p>
 Parser から取得した Token を基に、 
 LuneScript の syntax を解析し、AST を生成する。</p>
@@ -17539,11 +17610,11 @@ ExpList2-&gt;LiteralInt_1;
 <p>などの emacs 連携などに利用する問い合わせ処理も行なっている。</p>
 </div>
 </div>
-<div id="outline-container-headline-543" class="outline-4">
-<h4 id="headline-543">
+<div id="outline-container-headline-545" class="outline-4">
+<h4 id="headline-545">
 コード出力
 </h4>
-<div id="outline-text-headline-543" class="outline-text-4">
+<div id="outline-text-headline-545" class="outline-text-4">
 <p>
 AST から変換先のコードに出力を行なう。</p>
 <p>
@@ -17595,11 +17666,11 @@ Go へ変換する場合は、 AST の構造そのままでは、
 LuneScript 開発の続き。</p>
 <p>
 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。</p>
-<div id="outline-container-headline-545" class="outline-3">
-<h3 id="headline-545">
+<div id="outline-container-headline-547" class="outline-3">
+<h3 id="headline-547">
 型情報
 </h3>
-<div id="outline-text-headline-545" class="outline-text-3">
+<div id="outline-text-headline-547" class="outline-text-3">
 <p>
 プログラミングには、データの型が重要である。</p>
 <p>
@@ -17612,11 +17683,11 @@ LuneScript 開発の続き。</p>
 それは気にしないでほしい。</p>
 </div>
 </div>
-<div id="outline-container-headline-546" class="outline-3">
-<h3 id="headline-546">
+<div id="outline-container-headline-548" class="outline-3">
+<h3 id="headline-548">
 型の種類
 </h3>
-<div id="outline-text-headline-546" class="outline-text-3">
+<div id="outline-text-headline-548" class="outline-text-3">
 <p>
 早速だが、次のコードにおいて型は幾つあるか分かるだろうか？</p>
 <div class="src src-lns">
@@ -17637,11 +17708,11 @@ fn func() {
 もちろん、LuneScript は他にも整数型や実数型,クラスなど様々な型をサポートしている。</p>
 </div>
 </div>
-<div id="outline-container-headline-547" class="outline-3">
-<h3 id="headline-547">
+<div id="outline-container-headline-549" class="outline-3">
+<h3 id="headline-549">
 型の属性
 </h3>
-<div id="outline-text-headline-547" class="outline-text-3">
+<div id="outline-text-headline-549" class="outline-text-3">
 <p>
 さらに、型は以下の 2 つに分けることが出来る。</p>
 <ul>
@@ -17708,11 +17779,11 @@ pub fn func&lt;T&gt;( val:T ) : &amp;List&lt;T&gt; {
 この型情報は、LuneScript では <strong><code class="verbatim">Ast.TypeInfo</code></strong> クラスで管理している。</p>
 </div>
 </div>
-<div id="outline-container-headline-548" class="outline-3">
-<h3 id="headline-548">
+<div id="outline-container-headline-550" class="outline-3">
+<h3 id="headline-550">
 型情報のバリエーション
 </h3>
-<div id="outline-text-headline-548" class="outline-text-3">
+<div id="outline-text-headline-550" class="outline-text-3">
 <p>
 次のコードを見て欲しい。</p>
 <div class="src src-lns">
@@ -17738,11 +17809,11 @@ let list4:&amp;List&lt;int&gt;!;</code></pre>
 <p>
 そして、それぞれは異なる型なので、
 型情報としても異なる型情報として管理する必要がある。</p>
-<div id="outline-container-headline-549" class="outline-4">
-<h4 id="headline-549">
+<div id="outline-container-headline-551" class="outline-4">
+<h4 id="headline-551">
 TypeInfo のメソッド
 </h4>
-<div id="outline-text-headline-549" class="outline-text-4">
+<div id="outline-text-headline-551" class="outline-text-4">
 <p>
 上記の通り、全ての型に対して imuttable, nilable の型が存在する。</p>
 <p>
@@ -17764,11 +17835,11 @@ TypeInfo には次のメソッドを用意している。</p>
 <code class="verbatim">get_imutType()</code> を実行すると <code class="verbatim">&amp;List&lt;int&gt;</code> を管理する <code class="verbatim">TypeInfo</code> が取得できる。</p>
 </div>
 </div>
-<div id="outline-container-headline-550" class="outline-4">
-<h4 id="headline-550">
+<div id="outline-container-headline-552" class="outline-4">
+<h4 id="headline-552">
 代入可能判定
 </h4>
-<div id="outline-text-headline-550" class="outline-text-4">
+<div id="outline-text-headline-552" class="outline-text-4">
 <p>
 次の関数の引数において、</p>
 <div class="src src-lns">
@@ -17809,11 +17880,11 @@ list4 = list3;</code></pre>
 (例えば、関数型のデータを整数型に代入する場合など)</p>
 </div>
 </div>
-<div id="outline-container-headline-551" class="outline-4">
-<h4 id="headline-551">
+<div id="outline-container-headline-553" class="outline-4">
+<h4 id="headline-553">
 generics 
 </h4>
-<div id="outline-text-headline-551" class="outline-text-4">
+<div id="outline-text-headline-553" class="outline-text-4">
 <p>
 あるクラス Hoge を要素にもつ List 型の変数 list1, list2 を宣言した場合、</p>
 <div class="src src-lns">
@@ -17832,11 +17903,11 @@ list2 = list1;</code></pre>
 そしてこれは、先程の型情報のバリエーションとの組み合わせで制御が必要である。</p>
 </div>
 </div>
-<div id="outline-container-headline-552" class="outline-4">
-<h4 id="headline-552">
+<div id="outline-container-headline-554" class="outline-4">
+<h4 id="headline-554">
 class
 </h4>
-<div id="outline-text-headline-552" class="outline-text-4">
+<div id="outline-text-headline-554" class="outline-text-4">
 <p>
 以下のクラスの継承関係がある時、</p>
 <div class="src src-lns">
@@ -17860,11 +17931,11 @@ sub = super; // error</code></pre>
 そしてこれも、型情報のバリエーションとの組み合わせで制御が必要である。</p>
 </div>
 </div>
-<div id="outline-container-headline-553" class="outline-4">
-<h4 id="headline-553">
+<div id="outline-container-headline-555" class="outline-4">
+<h4 id="headline-555">
 nilable, immutable を管理するクラス
 </h4>
-<div id="outline-text-headline-553" class="outline-text-4">
+<div id="outline-text-headline-555" class="outline-text-4">
 <p>
 LuneScript では、nilable, immutable の型情報を以下のクラスで管理する。
 なお、以下のクラスは <code class="verbatim">TypeInfo</code> のサブクラスである。</p>
@@ -17900,11 +17971,11 @@ LuneScript では、nilable, immutable の型情報を以下のクラスで管�
 LuneScript 開発の続き。</p>
 <p>
 フローの各処理概要は既に説明したので、今回は少し内部の説明に入る。</p>
-<div id="outline-container-headline-555" class="outline-3">
-<h3 id="headline-555">
+<div id="outline-container-headline-557" class="outline-3">
+<h3 id="headline-557">
 スコープ
 </h3>
-<div id="outline-text-headline-555" class="outline-text-3">
+<div id="outline-text-headline-557" class="outline-text-3">
 <p>
 LuneScript は一般的なレキカルスコープである。</p>
 <p>
@@ -17920,11 +17991,11 @@ LuneScript は一般的なレキカルスコープである。</p>
 グローバルスコープは、 lua のグローバルシンボル互換のシンボルを管理する。</p>
 <p>
 基本的にはユーザが作成するモジュールのシンボルは、全てモジュール内スコープで管理する。</p>
-<div id="outline-container-headline-556" class="outline-4">
-<h4 id="headline-556">
+<div id="outline-container-headline-558" class="outline-4">
+<h4 id="headline-558">
 スコープの構造
 </h4>
-<div id="outline-text-headline-556" class="outline-text-4">
+<div id="outline-text-headline-558" class="outline-text-4">
 <p>
 スコープはツリー構造になっていて、各スコープには次の要素を保持する。</p>
 <ul>
@@ -17957,22 +18028,22 @@ func( 1 );</code></pre>
 @dir スコープの中に @Test スコープを持つ。</p>
 </div>
 </div>
-<div id="outline-container-headline-557" class="outline-4">
-<h4 id="headline-557">
+<div id="outline-container-headline-559" class="outline-4">
+<h4 id="headline-559">
 LuneScript でのクラス
 </h4>
-<div id="outline-text-headline-557" class="outline-text-4">
+<div id="outline-text-headline-559" class="outline-text-4">
 <p>
 スコープは <strong><code class="verbatim">Ast.Scope</code></strong> クラスで管理する。</p>
 </div>
 </div>
 </div>
 </div>
-<div id="outline-container-headline-558" class="outline-3">
-<h3 id="headline-558">
+<div id="outline-container-headline-560" class="outline-3">
+<h3 id="headline-560">
 シンボル
 </h3>
-<div id="outline-text-headline-558" class="outline-text-3">
+<div id="outline-text-headline-560" class="outline-text-3">
 <p>
 スコープは、そのスコープに属するシンボルを管理する。</p>
 <p>
@@ -18021,11 +18092,11 @@ val2_sym-&gt;func
 <a href="#lunescript_scope_png">#lunescript_scope_png</a></p>
 <p>
 ここで、楕円がスコープで、四角がシンボルを示す。</p>
-<div id="outline-container-headline-559" class="outline-4">
-<h4 id="headline-559">
+<div id="outline-container-headline-561" class="outline-4">
+<h4 id="headline-561">
 シンボルの構成
 </h4>
-<div id="outline-text-headline-559" class="outline-text-4">
+<div id="outline-text-headline-561" class="outline-text-4">
 <p>
 シンボルは、次の属性から構成される。</p>
 <ul>
@@ -18077,11 +18148,11 @@ func( 1 );</code></pre>
 </table>
 </div>
 </div>
-<div id="outline-container-headline-560" class="outline-4">
-<h4 id="headline-560">
+<div id="outline-container-headline-562" class="outline-4">
+<h4 id="headline-562">
 LuneScript でのクラス
 </h4>
-<div id="outline-text-headline-560" class="outline-text-4">
+<div id="outline-text-headline-562" class="outline-text-4">
 <p>
 スコープは <strong><code class="verbatim">Ast.SymbolInfo</code></strong> クラスで管理する。</p>
 </div>

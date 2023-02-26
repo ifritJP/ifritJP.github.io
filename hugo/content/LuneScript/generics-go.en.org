@@ -1,0 +1,206 @@
+#+TITLE: 19.2. generics (two collection types)
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+#+HTML_HEAD: <link rel="stylesheet" type="text/css" href="org-mode-document.css" />
+
+From LuneScript v1.6.0, the handling of collection type generics has increased.
+
+*This mainly affects when converting to go , not when using the conversion to lua .*
+
+Before explaining this new collection type, let's explain the old collection type.
+
+
+* Traditional collection type
+
+LuneScript supported generics in 2019.
+
+On the other hand, go supports generics since version 1.18 (2022).
+
+And LuneScript supported transcompiling to go in 2020, around this time go 1.15.
+
+<https://twitter.com/DwarfJp/status/1317681809895780352?ref_src=twsrc>
+
+In other words, you were running LuneScript generics with go 1.15, which doesn't support generics.
+
+So how did you achieve LuneScript generics? When you say
+
+*"Data was handled with go's interface{} type (current any type), and was used by casting from interface{} each time it was accessed."*
+
+about it.
+
+Specifically, the LuneScript collection type includes:
+- List<T>
+- Set<T>
+- Map<K,V>
+These are defined as the following types when handled by go.
+#+BEGIN_SRC go
+// List<T>
+type LnsList struct {
+	Items       []LnsAny
+	lnsItemKind int
+}
+// Set<T>
+type LnsSet struct {
+	Items map[LnsAny]bool
+}
+// Map<K,V>
+type LnsMap struct {
+	Items map[LnsAny]LnsAny
+}
+#+END_SRC
+
+
+where =LnsAny= is =interface{}=.
+
+
+* new collection type
+
+Starting with LuneScript v1.6.0, we are introducing the following new collection types:
+- __List<T>
+- __Set<T>
+- __Map<K,V>
+*New collection types have __ appended to the prefix.*
+
+These are defined as the following types when handled by go.
+#+BEGIN_SRC go
+// __List<T>
+type LnsList2_[T any] struct {
+	Items       []T
+	lnsItemKind int
+}
+// __Set<T>
+type LnsSet2_[T comparable] struct {
+	Items map[T]bool
+}
+// __Map<K,V>
+type LnsMap2_[K comparable,V any] struct {
+	Items map[K]V
+}
+#+END_SRC
+
+
+As you can see, the new collection type uses go's collection type.
+
+
+* Characteristics of each type
+
+Here, we will explain the characteristics of the conventional type and the new type.
+
+
+** Conventional features
+
+
+*** processing flexibility
+
+Since the conventional type handles data with any, it is dynamically converted and processed. This allows you to:
+#+BEGIN_SRC lns
+// @lnsFront: ok
+let list:&List<str> = [ "abc" ];
+let list2:&List<&stem> = list;
+let list3:&List<str> = list2@@List<str>;
+#+END_SRC
+
+- A list of type =&List<str>= can be assigned to type =&List<&stem>=.
+- A list of type =&List<&stem>= can be cast to type =&List<str>=.
+The above processing is possible because any is used when storing data, and it is used by casting when accessing the actually stored data.
+
+Also, this feature makes it easy to exchange collection type data between LuneScript and Lua.
+
+For example, the following code casts =obj@@Map<str,int>=, and this cast is also possible due to this feature.
+#+BEGIN_SRC lns
+// @lnsFront: ok
+fn func() {
+   let code = ```
+return { abc = 123 }
+```;
+   let obj:&stem!;
+   __luago {
+      if! let loaded = _load( code ## ) {
+         let work = loaded(##);
+         obj = expandLuavalMap( work );
+      } else {
+         obj = nil;
+      }
+   }
+   when! obj {
+      let map = obj@@Map<str,int>;
+      foreach val, key in map {
+         print( key, val );
+      }
+   }
+}
+func();
+#+END_SRC
+
+
+=expandLuavalMap()= is a function that converts a value obtained from Lua to a LuneScript value.
+
+=expandLuavalMap()= creates and returns in =&Map<&stem,&stem>= if the given value is a table.
+
+Since it is inconvenient to handle with this =&Map<&stem,&stem>=, it is cast to =Map<str,int>=.
+
+In this way, the ability to dynamically switch the type of collection type elements is a feature of the conventional type.
+
+
+*** overhead
+
+As above, store the data as any and cast it when accessing the stored data.
+
+The above processing is an overhead
+
+
+** Features of the new collection type
+
+
+*** less overhead
+
+The new collection type takes advantage of go's generics.
+
+This go generics eliminates the need for explicit casts when accessing data, reducing overhead.
+
+
+*** Lack of processing flexibility
+
+The following processing mentioned in the characteristics of the conventional collection type cannot be done with the new collection type.
+#+BEGIN_SRC lns
+// @lnsFront: error
+let list:&__List<str> = [ "abc" ];
+let list2:&__List<&stem> = list; // error
+let list3:&__List<str> = list2@@List<str>; // error
+#+END_SRC
+
+
+This is a drawback, but the generics of many statically typed languages have such restrictions in the first place, so the conventional type was the exception. You may say.
+
+
+* how to use
+
+As long as you don't care about it, you can just use a conventional collection.
+
+On the other hand, if you want to transcompile to go and still want to improve execution performance even a little, use the new collection type.
+
+To use the new collection type, just add a =__= prefix, such as =__List= , but adding it to every type declaration would be cumbersome. So we provide a way to make the new collection available by default.
+
+By putting the following at the beginning of the code, if =List= is declared in that code, it will behave as if =__List= is specified.
+: _lune_control default_strict_generics;
+
+
+At this time, how to use the conventional collection is to use =_List= (one "_").
+
+In summary:
+|-|-|-|-|
+| Presence or absence of default_strict_generics declaration | List | _List | __List | 
+|-+-+-+-|
+| none | synonymous with _List | conventional | new model | 
+| Yes | synonymous with __List | conventional | new model | 
+
+
+* summary
+
+Supported go generics for LuneScript collection type.
+
+This feature is highly experimental.
+
+In most cases, just using the traditional collection type is fine.

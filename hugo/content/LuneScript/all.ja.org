@@ -7167,10 +7167,10 @@ if! let test2 = Test<str>._fromMap( map ) {
 
 LuneScript v1.6.0 から collection 型の generics の扱いが増えました。
 
-これは主に go へ変換したときに影響があるもので、
-lua への変換を利用している場合は影響ありません。
+これは主に go へ変換するときに影響があるもので、
+*lua への変換を利用している場合は影響ありません。*
 
-新しい collection 型の説明をする前に、
+この新しい collection 型の説明をする前に、
 従来の collection 型の説明をします。
 
 ** 従来型の collection 型
@@ -7184,11 +7184,13 @@ LuneScript は 2019 年に generics をサポートしました。
 
 <https://twitter.com/DwarfJp/status/1317681809895780352?ref_src=twsrc>
 
-では、 generics を対応していない go 1.15 、
-でどのように LuneScript の generics を実現していたか？というと、
+つまり、 generics に対応していない go 1.15 で
+LuneScript の generics を動かしていた、ということです。
+
+では、でどのように LuneScript の generics を実現していたか？というと、
 
 *『go の interface{} 型(現在の any 型)でデータを扱い、*
-*アクセスする際に interface{} からキャストして使っていた』* 
+*アクセスする毎に interface{} からキャストして使っていた』* 
 
 ということです。
 
@@ -7269,8 +7271,8 @@ let list2:&List<&stem> = list;
 let list3:&List<str> = list2@@List<str>;
 #+END_SRC
 
-- &List<str> 型の list から &List<&stem> 型への代入が可能です。
-- &List<&stem> 型の list から &List<str> 型へのキャストが可能です。
+- =&List<str>= 型のリストから =&List<&stem>= 型への代入が可能です。
+- =&List<&stem>= 型のリストから =&List<str>= 型へのキャストが可能です。
 
 上記の処理が可能なのは、データを格納する際は any で扱い、
 実際に格納されたデータにアクセスする際にキャストして利用しているためです。
@@ -7350,6 +7352,49 @@ let list:&__List<str> = [ "abc" ];
 let list2:&__List<&stem> = list; // error
 let list3:&__List<str> = list2@@List<str>; // error
 #+END_SRC
+
+これは欠点と言えば欠点ですが、
+そもそも多くの静的型付け言語の generics には、このような制限があるので、
+従来型の方が例外的だった。と言えるかもしれません。
+
+
+** 使用方法
+
+特に意識をしない限り、従来型の collection を使っているだけで良いです。
+
+一方で、 go へのトランスコンパイルを利用し、
+なおかつ、少しでも実行パフォーマンスを改善したい場合は、
+新しい collection 型を利用します。
+
+新しい collection 型を利用するには =__List= などの =__= prefix を付加するだけですが、
+全ての型宣言に追加をするのは大変です。
+そこで、デフォルトで新しい collection を利用できるようにする方法を提供しています。
+
+以下をコードの先頭に記載することで、
+そのコード内で =List= を宣言した場合、 =__List= が指定されたものとして動作します。
+
+
+: _lune_control default_strict_generics;
+
+この時、従来型の collection を利用するにはどうすれば良いかというと、
+=_List= ("_" が 1つ)を使用します。
+
+まとめると、以下です。
+
+| default_strict_generics 宣言の有無 | List          | _List  | __List |
+|------------------------------------+---------------+--------+--------|
+| 無し                               | _List と同義  | 従来型 | 新型   |
+| 有り                               | __List と同義 | 従来型 | 新型   |
+
+
+** まとめ
+
+LuneScript の collection 型で、 go の generics を利用できるように対応しました。
+
+この機能は実験的な要素の強い機能です。
+
+多くの場合は、従来通りの collection 型を使うだけで問題ありません。
+
 -----
 * *nil 条件演算子 編*
 :PROPERTIES:
