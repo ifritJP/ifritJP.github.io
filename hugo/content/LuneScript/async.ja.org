@@ -110,9 +110,15 @@ __Runner を extend するクラスのコンストラクタの引数は、
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
+   pub fn func() __async {
+   }
+}
+class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:Test, list:List<int> ) __async { // error
+   pub fn __init( test:Test, list:List<int>, foo:Foo ) __async { // error
    }
    pub fn run() __async mut {
    }
@@ -121,15 +127,23 @@ class Hoge extend (__Runner) {
 
 このエラーは、 引数の test と list が mutable な型であるためです。
 
-
 以下のように immutable としての宣言が必要です。
+
+なお、 foo は全てのメソッドが __noasync であるため、
+mutable のまま渡すことができます。
    
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
+   pub fn func() __async {
+   }
+}
+class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:&Test, list:&List<int> ) __async { // ok
+   pub fn __init( test:&Test, list:&List<int>, foo:Foo ) __async { // ok
    }
    pub fn run() __async mut {
    }

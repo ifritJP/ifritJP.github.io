@@ -32,7 +32,7 @@
 <meta itemprop="name" content="81. 安全な非同期処理">
 <meta itemprop="description" content="LuneScript から go 言語へのトランスコンパイル対応したのを機に、 LuneScript による非同期処理を対応しました。 静的にデータ競合を排除する簡易機能を持ちます。 __Runner インタ">
 
-<meta itemprop="wordCount" content="4276">
+<meta itemprop="wordCount" content="4344">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -199,9 +199,15 @@ __Runner を extend するクラスのコンストラクタの引数は、
 <div class="src src-lns">
 <pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: error
 class Test {
+   pub fn func() __async {
+   }
+}
+class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:Test, list:List&lt;int&gt; ) __async { // error
+   pub fn __init( test:Test, list:List&lt;int&gt;, foo:Foo ) __async { // error
    }
    pub fn run() __async mut {
    }
@@ -211,12 +217,21 @@ class Hoge extend (__Runner) {
 このエラーは、 引数の test と list が mutable な型であるためです。</p>
 <p>
 以下のように immutable としての宣言が必要です。</p>
+<p>
+なお、 foo は全てのメソッドが __noasync であるため、
+mutable のまま渡すことができます。</p>
 <div class="src src-lns">
 <pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
 class Test {
+   pub fn func() __async {
+   }
+}
+class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:&amp;Test, list:&amp;List&lt;int&gt; ) __async { // ok
+   pub fn __init( test:&amp;Test, list:&amp;List&lt;int&gt;, foo:Foo ) __async { // ok
    }
    pub fn run() __async mut {
    }
