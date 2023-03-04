@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja-jp">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>19.2. generics (two collection types) - tech</title>
+<meta name="generator" content="Hugo 0.109.0">
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/en/lunescript/generics-go/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="19.2. generics (two collection types)" />
+<meta property="og:description" content="From LuneScript v1.6.0, the handling of collection type generics has increased.
+This mainly affects when converting to go , not when using the conversion to lua .
+Before explaining this new collection type, let&#39;s explain the old collection type.
+Traditional collection type LuneScript supported generics in 2019.
+On the other hand, go supports generics since version 1.18 (2022).
+And LuneScript supported transcompiling to go in 2020, around this time go 1." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/en/lunescript/generics-go/" /><meta property="article:section" content="LuneScript" />
+
+<meta property="og:site_name" content="tech" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="19.2. generics (two collection types)"/>
+<meta name="twitter:description" content="From LuneScript v1.6.0, the handling of collection type generics has increased.
+This mainly affects when converting to go , not when using the conversion to lua .
+Before explaining this new collection type, let&#39;s explain the old collection type.
+Traditional collection type LuneScript supported generics in 2019.
+On the other hand, go supports generics since version 1.18 (2022).
+And LuneScript supported transcompiling to go in 2020, around this time go 1."/>
+<meta itemprop="name" content="19.2. generics (two collection types)">
+<meta itemprop="description" content="From LuneScript v1.6.0, the handling of collection type generics has increased.
+This mainly affects when converting to go , not when using the conversion to lua .
+Before explaining this new collection type, let&#39;s explain the old collection type.
+Traditional collection type LuneScript supported generics in 2019.
+On the other hand, go supports generics since version 1.18 (2022).
+And LuneScript supported transcompiling to go in 2020, around this time go 1.">
+
+<meta itemprop="wordCount" content="823">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body><div class="container"><header>
+<h1>tech</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_fengari/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>19.2. generics (two collection types)</h1>
+
+<p>
+From LuneScript v1.6.0, the handling of collection type generics has increased.</p>
+<p>
+<strong>This mainly affects when converting to go , not when using the conversion to lua .</strong></p>
+<p>
+Before explaining this new collection type, let&#39;s explain the old collection type.</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+Traditional collection type
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+LuneScript supported generics in 2019.</p>
+<p>
+On the other hand, go supports generics since version 1.18 (2022).</p>
+<p>
+And LuneScript supported transcompiling to go in 2020, around this time go 1.15.</p>
+<p>
+&lt;<a href="https://twitter.com/DwarfJp/status/1317681809895780352?ref_src=twsrc">https://twitter.com/DwarfJp/status/1317681809895780352?ref_src=twsrc</a>&gt;</p>
+<p>
+In other words, you were running LuneScript generics with go 1.15, which doesn&#39;t support generics.</p>
+<p>
+So how did you achieve LuneScript generics? When you say</p>
+<p>
+<strong>&#34;Data was handled with go&#39;s interface{} type (current any type), and was used by casting from interface{} each time it was accessed.&#34;</strong></p>
+<p>
+about it.</p>
+<p>
+Specifically, the LuneScript collection type includes:</p>
+<ul>
+<li>List&lt;T&gt;</li>
+<li>Set&lt;T&gt;</li>
+<li>Map&lt;K,V&gt;</li>
+</ul>
+<p>These are defined as the following types when handled by go.</p>
+<div class="src src-go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// List&lt;T&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">LnsList</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Items</span>       <span class="p">[]</span><span class="nx">LnsAny</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">lnsItemKind</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Set&lt;T&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">LnsSet</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Items</span> <span class="kd">map</span><span class="p">[</span><span class="nx">LnsAny</span><span class="p">]</span><span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// Map&lt;K,V&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">LnsMap</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Items</span> <span class="kd">map</span><span class="p">[</span><span class="nx">LnsAny</span><span class="p">]</span><span class="nx">LnsAny</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+where <code class="verbatim">LnsAny</code> is <code class="verbatim">interface{}</code>.</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+new collection type
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+Starting with LuneScript v1.6.0, we are introducing the following new collection types:</p>
+<ul>
+<li>__List&lt;T&gt;</li>
+<li>__Set&lt;T&gt;</li>
+<li>__Map&lt;K,V&gt;</li>
+</ul>
+<p><strong>New collection types have __ appended to the prefix.</strong></p>
+<p>
+These are defined as the following types when handled by go.</p>
+<div class="src src-go">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="c1">// __List&lt;T&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">LnsList2_</span><span class="p">[</span><span class="nx">T</span> <span class="nx">any</span><span class="p">]</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Items</span>       <span class="p">[]</span><span class="nx">T</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">lnsItemKind</span> <span class="kt">int</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// __Set&lt;T&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">LnsSet2_</span><span class="p">[</span><span class="nx">T</span> <span class="nx">comparable</span><span class="p">]</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Items</span> <span class="kd">map</span><span class="p">[</span><span class="nx">T</span><span class="p">]</span><span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="c1">// __Map&lt;K,V&gt;
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">LnsMap2_</span><span class="p">[</span><span class="nx">K</span> <span class="nx">comparable</span><span class="p">,</span><span class="nx">V</span> <span class="nx">any</span><span class="p">]</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">	<span class="nx">Items</span> <span class="kd">map</span><span class="p">[</span><span class="nx">K</span><span class="p">]</span><span class="nx">V</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+As you can see, the new collection type uses go&#39;s collection type.</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+Characteristics of each type
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+Here, we will explain the characteristics of the conventional type and the new type.</p>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+Conventional features
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<div id="outline-container-headline-5" class="outline-4">
+<h4 id="headline-5">
+processing flexibility
+</h4>
+<div id="outline-text-headline-5" class="outline-text-4">
+<p>
+Since the conventional type handles data with any, it is dynamically converted and processed. This allows you to:</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+let list:&amp;List&lt;str&gt; = [ &#34;abc&#34; ];
+let list2:&amp;List&lt;&amp;stem&gt; = list;
+let list3:&amp;List&lt;str&gt; = list2@@List&lt;str&gt;;</code></pre>
+</div>
+<ul>
+<li>A list of type <code class="verbatim">&amp;List&lt;str&gt;</code> can be assigned to type <code class="verbatim">&amp;List&lt;&amp;stem&gt;</code>.</li>
+<li>A list of type <code class="verbatim">&amp;List&lt;&amp;stem&gt;</code> can be cast to type <code class="verbatim">&amp;List&lt;str&gt;</code>.</li>
+</ul>
+<p>The above processing is possible because any is used when storing data, and it is used by casting when accessing the actually stored data.</p>
+<p>
+Also, this feature makes it easy to exchange collection type data between LuneScript and Lua.</p>
+<p>
+For example, the following code casts <code class="verbatim">obj@@Map&lt;str,int&gt;</code>, and this cast is also possible due to this feature.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
+fn func() {
+   let code = ```
+return { abc = 123 }
+```;
+   let obj:&amp;stem!;
+   __luago {
+      if! let loaded = _load( code ## ) {
+         let work = loaded(##);
+         obj = expandLuavalMap( work );
+      } else {
+         obj = nil;
+      }
+   }
+   when! obj {
+      let map = obj@@Map&lt;str,int&gt;;
+      foreach val, key in map {
+         print( key, val );
+      }
+   }
+}
+func();</code></pre>
+</div>
+<p>
+<code class="verbatim">expandLuavalMap()</code> is a function that converts a value obtained from Lua to a LuneScript value.</p>
+<p>
+<code class="verbatim">expandLuavalMap()</code> creates and returns in <code class="verbatim">&amp;Map&lt;&amp;stem,&amp;stem&gt;</code> if the given value is a table.</p>
+<p>
+Since it is inconvenient to handle with this <code class="verbatim">&amp;Map&lt;&amp;stem,&amp;stem&gt;</code>, it is cast to <code class="verbatim">Map&lt;str,int&gt;</code>.</p>
+<p>
+In this way, the ability to dynamically switch the type of collection type elements is a feature of the conventional type.</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-4">
+<h4 id="headline-6">
+overhead
+</h4>
+<div id="outline-text-headline-6" class="outline-text-4">
+<p>
+As above, store the data as any and cast it when accessing the stored data.</p>
+<p>
+The above processing is an overhead</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+Features of the new collection type
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<div id="outline-container-headline-8" class="outline-4">
+<h4 id="headline-8">
+less overhead
+</h4>
+<div id="outline-text-headline-8" class="outline-text-4">
+<p>
+The new collection type takes advantage of go&#39;s generics.</p>
+<p>
+This go generics eliminates the need for explicit casts when accessing data, reducing overhead.</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-4">
+<h4 id="headline-9">
+Lack of processing flexibility
+</h4>
+<div id="outline-text-headline-9" class="outline-text-4">
+<p>
+The following processing mentioned in the characteristics of the conventional collection type cannot be done with the new collection type.</p>
+<div class="src src-lns">
+<pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: error
+let list:&amp;__List&lt;str&gt; = [ &#34;abc&#34; ];
+let list2:&amp;__List&lt;&amp;stem&gt; = list; // error
+let list3:&amp;__List&lt;str&gt; = list2@@List&lt;str&gt;; // error</code></pre>
+</div>
+<p>
+This is a drawback, but the generics of many statically typed languages have such restrictions in the first place, so the conventional type was the exception. You may say.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
+<h2 id="headline-10">
+how to use
+</h2>
+<div id="outline-text-headline-10" class="outline-text-2">
+<p>
+As long as you don&#39;t care about it, you can just use a conventional collection.</p>
+<p>
+On the other hand, if you want to transcompile to go and still want to improve execution performance even a little, use the new collection type.</p>
+<p>
+To use the new collection type, just add a <code class="verbatim">__</code> prefix, such as <code class="verbatim">__List</code> , but adding it to every type declaration would be cumbersome. So we provide a way to make the new collection available by default.</p>
+<p>
+By putting the following at the beginning of the code, if <code class="verbatim">List</code> is declared in that code, it will behave as if <code class="verbatim">__List</code> is specified.</p>
+<pre class="example">
+_lune_control default_strict_generics;
+</pre>
+<p>
+At this time, how to use the conventional collection is to use <code class="verbatim">_List</code> (one &#34;_&#34;).</p>
+<p>
+In summary:</p>
+<table>
+<thead>
+<tr>
+<th>Presence or absence of default_strict_generics declaration</th>
+<th>List</th>
+<th>_List</th>
+<th>__List</th>
+<th class="align-right"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>none</td>
+<td>synonymous with _List</td>
+<td>conventional</td>
+<td>new model</td>
+<td class="align-right"></td>
+</tr>
+<tr>
+<td>Yes</td>
+<td>synonymous with __List</td>
+<td>conventional</td>
+<td>new model</td>
+<td class="align-right"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-2">
+<h2 id="headline-11">
+summary
+</h2>
+<div id="outline-text-headline-11" class="outline-text-2">
+<p>
+Supported go generics for LuneScript collection type.</p>
+<p>
+This feature is highly experimental.</p>
+<p>
+In most cases, just using the traditional collection type is fine.</p>
+</div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/en/lunescript/generics/" title="19. generics"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - 19. generics</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/en/lunescript/nilcond/" title="20. nil conditional operator">Next - 20. nil conditional operator <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/en/lunescript/">Easier Lua development with the transcompiler LuneScript!!<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial2.setup/">01. Introduction</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/crosscompile/">03. Cross-compiling between Lua versions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/value/">04. Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/set/">04.2. Set</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/tuple/">04.3 Tuples</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/enum/">05. enum</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/match/">06. match</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/variable/">07. Variables</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/branch/">08. General branch syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/loop/">09. Repetition Syntax</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/func/">10. Functions</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/multipleretval/">10.2. Multi-value return values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/defaultarg/">10.3. Omitting Arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/arg/">10.4. Variadic Arguments and Return Values</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/closure/">10.5. Closures</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/error/">10.6. Error handling</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilable/">11. nilable</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class1/">12. Class basics</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/class2accessor/">13. accessor</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classinherit/">14. Class Inheritance</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classadvertise/">15. Class advertise</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classoverride/">16. Class override</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/interface/">17. Interface</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/classmapping/">18. mapping</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/generics/">19. generics</a></li>
+<li class="active"><a href="https://ifritjp.github.io/documents/en/lunescript/generics-go/">19.2. generics (two collection types)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/nilcond/">20. nil conditional operator</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/import/">21. import/provide</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/require/">22. require/module</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/glue/">22.1. Semi-automatic generation of glue code</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua/">22.2. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/make/">23. Build</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/macro/">24. Macro</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/cast/">25. Cast</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/subfile/">26. subfile</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lazyloading/">27. Lazy Loading</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/shebang_main/">28. shebang and command line arguments</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/dir/">29. Recommended directory structure for projects using LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go/">80. Transcompiling to Go Language</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_package/">80.2 Packages when transpiling to Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_wasm/">80.4 WebAssembly support for LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async/">81. Safe Asynchronous Processing</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/async_old/">81.1 Asynchronous processing (past information)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/luago/">82. Linking with Lua</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/ebnf/">A. BNF</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/onweb/">A. LuneScript running on a web browser</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/reason/">A. Reason for developing Lua transcompiler LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/recommend/">A. Recommendations for transcompiler development</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lnstags/">A. Tag jumping with lnstags (source code tagging system)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/completion/">A.Let&#39;s have more fun in a modern development environment</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/box/">Box edition</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/lua_runtime/">Lua runtime when transpiling to 80.3 Go</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/test/">X. The Importance of Self-Hosting and Test Design in Language Development Quality Control</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design/">Y.1 How to develop LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-2/">Y.2 Development of LuneScript (type information management)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/design-3/">Y.3 LuneScript Development (Scopes and Symbols)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/en/lunescript/go_study/">Z. Transcompile to Go language (exploratory stage)</a></li>
+</ul>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>
