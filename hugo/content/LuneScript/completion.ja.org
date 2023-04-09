@@ -30,12 +30,30 @@ Lua のトランスコンパイラ LuneScript では、
 ここでは、LuneScript のコーディング時に利用出来る、
 イマドキの開発支援を紹介します。
 
-具体的には次の 3 つの機能です。
+具体的には次の機能です。
 
+- オートインデント
 - コード補完機能
 - カーソル位置の型情報確認  
 - Syntax エラーチェック機能
 - subfile を認識した検索
+
+* オートインデント
+
+オートインデントは、コーディングする際の最も基本的なサポート機能です。
+
+LuneScript では、オートインデントを行なうフォーマッタを提供します。
+
+emacs の環境では、この後に示す lns-mode 設定を実施するだけで
+オートインデントを利用できます。
+
+emacs 以外の環境は、現状サポートしていません。
+ですが、オートインデントの主要機能は LuneScript で作成した
+外部ツール formatter が担っています。
+emacs は、その formatter で取得したインデント量を利用しているだけです。
+よって、他の環境でも formatter との連携部を作成すれば、
+オートインデント機能を利用できます。
+
 
 * コード補完機能
 
@@ -63,7 +81,7 @@ class Test extend Super {
 let test = new Test( 1 );
 #+END_SRC
 
-test のフィールドの補完が次のように行なえます。
+test のフィールドの補完を次のように行なえます。
 
 [[https://ifritjp.github.io/doc/LuneScript/comp1.gif]]
 
@@ -154,7 +172,7 @@ sub1.lns で見つからない場合は、次は sub2.lns に切り替えて検�
 
 * 設定
 
-emacs の設定です。  
+emacs の lns-mode 設定です。  
   
 #+BEGIN_SRC lisp
 (require 'lns-conf)
@@ -176,6 +194,31 @@ emacs の設定です。
 
 LuneScript の flymake, auto-complete 対応は、メンテナンスしていません。
 flycheck, company-mode の使用を推奨します。
+
+** オートインデントの高速化
+
+github から取得しただけの状態だと、
+オートインデント処理はスクリプト版の formatter が動作します。
+スクリプト版の formatter は動作が遅いため、
+規模の大きいソースファイルでは処理に時間がかかります。
+
+これを高速化するには、Go 版の formatter をビルドします。
+
+Go 版をビルドするには、
+github から取得したプロジェクトに対して以下を実行します。
+
+: $ cd tools/formatter
+: $ make build-go
+
+*** カスタマイズ
+
+次の設定項目で、オートインデントの設定を変更できます。
+
+- lns-get-formatter-path
+  - formatter のパスを返す関数を登録します。
+- lns-proj-info-check-useing-indent-command
+  - formatter を使用するかどうかを返す関数を登録します。
+
 
 * プロジェクト
 
