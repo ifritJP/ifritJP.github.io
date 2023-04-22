@@ -10,7 +10,7 @@ LuneScript の動作確認用に、Web ブラウザ上で動作する LuneScript
 LuneScript 環境には次の2つを用意しています。
 
 - fengari を利用した環境
-- golang の wasm を利用した環境
+- golang の wasm を利用した環境  *(最新)*
 
 * fengari を利用した環境
 
@@ -171,9 +171,10 @@ maxTime を省略した場合、デフォルトの 2 秒がリミットになり
 
 [[https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/]]
 
-上記リンク先の UI 構成は、 fengari 利用時と同じです。
+上記リンク先の構成は、 fengari の構成と比べて次が異なります。
 
-LuneScript の実行に fengari を利用しているか、 golang の wasm を利用しているかの違いです。
+- LuneScript の実行に fengari ではなく golang の wasm を利用している
+- エディタに textarea ではなく monaco を利用している
 
 
 ** 技術解説
@@ -181,11 +182,11 @@ LuneScript の実行に fengari を利用しているか、 golang の wasm を�
 次に LuneScript の golang wasm を利用するサンプルコードを示します。
 
 #+BEGIN_SRC html
-<script type="text/javascript" src="./lnsc_frontend.js"></script>
+<script type="text/javascript" src="./lnsc_frontend.js?symbol=getLnsFrontEnd"></script>
 <script>
   addEventListener("load", function( event ) {
-    document.__getLnsFrontEnd().then( (frontend) => {
-      let result = await frontend.conv2lua( `print( "hello world" );`, true, 4 );
+    getLnsFrontEnd().then( (frontend) => {
+      let result = await frontend.conv2lua( `print( "hello world" );`, {}, true, 4 );
   
       console.log( result.console );
       console.log( result.execLog );
@@ -198,29 +199,54 @@ LuneScript の実行に fengari を利用しているか、 golang の wasm を�
 まず、 [[https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/lnsc_frontend.js]] を
 ロードします。
 
-このスクリプトで、 LuneScript の golang wasm を制御します。
+この時に、 *?symbol=getLnsFrontEnd* のクエリーを指定しています。
 
-このスクリプトをロードすると、 =document.__getLnsFrontEnd()= 関数が追加されます。
+このクエリーは、フロントエンドを取得する関数を登録する際の、
+次のシンボル名(getLnsFrontEnd)を指定します。
+
+: getLnsFrontEnd().then( (frontend) =>
+
+上記の =getLnsFrontEnd= の部分をクエリーで指定します。
+
+
+このスクリプトは、 LuneScript の golang wasm を制御します。
+
+このスクリプトをロードすると、 上記クエリーで指定したシンボル名で関数が追加されます。
+クエリーを指定しない場合、 *__getLnsFrontEnd* のシンボル名で登録されます。
+ここでは便宜的に *__getLnsFrontEnd* のシンボル名を使って説明します。
+
 この関数を実行すると、 LuneScript の golang wasm がロードされます。
 なお lnsc_frontend.js は、
 LuneScript の golang wasm を worker として動作させます。
 
-=document.__getLnsFrontEnd()= は、 async 関数です。
+=__getLnsFrontEnd()= は、 async 関数です。
 処理が終ると LuneScript の frontend オブジェクトが返されます。
 
 この frontend オブジェクトは、 以下のメソッドを持ちます。
 
-: frontend.conv2lua( lnsCode, execLua, timeoutSec )
+- async conv2lua( lnsCode, execLua, timeoutSec )
+- async getIndent( lnsCode, targetLineNo, endLineNo )
+- async complete( lnsCode, name2code, lineNo, column )
+- async diag( lnsCode, name2code )
+- async runLnsc( name2code, args )
+
+
+*** async conv2lua( lnsCode, name2code, andExec, timeoutSec )
+
 
 このメソッドは、指定の LuneScript から Lua へトランスコンパイルを行ないます。
 
 引数はそれぞれ
 
 - lnsCode
-  - トランスコンパイル対象の LuneScript 
+  - トランスコンパイル対象の LuneScript コード
+- name2code
+  - lnsCode からロードしているモジュール情報。
+  - パス名からモジュールのソースコード文字列の Object。
 - execLua 
   - トランスコンパイル後の Lua を実行するかどうかの bool。
-  - 実行する場合は true
+  - 実行する場合は true。
+  - lnsCode が別のモジュールを import ている場合は、現状正常に動作しません。
 - timeoutSec
   - トランスコンパイルから実行までの処理待ちタイムアウト(秒)。
   - 指定時間内に処理が終わらない場合は強制停止させる。
@@ -234,3 +260,125 @@ LuneScript の golang wasm を worker として動作させます。
   - トランスコンパイルした際のコンソール出力(warrning や error 情報)
 - execLog
   - lua コードを実行した際の、console 出力結果
+  - execLog に false を指定した場合は無効
+
+*** async getIndent( lnsCode, targetLineNo, endLineNo )
+
+このメソッドは、 指定の LuneScript コードの、指定行のインデント情報を返します。
+
+引数はそれぞれ
+
+- lnsCode
+  - トランスコンパイル対象の LuneScript コード
+  - endLineNo の行末に =" ___LNS___"= の文字列(先頭にスペースがある)を付加してください。
+- targetLineNo
+  - インデント量を取得する開始行 (先頭は 1 )
+- endLineNo
+  - インデント量を取得する終了行 (先頭は 1 )
+  - 一行だけ計算する場合は、 targetLineNo と endLineNo を同じ値にしてください。
+
+
+このメソッドは、次のようなオブジェクトを返します。
+
+: {"indent": {"lines": [
+:      {"info": {"column": 7,"lineNo": 255}},
+:      {"info": {"column": 10,"lineNo": 256}},
+:      {"info": {"column": 10,"lineNo": 257}}]}}
+
+ここで各項目は以下を示します。
+
+- info 
+  - targetLineNo と endLineNo の間の行のインデント量を示す
+- lineNo 
+  - 対象の行番号 (先頭は 1 )
+- column
+  - インデント量
+
+
+*** async complete( lnsCode, name2code, lineNo, column )
+
+このメソッドは、 指定の LuneScript コードの指定位置の補完情報を返します。
+
+引数はそれぞれ
+
+- lnsCode
+  - トランスコンパイル対象の LuneScript コード。
+  - 補完位置に ="lune"= の文字列を付加してください。
+- name2code
+  - lnsCode からロードしているモジュール情報。
+  - パス名からモジュールのソースコード文字列の Object。
+- lineNo
+  - 補完を行なう位置の行番号 (先頭は 1 )
+- column
+  - 補完を行なう位置の column (行頭は 1 )
+
+
+前提条件として、
+対象の lnsCode の lineNo までの処理が正常にビルドできる必要があります。
+
+
+このメソッドは、次のようなオブジェクトを返します。
+
+: { "complete": {"lunescript": {
+:     "prefix": "pr",
+:     "candidateList": [
+:         {"candidate": {"type": "SymbolKind.Fun","displayTxt": "print(&...)"}}
+:     ]}}}
+
+ここで各項目は以下を示します。
+
+- prefix 
+  - 補完の元になった文字列を示します。
+  - 例えば ="pr"= を補完する情報として ="print"= が候補として検出された場合、
+    prefix には ="pr"= が格納されます
+- candidate
+  - 補完候補の情報を示します
+- type
+  - シンボルの種別を示します
+- displayTxt
+  - 補完する文字列を示します
+
+*** async diag( lnsCode, name2code )
+
+このメソッドは、 ビルドエラー情報を取得します。
+
+引数はそれぞれ
+
+- lnsCode
+  - トランスコンパイル対象の LuneScript コード。
+- name2code
+  - lnsCode からロードしているモジュール情報。
+  - パス名からモジュールのソースコード文字列の Object。
+
+
+このメソッドは、次のようなオブジェクトを返します。
+
+: { "console" : "" }
+
+ここで各項目は以下を示します。
+
+- console 
+  - lnsc のビルドエラーメッセージ
+
+*** async runLnsc( name2code, args )
+
+このメソッドは、 lnsc にコマンドラインオプション args を指定して実行します。
+
+このメソッドは、任意のコマンドラインオプションを指定することが可能です。
+
+引数はそれぞれ
+
+- name2code
+  - lnsCode からロードしているモジュール情報。
+  - パス名からモジュールのソースコード文字列の Object。
+- args
+  - コマンドラインオプションの文字列配列
+
+このメソッドは、次のようなオブジェクトを返します。
+
+: { "console" : "" }
+
+ここで各項目は以下を示します。
+
+- console 
+  - lnsc のコンソール出力
