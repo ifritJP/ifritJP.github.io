@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="次の URL で提供している LuneScript playground 環境のエディタを、 シンプルな textarea からモダンな monaco editor に変更しました。 &amp;lt;https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/&amp;gt; 今回のネタは、monaco editor に独自言語の次の機能を追" />
+    <meta name="generator" content="Hugo 0.111.3 with theme pure" />
+    <title>monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する" />
+<meta property="og:description" content="次の URL で提供している LuneScript playground 環境のエディタを、 シンプルな textarea からモダンな monaco editor に変更しました。 &lt;https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/&gt; 今回のネタは、monaco editor に独自言語の次の機能を追" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2023/2023-04-23-monago/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-04-23T00:00:00+00:00" />
+<meta property="article:modified_time" content="2023-04-23T00:00:00+00:00" />
+<meta itemprop="name" content="monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する">
+<meta itemprop="description" content="次の URL で提供している LuneScript playground 環境のエディタを、 シンプルな textarea からモダンな monaco editor に変更しました。 &lt;https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/&gt; 今回のネタは、monaco editor に独自言語の次の機能を追"><meta itemprop="datePublished" content="2023-04-23T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2023-04-23T00:00:00+00:00" />
+<meta itemprop="wordCount" content="2063">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する"/>
+<meta name="twitter:description" content="次の URL で提供している LuneScript playground 環境のエディタを、 シンプルな textarea からモダンな monaco editor に変更しました。 &lt;https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/&gt; 今回のネタは、monaco editor に独自言語の次の機能を追"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-04-23-monago/" class="title">monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-04-23 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-04-23</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-03-19-gomaxprocs/" class="title">LuneScript のセルフホストビルド時間と GOMAXPROCS</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-03-19 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-03-19</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-02-27-go-generics3/" class="title">LuneScript のコレクション側を Go の generics を利用するように変更</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-02-27 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-02-27</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-02-11-go-generics2/" class="title">Golang の generics パフォーマンスがもの凄く改善されていた</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-02-11 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-02-11</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-01-29-tuple-implementation/" class="title">LuneScript のタプルの go 実装</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-01-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-01-29</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2023/2023-04-23-monago/"
+    >monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-04-23-monago/" class="article-date">
+  <time datetime="2023-04-23 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-04-23</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2023/2023-04-23-monago/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2063</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">5 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+次の URL で提供している LuneScript playground 環境のエディタを、
+シンプルな textarea からモダンな monaco editor に変更しました。</p>
+<p>
+&lt;<a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/">https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/</a>&gt;</p>
+<p>
+今回のネタは、monaco editor に独自言語の次の機能を追加する方法についてです。</p>
+<ul>
+<li>インデント調整</li>
+<li>コード補完</li>
+<li>syntax エラー表示</li>
+</ul>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+monaco editor 
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+monaco editor は、 vscode のエディタ・コアです。</p>
+<p>
+&lt;<a href="https://microsoft.github.io/monaco-editor/">https://microsoft.github.io/monaco-editor/</a>&gt;</p>
+<p>
+web 上で動作する高機能エディタには、 
+monaco editor とは別に <a href="https://ace.c9.io/">Ace</a> もありますが、
+今回は monaco editor の方を採用しました。</p>
+<p>
+その理由は、
+近い将来的に vscode 用の LuneScript extension を作成するときに、
+monaco editor を知っていた方が役立つこともあるんじゃないか？と思ったためです。</p>
+<p>
+実際に役立つかどうかは不明ですが。。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+独自言語の登録
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+monaco editor に独自言語の処理を登録するには、
+先ず次のように言語 ID を monaco editor に登録する必要があります。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">    <span class="nx">monaco</span><span class="p">.</span><span class="nx">languages</span><span class="p">.</span><span class="nx">register</span><span class="p">({</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">id</span><span class="o">:</span> <span class="s2">&#34;LuneScript&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">    <span class="p">});</span></span></span></code></pre></div>
+</div>
+<p>
+この言語 ID に紐付けて、補完処理などの機能を登録します。</p>
+<p>
+機能登録後、 editor のインスタンスを生成する際、
+登録した言語 ID を指定します。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">  <span class="kd">let</span> <span class="nx">monacoEditor</span> <span class="o">=</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">editor</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span> <span class="nx">element</span><span class="p">,</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">language</span><span class="o">:</span> <span class="s2">&#34;LuneScript&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">});</span></span></span></code></pre></div>
+</div>
+<p>
+これによって生成した editor は、指定の言語を扱うようになります。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+インデント
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+monaco の標準的なインデント制御機能は頭が良いので、
+多くの場合 monaco 内のパラメータの設定程度で十分うまく動作すると思います。</p>
+<p>
+ただ、今回は LuneScript 向けにインデント制御を別途作ってあったので、
+それを利用します。</p>
+<p>
+そのため、 monaco の組込みインデント機能を無効化するため、
+autoIndent に &#34;none&#34; を設定します。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">  <span class="kd">let</span> <span class="nx">monacoEditor</span> <span class="o">=</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">editor</span><span class="p">.</span><span class="nx">create</span><span class="p">(</span> <span class="nx">element</span><span class="p">,</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">language</span><span class="o">:</span> <span class="s2">&#34;LuneScript&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">// 組込みのインデント機能を off
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>      <span class="nx">autoIndent</span><span class="o">:</span> <span class="s2">&#34;none&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">});</span></span></span></code></pre></div>
+</div>
+<p>
+次に特定のキー入力時にインデントを調整するようにバインドします。</p>
+<p>
+ここでは、 次のキー入力時にインデント調整するように設定しています。</p>
+<ul>
+<li>TAB</li>
+<li>Enter</li>
+<li>C-j</li>
+<li>{</li>
+<li>}</li>
+</ul>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">        <span class="k">this</span><span class="p">.</span><span class="nx">monacoEditor</span><span class="p">.</span><span class="nx">onKeyUp</span><span class="p">(</span> <span class="kr">async</span> <span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="k">if</span> <span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">keyCode</span> <span class="o">===</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">KeyCode</span><span class="p">.</span><span class="nx">Tab</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">e</span><span class="p">.</span><span class="nx">preventDefault</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">                <span class="nx">e</span><span class="p">.</span><span class="nx">stopPropagation</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// タブキーが押されたときの処理
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                <span class="k">this</span><span class="p">.</span><span class="nx">updateIndent</span><span class="p">(</span> <span class="nx">monacoEditor</span><span class="p">.</span><span class="nx">getSelection</span><span class="p">()</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="nx">e</span><span class="p">.</span><span class="nx">keyCode</span> <span class="o">===</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">KeyCode</span><span class="p">.</span><span class="nx">Enter</span> <span class="o">||</span>
+</span></span><span class="line"><span class="cl">                        <span class="nx">e</span><span class="p">.</span><span class="nx">keyCode</span> <span class="o">==</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">KeyCode</span><span class="p">.</span><span class="nx">KeyJ</span> <span class="o">&amp;&amp;</span> <span class="nx">e</span><span class="p">.</span><span class="nx">ctrlKey</span> <span class="o">||</span>
+</span></span><span class="line"><span class="cl">                        <span class="nx">e</span><span class="p">.</span><span class="nx">keyCode</span> <span class="o">===</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">KeyCode</span><span class="p">.</span><span class="nx">BracketLeft</span> <span class="o">||</span>
+</span></span><span class="line"><span class="cl">                        <span class="nx">e</span><span class="p">.</span><span class="nx">keyCode</span> <span class="o">===</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">KeyCode</span><span class="p">.</span><span class="nx">BracketRight</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="p">{</span>
+</span></span><span class="line"><span class="cl">                <span class="c1">// Enter, C-j, {, }
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>                <span class="kd">let</span> <span class="nx">selection</span> <span class="o">=</span> <span class="nx">monacoEditor</span><span class="p">.</span><span class="nx">getSelection</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">                <span class="k">this</span><span class="p">.</span><span class="nx">updateIndent</span><span class="p">(</span> <span class="nx">selection</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">            <span class="p">}</span>
+</span></span><span class="line"><span class="cl">        <span class="p">});</span></span></span></code></pre></div>
+</div>
+<p>
+上記コードの <code class="verbatim">this.updateIndent()</code> は、自前で作成したインデント調整処理です。</p>
+<p>
+monaco editor の組込みインデント調整機能を利用する場合、上記処理は不要です。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+コード補完
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+コード補完は、次のように <code class="verbatim">registerCompletionItemProvider()</code> を使って
+コールバック情報を登録します。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">    <span class="nx">monaco</span><span class="p">.</span><span class="nx">languages</span><span class="p">.</span><span class="nx">registerCompletionItemProvider</span><span class="p">(</span> <span class="s2">&#34;LuneScript&#34;</span><span class="p">,</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// &#34;.&#34; で補完開始
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">triggerCharacters</span><span class="o">:</span> <span class="p">[</span><span class="s2">&#34;.&#34;</span><span class="p">],</span>
+</span></span><span class="line"><span class="cl">        <span class="c1">// 補完関数
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="nx">provideCompletionItems</span><span class="o">:</span> <span class="kr">async</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">model</span><span class="p">,</span> <span class="nx">position</span><span class="p">,</span> <span class="nx">context</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+このコールバック情報は <code class="verbatim">provideCompletionItems</code> を含みます。
+この <code class="verbatim">provideCompletionItems</code> は、
+エディタ上で英数字を入力している際に、呼び出されているようです。</p>
+<p>
+なお、 <code class="verbatim">triggerCharacters</code> で指定している文字を入力した際も、
+<code class="verbatim">provideCompletionItems</code> がコールされます。</p>
+<p>
+また、 <code class="verbatim">provideCompletionItems</code> に登録しているコールバック関数の引数
+<code class="verbatim">model</code>, <code class="verbatim">position</code>, <code class="verbatim">context</code> は、それぞれ次を示します。</p>
+<ul>
+<li>
+<p><code class="verbatim">model</code></p>
+<ul>
+<li>編集中の editor のデータを保持する model。 editor.getModel() が返す値と同じ。</li>
+</ul>
+</li>
+<li>
+<p><code class="verbatim">position</code></p>
+<ul>
+<li>編集中の位置</li>
+</ul>
+</li>
+<li>
+<p><code class="verbatim">context</code></p>
+<ul>
+<li>補完のトリガに関する情報</li>
+<li>例えば <code class="verbatim">context.triggerKind</code> は、補完のトリガの種別を示します。</li>
+</ul>
+</li>
+</ul>
+<p>このコールバック関数は、 次のような Object を返すように作成します。</p>
+<pre class="example">
+{ incomplete: true, suggestions:[] }
+</pre>
+<p>
+ここで、 incomplete は補完処理中かどうを示す値で、
+この値が true の結果を受けた monaco editor は後で再度コールバック関数を呼びます。</p>
+<p>
+suggestions は、補完候補の配列を示します。</p>
+<p>
+個々の補完候補は以下のような情報を保持します。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">label</span><span class="o">:</span> <span class="s2">&#34;hoge&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">kind</span><span class="o">:</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">languages</span><span class="p">.</span><span class="nx">CompletionItemKind</span><span class="p">.</span><span class="nx">Snippet</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">insertText</span><span class="o">:</span> <span class="s2">&#34;hoge&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">range</span><span class="o">:</span> <span class="nx">targetRange</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="c1">//command: { id: &#39;editor.action.insertLineAfter&#39; }
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+それぞれの項目は以下の通りです。</p>
+<ul>
+<li>
+<p>label </p>
+<ul>
+<li>補完候補をリスト表示する際に使われる文字列</li>
+</ul>
+</li>
+<li>
+<p>kind</p>
+<ul>
+<li>補完候補の種別</li>
+</ul>
+</li>
+<li>
+<p>insertText</p>
+<ul>
+<li>実際に補完文字列として展開される値</li>
+</ul>
+</li>
+<li>
+<p>range</p>
+<ul>
+<li>insertText を置き換える場所</li>
+</ul>
+</li>
+<li>
+<p>command</p>
+<ul>
+<li>置き換え後に実行する command</li>
+<li>上記のサンプルではコメントアウトしているが、
+補完時にコマンド実行が必要ならここで登録できる</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+syntax エラー
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+syntax エラーを表示するには、monaco の Marker 機能を利用します。</p>
+<p>
+補完には補完機能を実行するトリガが登録できますが、
+syntax をチェックするトリガは、特に規定されていないようです。</p>
+<p>
+ただ、 <code class="verbatim">onDidChangeModelContent()</code> を使うことで、
+エディタの内容が編集された場合のコールバックを登録できるので、
+このコールバックをトリガに利用して syntax チェックします。</p>
+<p>
+とはいえ、 syntax チェックはそこそこ重い処理であるのと、
+ 1 文字編集するごとにチェックしてもすぐに次の文字が入力されて、
+直前の syntax チェックの多くは無駄になるため、
+onDidChangeModelContent() では変更があったことだけ記録し、
+周期的タイマーで変更の有無をチェックし、変更があった場合に
+syntax チェックを掛けるようにします。
+こうすることで、リアルタイム性は少し悪くなりますが、
+無駄なチェック処理に CPU パワーを取られることを避けられます。</p>
+<p>
+syntax チェックは、
+当然独自処理でそれぞれの環境に合せて実施する必要があるため、ここでは省略します。</p>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+Marker の登録
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+自前の syntax チェックによってエラー箇所の情報を取得した後は、
+その情報を Marker に登録します。</p>
+<p>
+それが、 setModelMarkers() です。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">  <span class="nx">monaco</span><span class="p">.</span><span class="nx">editor</span><span class="p">.</span><span class="nx">setModelMarkers</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">      <span class="k">this</span><span class="p">.</span><span class="nx">monacoEditor</span><span class="p">.</span><span class="nx">getModel</span><span class="p">(),</span> <span class="s2">&#34;lnsc-diag&#34;</span><span class="p">,</span> <span class="nx">markerList</span> <span class="p">);</span></span></span></code></pre></div>
+</div>
+<p>
+上記の第1引数は Marker を登録する Model。
+第2引数は Marker の識別名。
+第3引数は Marker の情報リストです。</p>
+<p>
+第3引数は Marker の情報リストには、次の Marker 情報を入れます。</p>
+<div class="src src-js">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">  <span class="p">{</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">startLineNumber</span><span class="o">:</span> <span class="nx">range</span><span class="p">.</span><span class="nx">startLineNumber</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">startColumn</span><span class="o">:</span> <span class="nx">range</span><span class="p">.</span><span class="nx">startColumn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">endLineNumber</span><span class="o">:</span> <span class="nx">range</span><span class="p">.</span><span class="nx">endLineNumber</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">endColumn</span><span class="o">:</span> <span class="nx">range</span><span class="p">.</span><span class="nx">endColumn</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">message</span><span class="o">:</span> <span class="nx">message</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">      <span class="nx">severity</span><span class="o">:</span> <span class="nx">monaco</span><span class="p">.</span><span class="nx">MarkerSeverity</span><span class="p">.</span><span class="nb">Error</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">  <span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+上記を見れば各項目が何を意味するか、直感的に分かると思います。</p>
+<p>
+念の為概要を説明すると、次を指定しています。</p>
+<ul>
+<li>どこの部分にメッセージを表示するのか</li>
+<li>実際の表示するメッセージ</li>
+<li>メッセージの種別</li>
+</ul>
+<p>なお、一点注意すると、 <code class="verbatim">setModelMarkers()</code> の第2引数に指定する識別名は、
+<code class="verbatim">monaco.editor.removeAllMarkers()</code> に指定します。</p>
+<p>
+この <code class="verbatim">monaco.editor.removeAllMarkers()</code> は、
+<code class="verbatim">setModelMarkers()</code> で登録した Marker を削除する際に利用します。</p>
+<p>
+Marker は、 <code class="verbatim">setModelMarkers()</code> で登録したものを、
+一括して <code class="verbatim">setModelMarkers()</code> で削除します。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
+<h2 id="headline-7">
+さいごに
+</h2>
+<div id="outline-text-headline-7" class="outline-text-2">
+<p>
+monaco editor への独自言語の機能追加は、かなり簡単に実現出来ます。</p>
+<p>
+独自言語開発している人の Web エディタとして、オススメです。</p>
+</div>
+</div>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-03-19-gomaxprocs/" title="LuneScript のセルフホストビルド時間と GOMAXPROCS"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2023
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.e4989ab4dc212027af8773861b05b6bc333a1217f6b0a1b3377a3a3dbd454483.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.738a460bf4317fac61717f1bca393e53d00973db9754d9f0a81c7312d5874840.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.716b0c6a00b68ccc31a2b65345f3412f4246ffa94a90f8e25d525528b4504f9937880692bbe619023233caba5d0a17ebe23d7cfb57cd3a88f23ea337ad5e4d00.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

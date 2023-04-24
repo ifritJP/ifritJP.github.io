@@ -1,0 +1,258 @@
+#+TITLE: monaco editor に自作言語拡張(インデント、補完、syntax エラー)を登録する
+#+DATE: 2023-04-23
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: monaco
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+次の URL で提供している LuneScript playground 環境のエディタを、
+シンプルな textarea からモダンな monaco editor に変更しました。
+
+<https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/>
+
+今回のネタは、monaco editor に独自言語の次の機能を追加する方法についてです。
+- インデント調整
+- コード補完
+- syntax エラー表示
+
+* monaco editor 
+
+monaco editor は、 vscode のエディタ・コアです。
+
+<https://microsoft.github.io/monaco-editor/>
+
+web 上で動作する高機能エディタには、 
+monaco editor とは別に [[https://ace.c9.io/][Ace]] もありますが、
+今回は monaco editor の方を採用しました。
+
+その理由は、
+近い将来的に vscode 用の LuneScript extension を作成するときに、
+monaco editor を知っていた方が役立つこともあるんじゃないか？と思ったためです。
+
+実際に役立つかどうかは不明ですが。。
+
+* 独自言語の登録
+
+monaco editor に独自言語の処理を登録するには、
+先ず次のように言語 ID を monaco editor に登録する必要があります。
+
+#+BEGIN_SRC js
+    monaco.languages.register({
+        id: "LuneScript",
+    });
+#+END_SRC
+
+この言語 ID に紐付けて、補完処理などの機能を登録します。
+
+
+機能登録後、 editor のインスタンスを生成する際、
+登録した言語 ID を指定します。
+
+#+BEGIN_SRC js
+  let monacoEditor = monaco.editor.create( element, {
+      language: "LuneScript",
+  });
+#+END_SRC
+
+これによって生成した editor は、指定の言語を扱うようになります。
+
+
+* インデント
+
+monaco の標準的なインデント制御機能は頭が良いので、
+多くの場合 monaco 内のパラメータの設定程度で十分うまく動作すると思います。
+
+ただ、今回は LuneScript 向けにインデント制御を別途作ってあったので、
+それを利用します。
+
+そのため、 monaco の組込みインデント機能を無効化するため、
+autoIndent に "none" を設定します。
+
+#+BEGIN_SRC js
+  let monacoEditor = monaco.editor.create( element, {
+      language: "LuneScript",
+      // 組込みのインデント機能を off
+      autoIndent: "none",
+  });
+#+END_SRC
+
+次に特定のキー入力時にインデントを調整するようにバインドします。
+
+ここでは、 次のキー入力時にインデント調整するように設定しています。
+
+- TAB
+- Enter
+- C-j
+- {
+- }
+
+#+BEGIN_SRC js
+        this.monacoEditor.onKeyUp( async (e) => {
+            if (e.keyCode === monaco.KeyCode.Tab) {
+                e.preventDefault();
+                e.stopPropagation();
+                // タブキーが押されたときの処理
+                this.updateIndent( monacoEditor.getSelection() );
+            } else if ( e.keyCode === monaco.KeyCode.Enter ||
+                        e.keyCode == monaco.KeyCode.KeyJ && e.ctrlKey ||
+                        e.keyCode === monaco.KeyCode.BracketLeft ||
+                        e.keyCode === monaco.KeyCode.BracketRight )
+            {
+                // Enter, C-j, {, }
+                let selection = monacoEditor.getSelection();
+                this.updateIndent( selection );
+            }
+        });
+#+END_SRC
+
+上記コードの =this.updateIndent()= は、自前で作成したインデント調整処理です。
+
+monaco editor の組込みインデント調整機能を利用する場合、上記処理は不要です。
+
+
+* コード補完
+
+コード補完は、次のように =registerCompletionItemProvider()= を使って
+コールバック情報を登録します。
+
+#+BEGIN_SRC js
+    monaco.languages.registerCompletionItemProvider( "LuneScript", {
+        // "." で補完開始
+        triggerCharacters: ["."],
+        // 補完関数
+        provideCompletionItems: async function( model, position, context ) {
+        }
+    }
+#+END_SRC
+
+このコールバック情報は =provideCompletionItems= を含みます。
+この =provideCompletionItems= は、
+エディタ上で英数字を入力している際に、呼び出されているようです。
+
+なお、 =triggerCharacters= で指定している文字を入力した際も、
+=provideCompletionItems= がコールされます。
+
+また、 =provideCompletionItems= に登録しているコールバック関数の引数
+=model=, =position=, =context= は、それぞれ次を示します。
+
+- =model=
+  - 編集中の editor のデータを保持する model。 editor.getModel() が返す値と同じ。
+- =position=
+  - 編集中の位置
+- =context=
+  - 補完のトリガに関する情報
+  - 例えば =context.triggerKind= は、補完のトリガの種別を示します。
+
+このコールバック関数は、 次のような Object を返すように作成します。
+
+: { incomplete: true, suggestions:[] }
+
+ここで、 incomplete は補完処理中かどうを示す値で、
+この値が true の結果を受けた monaco editor は後で再度コールバック関数を呼びます。
+
+suggestions は、補完候補の配列を示します。
+
+個々の補完候補は以下のような情報を保持します。
+
+#+BEGIN_SRC js
+  {
+      label: "hoge",
+      kind: monaco.languages.CompletionItemKind.Snippet,
+      insertText: "hoge",
+      range: targetRange,
+      //command: { id: 'editor.action.insertLineAfter' }
+  }
+#+END_SRC
+
+それぞれの項目は以下の通りです。
+
+- label 
+  - 補完候補をリスト表示する際に使われる文字列
+- kind
+  - 補完候補の種別
+- insertText
+  - 実際に補完文字列として展開される値
+- range
+  - insertText を置き換える場所
+- command
+  - 置き換え後に実行する command
+  - 上記のサンプルではコメントアウトしているが、
+    補完時にコマンド実行が必要ならここで登録できる
+
+* syntax エラー
+
+syntax エラーを表示するには、monaco の Marker 機能を利用します。
+
+
+補完には補完機能を実行するトリガが登録できますが、
+syntax をチェックするトリガは、特に規定されていないようです。
+
+ただ、 =onDidChangeModelContent()= を使うことで、
+エディタの内容が編集された場合のコールバックを登録できるので、
+このコールバックをトリガに利用して syntax チェックします。
+
+とはいえ、 syntax チェックはそこそこ重い処理であるのと、
+ 1 文字編集するごとにチェックしてもすぐに次の文字が入力されて、
+直前の syntax チェックの多くは無駄になるため、
+onDidChangeModelContent() では変更があったことだけ記録し、
+周期的タイマーで変更の有無をチェックし、変更があった場合に
+syntax チェックを掛けるようにします。
+こうすることで、リアルタイム性は少し悪くなりますが、
+無駄なチェック処理に CPU パワーを取られることを避けられます。
+
+syntax チェックは、
+当然独自処理でそれぞれの環境に合せて実施する必要があるため、ここでは省略します。
+
+** Marker の登録
+
+自前の syntax チェックによってエラー箇所の情報を取得した後は、
+その情報を Marker に登録します。
+
+それが、 setModelMarkers() です。
+
+#+BEGIN_SRC js
+  monaco.editor.setModelMarkers(
+      this.monacoEditor.getModel(), "lnsc-diag", markerList );
+#+END_SRC
+
+上記の第1引数は Marker を登録する Model。
+第2引数は Marker の識別名。
+第3引数は Marker の情報リストです。
+
+第3引数は Marker の情報リストには、次の Marker 情報を入れます。
+
+#+BEGIN_SRC js
+  {
+      startLineNumber: range.startLineNumber,
+      startColumn: range.startColumn,
+      endLineNumber: range.endLineNumber,
+      endColumn: range.endColumn,
+      message: message,
+      severity: monaco.MarkerSeverity.Error,
+  }
+#+END_SRC
+
+上記を見れば各項目が何を意味するか、直感的に分かると思います。
+
+念の為概要を説明すると、次を指定しています。
+
+- どこの部分にメッセージを表示するのか
+- 実際の表示するメッセージ
+- メッセージの種別
+
+なお、一点注意すると、 =setModelMarkers()= の第2引数に指定する識別名は、
+=monaco.editor.removeAllMarkers()= に指定します。
+
+この =monaco.editor.removeAllMarkers()= は、
+=setModelMarkers()= で登録した Marker を削除する際に利用します。
+
+Marker は、 =setModelMarkers()= で登録したものを、
+一括して =setModelMarkers()= で削除します。
+
+* さいごに
+
+monaco editor への独自言語の機能追加は、かなり簡単に実現出来ます。
+
+独自言語開発している人の Web エディタとして、オススメです。
