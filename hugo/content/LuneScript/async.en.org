@@ -92,13 +92,21 @@ If you transcompile to lua, do nothing as there is no asynchronous processing.
 Constructor arguments for classes that extend __Runner are restricted to the following types.
 - int, real, str, bool, enum 
 - immutable types
+- An object of a class that satisfies the following conditions (from v1.6.0)
+  - final, has no public members, and all public methods are =__noasyc=
 In other words, the following cases will result in an error.
 #+BEGIN_SRC lns
 // @lnsFront: error
 class Test {
+   pub fn func() __async {
+   }
+}
+final class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:Test, list:List<int> ) __async { // error
+   pub fn __init( test:Test, list:List<int>, foo:Foo ) __async { // error
    }
    pub fn run() __async mut {
    }
@@ -109,12 +117,20 @@ class Hoge extend (__Runner) {
 The error is because the arguments test and list are mutable types.
 
 You need to declare it as immutable like this:
+
+In addition, foo can be passed as mutable because all methods are __noasync.
 #+BEGIN_SRC lns
 // @lnsFront: ok
 class Test {
+   pub fn func() __async {
+   }
+}
+final class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:&Test, list:&List<int> ) __async { // ok
+   pub fn __init( test:&Test, list:&List<int>, foo:Foo ) __async { // ok
    }
    pub fn run() __async mut {
    }
@@ -382,7 +398,7 @@ class Test {
 
 A function that declares nothing is __noasync.
 
-We provide a way to make this default to __async.
+We provide a way to make this default to __async .
 : _lune_control default_async_all
 
 
@@ -419,7 +435,7 @@ class Test {
 #+END_SRC
 
 
-For example, the above access to list from =func()= would originally result in a compilation error, but if this is not considered an error, while executing the =func()= method, if the value of list is updated in another thread, list will reference and modification occur simultaneously, resulting in undefined behavior.
+For example, the above access to list from =func()= would originally result in a compile error, but if this is not considered an error, while executing the =func()= method, if another thread updates the value of list, list will reference and modification occur simultaneously, resulting in undefined behavior.
 
 To guard against this, functions declared __async are restricted.
 
@@ -444,7 +460,7 @@ let hoge2 = new Hoge( workList );
 #+END_SRC
 
 
-Originally, the type of list in Hoge constructor is mutable, so it will cause a compilation error, but if this is not treated as an error, =insert()= will occur at the same time due to the asynchronous processing of multiple Hoges for the same workList, resulting in undefined behavior. Become.
+Originally, the type of list in Hoge constructor is mutable, so it will cause a compilation error, but if this is not treated as an error, =insert()= will occur at the same time due to asynchronous processing of multiple Hoges for the same workList, resulting in undefined behavior. Become.
 
 To guard against this, constructors that extend __Runner are restricted.
 
@@ -453,7 +469,7 @@ To guard against this, constructors that extend __Runner are restricted.
 
 As mentioned above, LuneScript's exclusive control is incomplete.
 
-As some of you may have already noticed, it's easy to cause indeterminate behavior even if you follow the current restrictions.
+As some of you may have already noticed, it is easy to cause indeterminate behavior even if you follow the current restrictions.
 
 For example, list2 accessed from =func()= in the code below is &List<int> so it is immutable and satisfies the restrictions of __async functions.
 #+BEGIN_SRC lns

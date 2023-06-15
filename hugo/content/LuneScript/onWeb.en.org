@@ -9,7 +9,7 @@ A LuneScript environment that runs on a web browser is provided for checking Lun
 
 The following two LuneScript environments are available.
 - Environment using fengari
-- Environment using wasm of golang
+- Environment using wasm of golang (latest)
 
 
 * Environment using fengari
@@ -130,20 +130,20 @@ If you omit maxTime, the default limit is 2 seconds. If you specify more than 10
 
 [[https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/]]
 
-The UI configuration of the link above is the same as when using fengari.
-
-The difference is whether fengari is used to run LuneScript or wasm of golang is used.
+The configuration of the link above differs from the configuration of fengari in the following.
+- Uses wasm of golang instead of fengari to run LuneScript
+- Using monaco instead of textarea for editor
 
 
 ** Technical commentary
 
 Here is a sample code that uses LuneScript's golang wasm.
 #+BEGIN_SRC html
-<script type="text/javascript" src="./lnsc_frontend.js"></script>
+<script type="text/javascript" src="./lnsc_frontend.js?symbol=getLnsFrontEnd"></script>
 <script>
   addEventListener("load", function( event ) {
-    document.__getLnsFrontEnd().then( (frontend) => {
-      let result = await frontend.conv2lua( `print( "hello world" );`, true, 4 );
+    getLnsFrontEnd().then( (frontend) => {
+      let result = await frontend.conv2lua( `print( "hello world" );`, {}, true, 4 );
   
       console.log( result.console );
       console.log( result.execLog );
@@ -156,24 +156,44 @@ Here is a sample code that uses LuneScript's golang wasm.
 
 First, load [[https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/lnsc_frontend.js]].
 
+*At this time, the query of ?symbol=getLnsFrontEnd is specified.*
+
+This query specifies the following symbolic name (getLnsFrontEnd) when registering a function to get the front end.
+: getLnsFrontEnd().then( (frontend) =>
+
+
+Specify the =getLnsFrontEnd= part above in the query.
+
 This script controls golang wasm in LuneScript.
 
-Loading this script adds the =document.__getLnsFrontEnd()= function. Running this function will load the LuneScript golang wasm. lnsc_frontend.js runs LuneScript's golang wasm as a worker.
+*Loading this script will add a function with the symbolic name specified in the query above. If no query is specified, it will be registered with the symbolic name of __getLnsFrontEnd. For convenience, the symbol name __getLnsFrontEnd is used here for explanation.*
 
-=document.__getLnsFrontEnd()= is an async function. When done, the LuneScript frontend object is returned.
+Running this function will load the LuneScript golang wasm. lnsc_frontend.js runs LuneScript's golang wasm as a worker.
+
+=__getLnsFrontEnd()= is an async function. When done, the LuneScript frontend object is returned.
 
 This frontend object has the following methods.
-: frontend.conv2lua( lnsCode, execLua, timeoutSec )
+- async conv2lua( lnsCode, execLua, timeoutSec )
+- async getIndent( lnsCode, targetLineNo, endLineNo )
+- async complete( lnsCode, name2code, lineNo, column )
+- async diag( lnsCode, name2code )
+- async runLnsc( name2code, args )
 
+
+*** async conv2lua( lnsCode, name2code, andExec, timeoutSec )
 
 This method transcompiles from the given LuneScript to Lua.
 
 Each argument is
 - lnsCode
-  - LuneScript to be transcompiled
+  - LuneScript code to be transcompiled
+- name2code
+  - Module information loading from lnsCode.
+  - An Object from a pathname to a module source code string.
 - execLua 
   - A bool for whether to run Lua after transcompiling.
-  - true to run
+  - true to run;
+  - If lnsCode imports another module, it currently does not work properly.
 - timeoutSec
   - Processing wait timeout (seconds) from transcompilation to execution.
   - If the process does not finish within the specified time, it will be forced to stop.
@@ -185,3 +205,113 @@ This method returns an object with the following members.
   - Console output when transpiling (warning and error information)
 - execLog
   - console output when running lua code
+  - Disabled if false is specified for execLog
+
+
+*** async getIndent( lnsCode, targetLineNo, endLineNo )
+
+This method returns the indentation information for the specified line of the specified LuneScript code.
+
+Each argument is
+- lnsCode
+  - LuneScript code to be transcompiled
+  - Add the string =" ___LNS___"= (with a leading space) to the end of endLineNo.
+- targetLineNo
+  - Start line to get indent amount (starts with 1 )
+- endLineNo
+  - end line to get indent amount (starts with 1 )
+  - When calculating only one line, set targetLineNo and endLineNo to the same value.
+
+This method returns an object like this:
+: {"indent": {"lines": [
+:      {"info": {"column": 7,"lineNo": 255}},
+:      {"info": {"column": 10,"lineNo": 256}},
+:      {"info": {"column": 10,"lineNo": 257}}]}}
+
+
+where each item indicates:
+- info 
+  - Indicates the amount to indent the line between targetLineNo and endLineNo
+- lineNo 
+  - Target line number (starts with 1 )
+- column
+  - Indent amount
+
+
+*** async complete( lnsCode, name2code, lineNo, column )
+
+This method returns completion information for the specified position in the specified LuneScript code.
+
+Each argument is
+- lnsCode
+  - LuneScript code to be transcompiled.
+  - Add the string ="lune"= to the complement position.
+- name2code
+  - Module information loading from lnsCode.
+  - An Object from a pathname to a module source code string.
+- lineNo
+  - line number (starting with 1 ) at which to do completion
+- column
+  - column (starting with 1 ) at the position to do completion
+
+As a prerequisite, the process up to lineNo of the target lnsCode must be built normally.
+
+This method returns an object like this:
+: { "complete": {"lunescript": {
+:     "prefix": "pr",
+:     "candidateList": [
+:         {"candidate": {"type": "SymbolKind.Fun","displayTxt": "print(&...)"}}
+:     ]}}}
+
+
+where each item indicates:
+- prefix 
+  - Indicates the string from which completion is based.
+  - For example, if ="print"= is detected as a candidate to complement ="pr"=, prefix will contain ="pr"=
+- candidate
+  - Shows completion candidate information
+- type
+  - Indicates the type of symbol
+- displayTxt
+  - indicates the string to complete
+
+
+*** async diag( lnsCode, name2code )
+
+This method retrieves build error information.
+
+Each argument is
+- lnsCode
+  - LuneScript code to be transcompiled.
+- name2code
+  - Module information loading from lnsCode.
+  - An Object from a pathname to a module source code string.
+
+This method returns an object like this:
+: { "console" : "" }
+
+
+where each item indicates:
+- console 
+  - lnsc build error message
+
+
+*** async runLnsc( name2code, args )
+
+This method runs lnsc with command line options args.
+
+This method accepts arbitrary command line options.
+
+Each argument is
+- name2code
+  - Module information loading from lnsCode.
+  - An Object from a pathname to a module source code string.
+- args
+  - String array of command line options
+This method returns an object like this:
+: { "console" : "" }
+
+
+where each item indicates:
+- console 
+  - console output of lnsc

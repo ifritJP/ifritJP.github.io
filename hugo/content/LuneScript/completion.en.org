@@ -23,11 +23,23 @@ Lua's transcompiler LuneScript provides a completion function at the compiler le
 
 Here, I will introduce modern development support that can be used when coding LuneScript.
 
-Specifically, there are three functions:
+Specifically:
+- auto indent
 - Code completion feature
 - Check type information at cursor position
 - Syntax error checking function
 - subfile-aware search
+
+
+* auto indent
+
+Auto-indent is the most basic support feature when coding.
+
+LuneScript provides a formatter that does auto-indentation.
+
+In the emacs environment, auto-indent can be used simply by setting the lns-mode shown below.
+
+Environments other than emacs are currently not supported. However, the main functionality of auto-indent is handled by an external tool formatter written in LuneScript. emacs just uses the amount of indentation it gets with that formatter. Therefore, you can use the auto indent function even in other environments by creating a linkage part with formatter.
 
 
 * Code completion feature
@@ -56,7 +68,7 @@ let test = new Test( 1 );
 #+END_SRC
 
 
-Completion for the fields of test can be done like this:
+You can do completion for the fields of test like this:
 
 [[https://ifritjp.github.io/doc/LuneScript/comp1.gif]]
 
@@ -131,12 +143,12 @@ This is a cumbersome operation.
 
 This troublesome operation is automatically performed at the time of searching.
 
-Specifically, if you can't find it by searching with owner.lns, then switch to sub1.lns and search. If not found in sub1.lns, then switch to sub2.lns and search. ... to do this automatically.
+Specifically, if you cannot find it by searching with owner.lns, then switch to sub1.lns and search. If not found in sub1.lns, then switch to sub2.lns and search. ... to do this automatically.
 
 
 * setting
 
-emacs settings.
+This is the lns-mode setting for emacs.
 #+BEGIN_SRC lisp
 (require 'lns-conf)
 ;;(require 'lns-flymake)
@@ -155,6 +167,27 @@ Select either code completion or syntax check according to your environment.
   - company-mode
   - auto-complete
 LuneScript's flymake and auto-complete support is not maintained. We recommend using flycheck, company-mode.
+
+
+** Faster auto-indent
+
+If you just get it from github, the auto-indenting process will work with the script version of the formatter. The scripted version of the formatter is slow and can take a long time to process large source files.
+
+To speed this up, build a Go version of the formatter.
+
+To build the Go version, run the following against the project you got from github.
+: $ cd tools/formatter
+: $ make build-go
+
+
+
+*** customization
+
+You can change the auto indent settings with the following setting items.
+- lns-get-formatter-path
+  - Register a function that returns the path of the formatter.
+- lns-proj-info-check-useing-indent-command
+  - Register a function that returns whether to use the formatter.
 
 
 * project
@@ -188,7 +221,7 @@ proj/foo/bar/module1.lsn
 
 This function has been confirmed to work on emacs. By the way, code completion corresponds to company-mode, auto-complete, syntax error check corresponds to flymake, flycheck.
 
-By default, LuneScript provides settings for emacs, but emacs does only front-end control, and all back-end is done by LuneScript.
+By default, LuneScript provides settings for emacs, but emacs does only frontend control, and LuneScript does all the backend.
 
 In other words, porting to environments other than emacs is quite possible. However, since I myself am an emacs user, I develop emacs with the highest priority.
 

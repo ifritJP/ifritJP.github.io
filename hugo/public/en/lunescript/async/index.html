@@ -44,7 +44,7 @@ __Runner interface To do asynchronous processing in LuneScript, implement the __
 The __Runner interface is of type: __async is discussed later.
 // @lnsFront: skip pub interface __Runner { pub fn run() __async mut; } By implementing this interface, you can take advantage of the new built-in functions __run(), __join().">
 
-<meta itemprop="wordCount" content="2064">
+<meta itemprop="wordCount" content="2135">
 <meta itemprop="keywords" content="" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
@@ -192,14 +192,26 @@ Constructor arguments for classes that extend __Runner are restricted to the fol
 <ul>
 <li>int, real, str, bool, enum </li>
 <li>immutable types</li>
+<li>
+<p>An object of a class that satisfies the following conditions (from v1.6.0)</p>
+<ul>
+<li>final, has no public members, and all public methods are <code class="verbatim">__noasyc</code></li>
+</ul>
+</li>
 </ul>
 <p>In other words, the following cases will result in an error.</p>
 <div class="src src-lns">
 <pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: error
 class Test {
+   pub fn func() __async {
+   }
+}
+final class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:Test, list:List&lt;int&gt; ) __async { // error
+   pub fn __init( test:Test, list:List&lt;int&gt;, foo:Foo ) __async { // error
    }
    pub fn run() __async mut {
    }
@@ -209,12 +221,20 @@ class Hoge extend (__Runner) {
 The error is because the arguments test and list are mutable types.</p>
 <p>
 You need to declare it as immutable like this:</p>
+<p>
+In addition, foo can be passed as mutable because all methods are __noasync.</p>
 <div class="src src-lns">
 <pre tabindex="0"><code class="language-lns" data-lang="lns">// @lnsFront: ok
 class Test {
+   pub fn func() __async {
+   }
+}
+final class Foo {
+   pub fn func() __noasync {
+   }
 }
 class Hoge extend (__Runner) {
-   pub fn __init( test:&amp;Test, list:&amp;List&lt;int&gt; ) __async { // ok
+   pub fn __init( test:&amp;Test, list:&amp;List&lt;int&gt;, foo:Foo ) __async { // ok
    }
    pub fn run() __async mut {
    }
@@ -525,7 +545,7 @@ default to __async
 <p>
 A function that declares nothing is __noasync.</p>
 <p>
-We provide a way to make this default to __async.</p>
+We provide a way to make this default to __async .</p>
 <pre class="example">
 _lune_control default_async_all
 </pre>
@@ -574,7 +594,7 @@ class Test {
 }</code></pre>
 </div>
 <p>
-For example, the above access to list from <code class="verbatim">func()</code> would originally result in a compilation error, but if this is not considered an error, while executing the <code class="verbatim">func()</code> method, if the value of list is updated in another thread, list will reference and modification occur simultaneously, resulting in undefined behavior.</p>
+For example, the above access to list from <code class="verbatim">func()</code> would originally result in a compile error, but if this is not considered an error, while executing the <code class="verbatim">func()</code> method, if another thread updates the value of list, list will reference and modification occur simultaneously, resulting in undefined behavior.</p>
 <p>
 To guard against this, functions declared __async are restricted.</p>
 <p>
@@ -598,7 +618,7 @@ let hoge1 = new Hoge( workList );
 let hoge2 = new Hoge( workList );</code></pre>
 </div>
 <p>
-Originally, the type of list in Hoge constructor is mutable, so it will cause a compilation error, but if this is not treated as an error, <code class="verbatim">insert()</code> will occur at the same time due to the asynchronous processing of multiple Hoges for the same workList, resulting in undefined behavior. Become.</p>
+Originally, the type of list in Hoge constructor is mutable, so it will cause a compilation error, but if this is not treated as an error, <code class="verbatim">insert()</code> will occur at the same time due to asynchronous processing of multiple Hoges for the same workList, resulting in undefined behavior. Become.</p>
 <p>
 To guard against this, constructors that extend __Runner are restricted.</p>
 <div id="outline-container-headline-18" class="outline-3">
@@ -609,7 +629,7 @@ imperfect restriction
 <p>
 As mentioned above, LuneScript&#39;s exclusive control is incomplete.</p>
 <p>
-As some of you may have already noticed, it&#39;s easy to cause indeterminate behavior even if you follow the current restrictions.</p>
+As some of you may have already noticed, it is easy to cause indeterminate behavior even if you follow the current restrictions.</p>
 <p>
 For example, list2 accessed from <code class="verbatim">func()</code> in the code below is &amp;List&lt;int&gt; so it is immutable and satisfies the restrictions of __async functions.</p>
 <div class="src src-lns">
