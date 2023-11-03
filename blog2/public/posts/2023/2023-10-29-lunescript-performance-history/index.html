@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        LuneScript のソースコード規模とビルド時間の推移 - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="LuneScript のソースコード規模まとめをやったのが、3年前の 2020/10/1。 ../../2020/2020-10-01-lunescript-codesize/ 3年経ったのでそろそろ振り返りをやっても良い頃だろう、ということで、 今" />
+    <meta name="generator" content="Hugo 0.118.2 with theme pure" />
+    <title>LuneScript のソースコード規模とビルド時間の推移 - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="LuneScript のソースコード規模とビルド時間の推移" />
+<meta property="og:description" content="LuneScript のソースコード規模まとめをやったのが、3年前の 2020/10/1。 ../../2020/2020-10-01-lunescript-codesize/ 3年経ったのでそろそろ振り返りをやっても良い頃だろう、ということで、 今" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-29-lunescript-performance-history/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-10-29T00:00:00+00:00" />
+<meta property="article:modified_time" content="2023-10-29T00:00:00+00:00" />
+<meta itemprop="name" content="LuneScript のソースコード規模とビルド時間の推移">
+<meta itemprop="description" content="LuneScript のソースコード規模まとめをやったのが、3年前の 2020/10/1。 ../../2020/2020-10-01-lunescript-codesize/ 3年経ったのでそろそろ振り返りをやっても良い頃だろう、ということで、 今"><meta itemprop="datePublished" content="2023-10-29T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2023-10-29T00:00:00+00:00" />
+<meta itemprop="wordCount" content="2119">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LuneScript のソースコード規模とビルド時間の推移"/>
+<meta name="twitter:description" content="LuneScript のソースコード規模まとめをやったのが、3年前の 2020/10/1。 ../../2020/2020-10-01-lunescript-codesize/ 3年経ったのでそろそろ振り返りをやっても良い頃だろう、ということで、 今"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-11-03-lunescript-selfhost-thread/" class="title">LuneScript セルフホストビルド時の go スレッド状態</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-10-31 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-31</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-29-lunescript-performance-history/" class="title">LuneScript のソースコード規模とビルド時間の推移</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-10-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-23-pc9801-os-v/" class="title">PC9801-OS/V という PC9801 シリーズ向けの OS</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-10-23 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-23</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-09-30-security/" class="title">お金にまつわる話し</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-09-30 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-09-30</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-09-02-microsoft_account_birthday/" class="title">Microsoft アカウントの生年月日設定</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-09-02 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-09-02</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2023/2023-10-29-lunescript-performance-history/"
+    >LuneScript のソースコード規模とビルド時間の推移</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-29-lunescript-performance-history/" class="article-date">
+  <time datetime="2023-10-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-29</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2023/2023-10-29-lunescript-performance-history/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">2119</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">5 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+LuneScript のソースコード規模まとめをやったのが、3年前の 2020/10/1。</p>
+<p>
+<a href="../../2020/2020-10-01-lunescript-codesize/">../../2020/2020-10-01-lunescript-codesize/</a></p>
+<p>
+3年経ったのでそろそろ振り返りをやっても良い頃だろう、ということで、
+今回はソースコード規模とついでにビルド時間の推移についてのネタ。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+ソースコード規模とビルド時間の推移
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+以下は、 2020/11/8 から現在までのソースコード規模とビルド時間の推移を示す図である。</p>
+<p>
+<img src="../perform_history.svg" alt="../perform_history.svg" title="../perform_history.svg" /></p>
+<p>
+このグラフは、以下の 4 つの値の推移を表わしている。</p>
+<ul>
+<li>
+<p>セルフホストビルドの実時間</p>
+<ul>
+<li>.lns から .lua, .go へのトランスコンパイルに掛った実時間。</li>
+</ul>
+</li>
+<li>
+<p>セルフホストビルドのユーザCPU時間</p>
+<ul>
+<li>.lns から .lua, .go へのトランスコンパイルに掛ったユーザCPU時間。</li>
+<li>トランスコンパイルによって、CPU をどれだけ使ったかを示す。</li>
+<li>LuneScript のビルドは並列処理をしている分、実時間よりも多くユーザ CPU 時間が掛る。</li>
+</ul>
+</li>
+<li>
+<p>LuneScript の .lns のソースコードライン数</p>
+<ul>
+<li>コメント行も含むソースコードの行数</li>
+</ul>
+</li>
+<li>
+<p>セルフホストビルドにおいて、1秒間に処理した行数</p>
+<ul>
+<li><code class="verbatim">ソースコードライン数 / 実時間</code> の値</li>
+</ul>
+</li>
+</ul>
+<p>図の左の Y 軸が時間を示し、図の右の Y 軸が行数を示している。</p>
+<p>
+なお、ビルド時間に関しては、かなりの誤差を含んでいる。
+複数回実行して平均を取っているが、実行時間が 1 秒前後でしかないので、
+100msec の誤差が入っても 10% 違うことになる。</p>
+<p>
+もっと規模の大きいプロジェクトで計測できれば良いのだが、
+残念ながら LuneScript のプロジェクトで一番大きい規模は LuneScript 自身であり、
+これ以上の大きい規模のものはないため、これは割り切るしかない。</p>
+<p>
+よって、ビルド時間に関しては、だいたいの傾向を見ていく。</p>
+<p>
+また、3年前のソースコード規模のグラフと比べると、
+だいぶゴチャついていて分かり難いと思うが、
+それぞれの値について以降で説明していく。</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+セルフホストビルドの実時間
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+まず、セルフホストビルドの実時間から見ていく。
+2020/11 と現在を比べると約 1/4 に短縮できているのが分かる。</p>
+<p>
+特に 2021/5 から 2021/7 にかけて短期間に短縮している。
+逆に言えば、それ以降はほとんど変っていないとも言える。</p>
+<p>
+2021/7 以降も改善は続けているが、思った程の効果が出ていないのが良く分かる。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+LuneScript の .lns のソースコードライン数
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+ソースコードライン数の推移は特徴的な変化点(2021/5 辺りと 2022/8 辺り)が 2 つある。</p>
+<p>
+これは何かというと、次の通り。</p>
+<ul>
+<li>
+<p>2021/5</p>
+<ul>
+<li>実験的に作っていた C 言語へのトランスコンパイル用ソースを削除</li>
+</ul>
+</li>
+<li>
+<p>2022/8</p>
+<ul>
+<li>実験的に python へのトランスコンパイル用ソースを追加</li>
+</ul>
+</li>
+</ul>
+<p>ソースコードの削除でコード量が減り、ソースコードの追加でコード量が増えている。</p>
+<p>
+それ以外は、不具合修正や機能追加などで微増している。</p>
+<p>
+大規模な設計変更をしない限りは、今後も微増が続いていくだろう。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+セルフホストビルドのユーザCPU時間
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+ユーザ時間は、ほぼ LuneScript のソースコードライン数に比例して推移している。
+セルフホストは、LuneScript のソースコードを全て読み込み、
+解析し、別の言語への変換を行なうので、ソースコードの行数が増えれば
+それを処理しているユーザCPU時間が増えるのは当然の結果と言えるだろう。</p>
+<p>
+ここで注目してもらいたいのは、
+ユーザCPU時間が増えても実時間はほとんど変化が無い、ということ。</p>
+<p>
+それだけ頑張って並列化して、実時間に影響が出ないようにしている。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+セルフホストビルドにおいて、1秒間に処理した行数
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+最後がセルフホストビルドにおいて、1秒間に処理した行数。</p>
+<p>
+実時間だけ見ていると、 2021/7 以降ほとんど全く改善されていないように見えるが、
+この値の推移を見ると分かるにように、僅かではあるが改善している。</p>
+<p>
+実時間に表われ難いのは、それらが細かい改善で、
+その改善のために追加したコード量と、
+それによって改善された処理時間がほとんど同じになってしまっているからである。</p>
+<p>
+だた、これはセルフホストビルドの結果だからであって、
+他のプロジェクトであれば、普通にビルド時間が短縮されているはずだ。</p>
+<p>
+そのための指標が、この値である。</p>
+<p>
+この値は、単位時間でどの程度処理したか？を表わすので、
+同じプロジェクトに対して、 LuneScript のバージョンを変えてビルドしたら、
+どの程度処理できるか、をこのグラフから推測できる。</p>
+<p>
+2020/11 から現在までで、5倍強の量を処理できるようになっている。</p>
+<p>
+なお、この値はビルド対象の依存関係に大きく影響を受ける。
+最悪なケースは、巨大な 1 ファイルで構成されて、かつ1つの関数が大きい場合で、
+次に悪いのがモジュールの参照構造が片方向リストのように数珠繋ぎになっている場合である。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
+<h2 id="headline-6">
+まとめ
+</h2>
+<div id="outline-text-headline-6" class="outline-text-2">
+<p>
+今回はソースコード規模とビルド時間について振り返りを行なった。</p>
+<p>
+ビルド時間の改善については、
+2021/5 から 2021/7 にかけてかなり改善したが、
+それ以降は小さな改善に留まっている。</p>
+<p>
+これは、改善するためのネタが無い、というのが一番の要因である。</p>
+<p>
+これ以上の改善は、根本の設計からの見直しが必要になると思われる。</p>
+<p>
+ここで難しいのが、
+根本の設計からの見直しをするとかなり時間がかかることが予想される、ということ。
+しかも、それによって確実に改善できるならまだしも、
+ほとんど変らない、むしろ悪化することも考えられる。
+そうすると、どうしても慎重にならざるをえない。</p>
+<p>
+そんなこんなで、速度改善に関しては厳しい状態が続いている。
+まぁ、これはライフワークみたいなモノだと思って、今後も気長にやっていこうと思う。</p>
+</div>
+</div>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-23-pc9801-os-v/" title="PC9801-OS/V という PC9801 シリーズ向けの OS"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            <li class="next">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-11-03-lunescript-selfhost-thread/"
+                    title="LuneScript セルフホストビルド時の go スレッド状態"><span>&nbsp;&nbsp;</span><i
+                        class="icon icon-angle-right" aria-hidden="true"></i></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2023
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.e4989ab4dc212027af8773861b05b6bc333a1217f6b0a1b3377a3a3dbd454483.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.738a460bf4317fac61717f1bca393e53d00973db9754d9f0a81c7312d5874840.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.716b0c6a00b68ccc31a2b65345f3412f4246ffa94a90f8e25d525528b4504f9937880692bbe619023233caba5d0a17ebe23d7cfb57cd3a88f23ea337ad5e4d00.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>

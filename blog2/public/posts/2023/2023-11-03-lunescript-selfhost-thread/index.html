@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <title>
+        LuneScript セルフホストビルド時の go スレッド状態 - hoge blog
+      </title>
+        <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, minimal-ui">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="Cache-Control" content="no-transform" />
+    <meta http-equiv="Cache-Control" content="no-siteapp" />
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="format-detection" content="telephone=no,email=no,adress=no">
+    
+    <meta name="theme-color" content="#000000" />
+    
+    <meta http-equiv="window-target" content="_top" />
+    
+    
+    <meta name="description" content="LuneScript セルフホストビルド時の go スレッドの状態について調べてみました。 グラフの説明 次の図は、 go ランタイムのトレース機能(GODEBUG=sched" />
+    <meta name="generator" content="Hugo 0.118.2 with theme pure" />
+    <title>LuneScript セルフホストビルド時の go スレッド状態 - hoge blog</title>
+    
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/style.min.c58e22f1aa6179cd5cb60b9e08421a2b9a9c9fe9352d095e051b51aae209e5c0.css">
+
+    
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/custom.css" async>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.css" async>
+    <link rel="stylesheet" href="https://ifritjp.github.io/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/highlight_lns.js"></script>
+    
+    <meta property="og:title" content="LuneScript セルフホストビルド時の go スレッド状態" />
+<meta property="og:description" content="LuneScript セルフホストビルド時の go スレッドの状態について調べてみました。 グラフの説明 次の図は、 go ランタイムのトレース機能(GODEBUG=sched" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2023/2023-11-03-lunescript-selfhost-thread/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2023-10-31T00:00:00+00:00" />
+<meta property="article:modified_time" content="2023-10-31T00:00:00+00:00" />
+<meta itemprop="name" content="LuneScript セルフホストビルド時の go スレッド状態">
+<meta itemprop="description" content="LuneScript セルフホストビルド時の go スレッドの状態について調べてみました。 グラフの説明 次の図は、 go ランタイムのトレース機能(GODEBUG=sched"><meta itemprop="datePublished" content="2023-10-31T00:00:00+00:00" />
+<meta itemprop="dateModified" content="2023-10-31T00:00:00+00:00" />
+<meta itemprop="wordCount" content="1884">
+<meta itemprop="keywords" content="" /><meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="LuneScript セルフホストビルド時の go スレッド状態"/>
+<meta name="twitter:description" content="LuneScript セルフホストビルド時の go スレッドの状態について調べてみました。 グラフの説明 次の図は、 go ランタイムのトレース機能(GODEBUG=sched"/>
+
+    <!--[if lte IE 9]>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/classlist/1.1.20170427/classList.min.js"></script>
+      <![endif]-->
+
+    <!--[if lt IE 9]>
+        <script src="https://cdn.jsdelivr.net/npm/html5shiv@3.7.3/dist/html5shiv.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/respond.js@1.4.2/dest/respond.min.js"></script>
+    <![endif]-->
+    <script src="https://unpkg.com/current-device/umd/current-device.min.js"></script>
+    <script >
+      window.addEventListener('load', function(){
+
+
+      if ( !device.mobile() && location.href.indexOf( "/documents/" ) != location.href.length - "/documents/".length ) {
+        $('#collapseToc').collapse( 'show' );
+      }
+    });
+    </script>
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+
+  </head>
+
+  
+  
+
+  <body class="main-center theme-black" itemscope itemtype="http://schema.org/WebPage"><header class="header" itemscope itemtype="http://schema.org/WPHeader">
+    <div class="slimContent">
+      <div class="navbar-header">
+        <div class="profile-block text-center">
+          <a id="avatar" href="https://ifritjp.github.io/documents/" target="_blank">
+            <img class="img-circle img-rotate" src="https://ifritjp.github.io/blog2/public/avatar.png" width="200" height="200">
+          </a>
+          <h2 id="name" class="hidden-xs hidden-sm">ifritJP</h2>
+          <h3 id="title" class="hidden-xs hidden-sm hidden-md">生涯現役エンジニア</h3>
+          <small id="location" class="text-muted hidden-xs hidden-sm"><i class="icon icon-map-marker"></i>Japan</small>
+        </div><div class="search" id="search-form-wrap">
+    <form class="search-form sidebar-form">
+        <div class="input-group">
+            <input type="text" class="search-form-input form-control" placeholder="" />
+            <span class="input-group-btn">
+                <button type="submit" class="search-form-submit btn btn-flat" onclick="return false;"><i
+                        class="icon icon-search"></i></button>
+            </span>
+        </div>
+        <div class="ins-search">
+            <div class="ins-search-mask"></div>
+            <div class="ins-search-container">
+                <div class="ins-input-wrapper">
+                    <input type="text" class="ins-search-input" placeholder=""
+                        x-webkit-speech />
+                    <button type="button" class="close ins-close ins-selectable" data-dismiss="modal"
+                        aria-label="Close"><span aria-hidden="true">×</span></button>
+                </div>
+                <div class="ins-section-wrapper">
+                    <div class="ins-section-container"></div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+        <button class="navbar-toggle collapsed" type="button" data-toggle="collapse" data-target="#main-navbar" aria-controls="main-navbar" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <nav id="main-navbar" class="collapse navbar-collapse" itemscope itemtype="http://schema.org/SiteNavigationElement" role="navigation">
+        <ul class="nav navbar-nav main-nav">
+            <li class="menu-item menu-item-home">
+                <a href="/blog2/public/">
+                    <i class="icon icon-home-fill"></i>
+                  <span class="menu-title">Home</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-archives">
+                <a href="/blog2/public/posts/">
+                    <i class="icon icon-archives-fill"></i>
+                  <span class="menu-title">Archives</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-tags">
+                <a href="/blog2/public/tags/">
+                    <i class="icon icon-tags"></i>
+                  <span class="menu-title">Tags</span>
+                </a>
+            </li>
+            <li class="menu-item menu-item-about">
+                <a href="https://ifritjp.github.io/documents/">
+                    <i class="icon icon-cup-fill"></i>
+                  <span class="menu-title">公開技術情報</span>
+                </a>
+            </li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+<aside class="sidebar" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    
+      <div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <div id="board">
+            <div class="content"><ul><li><a href="https://ifritjp.github.io/documents/">公開技術情報</a></li></ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="category-list">
+        </ul>
+    </div>
+</div>
+      <div class="widget">
+    <h3 class="widget-title"> </h3>
+    <div class="widget-body">
+        <ul class="tag-list">
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/emacs/" class="tag-list-link">emacs</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/etc/" class="tag-list-link">etc</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/jekyll/" class="tag-list-link">jekyll</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/lua/" class="tag-list-link">lua</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/mew/" class="tag-list-link">mew</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/org-mode/" class="tag-list-link">org-mode</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/outlook/" class="tag-list-link">outlook</a><span
+                    class="tag-list-count">1</span></li>
+            
+            
+            <li class="tag-list-item"><a href="https://ifritjp.github.io/blog2/public/tags/proglang/" class="tag-list-link">proglang</a><span
+                    class="tag-list-count">2</span></li>
+            
+        </ul>
+
+    </div>
+</div>
+      
+<div class="widget">
+    <h3 class="widget-title"></h3>
+    <div class="widget-body">
+        <ul class="recent-post-list list-unstyled no-thumbnail">
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-11-03-lunescript-selfhost-thread/" class="title">LuneScript セルフホストビルド時の go スレッド状態</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-10-31 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-31</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-29-lunescript-performance-history/" class="title">LuneScript のソースコード規模とビルド時間の推移</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-10-29 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-29</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-23-pc9801-os-v/" class="title">PC9801-OS/V という PC9801 シリーズ向けの OS</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-10-23 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-23</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-09-30-security/" class="title">お金にまつわる話し</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-09-30 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-09-30</time>
+                    </p>
+                </div>
+            </li>
+            <li>
+                <div class="item-inner">
+                    <p class="item-title">
+                        <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-09-02-microsoft_account_birthday/" class="title">Microsoft アカウントの生年月日設定</a>
+                    </p>
+                    <p class="item-date">
+                        <time datetime="2023-09-02 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-09-02</time>
+                    </p>
+                </div>
+            </li>
+        </ul>
+    </div>
+</div>
+  </div>
+</aside>
+
+    
+    
+<aside class="sidebar sidebar-toc collapse" id="collapseToc" itemscope itemtype="http://schema.org/WPSideBar">
+  <div class="slimContent">
+    <h4 class="toc-title"></h4>
+    <nav id="toc" class="js-toc toc">
+
+    </nav>
+  </div>
+</aside>
+<main class="main" role="main"><div class="content">
+  <article id="-" class="article article-type-" itemscope
+    itemtype="http://schema.org/BlogPosting">
+    
+    <div class="article-header">
+      <h1 itemprop="name">
+  <a
+    class="article-title"
+    href="/blog2/public/posts/2023/2023-11-03-lunescript-selfhost-thread/"
+    >LuneScript セルフホストビルド時の go スレッド状態</a
+  >
+</h1>
+
+      <div class="article-meta">
+        
+<span class="article-date">
+  <i class="icon icon-calendar-check"></i>&nbsp;
+<a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-11-03-lunescript-selfhost-thread/" class="article-date">
+  <time datetime="2023-10-31 00:00:00 &#43;0000 UTC" itemprop="datePublished">2023-10-31</time>
+</a>
+</span>
+
+
+        <span class="post-comment"><i class="icon icon-comment"></i>&nbsp;<a href="/blog2/public/posts/2023/2023-11-03-lunescript-selfhost-thread/#comments"
+            class="article-comment-link"></a></span>
+		<span class="post-wordcount hidden-xs" itemprop="wordCount">1884</span>
+		<span class="post-readcount hidden-xs" itemprop="timeRequired">4 </span>
+      </div>
+    </div>
+    <div class="article-entry marked-body js-toc-content" itemprop="articleBody">
+      
+<p>
+LuneScript セルフホストビルド時の go スレッドの状態について調べてみました。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+グラフの説明
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+次の図は、 go ランタイムのトレース機能(GODEBUG=schedtrace=5)を使って取得した
+go のスレッドスケジューリング情報と、
+セルフホストビルドのモジュールの Meta 情報解析進捗状態を示したグラフです。</p>
+<p>
+<img src="../go_schedule.svg" alt="../go_schedule.svg" title="../go_schedule.svg" /></p>
+<p>
+それぞれの値は次の通りです。</p>
+<ul>
+<li>
+<p>ready meta</p>
+<ul>
+<li>セルフホストビルドにおける Meta 情報解析が終了したモジュール数</li>
+</ul>
+</li>
+<li>
+<p>threads</p>
+<ul>
+<li>go のスレッド数</li>
+</ul>
+</li>
+<li>
+<p>active threads</p>
+<ul>
+<li>go のスレッドの内、待ちがなく実行中のスレッド数</li>
+</ul>
+</li>
+<li>
+<p>runqueue</p>
+<ul>
+<li>スレッドが空くのを待つ go-routine 数</li>
+</ul>
+</li>
+</ul>
+<p>X 軸は時間を示し、それぞれの値の時間ごとの推移を表します。</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+ready meta(セルフホストビルドにおける Meta 情報解析が終了したモジュール数)
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+ready meta は、Meta 情報解析が終了したセルフホストのモジュール数なので、
+時間経過するごとに増加していきます。</p>
+<p>
+モジュール毎に規模が異なり、それによって処理にかかる時間も異なります。</p>
+<p>
+グラフの角度が低く横に長いところが、
+Meta 情報解析処理に多くの時間が掛っているモジュールの処理であることが分かります。</p>
+<p>
+なお、Meta 情報解析終了後は .lns から .lua 等への言語変換処理を実行しますが、
+今回の図には入れていません。</p>
+<p>
+ready meta の処理が終了した後も threads 等の処理が続いているのは、
+言語変換処理が続いているためです。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+threads (go のスレッド数)
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+threads を見ると、起動してからすぐにスレッド数が増加し、
+一定値まで増えたところで変化しなくなります。</p>
+<p>
+LuneScript は、ビルド対象として与えられたパスの .lns ファイルを処理する
+非同期処理を立ち上げます。
+セルフホストの場合、全 .lns ファイルパスをビルド対象として与えるので、
+起動時に一気に非同期処理が増えます。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+active threads (go のスレッドの内、待ちがなく実行中のスレッド数)
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+active threads はかなり増減していることが分かります。
+ビルド中に出来るだけ全てのスレッドを使い切ることが理想ですが、
+残念ならがそうはなっていません。</p>
+<p>
+理由は単純で、 LuneScript を構成する複数のモジュールには依存関係があり、
+依存先のモジュールの Meta 情報解析が終らないと、
+依存しているモジュールの解析を進められないためです。</p>
+<p>
+ready meta のグラフの角度が低く横に長いところと、
+active threads のグラフの値が低く落ちているところが一致していることが分かります。</p>
+<p>
+これは、
+あるモジュール A の Meta 情報解析処理に時間がかかると、
+そのモジュール A に依存している他のモジュール B の処理が
+モジュール A の Meta 情報待ちになって処理が停止し、
+モジュール A の Meta 情報解析処理が終るまではその処理だけが動くことになるためです。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+runqueue (スレッドが空くのを待つ go-routine 数)
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+起動された go routine は、
+実際にスレッドに割り付けられて実行される前にキューに入ります。
+runqueue の値は、そのキューに入っている go routine 数を表わします。</p>
+<p>
+グラフを見ると、わずかに runqueue に変化があることが分かりますが、
+active threads が低い時であれば、
+次の瞬間にはキューに入っている go routine は、
+空いているスレッドに割り当てられて実行されるので問題ありません。</p>
+<p>
+しかし、active threads が上限になっている場合、
+どこかのスレッドが空きになるまで runqueue の go routine は待ちになるため、
+そこでパフォーマンスが落ちることになります。</p>
+<p>
+グラフの後半を見ると、待ちになっていると思われる runqueue を僅かに確認できます。</p>
+<p>
+つまり、その瞬間は CPU のコア数が足りていない、と言えます。</p>
+<p>
+さらには、 コア数の多い CPU を使うことで、改善できることを示唆しています。</p>
+<p>
+ただし、改善できたとしても非常に僅かだということも、グラフを見ると分かります。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
+<h2 id="headline-6">
+まとめ
+</h2>
+<div id="outline-text-headline-6" class="outline-text-2">
+<p>
+モジュールの依存関係がビルド時間に影響することは、
+わざわざこのグラフを見なくても論理的に分っていたことではありました。</p>
+<p>
+では何故今回このグラフを生成したかというと、以下を確認するためです。</p>
+<ul>
+<li>自分の想定した通りに go routine がアクティブになっているのかどうか？</li>
+<li>アクティブになった go routine が、直ぐにスレッドに割り当てられているのかどうか？</li>
+</ul>
+<p>これは、 active threads と runqueue の関係について見ると分かります。</p>
+<p>
+そしてそれらは、ほぼ想定通りだということが分かりました。</p>
+<p>
+少なくとも、 <strong>コア数が影響して実行待ちになっている go routine はほとんどない</strong> ので、
+それが影響してパフォーマンスが悪くなっている、
+<strong>ということはない</strong> ことが分かりました。</p>
+<p>
+ただ、そもそも今の LuneScript の非同期処理数は、
+現状の環境(コア数)に合せて調整してあるので、ある意味で辺り前の結果かもしれません。</p>
+<p>
+現状とは異なる環境で動かした場合、次のことが考えられます。</p>
+<ul>
+<li>いまよりもコア数の少ない環境で実行したら、
+空き待ちになる go routine 数は増えるかもしれない</li>
+<li>いまよりもコア数の多い環境で非同期処理数を上げて実行したら、
+もっと効率よく実行できるかもしれない</li>
+</ul>
+</div>
+</div>
+
+    </div>
+    <div class="article-footer">
+    </div>
+  </article>
+<section id="comments">
+</section>
+
+</div><nav class="bar bar-footer clearfix" data-stick-bottom>
+    <div class="bar-inner">
+        <ul class="pager pull-left">
+            <li class="prev">
+                <a href="https://ifritjp.github.io/blog2/public/posts/2023/2023-10-29-lunescript-performance-history/" title="LuneScript のソースコード規模とビルド時間の推移"><i
+                        class="icon icon-angle-left"
+                        aria-hidden="true"></i><span>&nbsp;&nbsp;</span></a>
+            </li>
+            
+            <li class="toggle-toc">
+                <a class="toggle-btn collapsed" data-toggle="collapse" href="#collapseToc" aria-expanded="false"
+                    title="" role="button">
+                    <span>[&nbsp;</span><span></span>
+                    <i class="text-collapsed icon icon-anchor"></i>
+                    <i class="text-in icon icon-close"></i>
+                    <span>]</span>
+                </a>
+            </li>
+        </ul>
+        <div class="bar-right">
+            <div class="share-component" data-sites="twitter"
+                data-mobile-sites="twitter"></div>
+        </div>
+    </div>
+</nav>
+
+</main><footer class="footer" itemscope itemtype="http://schema.org/WPFooter">
+<ul class="social-links">
+    <li><a href="https://github.com/ifritJP" target="_blank" title="github" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-github"></i></a></li>
+    <li><a href="https://ifritjp.github.io/index.xml" target="_blank" title="rss" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-rss"></i></a></li>
+    <li><a href="https://twitter.com/dwarfjp" target="_blank" title="twitter" data-toggle=tooltip data-placement=top >
+            <i class="icon icon-twitter"></i></a></li>
+</ul>
+  <div class="copyright">
+    &copy;2019  -
+    2023
+    <div class="publishby">
+         <a href="https://github.com/xiaoheiAh" target="_blank"> xiaoheiAh </a><a href="https://github.com/xiaoheiAh/hugo-theme-pure" target="_blank"> pure</a>.
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script>
+    window.jQuery || document.write('<script src="js/jquery.min.js"><\/script>')
+</script>
+
+<script src="https://ifritjp.github.io/blog2/public/js/application.min.e4989ab4dc212027af8773861b05b6bc333a1217f6b0a1b3377a3a3dbd454483.js"></script>
+<script src="https://ifritjp.github.io/blog2/public/js/plugin.min.738a460bf4317fac61717f1bca393e53d00973db9754d9f0a81c7312d5874840.js"></script>
+
+<script>
+    (function (window) {
+        var INSIGHT_CONFIG = {
+            TRANSLATION: {
+                POSTS: '',
+                PAGES: '',
+                CATEGORIES: '',
+                TAGS: '',
+                UNTITLED: '',
+            },
+            ROOT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/',
+            CONTENT_URL: 'https:\/\/ifritjp.github.io\/blog2\/public\/\/searchindex.json ',
+        };
+        window.INSIGHT_CONFIG = INSIGHT_CONFIG;
+    })(window);
+</script>
+<script type="text/javascript" src="https://ifritjp.github.io/blog2/public/js/insight.min.716b0c6a00b68ccc31a2b65345f3412f4246ffa94a90f8e25d525528b4504f9937880692bbe619023233caba5d0a17ebe23d7cfb57cd3a88f23ea337ad5e4d00.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tocbot/4.4.2/tocbot.min.js"></script>
+<script>
+    tocbot.init({
+        
+        tocSelector: '.js-toc',
+        
+        contentSelector: '.js-toc-content',
+        
+        headingSelector: 'h1, h2, h3',
+        
+        hasInnerContainers: true,
+    });
+</script>
+
+
+  </body>
+</html>
