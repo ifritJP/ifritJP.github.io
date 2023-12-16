@@ -1,0 +1,522 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2022-12-20 Tue 13:51 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Golang の WASM (JavaScript の非同期処理 async との連携)</title>
+<meta name="author" content="ifritJP" />
+<meta name="generator" content="Org Mode" />
+<style>
+  #content { max-width: 60em; margin: auto; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #e6e6e6;
+    border-radius: 3px;
+    background-color: #f2f2f2;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: auto;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    top: -8px;
+    right: 12px;
+    padding: 3px;
+    color: #555;
+    background-color: #f2f2f299;
+  }
+  pre.src:hover:before { display: inline; margin-top: 14px;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-authinfo::before { content: 'Authinfo'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .equation-container {
+    display: table;
+    text-align: center;
+    width: 100%;
+  }
+  .equation {
+    vertical-align: middle;
+  }
+  .equation-label {
+    display: table-cell;
+    text-align: right;
+    vertical-align: middle;
+  }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { }
+</style>
+</head>
+<body>
+<div id="content" class="content">
+<h1 class="title">Golang の WASM (JavaScript の非同期処理 async との連携)</h1>
+<div id="table-of-contents" role="doc-toc">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents" role="doc-toc">
+<ul>
+<li><a href="#orgd74ef6c">1. go の wasm の非同期処理</a></li>
+<li><a href="#org56ffa83">2. JavaScript と wasm 間の関数コールは全て同期呼び出し</a>
+<ul>
+<li><a href="#org7bf1b87">2.1. go から js の promise 待ちをする場合</a></li>
+<li><a href="#orgd006f75">2.2. js の async と go の goroutine</a></li>
+</ul>
+</li>
+<li><a href="#org13e6d5d">3. まとめ</a></li>
+</ul>
+</div>
+</div>
+<p>
+go の wasm と、JavaScript の非同期処理との連携についてです。
+</p>
+
+
+<p>
+基本的な go の wasm と JavaScript 間のインタフェースについては、
+以前のネタを確認してください。
+</p>
+
+<p>
+<a href="../2022-09-19-go-wasm">../2022-09-19-go-wasm</a>
+</p>
+
+<div id="outline-container-orgd74ef6c" class="outline-2">
+<h2 id="orgd74ef6c"><span class="section-number-2">1.</span> go の wasm の非同期処理</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+複数の goroutine を利用したプログラムを wasm に変換すると、
+<code>GOMAXPROCS=1</code> を指定した時と同じ動作になります。
+</p>
+
+<p>
+つまり、複数の goroutine を起動させても、
+複数の goroutine が同時に動作することはなく、
+ある瞬間にアクティブになる goroutine は 1 つだけということです。
+</p>
+
+<p>
+これは前回のネタでも書いたことです。
+</p>
+
+<p>
+そして JavaScript と連携する際に、 go にはもう一つ大きな特徴があります。
+</p>
+
+<p>
+<b>全ての gorouine が chan 待ち等でブロックすると、go のランタイムエラーが発生する。</b>
+</p>
+
+<p>
+これは wasm に限らない go の特徴ですが、
+JavaScript との連携する際に注意が必要な特徴です。
+</p>
+</div>
+</div>
+
+<div id="outline-container-org56ffa83" class="outline-2">
+<h2 id="org56ffa83"><span class="section-number-2">2.</span> JavaScript と wasm 間の関数コールは全て同期呼び出し</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+JavaScript は、 async 宣言した関数は自動的に
+Promise ベースの非同期関数として処理されます。
+</p>
+
+<p>
+async 宣言した関数の終了を待つには、
+関数コールする際に await を利用して実行するか、
+Promise の then 等にコールバックを登録する必要があります。
+</p>
+
+<p>
+なお、 go から JavaScript の関数をコールする場合、
+通常の同期呼び出しになり、 await を利用した関数コールはできません。
+</p>
+
+<p>
+つまり、
+<b>go から JavaScript の async 関数をコールし、その async 関数の処理終了を待つには、</b>
+<b>その async 関数の戻り値の Promise を処理する必要がある</b> 、
+ということです。
+</p>
+
+<p>
+具体的な Promise 処理については、以下のサイトの解説を確認してください。
+</p>
+
+<p>
+<a href="https://stackoverflow.com/questions/68426700/how-to-wait-a-js-async-function-from-golang-wasm">https://stackoverflow.com/questions/68426700/how-to-wait-a-js-async-function-from-golang-wasm</a>
+</p>
+
+<p>
+ここでは、上記サイトのコード部分を抜粋しておきます。
+</p>
+
+<div class="org-src-container">
+<pre class="src src-go"><span style="color: #fa8072;">func</span> <span style="color: #ffff00;">await</span>(<span style="color: #adff2f;">awaitable</span> <span style="color: #00ced1;">js.Value</span>) ([]<span style="color: #00ced1;">js.Value</span>, []<span style="color: #00ced1;">js.Value</span>) {
+    <span style="color: #adff2f;">then</span> := <span style="color: #ff69b4;">make</span>(<span style="color: #fa8072;">chan</span> []<span style="color: #00ced1;">js.Value</span>)
+    <span style="color: #fa8072;">defer</span> <span style="color: #ff69b4;">close</span>(then)
+    <span style="color: #adff2f;">thenFunc</span> := js.<span style="color: #ffff00;">FuncOf</span>(<span style="color: #fa8072;">func</span>(<span style="color: #adff2f;">this</span> <span style="color: #00ced1;">js.Value</span>, <span style="color: #adff2f;">args</span> []<span style="color: #00ced1;">js.Value</span>) <span style="color: #fa8072;">interface</span>{} {
+    then &lt;- args
+    <span style="color: #fa8072;">return</span> <span style="color: #7fffd4;">nil</span>
+    })
+    <span style="color: #fa8072;">defer</span> thenFunc.<span style="color: #ffff00;">Release</span>()
+
+    <span style="color: #adff2f;">catch</span> := <span style="color: #ff69b4;">make</span>(<span style="color: #fa8072;">chan</span> []<span style="color: #00ced1;">js.Value</span>)
+    <span style="color: #fa8072;">defer</span> <span style="color: #ff69b4;">close</span>(catch)
+    <span style="color: #adff2f;">catchFunc</span> := js.<span style="color: #ffff00;">FuncOf</span>(<span style="color: #fa8072;">func</span>(<span style="color: #adff2f;">this</span> <span style="color: #00ced1;">js.Value</span>, <span style="color: #adff2f;">args</span> []<span style="color: #00ced1;">js.Value</span>) <span style="color: #fa8072;">interface</span>{} {
+    catch &lt;- args
+    <span style="color: #fa8072;">return</span> <span style="color: #7fffd4;">nil</span>
+    })
+    <span style="color: #fa8072;">defer</span> catchFunc.<span style="color: #ffff00;">Release</span>()
+
+    awaitable.<span style="color: #ffff00;">Call</span>(<span style="color: #00f5ff;">"then"</span>, thenFunc).<span style="color: #ffff00;">Call</span>(<span style="color: #00f5ff;">"catch"</span>, catchFunc)
+
+    <span style="color: #fa8072;">select</span> {
+    <span style="color: #fa8072;">case</span> <span style="color: #adff2f;">result</span> := &lt;-then:
+    <span style="color: #fa8072;">return</span> result, <span style="color: #7fffd4;">nil</span>
+    <span style="color: #fa8072;">case</span> <span style="color: #adff2f;">err</span> := &lt;-catch:
+    <span style="color: #fa8072;">return</span> <span style="color: #7fffd4;">nil</span>, err
+    }
+}
+</pre>
+</div>
+
+
+<p>
+この Promise 処理について、一点注意が必要です。
+</p>
+
+<p>
+それは、以下の go の特徴です。
+</p>
+
+<p>
+<b>『全ての gorouine が chan 待ち等でブロックすると、go のランタイムエラーが発生する。』</b>
+</p>
+
+
+<p>
+上記のコードの通り、Promise 処理を待つには chan を利用して待つ必要があります。
+一方で、 go の特徴から全ての gorouine がブロックすると 
+go がランタイムエラーしてしまいます。
+</p>
+
+<p>
+例えば次のようなケースです。
+</p>
+
+
+<div id="org888834d" class="figure">
+<p><img src="../goroutine_wasm_block.svg" alt="goroutine_wasm_block.svg" class="org-svg" />
+</p>
+</div>
+
+<p>
+このケースでは、次の動作になります。
+</p>
+
+<ul class="org-ul">
+<li>go.run() で実行した go の wasm の処理内で chan 待ちを行ないます。</li>
+<li>これにより、 wasm の処理がそこで停止し、
+js 側には go の wasm の実行を待つ promise が返されます。</li>
+<li>そして、js 側から go の関数を実行します。</li>
+<li>この go の関数から js の async 関数を呼びます。</li>
+<li>そして、その promise を待ちます。</li>
+</ul>
+
+<p>
+こうすると、 go 内で deadlock を検知し、 go の wasm は異常終了します。
+</p>
+
+<p>
+ただ、上記の図だとちょっと伝わり難いと思うので、
+<b>もう少し分かり易くした図</b> が以下です。
+</p>
+
+
+<div id="org6af0670" class="figure">
+<p><img src="../goroutine_wasm_block2.svg" alt="goroutine_wasm_block2.svg" class="org-svg" />
+</p>
+</div>
+
+<p>
+go の wasm を実行する場合、 
+go の main 関数がコールされる前に go の runtime が実行され、
+その runtime 内から同期的に main が実行されるのではなく、
+<b>main 用の goroutine が起動されて、そこで main が実行されます。</b>
+そして、 main 内で chan 待ちをすると、 go runtime が js 側に処理を戻す。
+という形になります。
+</p>
+
+<p>
+そして、その後の js から go 関数の呼び出しは、 
+<b>go runtime 内から直接同期実行されます。</b>
+これによって go runtime 内で chan 待ちすると全ての go routine が待ち状態になり、
+deadlock する、という訳です。
+</p>
+</div>
+
+<div id="outline-container-org7bf1b87" class="outline-3">
+<h3 id="org7bf1b87"><span class="section-number-3">2.1.</span> go から js の promise 待ちをする場合</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+以上を踏まえ、go から js の promise 待ちをする場合に deadlock を回避するには、
+以下が必要になります。
+</p>
+
+<p>
+<b>js から実行される go の関数を同期的に実行するのではなく goroutine を利用する。</b>
+</p>
+
+
+<div id="orge7727af" class="figure">
+<p><img src="../goroutine_wasm_block3.svg" alt="goroutine_wasm_block3.svg" class="org-svg" />
+</p>
+</div>
+
+
+<p>
+上記のように、  go 内から js の promise 待ちをする際は、
+直接 go runtime から実行するのではなく、
+goroutine を起動してその goroutine 内で promise を待ちます。
+</p>
+
+<p>
+これによって、 go が deadlock することなく js の非同期処理と連携を行なうことができます。
+</p>
+
+
+<p>
+js では await を使って async 関数の処理を待つことで、
+await の処理内で他の非同期な js の処理を行なうことが出来ます。
+一方で、
+<b>go の wasm 内の chan 待ちは完全に処理が停止します。</b>
+</p>
+
+<p>
+<b>なので、 js からの関数コールはブロックさせずに、速やかに処理を戻すのが鉄則です。</b>
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgd006f75" class="outline-3">
+<h3 id="orgd006f75"><span class="section-number-3">2.2.</span> js の async と go の goroutine</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+go 内で chan 待ちをする際、
+goroutine を使わずに js の async 関数から go の関数をコールし、
+その go の関数内で chan 待ちをしても結果は同じになるのか気になったので、
+以下のケースを確認しました。
+</p>
+
+
+<div id="orgf618c70" class="figure">
+<p><img src="../goroutine_wasm_block4.svg" alt="goroutine_wasm_block4.svg" class="org-svg" />
+</p>
+</div>
+
+
+<p>
+結果としては、 <b>js の async 関数から go の関数を呼んでも deadlock しました。</b>
+</p>
+
+<p>
+よって、 js からコールさせる go の関数は、
+ブロックさせずに速やかに処理を戻しましょう。
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org13e6d5d" class="outline-2">
+<h2 id="org13e6d5d"><span class="section-number-2">3.</span> まとめ</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+go の wasm 対応はちょっと面倒なイメージがありますが、
+go の標準ライブラリを使ったプログラムをそのままブラウザ上で動かせるという
+メリットは大きいです。
+</p>
+
+<p>
+もちろん「TCP 接続をする」
+などの wasm がそもそもサポートしていない処理は動きません。
+しかし、それでも go のソースを変更せずにそのままビルドが通って
+ wasm のモジュールが生成できる、
+というのは大きな長所です。
+</p>
+
+<p>
+また js で worker を使うよりは制限が少なく非同期処理を組めるのも
+web で go を使うメリットとも言えると思います。
+</p>
+
+<p>
+今回の JS の非同期処理との連携を活用すれば、
+JS や TypeScript でプログラムを組むよりも
+高度な処理を組み易くなる可能性もあると思います。
+</p>
+
+<p>
+とはいえ、go の wasm サイズは「デカ過ぎだろ」とツッコミを入れなければならないですが。。
+</p>
+
+<p>
+以上。
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2022-12-18</p>
+<p class="author">Author: ifritJP</p>
+<p class="date">Created: 2022-12-20 Tue 13:51</p>
+<p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

@@ -1,0 +1,69 @@
+#+TITLE: Wireguard + docker で簡単 VPN 構築
+#+DATE: 2023-09-03
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: VPN
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+[[../../2020/2020-05-29-tunnel/][kptunnel]] を使うことで、異なるネットワーク間の通信を転送することができる。
+
+ただ、 kptunnel は指定した TCP ポートに限って転送するので、
+不特定の通信を転送したい時には kptunnel は向かない。
+
+「不特定の通信を転送する」てコト自体がセキュリティ等を考えるとどうなん？って、
+気もしないでもないが、残念ながらそういうことも必要な時がある。
+
+そんな訳で、今回はwireguard を使って簡単に VPN を実現する方法について説明する。
+
+ネットを検索すると多くのサイトがヒットするが、
+Wireguard + docker で server を構築する記事は良く見掛けるのに対し、
+client を構築する記事はあまり見かけないので、
+今回は client & server 両方を Wireguard + docker で構築する方法について説明する。
+
+* ネットワーク構成
+
+#+BEGIN_SRC plantuml :file wg_network.svg :results silent
+cloud internet
+
+node router1 [
+ルータ1
+IP: aaa.aaa.aaa.aaa
+]
+
+
+frame device1 as "デバイス1" {
+frame docker1 {
+node wg_client
+}
+}
+
+node router2 [
+ルータ2
+IP: bbb.bbb.bbb.bbb
+]
+
+frame device2  as "デバイス2" {
+frame docker2 {
+node wg_server
+}
+}
+
+wg_client->router1 : bbb.bbb.bbb.bbb:port
+router1->internet
+
+internet->router2
+router2->wg_server : port 
+#+END_SRC
+
+[[../wg_network.svg]]
+
+異なるネットワークに、デバイス1, デバイス2 がある。
+それぞれのデバイスに docker コンテナを起動し、
+一方のコンテナで wireguard の client を起動し、
+もう一方に wireguard の server を起動する。 
+
+
+wireguard server が属するネットワークのルータ2は、
+wireguard で利用する UDP ポートをデバイス2に転送する必要がある。

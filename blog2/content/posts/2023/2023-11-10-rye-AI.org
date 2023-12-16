@@ -1,0 +1,154 @@
+#+TITLE: rye と ML(Machine Learning)
+#+DATE: 2023-11-10
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+TAGS: rye
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+ML (Machine Learning) の開発環境で利用する Python の仮想環境管理に
+rye を使ってみようと思ってかなり悪戦苦闘した記録。
+
+重い腰を上げてようやく ML 系の学習を初めようと、
+学習用の開発環境を準備しました。
+
+そして、せっかくだから Python の仮想環境管理に比較的評判の良い
+rye を使ってみたのが全ての始まりでした。
+
+* 実は rye は Python のバージョンに依存する
+
+Python で ML を使うとなると、 
+現在は多くの場合 Python のバージョンは 3.10 までの対応になります。
+一方で、 Python の最新は 3.12 です。
+
+この不整合を解決するために、 rye を使います。
+
+事前に rye でプロジェクトを作っておき、
+次に rye で python 3.10 を使うように登録します。
+
+: $ rye pin 3.10
+
+そして、 torch を rye に登録するために以下のコマンドを実行すると、
+
+: $ rye add torch
+: error: did not find package torch' without using pre-releases.
+
+上記のようにエラーしました。
+
+それならと、 =--pre= を追加して実行してみます。
+
+: $ rye add --pre torch
+: error: did not find package torch'.
+
+しかしエラーは変わらず。
+
+どうしたものかと。
+
+なお、 rye を使わずに python 3.10 から pip で直接 torch を install すると、
+正常にインストールできました。
+
+意味が分からん。
+
+しかたがないので、 rye の動作を strace で追ってみます。
+
+: strace -f rye add --pre torch
+
+ここで strace には -f を付加する必要があります。
+
+なぜかというと、 rye 自体のログよりも rye が起動する子プロセスのログが重要だからです。
+
+そして、 strace で =torch= のパッケージを処理していそうなログを見てみると、
+どうやら python *3.11* で =torch= を取得しようとしていることが分かりました。
+
+「いや、ちょっと待て」と、心の中でツッコミを入れます。
+
+rye の特徴は、
+python のバージョンをプロジェクトごとに切り変えられることのはずじゃないんかい？
+
+そのための =rye pin 3.10= コマンドやろ？
+
+なんで、 =rye add= コマンドの時に =python 3.11= を使ってんねん。
+
+というエセ関西弁でツッコミをいれつつ、
+この現象の原因を rye のコードを見て追ってみます。
+
+すると、 =rye add= コマンドを処理する際、
+rye は =~/.rye/self= の下の python を使っていることが分かりました。
+
+そして、この =~/.rye/self= の python のバージョンは、
+rye のインストール時に固定で決定されることが分かりました。
+
+その固定バージョンというのが、以下で定義されています。
+
+#+BEGIN_SRC rs
+/// this is the target version that we want to fetch
+pub const SELF_PYTHON_TARGET_VERSION: PythonVersionRequest = PythonVersionRequest {
+    name: Some(Cow::Borrowed("cpython")),
+    arch: None,
+    os: None,
+    major: 3,
+    minor: Some(11),
+    patch: None,
+    suffix: None,
+};
+#+END_SRC
+
+上記の設定で注目するべきは、 =major: 3= と =minor: Some(11)= です。
+
+要は =3.11= が指定されている。ということです。
+
+じゃぁ、 rye の self には =3.11= しか使えないのか？
+というと実はそんなことはないです。
+
+というのも、 rye のコードには次のような処理も入っています。
+
+#+BEGIN_SRC rs
+/// we only support cpython 3.9 to 3.11
+pub fn is_self_compatible_toolchain(version: &PythonVersion) -> bool {
+    version.name == "cpython" && version.major == 3 && version.minor >= 9 && version.minor < 12
+}
+#+END_SRC
+
+これが何の処理かと言えば、コメントに書いてあるように、
+rye の self には 3.9 から 3.11 が使えるから、
+その判定を行なっているのが上記の関数です。
+
+* rye の self で Python 3.10 を使えるように構築する
+
+では、どうすれば self に 3.10 が利用できるのか？というと、
+次の手順で利用できます。 (本来の手順かどうは不明)
+
+
+- rye をインストール済みなら、  ユーザホームの .rye フォルダを削除
+
+- rye をインストールする。
+  - 以下から環境に合せたバイナリを取得
+    : https://github.com/mitsuhiko/rye/releases/tag/0.15.2
+  - インストールコマンドを実行
+
+-  使いたい Python のバージョンを fetch
+   : $ rye fetch 3.10
+
+- toolchain を確認
+   : $ rye toolchain list
+
+- 必要なバージョンを残して、不要なバージョンを削除
+   : $ rye toolchain remove 3.11.6
+   バージョンの指定は =toolchain list= で確認したバージョンを指定してください。
+
+- ユーザフォルダの .rye フォルダ内の self を削除
+   : $ rm -rf ~/.rye/self/
+- 再度インストール
+   : $ rye self install
+  このとき self install オプションを付けるのが重要です。
+   
+
+上記で完了です。
+
+正常に処理できていれば、 .rye/self/Scripts の中に python310 などの
+3.10 を示すファイルがあるはずです。
+
+
+rye は、 python のバージョンを切り替えて使用できる仮想環境管理ツールのはずですが、
+今回は変なところで躓いてしまいました。
