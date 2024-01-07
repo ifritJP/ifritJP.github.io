@@ -1,0 +1,55 @@
+#+TITLE: Firefox の拡張機能で additional review が必要な manifest.json の項目
+#+DATE: 2024-01-07
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+Firefox の拡張機能をインストール可能な状態にするには署名が必要で、
+この署名には addons.mozilla.org のレビューが必要になる。
+
+レビューとはいえ基本的には機械的に処理され、
+署名処理自体は数分程度で終了する。
+しかし中には例外があり、機械的なレビューではなく、
+追加レビュー(additional review)が必要なケースが存在する。
+
+では、どんなときに additional review が必要になるか？
+それは、 manifest.json の項目に依存するらしい。
+
+今回は、manifest.json 何の項目を設定すると additional review が必要になるかを
+自分の経験から説明する。
+
+* manifest.json
+
+拡張機能は、web サイト上の JavaScript に比べると出来ることが増えている。
+これは、不用意に扱うとセキュリティ上の問題につながる。
+
+そのため、どの拡張機能が何の制御を行なうのかを管理するため、
+拡張機能は何の機能を利用するのかを manifest.json で宣言する必要がある。
+
+つまり、この manifest.json の宣言が少ない拡張機能は比較的に安全と言える。
+一方で、manifest.json を数多く宣言している拡張機能は、
+セキュリティ上のリスクが比較的多いと言える。
+
+そして、 Firefox の拡張機能の署名処理では、
+この宣言されている manifest.json の項目によって additional review が必要かどうかを
+判断している。
+
+
+現状、自分が宣言して review が必要だった manifest.json は以下。
+
+- *content_security_policy*
+
+この content_security_policy が何をするかというと、
+拡張機能は本来外部サイトへのアクセスが制限されているが、そのアクセス制限を緩和する。
+
+つまり、 content_security_policy が宣言されている拡張機能は、
+その extension を利用するユーザが意図せずに自分の情報が外部サイトに
+アップロードされる危険性がある、ということになる。
+
+署名処理では、署名対象の拡張機能にその危険性があるかどうかを判断するため、
+additional review が必要になる。
+
+
+なお、additional review が必要な項目は、上記以外にもあるかもしれない。
