@@ -1,0 +1,167 @@
+#+TITLE: Android 版 Firefox で動かす拡張機能を Wireless debug する
+#+DATE: 2024-01-06
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+昨年終盤から Firefox の拡張機能開発に手を出し始めた。
+折角作った拡張機能なので PC 版だけでなく、
+android 版 Firefox でも動かそうと思い Android 版 Firefox でのデバッグ方法を調べたので、
+備忘録として載せておく。
+
+なお、基本は次の公式ドキュメント通りだが、
+躓いたところもあるので改めてここに設定手順を残す。
+
+<https://firefox-source-docs.mozilla.org/devtools-user/about_colon_debugging/index.html#connecting-to-android-over-wi-fi>
+
+* Wireless debug
+
+Android 版 Firefox の拡張機能のデバッグを行なうには、
+Android 版 Firefox とそれをデバッグする PC 版 Firefox を接続する必要がある。
+
+そしてその接続方法には、次の 2 つある。
+
+- USB
+- Wireless (WiFi)
+
+USB は、Android と PC を USB で接続する方式で、
+WiFi は Android と PC を同じネットワークに接続する方式である。
+
+USB 接続のメリットは、
+物理的に接続するので接続の有無が一目瞭然であり、
+セキュリティ上も優位と言える。
+一方デメリットとして、 USB ケーブル長に限界があるのと、
+USB ケーブル挿したままだと使い勝手が悪かったり、
+物理的に接続されているため接続不良が発生することもある。
+コネクタは消耗品なので、抜き差し回数を削減できるならその方が良い。
+
+そんな訳で、ここでは Wireless Debug について説明する。
+
+* 構成
+
+Wireless debug に必要な構成は以下の通りである。
+
+- Android 端末 (Android 11 以降)
+- PC
+  - adb (pair オプションが利用可能なバージョン)
+  - web-ext  (https://github.com/mozilla/web-ext)
+
+当然と言えば当然だが、Wireless debug に USB は不要だ。
+
+Android 端末と PC は、同一サブネット内に属する必要がある。
+
+また、 Android 端末の OS は Android 11 以降が必要になる。
+これは、 Wireless debug は Android 11 以降の機能を利用するためだ。
+
+adb は、pair オプションが利用可能なバージョンの adb が必要になる。
+実は Firefox には adb が同梱されているが、
+現在(2024/1)の Firefox に同梱されている adb には pair がサポートされていない。
+よって、 adb は別途用意する必要がある。
+
+なお、上記の公式ドキュメントには以下の記載がある。
+
+: The adb program is available. You do not need Android Studio nor the full Android SDK.
+
+この記載の通り、adb には Android Studio も Android SDK も不要だ。
+一方で adb が available とは書いてあるが、 adb がある具体的な場所については触れていない。
+ここがちょっと不親切に感じる。
+
+じゃぁ具体的に adb がどこにあるかというと、
+android platform tool に含まれている。
+
+そして、platform tool は以下からダウンロードする。
+
+<https://developer.android.com/tools?hl=ja#tools-platform>
+
+* 接続方法
+
+ここからは基本的に公式ドキュメント記載の手順そのままになるが、
+一応メモ程度に書いておく。
+
+
+接続の手順は大きく次の 3 つに分けられる。
+
+- adb の接続
+- PC 内の拡張機能を Android Firefox にロード
+- Firefox デバッガの接続
+
+前述の通り、 Android 版 Firefox のデバッグは adb の機能を利用する。
+そのため、 adb の接続が最初に必要になる。
+
+** adb の接続
+
+adb の接続は以下の通り。
+
+- Android の開発者オプション表示を有効にする
+  - Android の設定 → バージョン表示画面 → アイコンを複数回タッチ
+- Android の開発者オプションを設定
+  - USB デバッグ機能を有効化
+    - USB デバッグを有効化しないと、Wireless デバッグが有効化できない
+  - ワイヤレスデバッグ機能を有効化
+    - ワイヤレスデバッグ機能の IP:ポート が表示 されているので、これをメモる。(memo_A)
+  - ワイヤレスデバッグ機能内のペア設定コードでペア設定を選択
+    - → 表示された IPアドレス、ポートと設定コードをメモる (memo_B)
+  - *上記でメモった port は、 memo_A, memo_B で異なるので注意*
+  - *また、有効化実行毎に port が変わる*
+- PC の adb で以下を実行 ( *memo_B* )
+: adb pair ip:port    ※ ip, port には上記でメモった値(memo_B)を指定
+- 上記コマンドを実行すると設定コード入力を求められるので、メモった値( *memo_B* )を入力
+- PC の adb で以下を実行 ( *memo_A* )
+: adb connect ip:port    ※ ip, port には上記でメモった値(memo_A)を指定
+- PC の adb で以下を実行
+: adb devices
+- 正常に接続されていれば、以下のような出力になる。 
+  - "device" と表示されていることが重要。 
+  - 不正な状態だと "offline" と出力される。 あるいは、何も出力されない。
+: List of devices attached
+: ip:port     device
+
+
+** PC 内の拡張機能を Android Firefox にロードする
+
+adb の接続を確立した後、以下の手順で PC 内の拡張機能を Android Firefox にロードする
+
+- Android 版 Firefox のメニューから、「リモート経由で USB デバッグをする」を有効化
+  - Firefox としては adb の機能を利用しているだけであり、 
+    adb が USB で接続されているか、あるいは WiFi で接続されているかは
+    Firefox としては関係ない。
+  - 当初 adb は USB 接続が前提だったため、 「USB デバッグ」というメッセージになっている。
+- PC 側の拡張機能を開発している(manifest.json がある)ディレクトリに移動
+- 次を実行
+#+BEGIN_SRC txt
+$ adb shell pm grant ${FIREFOX_PACK}				\
+		android.permission.READ_EXTERNAL_STORAGE
+$ web-ext run -t Firefox-android --adb-device ${IP}:${PORT}	\
+			--adb-bin "${ADB_PATH}"			\
+			--Firefox-apk ${FIREFOX_PACK}
+#+END_SRC
+- 上記の IP, PORT は memo_A を指定
+- 上記の ADB_PATH は、 adb のフルパスを指定
+- 上記の FIREFOX_PACK は、以下のどちらか
+  -  org.mozilla.Firefox (通常アプリ)
+  - org.mozilla.fenix (Nightly)
+
+上記で PC 内の拡張機能が Android 内の Firefox にロードされる。
+
+ロードには署名も不要で、
+PC 内の拡張機能のソースを修正すると自動で Android 側にロードされる。
+
+** Firefox デバッガの接続
+
+最後にFirefox デバッガを接続する。
+
+- PC 側の Firefox のアドレスバーに about:debugging を入力する
+- about:debugging 画面左側に、接続されている Android 端末を示す情報と「接続」ボタンを押下
+- about:debugging 画面左側に、接続されている Android 端末を示す情報をクリック
+- about:debugging 画面に表示された Android 端末内のデバッグしたい拡張機能をクリック
+
+以上で、Firefox デバッガの接続が完了する。
+
+* まとめ
+
+Wireless debug を利用することで、
+操作の邪魔になりがちな USB ケーブルに煩わされなくて良くなり、デバッグ作業が捗る。
+
+もしもまだ USB 接続でデバッグを利用している場合は、 Wireless debug を活用しよう。
