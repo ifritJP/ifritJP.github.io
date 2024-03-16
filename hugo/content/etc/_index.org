@@ -1,0 +1,61 @@
+#+TITLE: 細かいメモ
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+細かいネタ
+
+* Firefox の GUI を含めたサイズ変更
+
+ウェブコンテンツは Zoom でサイズ変更できるが、
+Firefox のメニューバー等は変わらない。
+
+メニューバー等を含めたサイズ変更方法。
+
+画面サイズの小さい高解像度ディスプレイで Firefox を利用する際に指定する。
+
+** 設定方法
+
+- アドレスバーで about:config を開く
+- layout.css.devPixelsPerPx を入力
+- デフォルトだと -1.0 が指定されているが、この値を変更する。
+- 表示倍率を指定する。 1.0 を越える値を指定すると拡大され、 1.0 未満を指定すると縮小される。
+
+
+* Firefox の web-ext を使っているときに拡張機能のメニュー等が正常に動かない場合
+
+Firefox の web-ext を使っているときに拡張機能のメニュー等が正常に動かない場合、
+Firefox の新規バージョンが出てないか調べて、新規バージョンをインストールする。
+
+新規バージョンの通知に UI 制御が取られて、他の UI 制御が不正になっているっぽい。
+
+* JavaScript の Pipe Stream
+
+TransformStream を利用すると Pipe 処理を利用できる。
+以下は writable に書き込んだデータを readable から読み取って処理している。
+
+メッセージでも同様の処理は可能だが、
+TransformStream を利用することで、データの関連性をより確実に結び付けられる。
+
+#+BEGIN_SRC js
+    let { readable, writable } = new TransformStream();
+    let writer = writable.getWriter();
+    async function read( reader ) {
+        while ( true ) {
+            let info = await reader.read();
+            if ( info.done ) {
+                break;
+            }
+            console.log(info.value); // "abc",  "def"
+        }
+    }
+    read( await readable.getReader() );
+
+
+    await writer.write( "abc" );
+    await writer.write( "def" );
+    await writer.close();
+
+    console.log( "hoge" );
+#+END_SRC

@@ -1,0 +1,169 @@
+#+TITLE: Firefox の File System API (オリジンプライベートファイルシステム)
+#+DATE: 2024-03-13
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+ブラウザ上で動作するウェブアプリ内のデータは、
+基本的に RAM 上で管理されるだけで不揮発には保持されない。
+不揮発にデータを保持するには、次の 3 つの方法がある。
+
+- Cookie
+  - データの本体をサーバ側で記録しておき、
+    サーバ側で管理しているデータへのアクセスキーをブラウザ側で不揮発に管理する方法。
+- Web Storage API
+  - Key-value 方式の簡易的な DB で、
+    比較的に小さいサイズのデータをブラウザ側で不揮発に管理する方法。
+- File System API
+  - ブラウザ側のファイルシステムを、ウェブアプリから直接アクセスする方法。
+
+
+上記 3 つの中で、
+クライアント側(ブラウザ側)で大きいサイズのデータを管理できるのは
+File System API になる。
+
+ただし、File System API はブラウザ側のファイルシステムを直接アクセスするので、
+セキュリティ上のリスクがあることもあり、現在は一部のブラウザのみの対応になっている。
+
+Firefox も File System API をフルサポートしていない。
+
+ただし、File System API を全くサポートしていない訳ではなく、
+オリジンプライベートファイルシステム(OPFS)はサポートしている。
+
+ウェブアプリ内のサイズの大きいデータを保持するという意味では、
+File System API のフルセットは不要であり、OPFS で十分である。
+なお、File System API のフルセットは Firefox, Safari 等で未サポートであるが、
+OPFS はモバイル版を含めた Firefox, Safari でもサポートされている。
+
+ここでは、OPFS の使用方法について示す。
+
+* OPFS (オリジンプライベートファイルシステム)
+
+OPFS は、
+*Web アプリのオリジンごとに割り当てられた所定のディレクトリを、*
+*root ディレクトリとしてアクセス可能なファイルシステムである。*
+
+以下に OPFS で出来ることを示す。
+
+- Web アプリのオリジンごとに割り当てられた所定のディレクトリを、
+  root ディレクトリとしてアクセスする
+- 一般的なファイルシステム API レベルでアクセス可能
+  - ディレクトリ作成/削除
+  - ディレクトリ内のエントリのリストアップ
+  - ファイル作成/削除
+  - ファイルの逐次書き込み
+
+以下に OPFS の制限を示す。
+
+- Web アプリのオリジンごとに所定のディレクトリ以降が割り当てられるので、
+  オリジン間を跨いだファイルの共有はできない。
+- 割り当てられた所定のディレクトリ以外はアクセスできない。
+  - 例えば、任意のユーザディレクトリへのアクセスは出来ない。
+- HTTPS でのみ利用できる。 
+  - ※ ただし、ブラウザの拡張機能からも利用できる。
+
+** サンプル
+
+次に OPFS の API を使ったサンプルを示す。
+
+#+BEGIN_SRC js
+export async function createDir( dirname ) {
+    const root = await navigator.storage.getDirectory();
+    const dirHandle = await root.getDirectoryHandle( dirname, { create: true } );
+    return new DirObj( dirHandle );
+}
+
+export async function removeDir( dirname ) {
+    try {
+        const root = await navigator.storage.getDirectory();
+        await root.removeEntry( dirname, { recursive: true } );
+    } catch ( err ) {
+        console.log( err );
+    }
+}
+
+export class DirObj {
+    constructor( dirHandle ) {
+        this.dirHandle = dirHandle;
+    }
+    async createFile( filename ){
+        let fileHandle =
+            await this.dirHandle.getFileHandle( filename, { create: true });
+        return new FileObj( fileHandle );
+    }
+
+    async lsdir( name ) {
+        for await (const [key, value] of this.dirHandle.entries()) {
+            console.log( name, key, value );
+        }
+    }
+}
+
+export class FileObj {
+    constructor( fileHandle ) {
+        this.fileHandle = fileHandle;
+    }
+    
+    async getWritable() {
+        return await this.fileHandle.createWritable();
+    }
+    async getBlob() {
+        return await this.fileHandle.getFile();
+    }
+}
+#+END_SRC
+
+ここで、上記サンプルの関数について説明する。
+
+- createDir()
+  - オリジンごとに割り当てられたディレクト内に指定の名前のサブディレクトを作成し、
+    そのサブディレクトリを管理する DirObj インスタンスを返す
+- removeDir()
+  - オリジンごとに割り当てられたディレクト内の指定の名前のサブディレクトを削除する。
+  - 指定の名前のサブディレクトが空でない場合は、再帰的に削除する
+- DirObj.createFile()
+  - DirObj インスタンスで管理するディレクトリ内のファイルを管理する
+    FileObj インスタンスを返す
+- DirObj.lsdir()
+  - DirObj インスタンスで管理するディレクトリ内の一覧をコンソール出力する
+- FileObj.getWritable()
+  - FileObj で管理するファイルにデータを書き込む 
+    FileSystemWritableFileStream インスタンスを返す。
+- FileObj.getBlob()
+  - FileObj で管理するファイルに書き込まれたデータにアクセスする File インスタンスを返す
+
+上記サンプルは次のように使用する。
+
+#+BEGIN_SRC js
+  async function Test() {
+     let dirObj = await createDir( "hoge" );
+     let fileObj = await dirObj.createFile( "sage.txt" );
+     let writable = await fileObj.getWritable();
+     await writable.write( "abc" );
+     await writable.write( "def" );
+     await writable.close();
+     let file = await fileObj.getBlob();
+     console.log( await file.text() );  // abcdef
+  }
+  Test();
+#+END_SRC
+
+このサンプルは、次のようなディレクトリ構成になる。
+
+#+BEGIN_SRC txt
+root/
+  |
+  +--- hoge/
+         |
+         +--- sage.txt
+              ( "abcdef" )
+#+END_SRC
+
+
+* まとめ
+
+ウェブアプリで扱うデータサイズは増加傾向にある。
+OPFS を利用すると、データ蓄積中の使用メモリ量を削減できるので、
+OPFS を利用する可能性が今後増えるかもしれない。
