@@ -1,0 +1,49 @@
+#+TITLE: Android 版 Firefox のアプリ切り替え時の処理
+#+DATE: 2024-03-24
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+Android 版 Firefox は、
+バックグラウンドに切り替えると android の省電力機能によって、 
+Web ページの状態が保持されず、
+アプリをフォアクラウンドに切り替えた際に Web ページがリロードされることがあります。
+
+静的な Web ページであれば、リロードするだけで画面を再構成されます。
+セッション管理が必要な Web ページであれば、
+Cookie を利用してセッションを復元できます。
+
+Web Extension の場合、通常の Web ページとは異なる制御が必要になります。
+
+
+* 省電力機能によって Web Extension のページ再構成が必要になった場合の処理
+
+省電力機能によってブラウザがバックグラウンドになると、
+Web Extension の JavaScript の実行状態はリセットされます。
+そして、ブラウザがフォアグラウンドになった時、次の処理が行なわれます。
+
+- background の JavaScript は、再度ロードされます。
+- Web Extension のページが開いていた状態からブラウザがバックグラウンドに移行した場合、
+  次の動作になります。
+  - 開いていた URL 自体は維持され、その URL がリロードされます。
+  - background のロード処理から =browser.runtime.sendMessage()= が、利用可能です。
+
+ページの再構成には、ページを構成する情報を保持しておく必要があります。
+このとき、データの保持には =browser.storage.*= を利用するのが基本です。
+
+=browser.storage.*= にはいくつか種類がありますが、
+session か local を使うことになります。
+
+- session は、ブラウザ起動中に保持される情報を管理します。
+- local は、ブラウザ終了後も永続的に保持される情報を管理します。
+
+ブラウザがバックグラウンドに切り替わった時に android の省電力機能が働いても、
+session に保持されている情報はクリアされないようです。
+よって、 session には画面の復元に特化した一時的な情報を保持、
+local には恒久的な Web Extension の設定情報を保持します。
+
+Web ページロード時、 
+=browser.storage.session= からデータを読み込みページを再構成することで、
+省電力機能からの復帰ができます。
