@@ -1,0 +1,184 @@
+>#+TITLE: ブラウザの Ctrl-N ショートカットを変更する
+#+DATE: 2024-05-03
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+emacs 使いとしては、ブラウザ内の textarea も emacs のキーバインドで操作をしたい。
+しかし、 emacs の超基本的なキーバインドの一つ Ctrl-n は
+ブラウザのデフォル機能の「あたらしいウィンドウを開く」に
+バインドされていて、クライアントサイドの JavaScript では
+どうしても上書きできないっぽい。
+
+そこで今回は、ブラウザの Ctrl-n の動作を変更する方法について話をしていく。
+
+結論を最初に書いてしまうと、
+限定的な変更はできたが、汎用的ではないので使い勝手が悪くオススメではない。
+
+* web extension の commands を利用する
+
+ブラウザの Ctrl-n を変更するには、web extension の commands を利用する必要がある。
+
+commands は、ブラウザのショートカットを登録する web extension の機能。
+この機能を使って、ブラウザの「あたらしいウィンドウを開く」を所定の動作に上書きする。
+
+** manifest.json に commands を追加
+
+commands を利用するには、
+ web extension の manifest.json に以下のような情報を追加する。
+
+#+BEGIN_SRC json
+"commands": {
+	"C-n": {
+	    "suggested_key": {
+		"default": "Ctrl+N"
+	    },
+	    "global": false,
+	    "description": "keyboard C-n"
+	}
+}
+#+END_SRC
+
+ここで、 "C-n" は登録するショートカット機能のコマンド名。
+"suggested_key.default" は、ショートカットの初期バインドキー。
+"description" は、ショートカットコマンドの説明。
+
+これによって、ブラウザにコマンド (C-n) が登録される。
+
+なお、ショートカットが登録されると、
+ブラウザのショートカットカスタマイズ設定画面に「コマンド (C-n)」が表示されるので、
+そこでバインド設定(C-n)を行なう。
+
+** コマンドイベントリスナーの登録
+
+ショートカットのバインド設定を行なった後にブラウザ画面で C-n を入力すると、
+「コマンド (C-n)」イベントが発生する。
+このコマンドイベントを処理するために、
+web extension にコマンドイベントリスナーを登録する。
+
+コマンドイベントリスナーは、次のようなコードで登録する。
+
+#+BEGIN_SRC js
+chrome.commands.onCommand.addListener((command) => {
+    if ( command == "C-n" ) {
+         // C-n イベントの処理
+    }
+});
+#+END_SRC
+
+chrome.commands.onCommand に登録したリスナーには、
+実行されたショートカットのコマンド名が通知される。
+そこで、コマンド名が所定のコマンドかどうかを確認し、
+所定のコマンドだった場合に、必要なイベント処理を行なう。
+
+** イベント処理
+
+ここまでで、 Ctrl-n の上書きが出来るのだが、問題はここからだ。
+
+この commands は web extension でしか利用できない情報なので、以下は実現出来ない。
+
+- 通常のクライアントサイドの JavaScript での利用
+- html 単体の textarea での利用
+
+そこで、なんとかして上記を解決するべくいくつか試してみた。
+
+
+*** KeyboardEvent
+まず、ブラウザでのキー入力処理の基本である KeyboardEvent として通知する方法を試した。
+
+#+BEGIN_SRC js
+let result = await chrome.scripting.executeScript( {
+    target: {
+        tabId: activeTab.id
+    },
+    func: ( event )=>{
+       let options = { key: "ArrowDown" };
+       let evt = new KeyboardEvent( 'keydown', options );
+       document.dispatchEvent( evt );
+    }
+} );
+#+END_SRC
+
+しかし、これでは KeyboardEvent がクライアントサイドの JavaScript へ通知されなかった。
+
+次に、 options に bubbles: true を追加する。
+
+#+BEGIN_SRC js
+       let options = { bubbles: true, key: "ArrowDown" };
+#+END_SRC
+
+これによって、クライアントサイドの JavaScript へ keydown イベントが
+通知されるようになった(keydown イベントのリスナーがコールされる)が、 
+KeyboardEvent で通知した所定のキーイベントは textarea などに反映されなかった。
+
+*** web extension 内で全て処理する
+
+上記の通り KeyboardEvent では意図した動きにならないことが判ったので、
+次は web extension 内で全て処理することを考える。
+
+「web extension 内で全て処理する」とはどういうことかというと、
+commands リスナ内でフォーカスがある element を調べて、
+その element の種類に応じて scroll やカーソルの移動を行なうことを指す。
+
+しかし、これはメンドイし、
+標準的な element を使っていないようなケース(例えば monaco エディタなど)は、
+対応できない。
+何かある度に web extension で対応しなければならないので、現実的ではない。
+
+*** postMessage
+
+そこで、web extension では
+「commands を検出し、それをクライアントサイドへ通知する」ところまで行ない、
+クライアントサイドは、通知された情報をもとに独自の処理を行なう、ことを考える。
+
+ここで、「クライアントサイドへの通知」に postMessage を利用する。
+
+具体的には、 web extension では以下のように処理を行なう。
+
+#+BEGIN_SRC js
+let result = await chrome.scripting.executeScript( {
+    target: {
+        tabId: activeTab.id
+    },
+    func: ( event )=>{
+       let options = { type: "exkey", key: "C-n" };
+       postMessage( options );
+    }
+} );
+#+END_SRC
+
+そして、クライアントサイド側で以下のように通知を受けて処理を行なう。
+
+#+BEGIN_SRC js
+{
+  const url = new URL( document.location.href );
+  const origin = url.origin;
+  addEventListener( "message", (event)=>{
+    if ( event.origin == origin && event.data && event.data.type == "exkey" ) {
+      let data = event.data;
+      if ( data.key == "C-n" ) {
+         // C-n の処理
+      }
+    }
+  });
+}
+#+END_SRC
+
+こうしておくことで、 web extension 側は変更せずに、
+クライアントサイド側で様々なカスタマイズが可能になる。
+
+とはいえ、 web extension がインストールされていることが前提になってしまう。
+
+* まとめ
+
+以上のように処理すると、
+ブラウザの Ctrl-n の動作を変更することは出来た。
+
+ただ、「Ctrl-n をカーソルの下矢印キーに置き換える」という汎用的な変更はできなかったため、
+使い勝手が悪い。。。
+
+残念。
+
+なんとなく、 firefox なら about:config に設定項目がありそうな気もするが。。
