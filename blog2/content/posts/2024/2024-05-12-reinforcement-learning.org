@@ -1,0 +1,448 @@
+#+TITLE: gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する
+#+DATE: 2024-05-12
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+趣味で検討している DL モデルの loss 値が全く収束しないので、
+DL 処理一発で問題を解くのを諦めて、
+DL 処理と強化学習を組合せて対応するように方針を変えた。
+
+そんな訳で、強化学習のフレームワークをいくつか調べ、 gymnasium を使うことにしてみた。
+
+gymnasium は、 元々は OpenAI が開発していた gym が開発終了したことを機に
+gym から分岐して開発されているフレームワーク。
+
+* 強化学習の要素
+
+強化学習は、ある環境下で出来るだけ良い行動を取れるように学習する方法。
+強化学習の要素として以下がある。
+
+- 環境
+- エージェント
+
+ここで、「環境」が解きたい問題を再現するシミュレータ。
+この「環境」上でエージェントが様々なアクションを選択し、
+「環境」における最善手を AI で探す。
+
+強化学習のフレームワークを利用する場合、
+「環境」を構築することが利用者(プログラマ)の責務になる。
+
+*「環境」を構築すれば、*
+*基本的には後は自動的に良い手を見つけてくれる。*
+
+この「良い手を見つける」のが、 *Stable-Baselines3 の役割。*
+
+一方で *gymnasium の役割* は、強化学習を行なう上で必要な「環境」と「エージェント」の
+インタースを提供すること。
+
+* gymnasium の「環境」
+
+gymnasium 向けの「環境」には、次の要素を持たせる必要がある。
+
+- プロパティ
+  - action_space
+    - エージェントが指定可能な値の空間を定義する
+  - observation_space
+    - 環境の状態の空間を定義する
+- メソッド
+  - reset
+    - 環境をリセットする
+  - step
+    - 引数で指定されたアクションを実行し、環境の状態を更新する
+  - render
+    - 環境の状態を出力する
+  - close
+    - 環境を終了する
+
+上記の 2 つのプロパティ action_space, observation_space は、
+どちらも gymnasium を使って空間を定義する。
+
+詳しくは <https://gymnasium.farama.org/api/spaces/> を参照。
+
+
+メソッドについては、公式のマニュアルを参照。
+
+<https://gymnasium.farama.org/api/env/>
+
+メインの step メソッドについては簡単に補足する。
+
+** step メソッド
+
+#+BEGIN_SRC python
+step(self, action: ActType): → tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]
+#+END_SRC
+
+step メソッドは引数で与えられた action を実行し、環境を更新する。
+そして更新結果として以下の情報を返す。
+
+- 環境の状態を示すベクトル。 例えばオセロの環境をシミュレートする場合、
+  盤面を示す (8,8,3) のベクトルを返す。 
+  (8,8,3) の最後の 3 は 「空」「白」「黒」を示す。
+- 指定された action を実行した結果の報酬。
+- ゲームが終了したかどうか。 ゲームクリアか、ゲームオーバーかどうかは関係ない。 
+  True は終了。
+- ゲームが正常終了以外の理由で終了したかどうか。 True は終了。 
+- デバッグ情報
+
+step メソッドは、環境のシミュレーションそのもの。
+機械学習の環境を構築するうえで一番重要となる。
+逆に言えばここさえ作れば、
+あとはフレームワーク側でやってくれるので気合いを入れて作る。
+
+* Stable-Baselines3
+
+Stable-Baselines3 は、
+環境に応じたアクションを決定し、
+アクションとその実行結果をもとにトレーニングして
+より良いアクションを決定するためのアルゴリズムを提供する。
+
+<https://stable-baselines3.readthedocs.io/en/master/guide/algos.html>
+
+* サンプル
+
+ここでは、gymnasium と Stable-Baselines3 を使って、
+独自のゲームをクリアするサンプルを載せる。
+
+** 問題例
+
+以下の問題を解くことを考える。
+
+*「間違えずにコナミコマンドを入力する」*
+
+なお、コナミコマンドとは次のボタン入力パターンのこと言う。
+(詳しくはネットで検索して欲しい。)
+
+: 上 上 下 下 左 右 左 右 B A
+
+その他の条件は以下。
+
+- 入力可能なボタンは次の 6 個
+  - カーソル (上、下、左、右)、A, B 
+- コナミコマンドを入力し終えたらゲームクリア
+- 一連のコナミコマンド入力中に別のボタンが入力された場合、ゲームオーバー
+  - 例えば 上 上 下 の次に A 等。
+
+** 環境の定義
+
+環境定義部分のコードは以下の通り
+
+#+BEGIN_SRC python
+  import gymnasium as gym
+  from enum import Enum
+  import numpy as np
+
+  # ボタンの定義
+  class Input(Enum):
+      Up = 0
+      Left = 1
+      Down = 2
+      Right = 3
+      ButtonA = 4
+      ButtonB = 5
+
+  # 環境の定義
+  class SimpleEnv(gym.Env):
+      def __init__(self):
+          super(SimpleEnv, self).__init__()
+
+          self.pattern = [ Input.Up, Input.Up, Input.Down, Input.Down, Input.Left, Input.Right, Input.Left, Input.Right, Input.ButtonB, Input.ButtonA ] 
+          # 状態空間は 0から9の1次元の整数
+          self.observation_space = gym.spaces.Discrete( len( self.pattern ) + 1 )
+          # 行動空間は Input の数
+          self.action_space = gym.spaces.Discrete( len( Input ) )
+          # 開始状態。　nparray のデータにする
+          self.state = np.zeros( 1, dtype="uint8" )
+          self.index = 0
+
+      def step(self, action):
+          # reward は、 0 ～ 1 の間で返す。 その時点の action として最善手を 1 とする。
+          reward = 0
+          fail = False
+          if self.pattern[ self.index ].value == action:
+              # self.index だと初期状態と同じになってしまうので self.index + 1 を設定
+              self.state[ 0 ] = self.index + 1
+              self.index += 1
+              # reward は、その時点での全体のスコアではなく、 action に対するスコア
+              reward = 1
+          else:
+              # 悪手自体に種類がないなら、悪手のスコアは一定にした方が良い
+              fail = True
+              self.state[ 0 ] = 0
+              self.index = 0
+                
+          done = (self.index == len( self.pattern) )
+          if fail:
+              # ゲームオーバーに種類に差がないなら、スコアは 0 で良い。変える必要はない。
+              # マイナスにする必要もない。
+              done = True
+        
+          # 状態、報酬、終了フラグ、異常フラグ、追加情報を返す
+          return self.state, reward, done, False, { "index":self.index }
+
+      def reset(self, seed = None, options = None):
+          # 状態を初期化
+          self.state[:] = 0
+          self.index = 0
+          return (self.state, {})
+#+END_SRC
+
+ここで重要なのは次の通り。
+
+- クラス宣言
+  - gymnasium.Env を継承
+- コンストラクタ
+  - observation_space を設定
+  - action_space を設定
+  - 内部状態の =state= と =index= を初期化
+- stepメソッド
+  - action に対する状態の更新と reward の決定
+
+*** observation_space について
+
+observation_space は、環境の状態が取り得る空間情報を定義する。
+
+上記 observation_space には、以下の値を代入している。
+
+#+BEGIN_SRC python
+          self.observation_space = gym.spaces.Discrete( len( self.pattern ) + 1 )
+#+END_SRC
+
+今回の場合、コナミコマンドを入力するのが目的なので、次のような状態遷移となる。
+
+: 初期状態 -> 上を入力 -> 上を入力 -> 下を入力 -> ........ -> A を入力
+
+つまり、コナミコマンドのキー入力の数と初期状態分となる。 =len( self.pattern ) + 1= 
+
+そして、それぞれは離散した状態なので =gym.spaces.Discrete()= を利用する。
+
+このように observation_space は、環境の状態そのものの情報ではなく、
+*環境が取り得る空間情報を定義する。*
+
+
+*** action_space について
+
+action_space は、環境内で実行できるアクションの取り得る空間情報を定義する。
+
+
+上記 action_space には、以下の値を代入している。
+
+#+BEGIN_SRC python
+          self.action_space = gym.spaces.Discrete( len( Input ) )
+#+END_SRC
+
+今回の場合、入力可能なボタンを次の 6 個として定義した。
+
+: カーソル (上、下、左、右)、A, B 
+
+また、それぞれ Input で enum 宣言しているので、 
+Input の個数がアクションの数になる。 =len( len( Input ) )= 
+
+そして、それぞれは離散した状態なので =gym.spaces.Discrete()= を利用する。
+
+このように action_space は、環境のアクションそのものの情報ではなく、
+*環境のアクションの取り得る空間情報を定義する。*
+
+*** 内部状態について
+
+環境の内部状態は、 =reset()=, =step()= の戻り値として返す必要がある。
+
+逆に言えば Stable-Baselines3 は、
+ =reset()=, =step()=  から取得した内部状態とアクションと reward を関連付けて学習を進める。
+
+なお内部状態は、 *環境の状態を一意に示す情報でなければならない。*
+
+「環境の状態を一意に示す」とは、環境の状態A と 状態B があった時、次が成り立つことを言う。
+
+- 状態A を示す情報は、必ず状態情報Aになる
+- 状態情報Aが示す状態は、必ず状態Aになる
+
+当然、以下も成り立つ。
+
+- ~状態A != 状態B~ ならば ~状態情報A != 状態情報B~ 
+- ~状態A == 状態B~ ならば ~状態情報A == 状態情報B~ 
+
+もし、一意に環境の状態は示せていないと、学習が正常に行なわれない。
+
+なお、 *状態情報は np.array として表現する。*
+
+今回は、「コナミコマンドの何番目まで入力済みか」を保持すれば良い。
+
+以上のことから、 ~np.zeros( 1, dtype="uint8" )~ としている。
+
+*** step メソッド
+
+action に対する状態の更新と reward の決定するのが主な役割になる。
+
+なお step の引数 action には、
+前述の action_space で定義した空間情報内の値が設定されてくる。
+
+状態の更新は、 action が入力されるべきボタンかどうかを確認し、
+入力されるべきボタンだった場合は次のボタンを待つ状態に進め、
+入力されるべきボタンではなかった場合、ゲームオーバーとする。
+
+
+reward は、現在の環境の状態時に action を実行することに対する良さ加減を表わす。
+
+今回の各状態は、コナミコマンドのボタン入力を待っているので、
+以下の様に定義する。
+
+- 1: 各状態の時に所定のコナミコマンドのボタンが入力された場合
+- 0: 上記以外
+
+action に対する状態遷移ごとに、
+その action がゴールに対して *どの程度貢献しているかを reward で示す* 必要がある。
+これを給与体系で例えるなら、 *年功序列* や *資格試験の合否* ではなく、 
+*実力主義* でなければならない。ということである。
+
+また、 *reward は貢献度に対して一意* である必要がある。
+つまり、同じ貢献をした場合、その reward は同じ値である必要がある。
+近年良く言われる *「同一労働・同一賃金」* と思えば良い。
+
+人間が働いているときに *実力主義* や *「同一労働・同一賃金」* が守られないと、
+働くモチベーションが著しく下って成果が上がらないように、
+貢献度に対する reward が適切でないと *強化学習が収束しなくなる* 可能性がある。
+
+今回の例で言うと、ある状態でコナミコマンドのボタンが入力された時の reward が 1 で、
+別の状態でコナミコマンドのボタンが入力された時の reward が 0.5 だと、
+学習が上手くいかないことがある。
+
+** トレーニング
+
+上記で定義した環境を解けるようにトレーニングするには、次のように実施する。
+
+#+BEGIN_SRC python
+from stable_baselines3 import A2C, DQN, DDPG, PPO
+
+from stable_baselines3.common.callbacks import EvalCallback, BaseCallback
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import DummyVecEnv
+
+# トレーニングの推移を取得するためのコールバックを宣言
+class MyCallback( BaseCallback ):
+    def __init__( self ):
+        super().__init__()
+        self.rewards = []
+        self.indexes = []
+        self.steps = 0
+    def _on_step( self ):
+        super()._on_step()
+        self.steps += 1
+        return True
+    def update_locals( self, locals ):
+        super().update_locals( locals )
+        self.rewards.extend( locals[ "rewards" ])
+        self.indexes.extend( [ info[ "index" ] for info in locals[ "infos" ] ] )
+
+# 環境の定義
+env = SimpleEnv()
+
+model = A2C("MlpPolicy", env, verbose=1)
+#model = DQN("MlpPolicy", env, verbose=1)
+#model = PPO("MlpPolicy", env, verbose=1)
+
+# トレーニングの実行
+eval_callback = MyCallback()
+model.learn(total_timesteps=8000, log_interval=300, callback=eval_callback)
+
+# トレーニングの推移を表示
+import matplotlib.pyplot as plt
+
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plt.plot(eval_callback.rewards)
+plt.title("Rewards")
+plt.subplot(1, 2, 2)
+plt.plot(eval_callback.indexes)
+plt.title("indexes")
+plt.tight_layout()
+plt.show()
+#+END_SRC
+
+上記の内、トレーニングの主要部分は以下になる。
+
+#+BEGIN_SRC python
+model.learn(total_timesteps=8000, log_interval=300, callback=eval_callback)
+#+END_SRC
+
+なお、 =callback=eval_callback= の部分も不要。
+
+=model.learn()= によって、
+環境の内部状態に基き action が生成され、step() が実行され、
+その時の reward と内部状態によって次の action が決定される。
+
+この処理の繰り返しが =total_timesteps=8000= で指定した分だけ行なわれる。
+
+** トレーニングの確認
+
+トレーニング済みのモデルを利用し、今回のゲームを解かせるには次のようになる。
+
+#+BEGIN_SRC python
+vec_env = model.get_env()
+obs = vec_env.reset()
+for i in range(20):
+    action = model.predict(obs, deterministic=True)
+    
+    obs, reward, done, info = vec_env.step(action)
+    print( action, obs, reward, done )
+    if done[0]:
+        obs = vec_env.reset()
+#+END_SRC
+
+この時の実行結果は以下のようになる。
+
+#+BEGIN_SRC txt
+[0] [1] [1.] [False]
+[0] [2] [1.] [False]
+[2] [3] [1.] [False]
+[2] [4] [1.] [False]
+[1] [5] [1.] [False]
+[3] [6] [1.] [False]
+[1] [7] [1.] [False]
+[3] [8] [1.] [False]
+[5] [9] [1.] [False]
+[4] [0] [1.] [ True]
+[0] [1] [1.] [False]
+[0] [2] [1.] [False]
+[2] [3] [1.] [False]
+[2] [4] [1.] [False]
+[1] [5] [1.] [False]
+[3] [6] [1.] [False]
+[1] [7] [1.] [False]
+[3] [8] [1.] [False]
+[5] [9] [1.] [False]
+[4] [0] [1.] [ True]
+#+END_SRC
+
+: print( action, obs, reward, done )
+
+これは、左から =アクション, 内部状態情報, reward, 終了状態= で、
+最短でコナミコマンドを入力していることが分かる。 
+
+: [4] [0] [1.] [ True]
+
+* トレーニングが収束しない場合
+
+強化学習を使ったトレーニングが収束しない場合、次を確認すると良い。
+
+- action_space の定義が正しいか
+- observation_space の定義が正しいか
+- 内部状態情報が状態を一意に示せているか
+- reward は貢献度に対して一意になっているか
+
+今回のような簡単な環境の例でも
+どれかが異なると強化学習は上手くいかないので、
+強化学習でトレーニングを行なう場合に、
+上記が正しいことを確認しておくと良い。
+
+なお、内部状態情報は状態を一意に示せていると思っても、
+実は足りていないということがあるので、十分な注意が必要である。
+
+とはいえ、何でもかんでも内部状態情報に含めてしまうと、
+それだけトレーニングに掛る処理が重くなったり、
+逆に発散してしまうこともあるため必要最低限を見極めなければならない。
+
+
+また、stable_baselines3 のアルゴリズムを変更してみるのも良いかもしれない。
