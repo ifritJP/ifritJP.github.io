@@ -3,10 +3,10 @@
 <head><meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計 - 公開技術情報</title>
+<title>Objective-C - 公開技術情報</title>
 <meta name="generator" content="Hugo 0.118.2">
 <link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
-<link rel="canonical" href="https://ifritjp.github.io/documents/lunescript/test/">
+<link rel="canonical" href="https://ifritjp.github.io/documents/objective-c/">
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
 <script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
 <link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
@@ -20,20 +20,15 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
 :root {}
 </style>
-<meta property="og:title" content="X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計" />
-<meta property="og:description" content="このドキュメントを見ているような人であれば、 日々「プログラミング言語」でコーディングしている方がほとんどだと思います。 そして、誰かが仕込んだ" />
-<meta property="og:type" content="article" />
-<meta property="og:url" content="https://ifritjp.github.io/documents/lunescript/test/" /><meta property="article:section" content="LuneScript" />
-
-<meta property="og:site_name" content="公開技術情報" />
+<meta property="og:title" content="Objective-C" />
+<meta property="og:description" content="" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/objective-c/" /><meta property="og:site_name" content="公開技術情報" />
 <meta name="twitter:card" content="summary"/>
-<meta name="twitter:title" content="X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計"/>
-<meta name="twitter:description" content="このドキュメントを見ているような人であれば、 日々「プログラミング言語」でコーディングしている方がほとんどだと思います。 そして、誰かが仕込んだ"/>
-<meta itemprop="name" content="X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計">
-<meta itemprop="description" content="このドキュメントを見ているような人であれば、 日々「プログラミング言語」でコーディングしている方がほとんどだと思います。 そして、誰かが仕込んだ">
-
-<meta itemprop="wordCount" content="3459">
-<meta itemprop="keywords" content="" />
+<meta name="twitter:title" content="Objective-C"/>
+<meta name="twitter:description" content=""/>
+<meta itemprop="name" content="Objective-C">
+<meta itemprop="description" content="">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -61,268 +56,12 @@
 </nav>
 </div>
 <div class="content-container">
-<main><h1>X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</h1>
-
-<p>
-このドキュメントを見ているような人であれば、
-日々「プログラミング言語」でコーディングしている方がほとんどだと思います。
-そして、誰かが仕込んだバグ潰し作業に追われている方も多いでしょう。</p>
-<p>
-そんな日々お世話になっている「プログラミング言語」も
-誰かが作ったソフトウェアであるので、いかにバグを出さないか、
-という品質コントロールが重要になります。</p>
-<p>
-私は運が良いいのか(？)、プログラミング言語を仕事で利用してきた中で
-言語のバグに遭遇したことはありません。</p>
-<p>
-<em>バグの様に思える言語の規格とかはありますが。。。</em></p>
-<p>
-プログラミング言語のバグに遭遇してしまった場合、
-その対処は数あるソフトウェアバグの中でもかなり厄介な部類になると思います。</p>
-<p>
-<em>そもそもプログラミング言語のバグだということに辿り着くのが困難です。</em></p>
-<p>
-ここでは、
-私が開発している独自言語のテスト方法について紹介したいと思います。</p>
-<p>
-なお、プログラミング言語は次の 2 つに分類できます。</p>
-<ul>
-<li>コンパイラ型</li>
-<li>インタプリタ型</li>
-</ul>
-<p>私が開発している言語はコンパイラ型であるため、
-以降はコンパイラ型のテストについて話をします。</p>
-<p>
-ちなみに私が開発している独自言語の LuneScript については、次の記事で紹介しています。</p>
-<p>
-https://qiita.com/dwarfJP/items/21d4d4099ab0feb68eaf</p>
-<p>
-今後、独自言語を開発しようと考えている方のテスト設計検討に、
-少しでも役にたてれば幸いです。</p>
-<div id="outline-container-headline-1" class="outline-3">
-<h3 id="headline-1">
-コンパイラは関数
-</h3>
-<div id="outline-text-headline-1" class="outline-text-3">
-<p>
-コンパイラ型プログラミング言語は、
-そのプログラミング言語で書かれたコードをマシン語などに変換するのが仕事です。</p>
-<p>
-例えば、</p>
-<ul>
-<li>C 言語のコンパイラは Native コードに変換</li>
-<li>Java のコンパイラは JVM コードに変換</li>
-<li>C# は CIL に変換</li>
-<li>Clang は LLVM-IR に変換し、 LLVM が各種コードに変換</li>
-</ul>
-<p>つまりコンパイラとは、
-「入力を与えると、その入力に応じた出力を返す 1 つの大きな関数」と考えられます。</p>
-<p>
-コンパイラを 1 つの関数と考えれば、そのテストは非常に単純です。
-様々な入力を与えて、その出力と期待値とを比較すればテストが出来ます。</p>
-<p>
-日頃作成している関数の UNIT TEST と考え方は全く同じです。</p>
-</div>
-</div>
-<div id="outline-container-headline-2" class="outline-3">
-<h3 id="headline-2">
-コンパイラのテスト
-</h3>
-<div id="outline-text-headline-2" class="outline-text-3">
-<p>
-独自言語である LuneScript では、次のテストを実施しています。</p>
-<ul>
-<li>セルフホスティングしている LuneScript 自身のビルド</li>
-<li>言語が対応する全構文の正常系</li>
-<li>言語が対応する全構文の異常系</li>
-</ul>
-<p>ここで特に重要なのがセルフホスティングしていることです。</p>
-<p>
-セルフホスティングしていることで、あえてテストコードを書かなくても、
-自分自身のコードがそのままテストコードになります。</p>
-<p>
-ある程度の規模で、意味のあるテストコードを作成する、
-というのは中々骨の折れる作業です。</p>
-<p>
-特に自分以外誰も使っていないような独自言語の場合、
-テストのためのコードではなく、
-ちゃんとした実用的なコードというものが github を探せば簡単に出てくる、
-<strong>なんてことはない</strong> ので、
-ある程度の規模のテストコードというのは貴重になります。</p>
-<p>
-セルフホスティングしていると、
-自分自身のコードがその貴重なテストコードになるのです。</p>
-<p>
-ただ、「自分自身のコードがそのままテストコードになる」と言っても、
-それだけでは十分なテストにはなりません。
-使用する構文やデザインパターン等に偏りが出てしまい、
-網羅性という意味ではイマイチなテストになってしまいます。
-また、コンパイルエラーになるような異常系コードは、
-セルフホスティングしている自分自身のコードに仕込んでおけません。
-よって、セルフホスティングしている自分自身のコードだけでは
-テストケースとして不十分であり、
-網羅的に正常系を確認するテストと、
-コンパイルエラーを検出する異常系のテストが別途必要になります。</p>
-<p>
-この正常系と、異常系のテストは、
-予め期待値を用意しておくことで、テストの成否を確認出来ます。</p>
-<p>
-一方で「自分自身のコードをコンパイルした結果が正しいかどうか」、
-をどのように判定すれば良いか？が問題です。</p>
-<p>
-テストケースのコードは一般的に不変なので、そのコンパイル結果も不変です。
-つまり、テストケースと期待値のペアを一度作成すれば、
-テストケースを変更しないかぎりは同じ期待値を使い続けられます。</p>
-<p>
-一方で、セルフホスティングしている自分自身のコードは当然変っていきます。
-つまり、期待値も常に変わるため、期待値を事前に用意しておくことは不可能です。</p>
-<p>
-では、セルフホスティングしている自分自身のコードのコンパイル結果が正しいかどうかを、
-どのように判断するのかというと、 次が成り立つかどうかで判断します。</p>
-<pre class="example">
-「使用中のコンパイラでのテストケースの結果」 == 「新しくコンパイルしたコンパイラでのテストケースの結果」
-</pre>
-<p>
-これは、使用中のコンパイラが正しい動作をしていることを前提に、
-その正しい動作をしている使用中のコンパイラで実行したテストケースの結果と、
-新しくコンパイルしたコンパイラで実行したテストケースの結果が同一であるならば、
-新しくコンパイルしたコンパイラも正しい、という論理です。</p>
-<p>
-さらに、新しくコンパイルしたコンパイラで、もう一度自分自身をコンパイルしています。
-これは、同じコードをコンパイルしたときに、
-その出力結果が全く同じ結果になることを確認するために実行しています。</p>
-<p>
-まとめると、 LuneScript のテストは次を実行します。</p>
-<dl>
-<dt>
-step1
-</dt>
-<dd>現在使用中のコンパイラ A を使って、セルフホスティングしている自身のコードをコンパイルしコンパイラ B を生成</dd>
-<dt>
-step2
-</dt>
-<dd>コンパイラ B を使って、再度自身のコードをコンパイルしコンパイラ C を生成</dd>
-<dt>
-step3
-</dt>
-<dd>コンパイラ C を使って、再度自身のコードをコンパイルしコンパイラ D を生成</dd>
-<dt>
-step4
-</dt>
-<dd>コンパイラ C とコンパイラ D が同一であることを確認</dd>
-<dt>
-step5
-</dt>
-<dd>コンパイラ A の正常系、異常系のテストを実行し、テスト結果を result A に保存</dd>
-<dt>
-step6
-</dt>
-<dd>コンパイラ D の正常系、異常系のテストを実行し、テスト結果を result D に保存</dd>
-<dt>
-step7
-</dt>
-<dd>result A と result D が同一であることを確認</dd>
-</dl>
-<p>上記テストをパスしたら、コンパイラ D を最新のコンパイラ A として次回から利用します。
-また、拡張した言語仕様の正常系、異常系のテストを随時追加します。</p>
-<p>
-セルフホスティングの場合、
-不具合があると自分自身のコンパイル自体が出来なくなって、
-開発を進められなくなってしまう可能性があります。
-このテストを行なうことで、
-新しくビルドしたコンパイラが正常に動作することを確実に保証でき、
-安全に言語の機能拡張を進められます。</p>
-<p>
-独自言語の場合、
-セルフホスティングへの移行タイミングというのは非常に重要になると思います。</p>
-<p>
-コンパイラのコード規模が大きくなると移植作業に掛かる時間も大きくなってくるので、
-独自言語をフルスクラッチで開発する場合、
-セルフホスティングに必要な機能を優先的に実現し、
-出来るだけ早い段階でセルフホスティングに移行することをオススメします。</p>
-</div>
-</div>
-<div id="outline-container-headline-3" class="outline-2">
-<h2 id="headline-3">
-それでもバグは残る
-</h2>
-<div id="outline-text-headline-3" class="outline-text-2">
-<p>
-独自言語開発で実施しているテストについて紹介しましたが、
-テストをしても残念ながらバグは残ります。</p>
-<p>
-そのバグの原因を分類すると次の 2 つになります。</p>
-<ul>
-<li>異常系が検出できないケース</li>
-<li>本来正常に動作しなければならないのに動作しないケース</li>
-</ul>
-<p>上記の 2 つの内、異常系が検出できないケースが圧倒的に多いです。</p>
-<p>
-というのも、
-正常系のパスは言語仕様通りのコードを書いて動くことを確認すれば良いのに対し、
-異常系のパスは言語仕様から外れたコードを書いてエラーを検出する必要があります。</p>
-<p>
-この「言語仕様から外れる」というのが結構難しく、穴が空いてしまうことが多いです。</p>
-<p>
-最初から完璧なテストを求めるのではなく、
-こういう「穴」を見つけ、
-それを塞ぐテストケースを追加していき、
-再度同じ「穴」が開いた時に検出できるように対応することが
-テストでは重要だと考えます。</p>
-</div>
-</div>
-<div id="outline-container-headline-4" class="outline-2">
-<h2 id="headline-4">
-最後に
-</h2>
-<div id="outline-text-headline-4" class="outline-text-2">
-<p>
-独自言語の開発を続けてこられたのも、
-次のテスト方針で進めて来たことが大きいと考えています。</p>
-<ul>
-<li>
-<p>早期にセルフホスティングに移行したこと</p>
-<ul>
-<li>
-<p>セルフホスティングに移行すると、否応なく一定以上の品質保証が必要になる</p>
-<ul>
-<li>品質が悪ければセルフホスティングに支障が出るため、自ずと品質が保たれる</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p>始めから 100% のテストを目指さないこと</p>
-<ul>
-<li>目的は独自言語の開発であって、テストの開発ではない。</li>
-<li>独自言語に集中できる。</li>
-</ul>
-</li>
-<li>
-<p>言語の仕様拡充とテストコード拡充を同期して行なって来たこと</p>
-<ul>
-<li>テストの抜け漏れ、デグレードを防止できる</li>
-</ul>
-</li>
-<li>
-<p>関数レベルのテストではなく、コンパイラ入出力レベルでのテストを行なったこと</p>
-<ul>
-<li>関数レベルのテストだと、設計変更の度にテストケース変更が必要だが、
-コンパイラ入出力レベルでのテストならば、
-コンパイラの仕様変更がない限りはテストケースの変更が不要</li>
-</ul>
-</li>
-</ul>
-<p>独自言語の開発を行なう場合は、品質を確保するという意味でも、
-まずはセルフホスティングを目指すのが効率的だと思います。</p>
-<p>
-以上。</p>
-</div>
-</div>
+<main><h1>Objective-C</h1><p>
+<a href="./arc">Objective-C  の MRC と ARC と オートリリースプール</a></p>
 <div class="edit-meta">
 
-<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/lunescript/box/" title="Box 編"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Box 編</a>
-<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/lunescript/design/" title="Y.1 LuneScript の開発方法">Next - Y.1 LuneScript の開発方法 <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/libclang/ast/" title="libclang の AST(Abstract Syntax Tree)"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - libclang の AST(Abstract Syntax Tree)</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/objective-c/arc/" title="Objective-C  の MRC と ARC と オートリリースプール">Next - Objective-C  の MRC と ARC と オートリリースプール <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
 </nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
 </footer>
 </main><div class="sidebar">
@@ -403,7 +142,7 @@ step7
   
 </li>
 
-<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/objective-c/">Objective-C<span class="mark closed">+</span></a>
+<li class=" active has-sub-menu"><a href="https://ifritjp.github.io/documents/objective-c/">Objective-C<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/objective-c/arc/">Objective-C  の MRC と ARC と オートリリースプール</a></li>
@@ -431,7 +170,7 @@ step7
   
 </li>
 
-<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark opened">-</span></a>
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
   
 <ul class="sub-menu">
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
@@ -489,7 +228,7 @@ step7
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
-<li class="active"><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design/">Y.1 LuneScript の開発方法</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-2/">Y.2 LuneScript の開発(型情報管理)</a></li>
 <li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-3/">Y.3 LuneScript の開発(スコープとシンボル)</a></li>

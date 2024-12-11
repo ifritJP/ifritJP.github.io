@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Objective-C  の MRC と ARC と オートリリースプール - 公開技術情報</title>
+<meta name="generator" content="Hugo 0.118.2">
+<link href="https://ifritjp.github.io/documentsindex.xml" rel="alternate" type="application/rss+xml">
+<link rel="canonical" href="https://ifritjp.github.io/documents/objective-c/arc/">
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/theme.min.css">
+<script src="https://use.fontawesome.com/releases/v5.0.6/js/all.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/chroma.min.css">
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.4.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery.easing@1.4.1/jquery.easing.min.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/custom.css">
+<script src="https://ifritjp.github.io/documents/js/bundle.js"></script>
+<script src="https://ifritjp.github.io/documents/js/lnsSrcRun.js"></script>
+<script src="https://ifritjp.github.io/documents/js/highlight_lns.js"></script>
+<link rel="stylesheet" href="https://ifritjp.github.io/documents/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script><style>
+:root {}
+</style>
+<meta property="og:title" content="Objective-C  の MRC と ARC と オートリリースプール" />
+<meta property="og:description" content="Objective-C(以降 objc) のメモリ管理について説明する。 ここで言うメモリ管理とは以下を指す。 OS から取得したメモリをどのように開放するか？" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/documents/objective-c/arc/" /><meta property="article:section" content="objective-c" />
+
+<meta property="og:site_name" content="公開技術情報" />
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Objective-C  の MRC と ARC と オートリリースプール"/>
+<meta name="twitter:description" content="Objective-C(以降 objc) のメモリ管理について説明する。 ここで言うメモリ管理とは以下を指す。 OS から取得したメモリをどのように開放するか？"/>
+<meta itemprop="name" content="Objective-C  の MRC と ARC と オートリリースプール">
+<meta itemprop="description" content="Objective-C(以降 objc) のメモリ管理について説明する。 ここで言うメモリ管理とは以下を指す。 OS から取得したメモリをどのように開放するか？">
+
+<meta itemprop="wordCount" content="2840">
+<meta itemprop="keywords" content="" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body><div class="container"><header>
+<h1>公開技術情報</h1>
+
+
+[<a href="https://ifritjp.github.io/documents/en/">English</a>]
+
+[<a href="https://ifritjp.github.io/documents/">Japanese</a>]
+
+</header>
+<div class="global-menu">
+<nav>
+<ul>
+<li><a href="/documents/">Home</a></li>
+<li><a href="https://ifritjp.github.io/blog2/public/">blog</a></li>
+<li><a href="https://ifritjp.github.io/LuneScript-webFront/lnsc_web_frontend/for_wasm/">LuneScript on Web</a></li></ul>
+</nav>
+</div>
+<div class="content-container">
+<main><h1>Objective-C  の MRC と ARC と オートリリースプール</h1>
+
+<p>
+Objective-C(以降 objc) のメモリ管理について説明する。</p>
+<p>
+ここで言うメモリ管理とは以下を指す。</p>
+<ul>
+<li>OS から取得したメモリをどのように開放するか？</li>
+<li>開放処理をどの様にコード上に書くか？</li>
+</ul>
+<p>なお、objc のメモリ管理には次の2つのモードがある。</p>
+<ul>
+<li>MRC(Manual Reference Counting)</li>
+<li>ARC(Automatic Reference Counting)</li>
+</ul>
+<p>このドキュメントでは、この 2 つのモードと、
+ オートリリースプールについて説明する。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+実行環境
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+このドキュメントを書くにあたって、
+objc のコードをビルドして動作させた結果を確認している。</p>
+<p>
+その動作確認環境を用意する際、
+最も簡単なのは Mac を使うことだが、
+残念ながら Mac を持っていない。
+そこで、ここでは次の Docker 環境を利用して objc の動作確認を行なった。</p>
+<p>
+&lt;<a href="https://hub.docker.com/r/doratex/clang9-objc2">https://hub.docker.com/r/doratex/clang9-objc2</a>&gt;</p>
+<p>
+上記 docker イメージについては以下を参照。</p>
+<p>
+&lt;<a href="https://qiita.com/doraTeX/items/c35e25c2afbb48a1469f">https://qiita.com/doraTeX/items/c35e25c2afbb48a1469f</a>&gt;</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+サンプルクラス
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+メモリの開放タイミングを確認するため、次のクラス MyClass を宣言している。</p>
+<p>
+このクラスは、オブジェクトが開放される直前に次のメッセージを出力する。</p>
+<pre class="example">
+MyClass dealloc -- obj:%d
+</pre>
+<p>
+ここで、 <code class="verbatim">%d</code> にはオブジェクト生成時に与えた整数値が入る。</p>
+<ul>
+<li>sub.h</li>
+</ul>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="cp">#import &lt;Foundation/Foundation.h&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="k">@interface</span> <span class="nc">MyClass</span> : <span class="nc">NSObject</span>
+</span></span><span class="line"><span class="cl"><span class="k">@property</span> <span class="p">(</span><span class="k">nonatomic</span><span class="p">)</span> <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">init:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="k">@end</span></span></span></code></pre></div>
+</div>
+<ul>
+<li>sub.m</li>
+</ul>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="cp">#import &lt;sub.h&gt;
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="k">@implementation</span> <span class="nc">MyClass</span>
+</span></span><span class="line"><span class="cl"><span class="p">-</span> <span class="p">(</span><span class="kt">instancetype</span><span class="p">)</span><span class="nf">init:</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="nv">val</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">self</span> <span class="o">=</span> <span class="p">[</span><span class="nb">super</span> <span class="n">init</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">self</span><span class="p">.</span><span class="n">val</span> <span class="o">=</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nb">self</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">dealloc</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">NSLog</span><span class="p">(</span><span class="s">@&#34;MyClass dealloc -- obj:%d&#34;</span><span class="p">,</span> <span class="nb">self</span><span class="p">.</span><span class="n">val</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="k">@end</span></span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+MRC
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+MRC は、古典的なメモリ管理であり、
+その名の通り確保したメモリ開放の API を
+コード上に組み込んでおく必要がある。</p>
+<p>
+例えば以下のような感じで、 alloc で確保したオブジェクトに対して
+明示的に release をコールして開放を行なう。</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl">    <span class="n">MyClass</span> <span class="o">*</span><span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">init</span><span class="p">:</span><span class="mi">0</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">    <span class="p">[</span><span class="n">obj</span> <span class="k">release</span><span class="p">];</span></span></span></code></pre></div>
+</div>
+<p>
+なお、このコードを動かすと次のメッセージが出力される。</p>
+<pre class="example">
+MyClass dealloc -- obj:0
+</pre>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+参照カウンタ
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+objc でヒープ内に確保したオブジェクトは、参照カウンタを持つ。</p>
+<p>
+この参照カウンタが 0 になったタイミングで、そのオブジェクトは開放される。</p>
+<p>
+参照カウンタの制御に関するメソッドには次がある。</p>
+<ul>
+<li>
+<p>alloc</p>
+<ul>
+<li>オブジェクトをヒープ内に確保し、参照カウンタを 1 にセットする</li>
+</ul>
+</li>
+<li>
+<p>retain</p>
+<ul>
+<li>参照カウンタをインクリメントする</li>
+</ul>
+</li>
+<li>
+<p>release</p>
+<ul>
+<li>参照カウンタをデクリメントして、0 になった場合にオブジェクトを開放する</li>
+</ul>
+</li>
+</ul>
+<p>以下のコードを実行すると、</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl">    <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">init</span><span class="p">:</span><span class="mi">1</span><span class="p">];</span> <span class="cm">/* step1, 参照カウンタ: 1 */</span>
+</span></span><span class="line"><span class="cl">    <span class="p">[</span><span class="n">obj</span> <span class="k">retain</span><span class="p">];</span>                   <span class="cm">/* step2, 参照カウンタ: 2 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">NSLog</span><span class="p">(</span> <span class="s">@&#34;release-1&#34;</span> <span class="p">);</span>          <span class="cm">/* step2-2 */</span>
+</span></span><span class="line"><span class="cl">    <span class="p">[</span><span class="n">obj</span> <span class="k">release</span><span class="p">];</span>                  <span class="cm">/* step3, 参照カウンタ: 1 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">NSLog</span><span class="p">(</span> <span class="s">@&#34;release-2&#34;</span> <span class="p">);</span>          <span class="cm">/* step3-2 */</span>
+</span></span><span class="line"><span class="cl">    <span class="p">[</span><span class="n">obj</span> <span class="k">release</span><span class="p">];</span>                  <span class="cm">/* step4, 参照カウンタ: 0 */</span>
+</span></span><span class="line"><span class="cl">    <span class="n">NSLog</span><span class="p">(</span> <span class="s">@&#34;release-3&#34;</span> <span class="p">);</span>          <span class="cm">/* step4-2 */</span></span></span></code></pre></div>
+</div>
+<p>
+この時の出力は次になる。</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="k">release</span><span class="o">-</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="k">release</span><span class="o">-</span><span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="n">MyClass</span> <span class="n">dealloc</span> <span class="o">--</span> <span class="nl">obj</span><span class="p">:</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="k">release</span><span class="o">-</span><span class="mi">3</span></span></span></code></pre></div>
+</div>
+<p>
+この時の参照カウンタに着目して動作を説明すると、以下の通り。</p>
+<ul>
+<li>step1 の段階で参照カウンタが 1 にセットされる</li>
+<li>step2 では、retain によってインクリメンされて参照カウンタは 2 になる。</li>
+<li>step3 では、release によって参照カウンタがデクリメントされる。
+デクリメント後の参照カウンタは 1 なので、オブジェクトはまだ開放されない</li>
+<li>step4 では、release によって参照カウンタがデクリメントされる。
+デクリメント後の参照カウンタは 0 なので、オブジェクトは開放される。</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+オートリリースプール
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+MRC でよくある問題は、 release し忘れによるメモリリークである。</p>
+<p>
+確保したヒープオブジェクトに対して release しないと、
+そのメモリはプログラム自体が終了しない限りはヒープ内に残り続ける。
+これによりメモリが圧迫されアプリが異常終了したり、
+OS 自体の挙動が重くなったりすることがある。</p>
+<p>
+この release の実行を手助けするのが、 <strong>オートリリースプール</strong> である。</p>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+オートリリースプールのコンセプト
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+オートリリースプールのコンセプトは、次の通りである。</p>
+<p>
+『ヒープオブジェクト個々に対して release するのは面倒なので、
+ヒープオブジェクトをグループでまとめて管理するクラスを作成し、
+そのクラスのインスタンスを開放するタイミングで、
+その管理クラスインスタンスに登録されているヒープオブジェクトに対して
+まとめて release を呼ぶ』</p>
+<p>
+オートリリースプールには、 次の 2 つの生成方法がある。</p>
+<ul>
+<li>NSAutoreleasePool のインスタンスを生成する</li>
+<li><code class="verbatim">@autoreleasepool</code> ブロックを使用する</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+NSAutoreleasePool のサンプル
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+NSAutoreleasePool のサンプル を以下に示す。</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">NSAutoreleasePool</span> <span class="o">*</span><span class="n">pool</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSAutoreleasePool</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">MyClass</span> <span class="o">*</span><span class="n">obj</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">obj</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">MyClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">init</span><span class="p">:</span><span class="mi">0</span><span class="p">]</span><span class="n">autorelease</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">obj</span> <span class="o">=</span> <span class="p">[[[</span><span class="n">MyClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">init</span><span class="p">:</span><span class="mi">1</span><span class="p">]</span><span class="n">autorelease</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="n">NSLog</span><span class="p">(</span> <span class="s">@&#34;NSAutoreleasePool-0&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">  <span class="p">[</span><span class="n">pool</span> <span class="k">release</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">NSLog</span><span class="p">(</span> <span class="s">@&#34;NSAutoreleasePool-1&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+上記サンプルを解説すると、</p>
+<ul>
+<li><code class="verbatim">[[NSAutoreleasePool alloc] init]</code> によって、オートリリースプールを生成する</li>
+<li><code class="verbatim">[pool release];</code> によって、オートリリースプールを開放する</li>
+<li>上記処理の間に <strong>autorelease メソッド</strong> が呼ばれたヒープオブジェクトは、
+オートリリースプールに登録され、オートリリースプール開放時に、
+登録されているヒープオブジェクト自体も release される。</li>
+</ul>
+<p>上記サンプルの出力は以下の通り。</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="n">NSAutoreleasePool</span><span class="o">-</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="n">MyClass</span> <span class="n">dealloc</span> <span class="o">--</span> <span class="nl">obj</span><span class="p">:</span><span class="mi">1</span>
+</span></span><span class="line"><span class="cl"><span class="n">MyClass</span> <span class="n">dealloc</span> <span class="o">--</span> <span class="nl">obj</span><span class="p">:</span><span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="n">NSAutoreleasePool</span><span class="o">-</span><span class="mi">1</span></span></span></code></pre></div>
+</div>
+<p>
+上記出力を見ると、 <code class="verbatim">[pool release];</code> によって、
+オートリリースプールに登録されている
+ヒープオブジェクトの release が呼ばれ開放されていることが分かる。</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+<code class="verbatim">@autoreleasepool</code> のサンプル
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<p>
+<code class="verbatim">@autoreleasepool</code> は、
+ NSAutoreleasePool のシンタックスシュガーである。</p>
+<p>
+次のコードと、</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="n">NSAutoreleasePool</span> <span class="o">*</span><span class="n">pool</span> <span class="o">=</span> <span class="p">[[</span><span class="n">NSAutoreleasePool</span> <span class="n">alloc</span><span class="p">]</span> <span class="n">init</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// some codes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">[</span><span class="n">pool</span> <span class="k">release</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></div>
+</div>
+<p>
+次のコードは等価である。</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="k">@autoreleasepool</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">// some codes
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="p">}</span></span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
+<h3 id="headline-9">
+オートリリースプールの注意点
+</h3>
+<div id="outline-text-headline-9" class="outline-text-3">
+<p>
+オートリリースプールを利用することで、メモリ管理の手間を削減できる。</p>
+<p>
+一方で、メモリの開放タイミングがオートリリースプール開放時になるため、
+細かいメモリの開放制御を行えないデメリットもある。</p>
+<p>
+例えば、非常に大きいサイズのメモリを確保するような場合、
+オートリリースプールに開放処理を任せてしまうと、
+メモリ開放が後回しになってしまってヒープメモリを
+圧迫してしまう可能性がある。</p>
+<p>
+オートリリースプールを使用する場合は、
+オートリリースプール自体のライフサイクルを十分検討する必要がある。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
+<h2 id="headline-10">
+ARC
+</h2>
+<div id="outline-text-headline-10" class="outline-text-2">
+<p>
+オートリリースプールは、 
+MRC で確保したヒープオブジェクトを登録することで
+release を一括処理することを目的としていた。
+そして、オートリリースプール自体の宣言は
+依然としてコード上に記述する必要がある。</p>
+<p>
+一方で ARC は、基本的にコード上には何も記述する必要がない。
+ただし、 ARC は MRC 上で成り立っている。</p>
+<p>
+これは、 retain や release を開発者がコードに記述する代わりに
+ARC のランタイムで実行時に等価の処理を行なうようになる、
+ということである。</p>
+<p>
+つまり、ARC は「変数がスマートポインタになる」と考えれば良い。</p>
+<div id="outline-container-headline-11" class="outline-3">
+<h3 id="headline-11">
+サンプル
+</h3>
+<div id="outline-text-headline-11" class="outline-text-3">
+<p>
+次に ARC によるメモリ開放タイミングのサンプルを示す。</p>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl">  <span class="n">MyClass</span> <span class="o">*</span><span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">init</span><span class="p">:</span><span class="mi">2</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">obj</span> <span class="o">=</span> <span class="p">[[</span><span class="n">MyClass</span> <span class="n">alloc</span><span class="p">]</span> <span class="nl">init</span><span class="p">:</span><span class="mi">3</span><span class="p">];</span>
+</span></span><span class="line"><span class="cl">  <span class="n">obj</span> <span class="o">=</span> <span class="nb">nil</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">  <span class="n">NSLog</span><span class="p">(</span><span class="s">@&#34;test&#34;</span><span class="p">);</span></span></span></code></pre></div>
+</div>
+<ul>
+<li><code class="verbatim">[[MyClass alloc] init:2]</code> で、確保したオブジェクトが obj に代入される</li>
+<li><code class="verbatim">[[MyClass alloc] init:3]</code> で、確保したオブジェクトが obj に代入される</li>
+<li>この時、元々 obj に格納されていたオブジェクトの release が呼ばれ、開放される</li>
+<li><code class="verbatim">obj = nil</code> で元々 obj に格納されていたオブジェクトの release が呼ばれ、開放される</li>
+</ul>
+<div class="src src-objc">
+<div class="highlight"><pre tabindex="0" class="chroma"><code class="language-objc" data-lang="objc"><span class="line"><span class="cl"><span class="n">MyClass</span> <span class="n">dealloc</span> <span class="o">--</span> <span class="nl">obj</span><span class="p">:</span><span class="mi">2</span>
+</span></span><span class="line"><span class="cl"><span class="n">MyClass</span> <span class="n">dealloc</span> <span class="o">--</span> <span class="nl">obj</span><span class="p">:</span><span class="mi">3</span>
+</span></span><span class="line"><span class="cl"><span class="n">test</span></span></span></code></pre></div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-12" class="outline-3">
+<h3 id="headline-12">
+_strong, _weak 
+</h3>
+<div id="outline-text-headline-12" class="outline-text-3">
+<p>
+ARC では、参照の度合いによって _strong, _weak の違いがある。
+_strong は前述の通り変数がスマートポインタになる。
+一方で _weak は参照だけして retain, release を行なわない。</p>
+<p>
+なお、 _strong, _weak どちらも宣言しない場合はデフォルト _strong になる。</p>
+<p>
+_weak は、循環参照に対処するケースで利用する。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-2">
+<h2 id="headline-13">
+ARC, MRC, オートリリースプールの混在
+</h2>
+<div id="outline-text-headline-13" class="outline-text-2">
+<p>
+ARC と MRC は排他でコンパイル時に切り替える。
+この切り替えは、ソースファイル単位で出来る。
+つまり、 ARC と MRC のソースファイルが混在することがある。</p>
+<p>
+なお、ARC モードでは autorelease メソッドを使用できない。
+ただし、 前述の通り ARC と MRC は混在できるので、
+MRC でオートリリースプールに登録されたオブジェクトを
+ARC 側で開放する必要がある。</p>
+<p>
+これに対応するため、 
+ARC でも <code class="verbatim">@autoreleasepool</code> ブロックを使うことができる。</p>
+<p>
+なお、この <code class="verbatim">@autoreleasepool</code> はあくまでもオートリリースプールに対する
+制御であって、
+ARC で確保したメモリ管理はあくまでもスマートポインタによる制御である。</p>
+</div>
+</div>
+<div class="edit-meta">
+
+<br></div><nav class="pagination"><a class="nav nav-prev-2" href="https://ifritjp.github.io/documents/objective-c/" title="Objective-C"><i class="fas fa-arrow-left" aria-hidden="true"></i> Prev - Objective-C</a>
+<a class="nav nav-next-2" href="https://ifritjp.github.io/documents/rust/" title="Rusts">Next - Rusts <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+</nav><footer><p class="powered">Powered by <a href="https://gohugo.io">Hugo</a>. Theme by <a href="https://themes.gohugo.io/hugo-theme-techdoc/">TechDoc</a>. Designed by <a href="https://github.com/thingsym/hugo-theme-techdoc">Thingsym</a>.</p>
+</footer>
+</main><div class="sidebar">
+
+<nav class="slide-menu">
+<ul>
+<li class=""><a href="https://ifritjp.github.io/documents">Home</a></li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lctags/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/introduce/">C/C&#43;&#43; ソースコードタグシステム lctags の紹介</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/rename/">C/C&#43;&#43; ソースコードをリファクタリング by lctags on emacs (リネーム編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/enum/">C/C&#43;&#43; の enum 補完 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/highlight/">C/C&#43;&#43; の特定シンボルをハイライト by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/varsize/">C/C&#43;&#43; の変数サイズ確認 by lctags on emacs</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callgraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなコールグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/modulegraph/">C言語/C&#43;&#43; コードを解析してインタラクティブなモジュール構成図っぽいグラフ表示 by lctags</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/callfunc/">lctags で C 言語の関数コールを簡単に</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/register/">lctags のプロジェクト簡易登録</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/c-language/">lctags を開発している時に改めて感じた C 言語規格のイケてないところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/subroutine/">lctags を使って C/C&#43;&#43; ソースコードをリファクタリング(サブルーチン化編)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lctags/windows/">Windows で lctags (C言語/C&#43;&#43; のタグジャンプ、コールグラフ、etc..)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lua/">C/C&#43;&#43; 言語プログラマのための Lua 入門リファレンス<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lua/detail/">C インタフェース詳細編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/interface/">C インタフェース編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/fengari/">fengari の使い方 (Lua を Web ブラウザで動かす方法)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/lua5.4/">Lua 5.4 の主な変更点</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/anti-pattern/">Lua でやりがちなミス</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lua/pointer/">ポインタ編</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/emacs/">Emacs<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/go/">Goes<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/go/package/">Go のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/go/guide/">Go 入門</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/gcp/">Google Cloud Platform を使ってみる</a>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/javascript/">Javascripts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/d3force/">D3.js V4 forceSimulation のノード動的更新(追加・削除)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/javascript/thread/">JavaScript のスレッド(非同期処理)</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/libclang/">Lua で C/C&#43;&#43; の構文解析 (libclang の Lua binding)<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/operator/">libclang で演算子を特定する方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/libclang/ast/">libclang の AST(Abstract Syntax Tree)</a></li>
+</ul>
+  
+</li>
+
+<li class="parent has-sub-menu"><a href="https://ifritjp.github.io/documents/objective-c/">Objective-C<span class="mark opened">-</span></a>
+  
+<ul class="sub-menu">
+<li class="active"><a href="https://ifritjp.github.io/documents/objective-c/arc/">Objective-C  の MRC と ARC と オートリリースプール</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/rust/">Rusts<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/rust/lifetime/">C/C&#43;&#43;エンジニアのための Rust のデータ所有権とライフタイム入門</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/singleboard/">Singleboards<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/raspios64-point/">64bit 版 Raspberry Pi OS でカーネルモジュールを使った際に遭遇したエラーと対応方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/build-kernel-module-64/">64bit 版 Raspberry Pi OS のカーネルモジュールのビルド環境設定</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/bluetooth-a2dp-receiver/">Raspberry Pi で Bluetooth レシーバー (オーディオ:A2DP) を作成するための設定方法解説</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/usb-gadget/">USB Gadget 機能を利用して Raspberry Pi を HID Keyboard と RNDIS の複合デバイスにする</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/singleboard/recover-image/">誤ってパーティションテーブル (LBA 0) を消して(0クリアして)しまった場合の対処</a></li>
+</ul>
+  
+</li>
+
+<li class=" has-sub-menu"><a href="https://ifritjp.github.io/documents/lunescript/">トランスコンパイラ LuneScript で Lua の開発をもっと楽に!!<span class="mark closed">+</span></a>
+  
+<ul class="sub-menu">
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial1/">00. はじめに</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial2.setup/">01. 導入編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tutorial3.hello/">02. Hello world</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/crosscompile/">03. Lua バージョン間のクロスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/value/">04. 値編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/set/">04.2. Set 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/tuple/">04.3 タプル編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/enum/">05. enum 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/match/">06. match 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/variable/">07. 変数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/branch/">08. 一般分岐構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/loop/">09. 繰り返し構文 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/func/">10. 関数 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/multipleretval/">10.2. 多値の戻り値</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/defaultarg/">10.3. 引数の省略 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/arg/">10.4. 可変長引数、戻り値 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/closure/">10.5. クロージャ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/error/">10.6. エラーハンドリング編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilable/">11. nilable 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class1/">12. クラス 基本 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/class2accessor/">13. accessor 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classinherit/">14. クラス 継承 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classadvertise/">15. クラス advertise 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classoverride/">16. クラス override 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/interface/">17. インタフェース 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/classmapping/">18. mapping 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics/">19. generics 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/generics-go/">19.2. generics (2つの collection 型) 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/nilcond/">20. nil 条件演算子 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/import/">21. import/provide 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/require/">22. require/module 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/glue/">22.1. glue コードの半自動生成</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua/">22.2. Lua と連携 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/make/">23. ビルド 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/macro/">24. マクロ 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/cast/">25. キャスト 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/subfile/">26. subfile 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lazyloading/">27. 遅延ロード 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/shebang_main/">28. shebang とコマンドライン引数</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/dir/">29. LuneScript を利用するプロジェクトの推奨ディレクトリ構成</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go/">80. Go 言語へのトランスコンパイル</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_package/">80.2 Go 言語へのトランスコンパイル時のパッケージ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lua_runtime/">80.3 Go へトランスコンパイルした際の Lua ランタイム</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_wasm/">80.4 LuneScript の WebAssembly 対応</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async/">81. 安全な非同期処理</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/async_old/">81.1 非同期処理(過去情報)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/luago/">82. Lua と連携 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/ebnf/">A. BNF</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/lnstags/">A. lnstags によるタグジャンプ (ソースコードタグシステム)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/reason/">A. Lua のトランスコンパイラ LuneScript を開発した理由</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/regret/">A. LuneScript の言語仕様でミスだったと思っているところ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/onweb/">A. Web ブラウザ上で動作する LuneScript</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/recommend/">A. トランスコンパイラ開発のすゝめ</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/completion/">A.イマドキな開発環境でもっと楽しよう</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/box/">Box 編</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/test/">X. 言語開発の品質コントロールにおけるセルフホスティングの重要性とテスト設計</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design/">Y.1 LuneScript の開発方法</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-2/">Y.2 LuneScript の開発(型情報管理)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/design-3/">Y.3 LuneScript の開発(スコープとシンボル)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/go_study/">Z. Go 言語へのトランスコンパイル (検討段階)</a></li>
+<li class=""><a href="https://ifritjp.github.io/documents/lunescript/all/">全文検索用結合ファイル</a></li>
+</ul>
+  
+</li>
+
+<li class=""><a href="https://ifritjp.github.io/documents/misc/">細かいメモ</a>
+  
+</li>
+</ul>
+</nav>
+
+
+
+<div class="sidebar-footer"></div>
+</div>
+</div><a href="#" id="backtothetop-fixed" class="backtothetop"
+ data-backtothetop-duration="600"
+ data-backtothetop-easing="easeOutQuart"
+ data-backtothetop-fixed-fadeIn="1000"
+ data-backtothetop-fixed-fadeOut="1000"
+ data-backtothetop-fixed-bottom="10"
+ data-backtothetop-fixed-right="20">
+<span class="fa-layers fa-fw">
+<i class="fas fa-circle"></i>
+<i class="fas fa-arrow-circle-up"></i>
+</span></a>
+</div>
+</body>
+</html>

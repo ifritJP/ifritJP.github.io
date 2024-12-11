@@ -1,0 +1,315 @@
+#+TITLE: Objective-C  の MRC と ARC と オートリリースプール
+# -*- coding:utf-8 -*-
+#+AUTHOR: ifritJP
+#+STARTUP: nofold
+#+OPTIONS: ^:{}
+
+Objective-C(以降 objc) のメモリ管理について説明する。
+
+ここで言うメモリ管理とは以下を指す。
+- OS から取得したメモリをどのように開放するか？
+- 開放処理をどの様にコード上に書くか？
+
+なお、objc のメモリ管理には次の2つのモードがある。
+
+- MRC(Manual Reference Counting)
+- ARC(Automatic Reference Counting)
+
+このドキュメントでは、この 2 つのモードと、
+ オートリリースプールについて説明する。
+
+* 実行環境
+
+このドキュメントを書くにあたって、
+objc のコードをビルドして動作させた結果を確認している。
+
+その動作確認環境を用意する際、
+最も簡単なのは Mac を使うことだが、
+残念ながら Mac を持っていない。
+そこで、ここでは次の Docker 環境を利用して objc の動作確認を行なった。
+
+<https://hub.docker.com/r/doratex/clang9-objc2>
+
+上記 docker イメージについては以下を参照。
+
+<https://qiita.com/doraTeX/items/c35e25c2afbb48a1469f>
+
+* サンプルクラス
+
+メモリの開放タイミングを確認するため、次のクラス MyClass を宣言している。
+
+このクラスは、オブジェクトが開放される直前に次のメッセージを出力する。
+
+: MyClass dealloc -- obj:%d
+
+ここで、 =%d= にはオブジェクト生成時に与えた整数値が入る。
+
+- sub.h
+
+#+BEGIN_SRC objc
+#import <Foundation/Foundation.h>
+
+@interface MyClass : NSObject
+@property (nonatomic) int val;
+- (instancetype)init:(int)val;
+- (void)dealloc;
+@end
+#+END_SRC
+
+- sub.m
+
+#+BEGIN_SRC objc
+#import <sub.h>
+
+@implementation MyClass
+- (instancetype)init:(int)val {
+    self = [super init];
+    self.val = val;
+    return self;
+}
+
+- (void)dealloc {
+  NSLog(@"MyClass dealloc -- obj:%d", self.val);
+}
+@end
+#+END_SRC
+
+
+
+* MRC
+
+MRC は、古典的なメモリ管理であり、
+その名の通り確保したメモリ開放の API を
+コード上に組み込んでおく必要がある。
+
+例えば以下のような感じで、 alloc で確保したオブジェクトに対して
+明示的に release をコールして開放を行なう。
+
+#+BEGIN_SRC objc
+    MyClass *obj = [[MyClass alloc] init:0];
+    [obj release];
+#+END_SRC
+
+なお、このコードを動かすと次のメッセージが出力される。
+
+: MyClass dealloc -- obj:0
+
+** 参照カウンタ
+
+objc でヒープ内に確保したオブジェクトは、参照カウンタを持つ。
+
+この参照カウンタが 0 になったタイミングで、そのオブジェクトは開放される。
+
+参照カウンタの制御に関するメソッドには次がある。
+
+- alloc
+  - オブジェクトをヒープ内に確保し、参照カウンタを 1 にセットする
+- retain
+  - 参照カウンタをインクリメントする
+- release
+  - 参照カウンタをデクリメントして、0 になった場合にオブジェクトを開放する
+
+以下のコードを実行すると、
+
+#+BEGIN_SRC objc
+    obj = [[MyClass alloc] init:1]; /* step1, 参照カウンタ: 1 */
+    [obj retain];                   /* step2, 参照カウンタ: 2 */
+    NSLog( @"release-1" );          /* step2-2 */
+    [obj release];                  /* step3, 参照カウンタ: 1 */
+    NSLog( @"release-2" );          /* step3-2 */
+    [obj release];                  /* step4, 参照カウンタ: 0 */
+    NSLog( @"release-3" );          /* step4-2 */
+#+END_SRC
+
+この時の出力は次になる。
+
+#+BEGIN_SRC objc
+release-1
+release-2
+MyClass dealloc -- obj:1
+release-3
+#+END_SRC
+
+この時の参照カウンタに着目して動作を説明すると、以下の通り。
+
+- step1 の段階で参照カウンタが 1 にセットされる
+- step2 では、retain によってインクリメンされて参照カウンタは 2 になる。
+- step3 では、release によって参照カウンタがデクリメントされる。
+  デクリメント後の参照カウンタは 1 なので、オブジェクトはまだ開放されない
+- step4 では、release によって参照カウンタがデクリメントされる。
+  デクリメント後の参照カウンタは 0 なので、オブジェクトは開放される。
+
+* オートリリースプール
+
+MRC でよくある問題は、 release し忘れによるメモリリークである。
+
+確保したヒープオブジェクトに対して release しないと、
+そのメモリはプログラム自体が終了しない限りはヒープ内に残り続ける。
+これによりメモリが圧迫されアプリが異常終了したり、
+OS 自体の挙動が重くなったりすることがある。
+
+この release の実行を手助けするのが、 *オートリリースプール* である。
+
+** オートリリースプールのコンセプト
+
+オートリリースプールのコンセプトは、次の通りである。
+
+『ヒープオブジェクト個々に対して release するのは面倒なので、
+ヒープオブジェクトをグループでまとめて管理するクラスを作成し、
+そのクラスのインスタンスを開放するタイミングで、
+その管理クラスインスタンスに登録されているヒープオブジェクトに対して
+まとめて release を呼ぶ』
+
+
+オートリリースプールには、 次の 2 つの生成方法がある。
+- NSAutoreleasePool のインスタンスを生成する
+- =@autoreleasepool= ブロックを使用する
+
+** NSAutoreleasePool のサンプル
+
+NSAutoreleasePool のサンプル を以下に示す。
+
+#+BEGIN_SRC objc
+{
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+
+  MyClass *obj;
+  obj = [[[MyClass alloc] init:0]autorelease];
+  obj = [[[MyClass alloc] init:1]autorelease];
+
+  NSLog( @"NSAutoreleasePool-0" );
+  [pool release];
+  NSLog( @"NSAutoreleasePool-1" );
+}
+#+END_SRC
+
+上記サンプルを解説すると、
+
+- =[[NSAutoreleasePool alloc] init]= によって、オートリリースプールを生成する
+- =[pool release];= によって、オートリリースプールを開放する
+- 上記処理の間に *autorelease メソッド* が呼ばれたヒープオブジェクトは、
+  オートリリースプールに登録され、オートリリースプール開放時に、
+  登録されているヒープオブジェクト自体も release される。
+
+上記サンプルの出力は以下の通り。
+
+#+BEGIN_SRC objc
+NSAutoreleasePool-0
+MyClass dealloc -- obj:1
+MyClass dealloc -- obj:0
+NSAutoreleasePool-1
+#+END_SRC
+
+上記出力を見ると、 =[pool release];= によって、
+オートリリースプールに登録されている
+ヒープオブジェクトの release が呼ばれ開放されていることが分かる。
+
+
+** =@autoreleasepool= のサンプル
+
+=@autoreleasepool= は、
+ NSAutoreleasePool のシンタックスシュガーである。
+
+次のコードと、
+
+#+BEGIN_SRC objc
+{
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+  // some codes
+  [pool release];
+}
+#+END_SRC
+
+次のコードは等価である。
+
+#+BEGIN_SRC objc
+@autoreleasepool {
+  // some codes
+}
+#+END_SRC
+
+
+** オートリリースプールの注意点
+
+オートリリースプールを利用することで、メモリ管理の手間を削減できる。
+
+一方で、メモリの開放タイミングがオートリリースプール開放時になるため、
+細かいメモリの開放制御を行えないデメリットもある。
+
+例えば、非常に大きいサイズのメモリを確保するような場合、
+オートリリースプールに開放処理を任せてしまうと、
+メモリ開放が後回しになってしまってヒープメモリを
+圧迫してしまう可能性がある。
+
+オートリリースプールを使用する場合は、
+オートリリースプール自体のライフサイクルを十分検討する必要がある。
+
+* ARC
+
+オートリリースプールは、 
+MRC で確保したヒープオブジェクトを登録することで
+release を一括処理することを目的としていた。
+そして、オートリリースプール自体の宣言は
+依然としてコード上に記述する必要がある。
+
+一方で ARC は、基本的にコード上には何も記述する必要がない。
+ただし、 ARC は MRC 上で成り立っている。
+
+これは、 retain や release を開発者がコードに記述する代わりに
+ARC のランタイムで実行時に等価の処理を行なうようになる、
+ということである。
+
+つまり、ARC は「変数がスマートポインタになる」と考えれば良い。
+
+
+** サンプル
+
+次に ARC によるメモリ開放タイミングのサンプルを示す。
+
+#+BEGIN_SRC objc
+  MyClass *obj = [[MyClass alloc] init:2];
+  obj = [[MyClass alloc] init:3];
+  obj = nil;
+  NSLog(@"test");
+#+END_SRC
+
+- =[[MyClass alloc] init:2]= で、確保したオブジェクトが obj に代入される
+- =[[MyClass alloc] init:3]= で、確保したオブジェクトが obj に代入される
+- この時、元々 obj に格納されていたオブジェクトの release が呼ばれ、開放される
+- =obj = nil= で元々 obj に格納されていたオブジェクトの release が呼ばれ、開放される
+
+
+#+BEGIN_SRC objc
+MyClass dealloc -- obj:2
+MyClass dealloc -- obj:3
+test
+#+END_SRC
+
+** _strong, _weak 
+
+ARC では、参照の度合いによって _strong, _weak の違いがある。
+_strong は前述の通り変数がスマートポインタになる。
+一方で _weak は参照だけして retain, release を行なわない。
+
+なお、 _strong, _weak どちらも宣言しない場合はデフォルト _strong になる。
+
+_weak は、循環参照に対処するケースで利用する。
+
+* ARC, MRC, オートリリースプールの混在
+
+ARC と MRC は排他でコンパイル時に切り替える。
+この切り替えは、ソースファイル単位で出来る。
+つまり、 ARC と MRC のソースファイルが混在することがある。
+
+なお、ARC モードでは autorelease メソッドを使用できない。
+ただし、 前述の通り ARC と MRC は混在できるので、
+MRC でオートリリースプールに登録されたオブジェクトを
+ARC 側で開放する必要がある。
+
+これに対応するため、 
+ARC でも =@autoreleasepool= ブロックを使うことができる。
+
+なお、この =@autoreleasepool= はあくまでもオートリリースプールに対する
+制御であって、
+ARC で確保したメモリ管理はあくまでもスマートポインタによる制御である。
+
