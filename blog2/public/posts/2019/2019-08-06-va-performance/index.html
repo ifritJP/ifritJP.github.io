@@ -179,29 +179,58 @@ LuneScript のメソッド呼び出し処理を C 言語にトランスコンパ
 <p>
 実験用に次の C 言語コードを作成した。</p>
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">func</span>( <span style="color:#66d9ef">int</span> val1, <span style="color:#66d9ef">int</span> val2 ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val1 <span style="color:#f92672">+</span> val2;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">sub</span>( <span style="color:#66d9ef">int</span> dummy, <span style="color:#66d9ef">int</span> val1, <span style="color:#66d9ef">int</span> val2 ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">func</span>( val1, val2 );
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">funcv2</span>( va_list ap ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val1 <span style="color:#f92672">=</span> <span style="color:#a6e22e">va_arg</span>( ap, <span style="color:#66d9ef">int</span> );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val2 <span style="color:#f92672">=</span> <span style="color:#a6e22e">va_arg</span>( ap, <span style="color:#66d9ef">int</span> );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val1 <span style="color:#f92672">+</span> val2;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">subv2</span>( <span style="color:#66d9ef">int</span> dummy, ... ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val;
-</span></span><span style="display:flex;"><span>    va_list ap;
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">va_start</span>( ap, dummy );
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    val <span style="color:#f92672">=</span> <span style="color:#a6e22e">funcv2</span>( ap );
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">va_end</span>( ap );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val;
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val1</span> <span class="o">+</span> <span class="n">val2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">int</span> <span class="n">dummy</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">funcv2</span><span class="p">(</span> <span class="n">va_list</span> <span class="n">ap</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val1</span> <span class="o">=</span> <span class="nf">va_arg</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="kt">int</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val2</span> <span class="o">=</span> <span class="nf">va_arg</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="kt">int</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val1</span> <span class="o">+</span> <span class="n">val2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">subv2</span><span class="p">(</span> <span class="kt">int</span> <span class="n">dummy</span><span class="p">,</span> <span class="p">...</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">va_list</span> <span class="n">ap</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">va_start</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="n">dummy</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">val</span> <span class="o">=</span> <span class="nf">funcv2</span><span class="p">(</span> <span class="n">ap</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nf">va_end</span><span class="p">(</span> <span class="n">ap</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 func, sub は、可変長引数を使用しないパターン。
@@ -209,86 +238,172 @@ funcv2, subv2 は、可変長引数を使用しするパターン。</p>
 <p>
 ちなみにコードの全体は次の通りである。</p>
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;sys/time.h&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;time.h&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdio.h&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e">#include</span> <span style="color:#75715e">&lt;stdarg.h&gt;</span><span style="color:#75715e">
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">func</span>( <span style="color:#66d9ef">int</span> val1, <span style="color:#66d9ef">int</span> val2 ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val1 <span style="color:#f92672">+</span> val2;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">sub</span>( <span style="color:#66d9ef">int</span> dummy, <span style="color:#66d9ef">int</span> val1, <span style="color:#66d9ef">int</span> val2 ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">func</span>( val1, val2 );
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">funcv2</span>( va_list ap ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val1 <span style="color:#f92672">=</span> <span style="color:#a6e22e">va_arg</span>( ap, <span style="color:#66d9ef">int</span> );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val2 <span style="color:#f92672">=</span> <span style="color:#a6e22e">va_arg</span>( ap, <span style="color:#66d9ef">int</span> );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val1 <span style="color:#f92672">+</span> val2;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">subv2</span>( <span style="color:#66d9ef">int</span> dummy, ... ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val;
-</span></span><span style="display:flex;"><span>    va_list ap;
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">va_start</span>( ap, dummy );
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    val <span style="color:#f92672">=</span> <span style="color:#a6e22e">funcv2</span>( ap );
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">va_end</span>( ap );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">funcv3</span>( va_list ap ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val1 <span style="color:#f92672">=</span> <span style="color:#a6e22e">va_arg</span>( ap, <span style="color:#66d9ef">int</span> );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val2 <span style="color:#f92672">=</span> <span style="color:#a6e22e">va_arg</span>( ap, <span style="color:#66d9ef">int</span> );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val3 <span style="color:#f92672">=</span> <span style="color:#a6e22e">va_arg</span>( ap, <span style="color:#66d9ef">int</span> );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val1 <span style="color:#f92672">+</span> val2 <span style="color:#f92672">+</span> val3;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">int</span> <span style="color:#a6e22e">subv3</span>( <span style="color:#66d9ef">int</span> dummy, ... ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> val;
-</span></span><span style="display:flex;"><span>    va_list ap;
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">va_start</span>( ap, dummy );
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    val <span style="color:#f92672">=</span> <span style="color:#a6e22e">funcv3</span>( ap );
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">va_end</span>( ap );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> val;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">double</span> <span style="color:#a6e22e">getTime</span>( <span style="color:#66d9ef">void</span> ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">struct</span> timeval tm;
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gettimeofday</span>( <span style="color:#f92672">&amp;</span>tm, NULL );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> tm.tv_sec <span style="color:#f92672">+</span> tm.tv_usec <span style="color:#f92672">/</span> <span style="color:#ae81ff">1000000.0</span>;
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">main</span>( <span style="color:#66d9ef">int</span> argc, <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">char</span> <span style="color:#f92672">*</span> argv[] ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> loop <span style="color:#f92672">=</span> <span style="color:#a6e22e">strtoll</span>( argv[ <span style="color:#ae81ff">1</span> ], NULL, <span style="color:#ae81ff">10</span> ) <span style="color:#f92672">*</span> <span style="color:#ae81ff">1000ll</span>;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">long</span> <span style="color:#66d9ef">long</span> count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">int</span> sum <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>;
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">double</span> prev <span style="color:#f92672">=</span> <span style="color:#a6e22e">getTime</span>();
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> ( <span style="color:#a6e22e">strcmp</span>( argv[ <span style="color:#ae81ff">2</span> ], <span style="color:#e6db74">&#34;1&#34;</span> ) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> ) {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> ( count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; count <span style="color:#f92672">&lt;</span> loop; count<span style="color:#f92672">++</span> ) {
-</span></span><span style="display:flex;"><span>            sum <span style="color:#f92672">+=</span> <span style="color:#a6e22e">sub</span>( <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span> );
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span> <span style="color:#66d9ef">if</span> ( <span style="color:#a6e22e">strcmp</span>( argv[ <span style="color:#ae81ff">2</span> ], <span style="color:#e6db74">&#34;2&#34;</span> ) <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span> ) {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> ( count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; count <span style="color:#f92672">&lt;</span> loop; count<span style="color:#f92672">++</span> ) {
-</span></span><span style="display:flex;"><span>            sum <span style="color:#f92672">+=</span> <span style="color:#a6e22e">subv2</span>( <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span> );
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">else</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> ( count <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>; count <span style="color:#f92672">&lt;</span> loop; count<span style="color:#f92672">++</span> ) {
-</span></span><span style="display:flex;"><span>            sum <span style="color:#f92672">+=</span> <span style="color:#a6e22e">subv3</span>( <span style="color:#ae81ff">0</span>, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">3</span> );
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">printf</span>( <span style="color:#e6db74">&#34;%s: %lld time = %g, %d</span><span style="color:#ae81ff">\n</span><span style="color:#e6db74">&#34;</span>, argv[ <span style="color:#ae81ff">2</span> ], loop, <span style="color:#a6e22e">getTime</span>() <span style="color:#f92672">-</span> prev, sum );
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span><span class="lnt">80
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;sys/time.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;time.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdio.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp">#include</span> <span class="cpf">&lt;stdarg.h&gt;</span><span class="cp">
+</span></span></span><span class="line"><span class="cl"><span class="cp"></span>
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">func</span><span class="p">(</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val1</span> <span class="o">+</span> <span class="n">val2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">sub</span><span class="p">(</span> <span class="kt">int</span> <span class="n">dummy</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val1</span><span class="p">,</span> <span class="kt">int</span> <span class="n">val2</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nf">func</span><span class="p">(</span> <span class="n">val1</span><span class="p">,</span> <span class="n">val2</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">funcv2</span><span class="p">(</span> <span class="n">va_list</span> <span class="n">ap</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val1</span> <span class="o">=</span> <span class="nf">va_arg</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="kt">int</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val2</span> <span class="o">=</span> <span class="nf">va_arg</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="kt">int</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val1</span> <span class="o">+</span> <span class="n">val2</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">subv2</span><span class="p">(</span> <span class="kt">int</span> <span class="n">dummy</span><span class="p">,</span> <span class="p">...</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">va_list</span> <span class="n">ap</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">va_start</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="n">dummy</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">val</span> <span class="o">=</span> <span class="nf">funcv2</span><span class="p">(</span> <span class="n">ap</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nf">va_end</span><span class="p">(</span> <span class="n">ap</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">funcv3</span><span class="p">(</span> <span class="n">va_list</span> <span class="n">ap</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val1</span> <span class="o">=</span> <span class="nf">va_arg</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="kt">int</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val2</span> <span class="o">=</span> <span class="nf">va_arg</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="kt">int</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val3</span> <span class="o">=</span> <span class="nf">va_arg</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="kt">int</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val1</span> <span class="o">+</span> <span class="n">val2</span> <span class="o">+</span> <span class="n">val3</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">int</span> <span class="nf">subv3</span><span class="p">(</span> <span class="kt">int</span> <span class="n">dummy</span><span class="p">,</span> <span class="p">...</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">va_list</span> <span class="n">ap</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">va_start</span><span class="p">(</span> <span class="n">ap</span><span class="p">,</span> <span class="n">dummy</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">val</span> <span class="o">=</span> <span class="nf">funcv3</span><span class="p">(</span> <span class="n">ap</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nf">va_end</span><span class="p">(</span> <span class="n">ap</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">val</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kt">double</span> <span class="nf">getTime</span><span class="p">(</span> <span class="kt">void</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">struct</span> <span class="n">timeval</span> <span class="n">tm</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">gettimeofday</span><span class="p">(</span> <span class="o">&amp;</span><span class="n">tm</span><span class="p">,</span> <span class="nb">NULL</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="n">tm</span><span class="p">.</span><span class="n">tv_sec</span> <span class="o">+</span> <span class="n">tm</span><span class="p">.</span><span class="n">tv_usec</span> <span class="o">/</span> <span class="mf">1000000.0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="nf">main</span><span class="p">(</span> <span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span> <span class="n">argv</span><span class="p">[]</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">long</span> <span class="kt">long</span> <span class="n">loop</span> <span class="o">=</span> <span class="nf">strtoll</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span> <span class="mi">1</span> <span class="p">],</span> <span class="nb">NULL</span><span class="p">,</span> <span class="mi">10</span> <span class="p">)</span> <span class="o">*</span> <span class="mi">1000ll</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">long</span> <span class="kt">long</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="kt">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kt">double</span> <span class="n">prev</span> <span class="o">=</span> <span class="nf">getTime</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="p">(</span> <span class="nf">strcmp</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span> <span class="mi">2</span> <span class="p">],</span> <span class="s">&#34;1&#34;</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="n">loop</span><span class="p">;</span> <span class="n">count</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">sum</span> <span class="o">+=</span> <span class="nf">sub</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="k">if</span> <span class="p">(</span> <span class="nf">strcmp</span><span class="p">(</span> <span class="n">argv</span><span class="p">[</span> <span class="mi">2</span> <span class="p">],</span> <span class="s">&#34;2&#34;</span> <span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="n">loop</span><span class="p">;</span> <span class="n">count</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">sum</span> <span class="o">+=</span> <span class="nf">subv2</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">else</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="p">(</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">count</span> <span class="o">&lt;</span> <span class="n">loop</span><span class="p">;</span> <span class="n">count</span><span class="o">++</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="n">sum</span> <span class="o">+=</span> <span class="nf">subv3</span><span class="p">(</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">printf</span><span class="p">(</span> <span class="s">&#34;%s: %lld time = %g, %d</span><span class="se">\n</span><span class="s">&#34;</span><span class="p">,</span> <span class="n">argv</span><span class="p">[</span> <span class="mi">2</span> <span class="p">],</span> <span class="n">loop</span><span class="p">,</span> <span class="nf">getTime</span><span class="p">()</span> <span class="o">-</span> <span class="n">prev</span><span class="p">,</span> <span class="n">sum</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 このプログラムは、コマンドラインの引数によって
@@ -390,11 +505,11 @@ sub, subv2, subv3 を指定の回数分実行し、実行時間を表示する�
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>

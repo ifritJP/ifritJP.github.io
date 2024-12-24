@@ -214,50 +214,100 @@ root ディレクトリとしてアクセスする</li>
 <p>
 次に OPFS の API を使ったサンプルを示す。</p>
 <div class="src src-js">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">createDir</span>( <span style="color:#a6e22e">dirname</span> ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">root</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">navigator</span>.<span style="color:#a6e22e">storage</span>.<span style="color:#a6e22e">getDirectory</span>();
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">dirHandle</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">root</span>.<span style="color:#a6e22e">getDirectoryHandle</span>( <span style="color:#a6e22e">dirname</span>, { <span style="color:#a6e22e">create</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span> } );
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">DirObj</span>( <span style="color:#a6e22e">dirHandle</span> );
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">removeDir</span>( <span style="color:#a6e22e">dirname</span> ) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">try</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">const</span> <span style="color:#a6e22e">root</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">navigator</span>.<span style="color:#a6e22e">storage</span>.<span style="color:#a6e22e">getDirectory</span>();
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">root</span>.<span style="color:#a6e22e">removeEntry</span>( <span style="color:#a6e22e">dirname</span>, { <span style="color:#a6e22e">recursive</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span> } );
-</span></span><span style="display:flex;"><span>    } <span style="color:#66d9ef">catch</span> ( <span style="color:#a6e22e">err</span> ) {
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>( <span style="color:#a6e22e">err</span> );
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">DirObj</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">constructor</span>( <span style="color:#a6e22e">dirHandle</span> ) {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">dirHandle</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">dirHandle</span>;
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">async</span> <span style="color:#a6e22e">createFile</span>( <span style="color:#a6e22e">filename</span> ){
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">fileHandle</span> <span style="color:#f92672">=</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#66d9ef">await</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">dirHandle</span>.<span style="color:#a6e22e">getFileHandle</span>( <span style="color:#a6e22e">filename</span>, { <span style="color:#a6e22e">create</span><span style="color:#f92672">:</span> <span style="color:#66d9ef">true</span> });
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">new</span> <span style="color:#a6e22e">FileObj</span>( <span style="color:#a6e22e">fileHandle</span> );
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">async</span> <span style="color:#a6e22e">lsdir</span>( <span style="color:#a6e22e">name</span> ) {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#66d9ef">await</span> (<span style="color:#66d9ef">const</span> [<span style="color:#a6e22e">key</span>, <span style="color:#a6e22e">value</span>] <span style="color:#66d9ef">of</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">dirHandle</span>.<span style="color:#a6e22e">entries</span>()) {
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>( <span style="color:#a6e22e">name</span>, <span style="color:#a6e22e">key</span>, <span style="color:#a6e22e">value</span> );
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">export</span> <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">FileObj</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">constructor</span>( <span style="color:#a6e22e">fileHandle</span> ) {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">fileHandle</span> <span style="color:#f92672">=</span> <span style="color:#a6e22e">fileHandle</span>;
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">async</span> <span style="color:#a6e22e">getWritable</span>() {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">fileHandle</span>.<span style="color:#a6e22e">createWritable</span>();
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">async</span> <span style="color:#a6e22e">getBlob</span>() {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">await</span> <span style="color:#66d9ef">this</span>.<span style="color:#a6e22e">fileHandle</span>.<span style="color:#a6e22e">getFile</span>();
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl"><span class="kr">export</span> <span class="kr">async</span> <span class="kd">function</span> <span class="nx">createDir</span><span class="p">(</span> <span class="nx">dirname</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">root</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">navigator</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nx">getDirectory</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">const</span> <span class="nx">dirHandle</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">root</span><span class="p">.</span><span class="nx">getDirectoryHandle</span><span class="p">(</span> <span class="nx">dirname</span><span class="p">,</span> <span class="p">{</span> <span class="nx">create</span><span class="o">:</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="k">new</span> <span class="nx">DirObj</span><span class="p">(</span> <span class="nx">dirHandle</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kr">export</span> <span class="kr">async</span> <span class="kd">function</span> <span class="nx">removeDir</span><span class="p">(</span> <span class="nx">dirname</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">try</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kr">const</span> <span class="nx">root</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">navigator</span><span class="p">.</span><span class="nx">storage</span><span class="p">.</span><span class="nx">getDirectory</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">        <span class="kr">await</span> <span class="nx">root</span><span class="p">.</span><span class="nx">removeEntry</span><span class="p">(</span> <span class="nx">dirname</span><span class="p">,</span> <span class="p">{</span> <span class="nx">recursive</span><span class="o">:</span> <span class="kc">true</span> <span class="p">}</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span> <span class="nx">err</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="nx">err</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kr">export</span> <span class="kr">class</span> <span class="nx">DirObj</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">constructor</span><span class="p">(</span> <span class="nx">dirHandle</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">this</span><span class="p">.</span><span class="nx">dirHandle</span> <span class="o">=</span> <span class="nx">dirHandle</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">async</span> <span class="nx">createFile</span><span class="p">(</span> <span class="nx">filename</span> <span class="p">){</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">let</span> <span class="nx">fileHandle</span> <span class="o">=</span>
+</span></span><span class="line"><span class="cl">            <span class="kr">await</span> <span class="k">this</span><span class="p">.</span><span class="nx">dirHandle</span><span class="p">.</span><span class="nx">getFileHandle</span><span class="p">(</span> <span class="nx">filename</span><span class="p">,</span> <span class="p">{</span> <span class="nx">create</span><span class="o">:</span> <span class="kc">true</span> <span class="p">});</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="k">new</span> <span class="nx">FileObj</span><span class="p">(</span> <span class="nx">fileHandle</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="kr">async</span> <span class="nx">lsdir</span><span class="p">(</span> <span class="nx">name</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="kr">await</span> <span class="p">(</span><span class="kr">const</span> <span class="p">[</span><span class="nx">key</span><span class="p">,</span> <span class="nx">value</span><span class="p">]</span> <span class="k">of</span> <span class="k">this</span><span class="p">.</span><span class="nx">dirHandle</span><span class="p">.</span><span class="nx">entries</span><span class="p">())</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="nx">name</span><span class="p">,</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">value</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kr">export</span> <span class="kr">class</span> <span class="nx">FileObj</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">constructor</span><span class="p">(</span> <span class="nx">fileHandle</span> <span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">this</span><span class="p">.</span><span class="nx">fileHandle</span> <span class="o">=</span> <span class="nx">fileHandle</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="kr">async</span> <span class="nx">getWritable</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kr">await</span> <span class="k">this</span><span class="p">.</span><span class="nx">fileHandle</span><span class="p">.</span><span class="nx">createWritable</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="kr">async</span> <span class="nx">getBlob</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kr">await</span> <span class="k">this</span><span class="p">.</span><span class="nx">fileHandle</span><span class="p">.</span><span class="nx">getFile</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 ここで、上記サンプルの関数について説明する。</p>
@@ -305,27 +355,56 @@ FileSystemWritableFileStream インスタンスを返す。</li>
 </ul>
 <p>上記サンプルは次のように使用する。</p>
 <div class="src src-js">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-js" data-lang="js"><span style="display:flex;"><span>  <span style="color:#66d9ef">async</span> <span style="color:#66d9ef">function</span> <span style="color:#a6e22e">Test</span>() {
-</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">dirObj</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">createDir</span>( <span style="color:#e6db74">&#34;hoge&#34;</span> );
-</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">fileObj</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">dirObj</span>.<span style="color:#a6e22e">createFile</span>( <span style="color:#e6db74">&#34;sage.txt&#34;</span> );
-</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">writable</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">fileObj</span>.<span style="color:#a6e22e">getWritable</span>();
-</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">writable</span>.<span style="color:#a6e22e">write</span>( <span style="color:#e6db74">&#34;abc&#34;</span> );
-</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">writable</span>.<span style="color:#a6e22e">write</span>( <span style="color:#e6db74">&#34;def&#34;</span> );
-</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">writable</span>.<span style="color:#a6e22e">close</span>();
-</span></span><span style="display:flex;"><span>     <span style="color:#66d9ef">let</span> <span style="color:#a6e22e">file</span> <span style="color:#f92672">=</span> <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">fileObj</span>.<span style="color:#a6e22e">getBlob</span>();
-</span></span><span style="display:flex;"><span>     <span style="color:#a6e22e">console</span>.<span style="color:#a6e22e">log</span>( <span style="color:#66d9ef">await</span> <span style="color:#a6e22e">file</span>.<span style="color:#a6e22e">text</span>() );  <span style="color:#75715e">// abcdef
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>  }
-</span></span><span style="display:flex;"><span>  <span style="color:#a6e22e">Test</span>();</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-js" data-lang="js"><span class="line"><span class="cl">  <span class="kr">async</span> <span class="kd">function</span> <span class="nx">Test</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">     <span class="kd">let</span> <span class="nx">dirObj</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">createDir</span><span class="p">(</span> <span class="s2">&#34;hoge&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">     <span class="kd">let</span> <span class="nx">fileObj</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">dirObj</span><span class="p">.</span><span class="nx">createFile</span><span class="p">(</span> <span class="s2">&#34;sage.txt&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">     <span class="kd">let</span> <span class="nx">writable</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">fileObj</span><span class="p">.</span><span class="nx">getWritable</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">     <span class="kr">await</span> <span class="nx">writable</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span> <span class="s2">&#34;abc&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">     <span class="kr">await</span> <span class="nx">writable</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span> <span class="s2">&#34;def&#34;</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">     <span class="kr">await</span> <span class="nx">writable</span><span class="p">.</span><span class="nx">close</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">     <span class="kd">let</span> <span class="nx">file</span> <span class="o">=</span> <span class="kr">await</span> <span class="nx">fileObj</span><span class="p">.</span><span class="nx">getBlob</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span> <span class="kr">await</span> <span class="nx">file</span><span class="p">.</span><span class="nx">text</span><span class="p">()</span> <span class="p">);</span>  <span class="c1">// abcdef
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>  <span class="p">}</span>
+</span></span><span class="line"><span class="cl">  <span class="nx">Test</span><span class="p">();</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 このサンプルは、次のようなディレクトリ構成になる。</p>
 <div class="src src-txt">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>root/
-</span></span><span style="display:flex;"><span>  |
-</span></span><span style="display:flex;"><span>  +--- hoge/
-</span></span><span style="display:flex;"><span>         |
-</span></span><span style="display:flex;"><span>         +--- sage.txt
-</span></span><span style="display:flex;"><span>              ( &#34;abcdef&#34; )</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">root/
+</span></span><span class="line"><span class="cl">  |
+</span></span><span class="line"><span class="cl">  +--- hoge/
+</span></span><span class="line"><span class="cl">         |
+</span></span><span class="line"><span class="cl">         +--- sage.txt
+</span></span><span class="line"><span class="cl">              ( &#34;abcdef&#34; )</span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -400,11 +479,11 @@ OPFS を利用する可能性が今後増えるかもしれない。</p>
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>

@@ -191,85 +191,170 @@ autoboxing 相当の処理をやめて Golang ネイティブの Generics を利
 リストから値を取りだしてトータルを計算する処理を 1000000 回繰替えして、
 その時間を計測します。</p>
 <div class="src src-go">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#f92672">package</span> <span style="color:#a6e22e">main</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> . <span style="color:#e6db74">&#34;github.com/ifritJP/LuneScript/src/lune/base/runtime_go&#34;</span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">init_miniGo</span> <span style="color:#66d9ef">bool</span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">miniGo__mod__</span> <span style="color:#66d9ef">string</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">// generics 
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">GenList</span>[<span style="color:#a6e22e">V</span> <span style="color:#a6e22e">any</span>] <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">items</span> []<span style="color:#a6e22e">V</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">list</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">GenList</span>[<span style="color:#a6e22e">V</span>]) <span style="color:#a6e22e">GetAt</span>( <span style="color:#a6e22e">index</span> <span style="color:#66d9ef">int</span> ) <span style="color:#a6e22e">V</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">items</span>[<span style="color:#a6e22e">index</span>]
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">list</span> <span style="color:#a6e22e">GenList</span>[<span style="color:#66d9ef">int</span>]
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">miniGo_generics</span>(<span style="color:#a6e22e">_env</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">LnsEnv</span>) <span style="color:#a6e22e">LnsInt</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">total</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_forWork0</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">_forWork0</span> <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">1000000</span>; <span style="color:#a6e22e">_forWork0</span><span style="color:#f92672">++</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_forWork1</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">_forWork1</span> <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">1000</span>; <span style="color:#a6e22e">_forWork1</span><span style="color:#f92672">++</span> {
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">loop</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">_forWork1</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">total</span> = <span style="color:#a6e22e">total</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">GetAt</span>(<span style="color:#a6e22e">loop</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>)
-</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// total = total + list.items[loop-1]
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">total</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">// autoboxing
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">BoxingList</span> <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">items</span> []<span style="color:#a6e22e">any</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">list</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">BoxingList</span>) <span style="color:#a6e22e">GetAt</span>( <span style="color:#a6e22e">index</span> <span style="color:#66d9ef">int</span> ) <span style="color:#a6e22e">any</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">items</span>[<span style="color:#a6e22e">index</span>]
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">var</span> <span style="color:#a6e22e">boxing</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">BoxingList</span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">miniGo_autoboxing</span>(<span style="color:#a6e22e">_env</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">LnsEnv</span>) <span style="color:#a6e22e">LnsInt</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">total</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_forWork0</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">_forWork0</span> <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">1000000</span>; <span style="color:#a6e22e">_forWork0</span><span style="color:#f92672">++</span> {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_forWork1</span> <span style="color:#f92672">:=</span> <span style="color:#ae81ff">1</span>; <span style="color:#a6e22e">_forWork1</span> <span style="color:#f92672">&lt;=</span> <span style="color:#ae81ff">1000</span>; <span style="color:#a6e22e">_forWork1</span><span style="color:#f92672">++</span> {
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">loop</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">_forWork1</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">total</span> = <span style="color:#a6e22e">total</span> <span style="color:#f92672">+</span> <span style="color:#a6e22e">boxing</span>.<span style="color:#a6e22e">GetAt</span>(<span style="color:#a6e22e">loop</span><span style="color:#f92672">-</span><span style="color:#ae81ff">1</span>).(<span style="color:#66d9ef">int</span>)
-</span></span><span style="display:flex;"><span>            <span style="color:#75715e">// total = total + boxing.items[loop-1].(int)
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>        }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">total</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">Lns_miniGo_init</span>(<span style="color:#a6e22e">_env</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">LnsEnv</span>) {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> <span style="color:#a6e22e">init_miniGo</span> { <span style="color:#66d9ef">return</span> }
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">init_miniGo</span> = <span style="color:#66d9ef">true</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">miniGo__mod__</span> = <span style="color:#e6db74">&#34;@miniGo&#34;</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Lns_InitMod</span>()
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">list</span> = <span style="color:#a6e22e">GenList</span>[<span style="color:#66d9ef">int</span>]{[]<span style="color:#66d9ef">int</span>{}}
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">boxing</span> = <span style="color:#f92672">&amp;</span><span style="color:#a6e22e">BoxingList</span>{[]<span style="color:#a6e22e">any</span>{}}
-</span></span><span style="display:flex;"><span>    {
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">_forFrom0</span> <span style="color:#a6e22e">LnsInt</span> = <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">var</span> <span style="color:#a6e22e">_forTo0</span> <span style="color:#a6e22e">LnsInt</span> = <span style="color:#ae81ff">1000</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">for</span> <span style="color:#a6e22e">_forWork0</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">_forFrom0</span>; <span style="color:#a6e22e">_forWork0</span> <span style="color:#f92672">&lt;=</span> <span style="color:#a6e22e">_forTo0</span>; <span style="color:#a6e22e">_forWork0</span><span style="color:#f92672">++</span> {
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">count</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">_forWork0</span>
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">items</span> = append(<span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">items</span>,<span style="color:#a6e22e">count</span>)
-</span></span><span style="display:flex;"><span>            <span style="color:#a6e22e">boxing</span>.<span style="color:#a6e22e">items</span> = append(<span style="color:#a6e22e">boxing</span>.<span style="color:#a6e22e">items</span>,<span style="color:#a6e22e">count</span>)
-</span></span><span style="display:flex;"><span>        }
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">miniGo_prev2</span>  <span style="color:#f92672">:=</span> <span style="color:#a6e22e">_env</span>.<span style="color:#a6e22e">GetVM</span>().<span style="color:#a6e22e">OS_clock</span>()
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Lns_print</span>([]<span style="color:#a6e22e">LnsAny</span>{
-</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;generics&#34;</span>, <span style="color:#a6e22e">miniGo_generics</span>(<span style="color:#a6e22e">_env</span>),
-</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;time = &#34;</span>, <span style="color:#a6e22e">_env</span>.<span style="color:#a6e22e">GetVM</span>().<span style="color:#a6e22e">OS_clock</span>() <span style="color:#f92672">-</span> <span style="color:#a6e22e">miniGo_prev2</span>})
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">miniGo_prev3</span>  <span style="color:#f92672">:=</span> <span style="color:#a6e22e">_env</span>.<span style="color:#a6e22e">GetVM</span>().<span style="color:#a6e22e">OS_clock</span>()
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">Lns_print</span>([]<span style="color:#a6e22e">LnsAny</span>{
-</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;autoboxing&#34;</span>, <span style="color:#a6e22e">miniGo_autoboxing</span>(<span style="color:#a6e22e">_env</span>),
-</span></span><span style="display:flex;"><span>        <span style="color:#e6db74">&#34;time = &#34;</span>, <span style="color:#a6e22e">_env</span>.<span style="color:#a6e22e">GetVM</span>().<span style="color:#a6e22e">OS_clock</span>() <span style="color:#f92672">-</span> <span style="color:#a6e22e">miniGo_prev3</span>})
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">MiniGo___main</span>( <span style="color:#a6e22e">_env</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">LnsEnv</span>, <span style="color:#a6e22e">args</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">LnsList</span> ) <span style="color:#a6e22e">LnsInt</span> {
-</span></span><span style="display:flex;"><span><span style="color:#a6e22e">Lns_miniGo_init</span>( <span style="color:#a6e22e">_env</span> )
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">return</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">init</span>() {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">init_miniGo</span> = <span style="color:#66d9ef">false</span>
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span><span class="lnt">58
+</span><span class="lnt">59
+</span><span class="lnt">60
+</span><span class="lnt">61
+</span><span class="lnt">62
+</span><span class="lnt">63
+</span><span class="lnt">64
+</span><span class="lnt">65
+</span><span class="lnt">66
+</span><span class="lnt">67
+</span><span class="lnt">68
+</span><span class="lnt">69
+</span><span class="lnt">70
+</span><span class="lnt">71
+</span><span class="lnt">72
+</span><span class="lnt">73
+</span><span class="lnt">74
+</span><span class="lnt">75
+</span><span class="lnt">76
+</span><span class="lnt">77
+</span><span class="lnt">78
+</span><span class="lnt">79
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kn">package</span> <span class="nx">main</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="p">.</span> <span class="s">&#34;github.com/ifritJP/LuneScript/src/lune/base/runtime_go&#34;</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">init_miniGo</span> <span class="kt">bool</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">miniGo__mod__</span> <span class="kt">string</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// generics 
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span> <span class="nx">any</span><span class="p">]</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">items</span> <span class="p">[]</span><span class="nx">V</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">list</span> <span class="o">*</span><span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span><span class="p">])</span> <span class="nf">GetAt</span><span class="p">(</span> <span class="nx">index</span> <span class="kt">int</span> <span class="p">)</span> <span class="nx">V</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">list</span> <span class="nx">GenList</span><span class="p">[</span><span class="kt">int</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">miniGo_generics</span><span class="p">(</span><span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">total</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">_forWork0</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork0</span> <span class="o">&lt;=</span> <span class="mi">1000000</span><span class="p">;</span> <span class="nx">_forWork0</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_forWork1</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork1</span> <span class="o">&lt;=</span> <span class="mi">1000</span><span class="p">;</span> <span class="nx">_forWork1</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">loop</span> <span class="o">:=</span> <span class="nx">_forWork1</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">total</span> <span class="p">=</span> <span class="nx">total</span> <span class="o">+</span> <span class="nx">list</span><span class="p">.</span><span class="nf">GetAt</span><span class="p">(</span><span class="nx">loop</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// total = total + list.items[loop-1]
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">total</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">// autoboxing
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span><span class="kd">type</span> <span class="nx">BoxingList</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">items</span> <span class="p">[]</span><span class="nx">any</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">list</span> <span class="o">*</span><span class="nx">BoxingList</span><span class="p">)</span> <span class="nf">GetAt</span><span class="p">(</span> <span class="nx">index</span> <span class="kt">int</span> <span class="p">)</span> <span class="nx">any</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">var</span> <span class="nx">boxing</span> <span class="o">*</span><span class="nx">BoxingList</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">miniGo_autoboxing</span><span class="p">(</span><span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">total</span> <span class="o">:=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">for</span> <span class="nx">_forWork0</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork0</span> <span class="o">&lt;=</span> <span class="mi">1000000</span><span class="p">;</span> <span class="nx">_forWork0</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_forWork1</span> <span class="o">:=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">_forWork1</span> <span class="o">&lt;=</span> <span class="mi">1000</span><span class="p">;</span> <span class="nx">_forWork1</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">loop</span> <span class="o">:=</span> <span class="nx">_forWork1</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">total</span> <span class="p">=</span> <span class="nx">total</span> <span class="o">+</span> <span class="nx">boxing</span><span class="p">.</span><span class="nf">GetAt</span><span class="p">(</span><span class="nx">loop</span><span class="o">-</span><span class="mi">1</span><span class="p">).(</span><span class="kt">int</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="c1">// total = total + boxing.items[loop-1].(int)
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">total</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">Lns_miniGo_init</span><span class="p">(</span><span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="nx">init_miniGo</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">true</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">miniGo__mod__</span> <span class="p">=</span> <span class="s">&#34;@miniGo&#34;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Lns_InitMod</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">list</span> <span class="p">=</span> <span class="nx">GenList</span><span class="p">[</span><span class="kt">int</span><span class="p">]{[]</span><span class="kt">int</span><span class="p">{}}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">boxing</span> <span class="p">=</span> <span class="o">&amp;</span><span class="nx">BoxingList</span><span class="p">{[]</span><span class="nx">any</span><span class="p">{}}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">var</span> <span class="nx">_forFrom0</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="kd">var</span> <span class="nx">_forTo0</span> <span class="nx">LnsInt</span> <span class="p">=</span> <span class="mi">1000</span>
+</span></span><span class="line"><span class="cl">        <span class="k">for</span> <span class="nx">_forWork0</span> <span class="o">:=</span> <span class="nx">_forFrom0</span><span class="p">;</span> <span class="nx">_forWork0</span> <span class="o">&lt;=</span> <span class="nx">_forTo0</span><span class="p">;</span> <span class="nx">_forWork0</span><span class="o">++</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">count</span> <span class="o">:=</span> <span class="nx">_forWork0</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">list</span><span class="p">.</span><span class="nx">items</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span><span class="nx">count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">            <span class="nx">boxing</span><span class="p">.</span><span class="nx">items</span> <span class="p">=</span> <span class="nb">append</span><span class="p">(</span><span class="nx">boxing</span><span class="p">.</span><span class="nx">items</span><span class="p">,</span><span class="nx">count</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">miniGo_prev2</span>  <span class="o">:=</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;generics&#34;</span><span class="p">,</span> <span class="nf">miniGo_generics</span><span class="p">(</span><span class="nx">_env</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;time = &#34;</span><span class="p">,</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">miniGo_prev2</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">miniGo_prev3</span>  <span class="o">:=</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">Lns_print</span><span class="p">([]</span><span class="nx">LnsAny</span><span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;autoboxing&#34;</span><span class="p">,</span> <span class="nf">miniGo_autoboxing</span><span class="p">(</span><span class="nx">_env</span><span class="p">),</span>
+</span></span><span class="line"><span class="cl">        <span class="s">&#34;time = &#34;</span><span class="p">,</span> <span class="nx">_env</span><span class="p">.</span><span class="nf">GetVM</span><span class="p">().</span><span class="nf">OS_clock</span><span class="p">()</span> <span class="o">-</span> <span class="nx">miniGo_prev3</span><span class="p">})</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">MiniGo___main</span><span class="p">(</span> <span class="nx">_env</span> <span class="o">*</span><span class="nx">LnsEnv</span><span class="p">,</span> <span class="nx">args</span> <span class="o">*</span><span class="nx">LnsList</span> <span class="p">)</span> <span class="nx">LnsInt</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl"><span class="nf">Lns_miniGo_init</span><span class="p">(</span> <span class="nx">_env</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="k">return</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">init_miniGo</span> <span class="p">=</span> <span class="kc">false</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -281,8 +366,16 @@ autoboxing 相当の処理をやめて Golang ネイティブの Generics を利
 <p>
 実行結果が以下です。</p>
 <div class="src src-txt">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>generics	500500000000	time = 	2.1711650000000002
-</span></span><span style="display:flex;"><span>autoboxing	500500000000	time = 	0.9791500000000002</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">generics	500500000000	time = 	2.1711650000000002
+</span></span><span class="line"><span class="cl">autoboxing	500500000000	time = 	0.9791500000000002</span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 これを見ると分かりますが、
@@ -300,20 +393,40 @@ autoboxing 相当の処理をやめて Golang ネイティブの Generics を利
 その直前処理を代わりにコメントアウトする)、
 次のように generics を利用した方が速く処理が終りました。</p>
 <div class="src src-txt">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>generics	500500000000	time = 	0.6483559999999999
-</span></span><span style="display:flex;"><span>autoboxing	500500000000	time = 	1.000772</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">generics	500500000000	time = 	0.6483559999999999
+</span></span><span class="line"><span class="cl">autoboxing	500500000000	time = 	1.000772</span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 generics を利用したメソッドは、オーバーヘッドが異様に大きいという結果になりました。</p>
 <p>
 ところで、 generics のメソッド対応方法って、これであってるよね？？</p>
 <div class="src src-go">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">type</span> <span style="color:#a6e22e">GenList</span>[<span style="color:#a6e22e">V</span> <span style="color:#a6e22e">any</span>] <span style="color:#66d9ef">struct</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">items</span> []<span style="color:#a6e22e">V</span>
-</span></span><span style="display:flex;"><span>}
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">func</span> (<span style="color:#a6e22e">list</span> <span style="color:#f92672">*</span><span style="color:#a6e22e">GenList</span>[<span style="color:#a6e22e">V</span>]) <span style="color:#a6e22e">GetAt</span>( <span style="color:#a6e22e">index</span> <span style="color:#66d9ef">int</span> ) <span style="color:#a6e22e">V</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">list</span>.<span style="color:#a6e22e">items</span>[<span style="color:#a6e22e">index</span>]
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">type</span> <span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span> <span class="nx">any</span><span class="p">]</span> <span class="kd">struct</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">items</span> <span class="p">[]</span><span class="nx">V</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="kd">func</span> <span class="p">(</span><span class="nx">list</span> <span class="o">*</span><span class="nx">GenList</span><span class="p">[</span><span class="nx">V</span><span class="p">])</span> <span class="nf">GetAt</span><span class="p">(</span> <span class="nx">index</span> <span class="kt">int</span> <span class="p">)</span> <span class="nx">V</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">return</span> <span class="nx">list</span><span class="p">.</span><span class="nx">items</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -396,11 +509,11 @@ generics を利用したメソッドは、オーバーヘッドが異様に大�
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>

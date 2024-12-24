@@ -1,0 +1,404 @@
+#+TITLE: huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)
+#+DATE: 2024-12-22
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+huggingface には様々な AI モデルのライブラリが公開されている。
+
+今回のネタは、このライブラリを利用する方法について。
+
+- 推論
+- ファインチューニング
+- 分類と回帰
+
+なお、今回は ViT モデルを具体例として取り上げるが、
+huggingface の transformers のモデルであれば、
+ほとんどの場合、少しの変更だけで応用できる。
+
+* 推論
+
+以下に、
+訓練済みの ViT モデルを使用して画像分類の推論を行なうサンプルソースを示す。
+
+#+BEGIN_SRC python
+from transformers import AutoImageProcessor, ViTForImageClassification
+import torch
+import cv2
+
+def loadImg( path ):
+  img = cv2.imread(path, cv2.IMREAD_COLOR)
+  img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+  return img
+
+# ViT のロード
+image_processor = AutoImageProcessor.from_pretrained("google/vit-base-patch16-224")
+model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224")
+
+# ViT で分類する画像のロード
+image = loadImg( "img/photo.jpg" );
+
+# 画像をベクトル変換
+inputs = image_processor(image, return_tensors="pt")
+# ベクトルに変換したデータから分類を推論
+outputs = model(**inputs)
+logits = outputs.logits
+
+# 推論結果の分類インデックスを取得
+predicted_label = logits.argmax(-1).item()
+# 推論結果
+print( predicted_label )
+#+END_SRC
+
+次にソースの各行について説明する。
+
+** ViT のロード
+
+推論に使用する訓練済みの ViT モデルをロードする。
+
+画像をベクトルに変換する ImageProcessor と、
+ベクトルデータから分類を行なう ViT モデルをロードしている。
+
+huggingface Transformer では、 
+ImageProcessor と モデルの組み合わせで制御する。
+
+: image_processor = AutoImageProcessor.from_pretrained("google/vit-base-patch16-224")
+: model = ViTForImageClassification.from_pretrained("google/vit-base-patch16-224")
+
+** 画像のベクトル変換
+
+huggingface Transformer モデルは、
+画像を各モデルが規定する所定のベクトルに変換する必要がある。
+その変換を行なうのが ImageProcessor の役割である。
+
+: # ViT で分類する画像のロード
+: image = loadImg( "img/photo.jpg" );
+: # 画像をベクトル変換
+: inputs = image_processor(image, return_tensors="pt")
+
+** 推論
+
+モデルにベクトルを渡して推論を行なう。
+なお、モデルのオブジェクトを関数呼び出しすると、 
+そのモデルの forward メソッドが実行される。
+
+推論結果は logits に格納されている。
+この logits には分類ごとのスコアが格納されているので、
+その最大スコアのインデックスを取得することで、
+分類の推論結果を得る。
+
+: # ベクトルに変換したデータから分類を推論
+: outputs = model(**inputs)
+: logits = outputs.logits
+: # 推論結果の分類インデックスを取得
+: predicted_label = logits.argmax(-1).item()
+
+* ファインチューニング
+
+公開されているトレーニング済みのモデルを使っても出来ることは限られている。
+
+個々の目的の処理を行なうためには、
+目的の処理を行なえるようにモデルをファインチューニングしなければならない。
+
+ファインチューニングを行なうには次の手順で行なう。
+
+- トレーニングデータの用意
+- ImageProcessor とモデルの生成
+- TrainingArguments の生成
+- トレーニングデータから、モデルに投入するデータへの変換処理作成
+- Trainer の生成とトレーニングの実行
+- トレーニング後のモデルのセーブ
+- Trainer を使った推論
+- トレーニング後のモデルを使った推論
+
+以下に、
+ViT をファインチューニングするサンプルソースを示す。
+
+#+BEGIN_SRC python
+# トレーニング用データロード
+from datasets import load_dataset
+ds = load_dataset('beans')
+labels = ds['train'].features['labels'].names
+
+# ImageProcessor, model のロード
+from transformers import ViTImageProcessor, ViTForImageClassification
+model_name_or_path = 'google/vit-base-patch16-224-in21k'
+processor = ViTImageProcessor.from_pretrained(model_name_or_path)
+model = ViTForImageClassification.from_pretrained(
+    model_name_or_path,
+    num_labels=len(labels),
+)
+
+# TrainingArguments の設定
+from transformers import TrainingArguments
+use_cpu = False
+
+training_args = TrainingArguments(
+  output_dir="./vit-base-beans",
+  evaluation_strategy="steps",
+  num_train_epochs=4,
+  fp16=not use_cpu,
+  save_steps=500,
+  eval_steps=500,
+  logging_steps=100,
+  learning_rate=2e-4,
+  save_total_limit=2,
+  remove_unused_columns=False,
+  push_to_hub=False,
+  load_best_model_at_end=True,
+  use_cpu = use_cpu,
+)
+
+# モデルに投入する引数の型に変換する関数の定義
+import torch
+def collate_fn(batch):
+    obj = processor([x['image'] for x in batch], return_tensors='pt')
+    obj[ 'labels' ] =torch.tensor([x['labels'] for x in batch])
+    return obj
+
+# Trainer の設定
+from transformers import Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    data_collator=collate_fn,
+    train_dataset=ds["train"],
+    eval_dataset=ds["validation"],
+    tokenizer=processor,
+)
+
+# トレーニング
+train_results = trainer.train()
+
+# 学習済みモデルのセーブ
+trainer.save_model()
+trainer.log_metrics("train", train_results.metrics)
+trainer.save_metrics("train", train_results.metrics)
+trainer.save_state()
+
+# trainer による推論
+predict = trainer.predict( ds["test" ] )
+import numpy as np
+np.argmax( predict.predictions, axis=1 )
+
+
+# 学習済みのモデルのロード
+model2 = ViTForImageClassification.from_pretrained("./vit-base-beans")
+
+# 学習済みのモデルのテスト
+test_ds = ds["test" ][0:50]
+inputs = processor( test_ds["image"], return_tensors='pt')
+outputs = model2( **inputs )
+# 推論
+print( torch.argmax( outputs.logits, dim=1 ))
+# 実際の値
+print( torch.tensor( test_ds["labels"] ))
+#+END_SRC
+
+次にソースの各行について説明する。
+
+** データセットのロード
+
+ここでは、画像処理の機械学習サンプルとして公開されている beans を利用する。
+
+beans の実際の画像は以下で確認できる。
+
+<https://github.com/AI-Lab-Makerere/ibean/>
+
+#+BEGIN_SRC python
+# トレーニング用データロード
+from datasets import load_dataset
+ds = load_dataset('beans')
+labels = ds['train'].features['labels'].names
+#+END_SRC
+
+
+** ImageProcessor, モデルのロード
+
+ファインチューニングに利用するモデルをロードする。
+また、今回の分類モデルの分類数 num_lables=(len(labels))) を設定する。
+
+#+BEGIN_SRC python
+# ImageProcessor, model のロード
+from transformers import ViTImageProcessor, ViTForImageClassification
+model_name_or_path = 'google/vit-base-patch16-224-in21k'
+processor = ViTImageProcessor.from_pretrained(model_name_or_path)
+model = ViTForImageClassification.from_pretrained(
+    model_name_or_path,
+    num_labels=len(labels),
+)
+#+END_SRC
+
+
+** TrainingArguments の設定
+
+トレーニングの設定を行なう。
+
+- トレーニング結果を保存するディレクトリの設定: output_dir
+- エポック数: num_train_epochs
+- トレーニングに fp16 を利用するかどうか: fp16
+- トレーニングの途中結果を保持するステップ数: save_state
+- トレーニングの途中結果を評価するステップ数: eval_steps
+- トレーニングの途中結果を保存する最大数: save_total_limit
+- 指定エポック数のトレーニング終了後、
+  トレーニング途中の評価結果のうち一番良い結果をロードするかどうか: load_best_model_at_end
+- トレーニングの演算に CPU を使うか: use_cpu
+
+ここでは速度重視で GPU, FP16 を使う設定にしている。
+
+なお、 相当古い GPU を使っている場合は逆に CPU の方が早い場合がある。
+
+まぁ、 ディープラーニングをやろうって人の GPU がそんな古いなんてことはないと思う。
+ちなみに私の GPU は、GT1030 でクソ重くて CPU の方が速かった。。
+
+#+BEGIN_SRC python
+from transformers import TrainingArguments
+use_cpu = False
+
+training_args = TrainingArguments(
+  output_dir="./vit-base-beans",
+  per_device_train_batch_size=2,
+  evaluation_strategy="steps",
+  num_train_epochs=4,
+  fp16=not use_cpu,
+  save_steps=500,
+  eval_steps=500,
+  logging_steps=100,
+  learning_rate=2e-4,
+  save_total_limit=2,
+  remove_unused_columns=False,
+  push_to_hub=False,
+  load_best_model_at_end=True,
+  use_cpu = use_cpu,
+)
+#+END_SRC
+
+** トレーニングデータから、モデルに投入するデータへの変換処理作成
+
+後述する Trainer に、トレーニングデータを指定する。
+このトレーニングデータは、リスト(あるいは配列)のデータであれば、
+そのデータの中身は問われない。
+
+とはいえ、モデルにデータを投入するには、
+モデルが要求するデータ型に整える必要がある。
+
+例えば、 Trainer に与えるデータとして、トレーニングデータの個数分のリストを与え、
+モデルに与えるデータには { pixel_values:[], labels:[] } のデータを与える。
+
+最初からトレーニング用の全画像データのリストを作成して Trainer に渡すことも可能だが、
+その場合事前に全画像データを読み込んでおく必要があり、
+データ数が多い場合や、データサイズが大きい場合にメモリを大量に消費することになる。
+メモリが潤沢にある場合はその方が効率が良いが、
+メモリが足りない場合はトレーニングが出来なくなってしまう。
+
+このようにメモリが足らなくならないようにするため、
+Trainer に与えるデータと、実際にモデルに与えるデータを分割する処理を行なう。
+
+この時、Trainer に与えたデータから、
+実際にモデルに与えるデータに変換する処理が必要になる。
+
+それをここで定義する。
+
+なお、モデルに与えるデータ形式はモデル毎に異なるので、
+実際に利用するモデル毎に合せて作成する必要がある。
+
+#+BEGIN_SRC python
+# モデルに投入する引数の型に変換する関数の定義
+import torch
+def collate_fn(batch):
+    obj = processor([x['image'] for x in batch], return_tensors='pt')
+    obj[ 'labels' ] =torch.tensor([x['labels'] for x in batch])
+    return obj
+#+END_SRC
+
+
+** Trainer の生成とトレーニングの実行
+
+Trainer は、先に設定した TrainingArguments の設定で
+実際にトレーニングを制御するクラスである。
+
+ここでは以下を設定する。
+
+- トレーニングするモデル: model
+- TrainingArguments: args
+- 上記のモデル用データに変換する関数: data_collator
+- トレーニング用データ: train_dataset
+- 評価用データ: eval_dataset
+
+
+#+BEGIN_SRC python
+from transformers import Trainer
+trainer = Trainer(
+    model=model,
+    args=training_args,
+    data_collator=collate_fn,
+    train_dataset=ds["train"],
+    eval_dataset=ds["validation"],
+)
+# トレーニング
+train_results = trainer.train()
+#+END_SRC
+
+** トレーニング後のモデルのセーブ
+
+トレーニング後のモデルをセーブする。
+
+#+BEGIN_SRC python
+trainer.save_model()
+trainer.log_metrics("train", train_results.metrics)
+trainer.save_metrics("train", train_results.metrics)
+trainer.save_state()
+#+END_SRC
+
+** Trainer を使った推論
+
+trainer を使って推論を行なう。
+
+#+BEGIN_SRC python
+predict = trainer.predict( ds["test" ] )
+import numpy as np
+np.argmax( predict.predictions, axis=1 )
+#+END_SRC
+
+** トレーニング後のモデルを使った推論
+
+トレーニング後のモデルを使って推論する。
+
+#+BEGIN_SRC python
+# 学習済みのモデルのロード
+model2 = ViTForImageClassification.from_pretrained("./vit-base-beans")
+
+# 学習済みのモデルのテスト
+test_ds = ds["test" ][0:50]
+inputs = processor( test_ds["image"], return_tensors='pt')
+outputs = model2( **inputs )
+# 推論
+print( torch.argmax( outputs.logits, dim=1 ))
+# 実際の値
+print( torch.tensor( test_ds["labels"] ))
+#+END_SRC
+
+* 分類と回帰
+
+一般的に ViT は分類を行なうモデルであるが、回帰モデルとしても利用することができる。
+なお、これは ViT に限らず huggingface の Transformers の分類モデルは基本的に
+回帰としても利用できる。
+
+使用方法は簡単で、モデルを作成する際の num_labels に 1 を指定するだけで、
+回帰モデルとして作成できる。
+
+ただし分類と比べて以下に注意すべきである。
+
+- label は int 型ではなく float 型とする
+- 推論結果は =logits.argmax(-1).item()= ではなく =logits.item()=
+
+label は、data_collator で label を渡す際に float 型に変えるだけで良い。
+
+#+BEGIN_SRC python
+model = ViTForImageClassification.from_pretrained(
+    model_name_or_path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              ,
+    num_labels=1, #  1 を指定すると回帰モデルになる
+)
+#+END_SRC

@@ -7,7 +7,7 @@
 	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
 	<meta name="description" content="">
 		<meta property="og:title" content="emacs lisp の quote" />
-<meta property="og:description" content="emacs lisp の quote でハマったのでネタに書いておく。 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &#34;1&#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のようにコールすると。 (let (val1 val2 val3) (hoge-init) (setq val1 (plist-get hoge-val :val)) (hoge-set) (setq val2 (plist-get hoge-val :val)) (hoge-init) (setq val3 (plist-get hoge-val :val)) (message (format &#34;%s %s %s&#34; val1 val2 val3))) 最後の (message (format &#34;%s %s %s&#34; val1 val2 val3)) で &#34;nil 1 1&#34; が出力される。 てっきり、 &#34;nil 1 nil&#34; が出力されるものだと思っていた。 なぜなら、val3 をセットする直前に hoge-init を実行しており、 この hoge-init は hoge-val を &#39;(:val nil) で初期化する関数なので、" />
+<meta property="og:description" content="emacs lisp の quote でハマったのでネタに書いておく。 1 2 3 4 5 6 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &#34;1&#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のようにコールすると。 1 2 3 4 5 6 7 8 (let (val1 val2 val3) (hoge-init) (setq val1 (plist-get hoge-val :val)) (hoge-set) (setq val2 (plist-get hoge-val :val)) (hoge-init) (setq val3 (plist-get hoge-val :val)) (message (format &#34;%s %s %s&#34; val1 val2 val3))) 最後の (message (format &#34;%s %s %s&#34; val1 val2 val3)) で &#34;nil 1 1&#34; が出力される。 てっきり、 &#34;nil 1 nil&#34; が出力されるものだと思っていた。 なぜなら、val3 をセットする直前に hoge-init を実行しており、 この hoge-init は hoge-val を" />
 <meta property="og:type" content="article" />
 <meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2020/2020-02-18-emacs-quoted-list/" /><meta property="article:section" content="posts" />
 <meta property="article:published_time" content="2020-02-18T00:00:00+00:00" />
@@ -15,7 +15,7 @@
 
 		<meta name="twitter:card" content="summary"/>
 <meta name="twitter:title" content="emacs lisp の quote"/>
-<meta name="twitter:description" content="emacs lisp の quote でハマったのでネタに書いておく。 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &#34;1&#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のようにコールすると。 (let (val1 val2 val3) (hoge-init) (setq val1 (plist-get hoge-val :val)) (hoge-set) (setq val2 (plist-get hoge-val :val)) (hoge-init) (setq val3 (plist-get hoge-val :val)) (message (format &#34;%s %s %s&#34; val1 val2 val3))) 最後の (message (format &#34;%s %s %s&#34; val1 val2 val3)) で &#34;nil 1 1&#34; が出力される。 てっきり、 &#34;nil 1 nil&#34; が出力されるものだと思っていた。 なぜなら、val3 をセットする直前に hoge-init を実行しており、 この hoge-init は hoge-val を &#39;(:val nil) で初期化する関数なので、"/>
+<meta name="twitter:description" content="emacs lisp の quote でハマったのでネタに書いておく。 1 2 3 4 5 6 (defvar hoge-val nil) (defun hoge-init () (setq hoge-val &#39;(:val nil)) ) (defun hoge-set () (plist-put hoge-val :val &#34;1&#34;)) 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、 次のようにコールすると。 1 2 3 4 5 6 7 8 (let (val1 val2 val3) (hoge-init) (setq val1 (plist-get hoge-val :val)) (hoge-set) (setq val2 (plist-get hoge-val :val)) (hoge-init) (setq val3 (plist-get hoge-val :val)) (message (format &#34;%s %s %s&#34; val1 val2 val3))) 最後の (message (format &#34;%s %s %s&#34; val1 val2 val3)) で &#34;nil 1 1&#34; が出力される。 てっきり、 &#34;nil 1 nil&#34; が出力されるものだと思っていた。 なぜなら、val3 をセットする直前に hoge-init を実行しており、 この hoge-init は hoge-val を"/>
 
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 	<link rel="dns-prefetch" href="//fonts.googleapis.com">
@@ -105,25 +105,51 @@
 			<p>
 emacs lisp の quote でハマったのでネタに書いておく。</p>
 <div class="src src-lisp">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-lisp" data-lang="lisp"><span style="display:flex;"><span>(defvar hoge-val <span style="color:#66d9ef">nil</span>)
-</span></span><span style="display:flex;"><span>(defun hoge-init ()
-</span></span><span style="display:flex;"><span>  (<span style="color:#66d9ef">setq</span> hoge-val <span style="color:#f92672">&#39;</span>(<span style="color:#e6db74">:val</span> <span style="color:#66d9ef">nil</span>))
-</span></span><span style="display:flex;"><span>  )
-</span></span><span style="display:flex;"><span>(defun hoge-set ()
-</span></span><span style="display:flex;"><span>  (plist-put hoge-val <span style="color:#e6db74">:val</span> <span style="color:#e6db74">&#34;1&#34;</span>))</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-lisp" data-lang="lisp"><span class="line"><span class="cl"><span class="p">(</span><span class="nb">defvar</span> <span class="nv">hoge-val</span> <span class="no">nil</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nb">defun</span> <span class="nv">hoge-init</span> <span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="k">setq</span> <span class="nv">hoge-val</span> <span class="o">&#39;</span><span class="p">(</span><span class="ss">:val</span> <span class="no">nil</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">  <span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nb">defun</span> <span class="nv">hoge-set</span> <span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">plist-put</span> <span class="nv">hoge-val</span> <span class="ss">:val</span> <span class="s">&#34;1&#34;</span><span class="p">))</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 上記のように変数 hoge-val に対して plist-put で処理する関数を定義して、
 次のようにコールすると。</p>
 <div class="src src-lisp">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-lisp" data-lang="lisp"><span style="display:flex;"><span>(<span style="color:#66d9ef">let</span> (val1 val2 val3)
-</span></span><span style="display:flex;"><span>   (hoge-init)
-</span></span><span style="display:flex;"><span>   (<span style="color:#66d9ef">setq</span> val1 (plist-get hoge-val <span style="color:#e6db74">:val</span>))
-</span></span><span style="display:flex;"><span>   (hoge-set)
-</span></span><span style="display:flex;"><span>   (<span style="color:#66d9ef">setq</span> val2 (plist-get hoge-val <span style="color:#e6db74">:val</span>))
-</span></span><span style="display:flex;"><span>   (hoge-init)
-</span></span><span style="display:flex;"><span>   (<span style="color:#66d9ef">setq</span> val3 (plist-get hoge-val <span style="color:#e6db74">:val</span>))
-</span></span><span style="display:flex;"><span>   (message (<span style="color:#a6e22e">format</span> <span style="color:#e6db74">&#34;%s %s %s&#34;</span> val1 val2 val3)))</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-lisp" data-lang="lisp"><span class="line"><span class="cl"><span class="p">(</span><span class="k">let</span> <span class="p">(</span><span class="nv">val1</span> <span class="nv">val2</span> <span class="nv">val3</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="nv">hoge-init</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="k">setq</span> <span class="nv">val1</span> <span class="p">(</span><span class="nv">plist-get</span> <span class="nv">hoge-val</span> <span class="ss">:val</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="nv">hoge-set</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="k">setq</span> <span class="nv">val2</span> <span class="p">(</span><span class="nv">plist-get</span> <span class="nv">hoge-val</span> <span class="ss">:val</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="nv">hoge-init</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="k">setq</span> <span class="nv">val3</span> <span class="p">(</span><span class="nv">plist-get</span> <span class="nv">hoge-val</span> <span class="ss">:val</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="nv">message</span> <span class="p">(</span><span class="nf">format</span> <span class="s">&#34;%s %s %s&#34;</span> <span class="nv">val1</span> <span class="nv">val2</span> <span class="nv">val3</span><span class="p">)))</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 最後の (message (format &#34;%s %s %s&#34; val1 val2 val3)) で &#34;nil 1 1&#34; が出力される。</p>
@@ -145,9 +171,18 @@ hoge-init 関数は変数に書き変わった定数を代入しているため�
 <p>
 一方で、 hoge-init の処理に list 関数を使うと、&#34;nil 1 nil&#34; となる。</p>
 <div class="src src-lisp">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-lisp" data-lang="lisp"><span style="display:flex;"><span>(defun hoge-init ()
-</span></span><span style="display:flex;"><span>  (<span style="color:#66d9ef">setq</span> hoge-val (<span style="color:#a6e22e">list</span> <span style="color:#e6db74">:val</span> <span style="color:#66d9ef">nil</span>))
-</span></span><span style="display:flex;"><span>  )</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-lisp" data-lang="lisp"><span class="line"><span class="cl"><span class="p">(</span><span class="nb">defun</span> <span class="nv">hoge-init</span> <span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="k">setq</span> <span class="nv">hoge-val</span> <span class="p">(</span><span class="nc">list</span> <span class="ss">:val</span> <span class="no">nil</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">  <span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 (list) は評価されるたび新規にリストを生成しているため、変数を初期化出来る。</p>
@@ -216,11 +251,11 @@ quote した値の変更は、要注意ってことで。</p>
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>

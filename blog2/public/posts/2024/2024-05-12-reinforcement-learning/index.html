@@ -258,7 +258,14 @@ step メソッド
 </h3>
 <div id="outline-text-headline-3" class="outline-text-3">
 <div class="src src-python">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>step(self, action: ActType): <span style="color:#960050;background-color:#1e0010">→</span> tuple[ObsType, SupportsFloat, bool, bool, dict[str, Any]]</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActType</span><span class="p">):</span> <span class="err">→</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">ObsType</span><span class="p">,</span> <span class="n">SupportsFloat</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 step メソッドは引数で与えられた action を実行し、環境を更新する。
@@ -345,63 +352,126 @@ Stable-Baselines3 は、
 <p>
 環境定義部分のコードは以下の通り</p>
 <div class="src src-python">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>  <span style="color:#f92672">import</span> gymnasium <span style="color:#66d9ef">as</span> gym
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">from</span> enum <span style="color:#f92672">import</span> Enum
-</span></span><span style="display:flex;"><span>  <span style="color:#f92672">import</span> numpy <span style="color:#66d9ef">as</span> np
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># ボタンの定義</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">Input</span>(Enum):
-</span></span><span style="display:flex;"><span>      Up <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>      Left <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>      Down <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>
-</span></span><span style="display:flex;"><span>      Right <span style="color:#f92672">=</span> <span style="color:#ae81ff">3</span>
-</span></span><span style="display:flex;"><span>      ButtonA <span style="color:#f92672">=</span> <span style="color:#ae81ff">4</span>
-</span></span><span style="display:flex;"><span>      ButtonB <span style="color:#f92672">=</span> <span style="color:#ae81ff">5</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>  <span style="color:#75715e"># 環境の定義</span>
-</span></span><span style="display:flex;"><span>  <span style="color:#66d9ef">class</span> <span style="color:#a6e22e">SimpleEnv</span>(gym<span style="color:#f92672">.</span>Env):
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">def</span> __init__(self):
-</span></span><span style="display:flex;"><span>          super(SimpleEnv, self)<span style="color:#f92672">.</span>__init__()
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>pattern <span style="color:#f92672">=</span> [ Input<span style="color:#f92672">.</span>Up, Input<span style="color:#f92672">.</span>Up, Input<span style="color:#f92672">.</span>Down, Input<span style="color:#f92672">.</span>Down, Input<span style="color:#f92672">.</span>Left, Input<span style="color:#f92672">.</span>Right, Input<span style="color:#f92672">.</span>Left, Input<span style="color:#f92672">.</span>Right, Input<span style="color:#f92672">.</span>ButtonB, Input<span style="color:#f92672">.</span>ButtonA ] 
-</span></span><span style="display:flex;"><span>          <span style="color:#75715e"># 状態空間は コナミコマンドのキーパターン + 1 (初期状態分)</span>
-</span></span><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>observation_space <span style="color:#f92672">=</span> gym<span style="color:#f92672">.</span>spaces<span style="color:#f92672">.</span>Discrete( len( self<span style="color:#f92672">.</span>pattern ) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> )
-</span></span><span style="display:flex;"><span>          <span style="color:#75715e"># 行動空間は Input の数</span>
-</span></span><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>action_space <span style="color:#f92672">=</span> gym<span style="color:#f92672">.</span>spaces<span style="color:#f92672">.</span>Discrete( len( Input ) )
-</span></span><span style="display:flex;"><span>          <span style="color:#75715e"># 開始状態。　nparray のデータにする</span>
-</span></span><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>state <span style="color:#f92672">=</span> np<span style="color:#f92672">.</span>zeros( <span style="color:#ae81ff">1</span>, dtype<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;uint8&#34;</span> )
-</span></span><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>index <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">step</span>(self, action):
-</span></span><span style="display:flex;"><span>          <span style="color:#75715e"># reward は、 0 ～ 1 の間で返す。 その時点の action として最善手を 1 とする。</span>
-</span></span><span style="display:flex;"><span>          reward <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>          fail <span style="color:#f92672">=</span> <span style="color:#66d9ef">False</span>
-</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">if</span> self<span style="color:#f92672">.</span>pattern[ self<span style="color:#f92672">.</span>index ]<span style="color:#f92672">.</span>value <span style="color:#f92672">==</span> action:
-</span></span><span style="display:flex;"><span>              <span style="color:#75715e"># self.index だと初期状態と同じになってしまうので self.index + 1 を設定</span>
-</span></span><span style="display:flex;"><span>              self<span style="color:#f92672">.</span>state[ <span style="color:#ae81ff">0</span> ] <span style="color:#f92672">=</span> self<span style="color:#f92672">.</span>index <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>              self<span style="color:#f92672">.</span>index <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>              <span style="color:#75715e"># reward は、その時点での全体のスコアではなく、 action に対するスコア</span>
-</span></span><span style="display:flex;"><span>              reward <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">else</span>:
-</span></span><span style="display:flex;"><span>              <span style="color:#75715e"># 悪手自体に種類がないなら、悪手のスコアは一定にした方が良い</span>
-</span></span><span style="display:flex;"><span>              fail <span style="color:#f92672">=</span> <span style="color:#66d9ef">True</span>
-</span></span><span style="display:flex;"><span>              self<span style="color:#f92672">.</span>state[ <span style="color:#ae81ff">0</span> ] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>              self<span style="color:#f92672">.</span>index <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>                
-</span></span><span style="display:flex;"><span>          done <span style="color:#f92672">=</span> (self<span style="color:#f92672">.</span>index <span style="color:#f92672">==</span> len( self<span style="color:#f92672">.</span>pattern) )
-</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">if</span> fail:
-</span></span><span style="display:flex;"><span>              <span style="color:#75715e"># ゲームオーバーに種類に差がないなら、スコアは 0 で良い。変える必要はない。</span>
-</span></span><span style="display:flex;"><span>              <span style="color:#75715e"># マイナスにする必要もない。</span>
-</span></span><span style="display:flex;"><span>              done <span style="color:#f92672">=</span> <span style="color:#66d9ef">True</span>
-</span></span><span style="display:flex;"><span>        
-</span></span><span style="display:flex;"><span>          <span style="color:#75715e"># 状態、報酬、終了フラグ、異常フラグ、追加情報を返す</span>
-</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">return</span> self<span style="color:#f92672">.</span>state, reward, done, <span style="color:#66d9ef">False</span>, { <span style="color:#e6db74">&#34;index&#34;</span>:self<span style="color:#f92672">.</span>index }
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>      <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">reset</span>(self, seed <span style="color:#f92672">=</span> <span style="color:#66d9ef">None</span>, options <span style="color:#f92672">=</span> <span style="color:#66d9ef">None</span>):
-</span></span><span style="display:flex;"><span>          <span style="color:#75715e"># 状態を初期化</span>
-</span></span><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>state[:] <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>index <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>          <span style="color:#66d9ef">return</span> (self<span style="color:#f92672">.</span>state, {})</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span><span class="lnt">57
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">  <span class="kn">import</span> <span class="nn">gymnasium</span> <span class="k">as</span> <span class="nn">gym</span>
+</span></span><span class="line"><span class="cl">  <span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+</span></span><span class="line"><span class="cl">  <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># ボタンの定義</span>
+</span></span><span class="line"><span class="cl">  <span class="k">class</span> <span class="nc">Input</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">      <span class="n">Up</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">      <span class="n">Left</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">      <span class="n">Down</span> <span class="o">=</span> <span class="mi">2</span>
+</span></span><span class="line"><span class="cl">      <span class="n">Right</span> <span class="o">=</span> <span class="mi">3</span>
+</span></span><span class="line"><span class="cl">      <span class="n">ButtonA</span> <span class="o">=</span> <span class="mi">4</span>
+</span></span><span class="line"><span class="cl">      <span class="n">ButtonB</span> <span class="o">=</span> <span class="mi">5</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="c1"># 環境の定義</span>
+</span></span><span class="line"><span class="cl">  <span class="k">class</span> <span class="nc">SimpleEnv</span><span class="p">(</span><span class="n">gym</span><span class="o">.</span><span class="n">Env</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">      <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">          <span class="nb">super</span><span class="p">(</span><span class="n">SimpleEnv</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="o">=</span> <span class="p">[</span> <span class="n">Input</span><span class="o">.</span><span class="n">Up</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">Up</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">Down</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">Down</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">Left</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">Right</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">Left</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">Right</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">ButtonB</span><span class="p">,</span> <span class="n">Input</span><span class="o">.</span><span class="n">ButtonA</span> <span class="p">]</span> 
+</span></span><span class="line"><span class="cl">          <span class="c1"># 状態空間は コナミコマンドのキーパターン + 1 (初期状態分)</span>
+</span></span><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">observation_space</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">spaces</span><span class="o">.</span><span class="n">Discrete</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">          <span class="c1"># 行動空間は Input の数</span>
+</span></span><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">action_space</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">spaces</span><span class="o">.</span><span class="n">Discrete</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span> <span class="n">Input</span> <span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">          <span class="c1"># 開始状態。　nparray のデータにする</span>
+</span></span><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s2">&#34;uint8&#34;</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">          <span class="c1"># reward は、 0 ～ 1 の間で返す。 その時点の action として最善手を 1 とする。</span>
+</span></span><span class="line"><span class="cl">          <span class="n">reward</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">          <span class="n">fail</span> <span class="o">=</span> <span class="kc">False</span>
+</span></span><span class="line"><span class="cl">          <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="p">[</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="n">action</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">              <span class="c1"># self.index だと初期状態と同じになってしまうので self.index + 1 を設定</span>
+</span></span><span class="line"><span class="cl">              <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">              <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">              <span class="c1"># reward は、その時点での全体のスコアではなく、 action に対するスコア</span>
+</span></span><span class="line"><span class="cl">              <span class="n">reward</span> <span class="o">=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">          <span class="k">else</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">              <span class="c1"># 悪手自体に種類がないなら、悪手のスコアは一定にした方が良い</span>
+</span></span><span class="line"><span class="cl">              <span class="n">fail</span> <span class="o">=</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl">              <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[</span> <span class="mi">0</span> <span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">              <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">                
+</span></span><span class="line"><span class="cl">          <span class="n">done</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span><span class="p">)</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">          <span class="k">if</span> <span class="n">fail</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">              <span class="c1"># ゲームオーバーに種類に差がないなら、スコアは 0 で良い。変える必要はない。</span>
+</span></span><span class="line"><span class="cl">              <span class="c1"># マイナスにする必要もない。</span>
+</span></span><span class="line"><span class="cl">              <span class="n">done</span> <span class="o">=</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">          <span class="c1"># 状態、報酬、終了フラグ、異常フラグ、追加情報を返す</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="p">{</span> <span class="s2">&#34;index&#34;</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="p">}</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">      <span class="k">def</span> <span class="nf">reset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seed</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">options</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">          <span class="c1"># 状態を初期化</span>
+</span></span><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">[:]</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">          <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="p">{})</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 ここで重要なのは次の通り。</p>
@@ -437,7 +507,14 @@ observation_space は、環境の状態が取り得る空間情報を定義す�
 <p>
 上記 observation_space には、以下の値を代入している。</p>
 <div class="src src-python">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>observation_space <span style="color:#f92672">=</span> gym<span style="color:#f92672">.</span>spaces<span style="color:#f92672">.</span>Discrete( len( self<span style="color:#f92672">.</span>pattern ) <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span> )</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">observation_space</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">spaces</span><span class="o">.</span><span class="n">Discrete</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span> <span class="bp">self</span><span class="o">.</span><span class="n">pattern</span> <span class="p">)</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 今回の場合、コナミコマンドを入力するのが目的なので、次のような状態遷移となる。</p>
@@ -463,7 +540,14 @@ action_space は、環境内で実行できるアクションの取り得る空�
 <p>
 上記 action_space には、以下の値を代入している。</p>
 <div class="src src-python">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>          self<span style="color:#f92672">.</span>action_space <span style="color:#f92672">=</span> gym<span style="color:#f92672">.</span>spaces<span style="color:#f92672">.</span>Discrete( len( Input ) )</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl">          <span class="bp">self</span><span class="o">.</span><span class="n">action_space</span> <span class="o">=</span> <span class="n">gym</span><span class="o">.</span><span class="n">spaces</span><span class="o">.</span><span class="n">Discrete</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span> <span class="n">Input</span> <span class="p">)</span> <span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 今回の場合、入力可能なボタンを次の 6 個として定義した。</p>
@@ -563,54 +647,110 @@ reward は、現在の環境の状態時に action を実行することに対�
 <p>
 上記で定義した環境を解けるようにトレーニングするには、次のように実施する。</p>
 <div class="src src-python">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span><span style="color:#f92672">from</span> stable_baselines3 <span style="color:#f92672">import</span> A2C, DQN, DDPG, PPO
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">from</span> stable_baselines3.common.callbacks <span style="color:#f92672">import</span> BaseCallback
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># トレーニングの推移を取得するためのコールバックを宣言</span>
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">class</span> <span style="color:#a6e22e">MyCallback</span>( BaseCallback ):
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> __init__( self ):
-</span></span><span style="display:flex;"><span>        super()<span style="color:#f92672">.</span>__init__()
-</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>rewards <span style="color:#f92672">=</span> []
-</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>indexes <span style="color:#f92672">=</span> []
-</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>steps <span style="color:#f92672">=</span> <span style="color:#ae81ff">0</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">_on_step</span>( self ):
-</span></span><span style="display:flex;"><span>        super()<span style="color:#f92672">.</span>_on_step()
-</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>steps <span style="color:#f92672">+=</span> <span style="color:#ae81ff">1</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">True</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">def</span> <span style="color:#a6e22e">update_locals</span>( self, locals ):
-</span></span><span style="display:flex;"><span>        super()<span style="color:#f92672">.</span>update_locals( locals )
-</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>rewards<span style="color:#f92672">.</span>extend( locals[ <span style="color:#e6db74">&#34;rewards&#34;</span> ])
-</span></span><span style="display:flex;"><span>        self<span style="color:#f92672">.</span>indexes<span style="color:#f92672">.</span>extend( [ info[ <span style="color:#e6db74">&#34;index&#34;</span> ] <span style="color:#66d9ef">for</span> info <span style="color:#f92672">in</span> locals[ <span style="color:#e6db74">&#34;infos&#34;</span> ] ] )
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># 環境の定義</span>
-</span></span><span style="display:flex;"><span>env <span style="color:#f92672">=</span> SimpleEnv()
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>model <span style="color:#f92672">=</span> A2C(<span style="color:#e6db74">&#34;MlpPolicy&#34;</span>, env, verbose<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
-</span></span><span style="display:flex;"><span><span style="color:#75715e">#model = DQN(&#34;MlpPolicy&#34;, env, verbose=1)</span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e">#model = PPO(&#34;MlpPolicy&#34;, env, verbose=1)</span>
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># トレーニングの実行</span>
-</span></span><span style="display:flex;"><span>eval_callback <span style="color:#f92672">=</span> MyCallback()
-</span></span><span style="display:flex;"><span>model<span style="color:#f92672">.</span>learn(total_timesteps<span style="color:#f92672">=</span><span style="color:#ae81ff">8000</span>, log_interval<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>, callback<span style="color:#f92672">=</span>eval_callback)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span><span style="color:#75715e"># トレーニングの推移を表示</span>
-</span></span><span style="display:flex;"><span><span style="color:#f92672">import</span> matplotlib.pyplot <span style="color:#66d9ef">as</span> plt
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>figure(figsize<span style="color:#f92672">=</span>(<span style="color:#ae81ff">10</span>, <span style="color:#ae81ff">5</span>))
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">1</span>)
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>plot(eval_callback<span style="color:#f92672">.</span>rewards)
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#34;Rewards&#34;</span>)
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>subplot(<span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">2</span>, <span style="color:#ae81ff">2</span>)
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>plot(eval_callback<span style="color:#f92672">.</span>indexes)
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>title(<span style="color:#e6db74">&#34;indexes&#34;</span>)
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>tight_layout()
-</span></span><span style="display:flex;"><span>plt<span style="color:#f92672">.</span>show()</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">stable_baselines3</span> <span class="kn">import</span> <span class="n">A2C</span><span class="p">,</span> <span class="n">DQN</span><span class="p">,</span> <span class="n">DDPG</span><span class="p">,</span> <span class="n">PPO</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="kn">from</span> <span class="nn">stable_baselines3.common.callbacks</span> <span class="kn">import</span> <span class="n">BaseCallback</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># トレーニングの推移を取得するためのコールバックを宣言</span>
+</span></span><span class="line"><span class="cl"><span class="k">class</span> <span class="nc">MyCallback</span><span class="p">(</span> <span class="n">BaseCallback</span> <span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">rewards</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">indexes</span> <span class="o">=</span> <span class="p">[]</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">=</span> <span class="mi">0</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">_on_step</span><span class="p">(</span> <span class="bp">self</span> <span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_on_step</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">steps</span> <span class="o">+=</span> <span class="mi">1</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">True</span>
+</span></span><span class="line"><span class="cl">    <span class="k">def</span> <span class="nf">update_locals</span><span class="p">(</span> <span class="bp">self</span><span class="p">,</span> <span class="nb">locals</span> <span class="p">):</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update_locals</span><span class="p">(</span> <span class="nb">locals</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">rewards</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span> <span class="nb">locals</span><span class="p">[</span> <span class="s2">&#34;rewards&#34;</span> <span class="p">])</span>
+</span></span><span class="line"><span class="cl">        <span class="bp">self</span><span class="o">.</span><span class="n">indexes</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span> <span class="p">[</span> <span class="n">info</span><span class="p">[</span> <span class="s2">&#34;index&#34;</span> <span class="p">]</span> <span class="k">for</span> <span class="n">info</span> <span class="ow">in</span> <span class="nb">locals</span><span class="p">[</span> <span class="s2">&#34;infos&#34;</span> <span class="p">]</span> <span class="p">]</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># 環境の定義</span>
+</span></span><span class="line"><span class="cl"><span class="n">env</span> <span class="o">=</span> <span class="n">SimpleEnv</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">model</span> <span class="o">=</span> <span class="n">A2C</span><span class="p">(</span><span class="s2">&#34;MlpPolicy&#34;</span><span class="p">,</span> <span class="n">env</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#model = DQN(&#34;MlpPolicy&#34;, env, verbose=1)</span>
+</span></span><span class="line"><span class="cl"><span class="c1">#model = PPO(&#34;MlpPolicy&#34;, env, verbose=1)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># トレーニングの実行</span>
+</span></span><span class="line"><span class="cl"><span class="n">eval_callback</span> <span class="o">=</span> <span class="n">MyCallback</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">model</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_timesteps</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">log_interval</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">eval_callback</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># トレーニングの推移を表示</span>
+</span></span><span class="line"><span class="cl"><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">eval_callback</span><span class="o">.</span><span class="n">rewards</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&#34;Rewards&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">eval_callback</span><span class="o">.</span><span class="n">indexes</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&#34;indexes&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 上記の内、トレーニングの主要部分は以下になる。</p>
 <div class="src src-python">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>model<span style="color:#f92672">.</span>learn(total_timesteps<span style="color:#f92672">=</span><span style="color:#ae81ff">8000</span>, log_interval<span style="color:#f92672">=</span><span style="color:#ae81ff">300</span>, callback<span style="color:#f92672">=</span>eval_callback)</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">model</span><span class="o">.</span><span class="n">learn</span><span class="p">(</span><span class="n">total_timesteps</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">log_interval</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">callback</span><span class="o">=</span><span class="n">eval_callback</span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 なお、 <code class="verbatim">callback=eval_callback</code> の部分も不要。</p>
@@ -630,39 +770,80 @@ reward は、現在の環境の状態時に action を実行することに対�
 <p>
 トレーニング済みのモデルを利用し、今回のゲームを解かせるには次のようになる。</p>
 <div class="src src-python">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-python" data-lang="python"><span style="display:flex;"><span>vec_env <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>get_env()
-</span></span><span style="display:flex;"><span>obs <span style="color:#f92672">=</span> vec_env<span style="color:#f92672">.</span>reset()
-</span></span><span style="display:flex;"><span><span style="color:#66d9ef">for</span> i <span style="color:#f92672">in</span> range(<span style="color:#ae81ff">20</span>):
-</span></span><span style="display:flex;"><span>    action <span style="color:#f92672">=</span> model<span style="color:#f92672">.</span>predict(obs, deterministic<span style="color:#f92672">=</span><span style="color:#66d9ef">True</span>)
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    obs, reward, done, info <span style="color:#f92672">=</span> vec_env<span style="color:#f92672">.</span>step(action)
-</span></span><span style="display:flex;"><span>    print( action, obs, reward, done )
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">if</span> done[<span style="color:#ae81ff">0</span>]:
-</span></span><span style="display:flex;"><span>        obs <span style="color:#f92672">=</span> vec_env<span style="color:#f92672">.</span>reset()</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span><span class="lnt">8
+</span><span class="lnt">9
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-python" data-lang="python"><span class="line"><span class="cl"><span class="n">vec_env</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">get_env</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="n">obs</span> <span class="o">=</span> <span class="n">vec_env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl"><span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">):</span>
+</span></span><span class="line"><span class="cl">    <span class="n">action</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">obs</span><span class="p">,</span> <span class="n">deterministic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">done</span><span class="p">,</span> <span class="n">info</span> <span class="o">=</span> <span class="n">vec_env</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">action</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nb">print</span><span class="p">(</span> <span class="n">action</span><span class="p">,</span> <span class="n">obs</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">done</span> <span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">if</span> <span class="n">done</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+</span></span><span class="line"><span class="cl">        <span class="n">obs</span> <span class="o">=</span> <span class="n">vec_env</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 この時の実行結果は以下のようになる。</p>
 <div class="src src-txt">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-txt" data-lang="txt"><span style="display:flex;"><span>[0] [1] [1.] [False]
-</span></span><span style="display:flex;"><span>[0] [2] [1.] [False]
-</span></span><span style="display:flex;"><span>[2] [3] [1.] [False]
-</span></span><span style="display:flex;"><span>[2] [4] [1.] [False]
-</span></span><span style="display:flex;"><span>[1] [5] [1.] [False]
-</span></span><span style="display:flex;"><span>[3] [6] [1.] [False]
-</span></span><span style="display:flex;"><span>[1] [7] [1.] [False]
-</span></span><span style="display:flex;"><span>[3] [8] [1.] [False]
-</span></span><span style="display:flex;"><span>[5] [9] [1.] [False]
-</span></span><span style="display:flex;"><span>[4] [0] [1.] [ True]
-</span></span><span style="display:flex;"><span>[0] [1] [1.] [False]
-</span></span><span style="display:flex;"><span>[0] [2] [1.] [False]
-</span></span><span style="display:flex;"><span>[2] [3] [1.] [False]
-</span></span><span style="display:flex;"><span>[2] [4] [1.] [False]
-</span></span><span style="display:flex;"><span>[1] [5] [1.] [False]
-</span></span><span style="display:flex;"><span>[3] [6] [1.] [False]
-</span></span><span style="display:flex;"><span>[1] [7] [1.] [False]
-</span></span><span style="display:flex;"><span>[3] [8] [1.] [False]
-</span></span><span style="display:flex;"><span>[5] [9] [1.] [False]
-</span></span><span style="display:flex;"><span>[4] [0] [1.] [ True]</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl">[0] [1] [1.] [False]
+</span></span><span class="line"><span class="cl">[0] [2] [1.] [False]
+</span></span><span class="line"><span class="cl">[2] [3] [1.] [False]
+</span></span><span class="line"><span class="cl">[2] [4] [1.] [False]
+</span></span><span class="line"><span class="cl">[1] [5] [1.] [False]
+</span></span><span class="line"><span class="cl">[3] [6] [1.] [False]
+</span></span><span class="line"><span class="cl">[1] [7] [1.] [False]
+</span></span><span class="line"><span class="cl">[3] [8] [1.] [False]
+</span></span><span class="line"><span class="cl">[5] [9] [1.] [False]
+</span></span><span class="line"><span class="cl">[4] [0] [1.] [ True]
+</span></span><span class="line"><span class="cl">[0] [1] [1.] [False]
+</span></span><span class="line"><span class="cl">[0] [2] [1.] [False]
+</span></span><span class="line"><span class="cl">[2] [3] [1.] [False]
+</span></span><span class="line"><span class="cl">[2] [4] [1.] [False]
+</span></span><span class="line"><span class="cl">[1] [5] [1.] [False]
+</span></span><span class="line"><span class="cl">[3] [6] [1.] [False]
+</span></span><span class="line"><span class="cl">[1] [7] [1.] [False]
+</span></span><span class="line"><span class="cl">[3] [8] [1.] [False]
+</span></span><span class="line"><span class="cl">[5] [9] [1.] [False]
+</span></span><span class="line"><span class="cl">[4] [0] [1.] [ True]</span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <pre class="example">
 print( action, obs, reward, done )
@@ -763,11 +944,11 @@ print( action, obs, reward, done )
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>

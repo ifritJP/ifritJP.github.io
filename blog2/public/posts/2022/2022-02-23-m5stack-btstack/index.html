@@ -398,13 +398,26 @@ classic HID ホストの初期化
 </h4>
 <div id="outline-text-headline-10" class="outline-text-4">
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>    <span style="color:#a6e22e">hid_host_init</span>(s_hid_descriptor_storage, <span style="color:#66d9ef">sizeof</span>(s_hid_descriptor_storage));
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">hid_host_register_packet_handler</span>(packet_handler_host);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gap_set_default_link_policy_settings</span>(
-</span></span><span style="display:flex;"><span>        LM_LINK_POLICY_ENABLE_SNIFF_MODE <span style="color:#f92672">|</span> LM_LINK_POLICY_ENABLE_ROLE_SWITCH);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">hci_set_master_slave_policy</span>(HCI_ROLE_MASTER);</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">    <span class="nf">hid_host_init</span><span class="p">(</span><span class="n">s_hid_descriptor_storage</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">s_hid_descriptor_storage</span><span class="p">));</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">hid_host_register_packet_handler</span><span class="p">(</span><span class="n">packet_handler_host</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">gap_set_default_link_policy_settings</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">LM_LINK_POLICY_ENABLE_SNIFF_MODE</span> <span class="o">|</span> <span class="n">LM_LINK_POLICY_ENABLE_ROLE_SWITCH</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">hci_set_master_slave_policy</span><span class="p">(</span><span class="n">HCI_ROLE_MASTER</span><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 ここでは、classic HID ホストの初期化と、
@@ -502,30 +515,60 @@ classic HID Device の初期化
 ここでは、classic HID device の初期化と、
 コールバックの登録を行なっています。</p>
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>    <span style="color:#a6e22e">gap_set_class_of_device</span>( <span style="color:#a6e22e">bt_kb_getCod</span>() );
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gap_set_local_name</span>( s_hid_device_name );
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gap_set_default_link_policy_settings</span>(
-</span></span><span style="display:flex;"><span>        LM_LINK_POLICY_ENABLE_ROLE_SWITCH <span style="color:#f92672">|</span> LM_LINK_POLICY_ENABLE_SNIFF_MODE );
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gap_set_allow_role_switch</span>(true);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">hid_create_sdp_record</span>(s_hid_service_buffer, <span style="color:#ae81ff">0x10001</span>, <span style="color:#f92672">&amp;</span>hid_params);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">sdp_register_service</span>(s_hid_service_buffer);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">device_id_create_sdp_record</span>(
-</span></span><span style="display:flex;"><span>        s_device_id_sdp_service_buffer, <span style="color:#ae81ff">0x10003</span>,
-</span></span><span style="display:flex;"><span>        DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH,
-</span></span><span style="display:flex;"><span>        BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH, <span style="color:#ae81ff">1</span>, <span style="color:#ae81ff">1</span>);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">sdp_register_service</span>(s_device_id_sdp_service_buffer);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">hid_device_init</span>(hid_boot_device, hidDescriptorLen, pHidDescriptor );
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    s_hci_event_callback_registration.callback <span style="color:#f92672">=</span> <span style="color:#f92672">&amp;</span>packet_handler;
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">hci_add_event_handler</span>(<span style="color:#f92672">&amp;</span>s_hci_event_callback_registration);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">hid_device_register_packet_handler</span>(<span style="color:#f92672">&amp;</span>packet_handler_device);</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">    <span class="nf">gap_set_class_of_device</span><span class="p">(</span> <span class="nf">bt_kb_getCod</span><span class="p">()</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">gap_set_local_name</span><span class="p">(</span> <span class="n">s_hid_device_name</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="nf">gap_set_default_link_policy_settings</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">LM_LINK_POLICY_ENABLE_ROLE_SWITCH</span> <span class="o">|</span> <span class="n">LM_LINK_POLICY_ENABLE_SNIFF_MODE</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">gap_set_allow_role_switch</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">hid_create_sdp_record</span><span class="p">(</span><span class="n">s_hid_service_buffer</span><span class="p">,</span> <span class="mh">0x10001</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">hid_params</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">sdp_register_service</span><span class="p">(</span><span class="n">s_hid_service_buffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">device_id_create_sdp_record</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">s_device_id_sdp_service_buffer</span><span class="p">,</span> <span class="mh">0x10003</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">DEVICE_ID_VENDOR_ID_SOURCE_BLUETOOTH</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl">        <span class="n">BLUETOOTH_COMPANY_ID_BLUEKITCHEN_GMBH</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">sdp_register_service</span><span class="p">(</span><span class="n">s_device_id_sdp_service_buffer</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">hid_device_init</span><span class="p">(</span><span class="n">hid_boot_device</span><span class="p">,</span> <span class="n">hidDescriptorLen</span><span class="p">,</span> <span class="n">pHidDescriptor</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="n">s_hci_event_callback_registration</span><span class="p">.</span><span class="n">callback</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">packet_handler</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">hci_add_event_handler</span><span class="p">(</span><span class="o">&amp;</span><span class="n">s_hci_event_callback_registration</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">hid_device_register_packet_handler</span><span class="p">(</span><span class="o">&amp;</span><span class="n">packet_handler_device</span><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -622,35 +665,70 @@ BLE HID Device の初期化
 ここでは、classic HID device の初期化と、
 コールバックの登録を行なっています。</p>
 <div class="src src-c">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-c" data-lang="c"><span style="display:flex;"><span>    <span style="color:#a6e22e">sm_set_io_capabilities</span>(IO_CAPABILITY_NO_INPUT_NO_OUTPUT);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">sm_set_authentication_requirements</span>(
-</span></span><span style="display:flex;"><span>        SM_AUTHREQ_SECURE_CONNECTION <span style="color:#f92672">|</span> SM_AUTHREQ_BONDING);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// setup ATT server
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">att_server_init</span>(profile_data, NULL, NULL);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// setup battery service
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">battery_service_server_init</span>( <span style="color:#ae81ff">100</span> );
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// setup device information service
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">device_information_service_server_init</span>();
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// setup HID Device service
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">hids_device_init</span>(<span style="color:#ae81ff">0</span>, <span style="color:#a6e22e">get_hidDescriptor</span>(), <span style="color:#a6e22e">get_hidDescriptorLen</span>() );
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// setup advertisements
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">gap_advertisements_set_params</span>(
-</span></span><span style="display:flex;"><span>        adv_int_min, adv_int_max, adv_type, <span style="color:#ae81ff">0</span>, null_addr, <span style="color:#ae81ff">0x07</span>, <span style="color:#ae81ff">0x00</span>);
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">gap_advertisements_set_data</span>( <span style="color:#66d9ef">sizeof</span>(adv_data), (<span style="color:#66d9ef">uint8_t</span><span style="color:#f92672">*</span>) adv_data);
-</span></span><span style="display:flex;"><span>    
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// register for SM events
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#66d9ef">static</span> <span style="color:#66d9ef">btstack_packet_callback_registration_t</span> sm_event_callback_registration;
-</span></span><span style="display:flex;"><span>    sm_event_callback_registration.callback <span style="color:#f92672">=</span> packet_handler;
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">sm_add_event_handler</span>(<span style="color:#f92672">&amp;</span>sm_event_callback_registration);
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#75715e">// register for HIDS
-</span></span></span><span style="display:flex;"><span><span style="color:#75715e"></span>    <span style="color:#a6e22e">hids_device_register_packet_handler</span>(packet_handler);</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-c" data-lang="c"><span class="line"><span class="cl">    <span class="nf">sm_set_io_capabilities</span><span class="p">(</span><span class="n">IO_CAPABILITY_NO_INPUT_NO_OUTPUT</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nf">sm_set_authentication_requirements</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">SM_AUTHREQ_SECURE_CONNECTION</span> <span class="o">|</span> <span class="n">SM_AUTHREQ_BONDING</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// setup ATT server
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">att_server_init</span><span class="p">(</span><span class="n">profile_data</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">,</span> <span class="nb">NULL</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// setup battery service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">battery_service_server_init</span><span class="p">(</span> <span class="mi">100</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// setup device information service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">device_information_service_server_init</span><span class="p">();</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// setup HID Device service
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">hids_device_init</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nf">get_hidDescriptor</span><span class="p">(),</span> <span class="nf">get_hidDescriptorLen</span><span class="p">()</span> <span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// setup advertisements
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">gap_advertisements_set_params</span><span class="p">(</span>
+</span></span><span class="line"><span class="cl">        <span class="n">adv_int_min</span><span class="p">,</span> <span class="n">adv_int_max</span><span class="p">,</span> <span class="n">adv_type</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">null_addr</span><span class="p">,</span> <span class="mh">0x07</span><span class="p">,</span> <span class="mh">0x00</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">gap_advertisements_set_data</span><span class="p">(</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">adv_data</span><span class="p">),</span> <span class="p">(</span><span class="kt">uint8_t</span><span class="o">*</span><span class="p">)</span> <span class="n">adv_data</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">    
+</span></span><span class="line"><span class="cl">    <span class="c1">// register for SM events
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="k">static</span> <span class="kt">btstack_packet_callback_registration_t</span> <span class="n">sm_event_callback_registration</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="n">sm_event_callback_registration</span><span class="p">.</span><span class="n">callback</span> <span class="o">=</span> <span class="n">packet_handler</span><span class="p">;</span>
+</span></span><span class="line"><span class="cl">    <span class="nf">sm_add_event_handler</span><span class="p">(</span><span class="o">&amp;</span><span class="n">sm_event_callback_registration</span><span class="p">);</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="c1">// register for HIDS
+</span></span></span><span class="line"><span class="cl"><span class="c1"></span>    <span class="nf">hids_device_register_packet_handler</span><span class="p">(</span><span class="n">packet_handler</span><span class="p">);</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 </div>
 </div>
@@ -891,11 +969,11 @@ gap_advertisements_enable(1);
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>

@@ -181,32 +181,64 @@ Promise の then 等にコールバックを登録する必要があります。
 <p>
 ここでは、上記サイトのコード部分を抜粋しておきます。</p>
 <div class="src src-go">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-go" data-lang="go"><span style="display:flex;"><span><span style="color:#66d9ef">func</span> <span style="color:#a6e22e">await</span>(<span style="color:#a6e22e">awaitable</span> <span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>) ([]<span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>, []<span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>) {
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">then</span> <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">chan</span> []<span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>)
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">defer</span> close(<span style="color:#a6e22e">then</span>)
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">thenFunc</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">FuncOf</span>(<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">this</span> <span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>, <span style="color:#a6e22e">args</span> []<span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>) <span style="color:#66d9ef">interface</span>{} {
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">then</span> <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">args</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
-</span></span><span style="display:flex;"><span>    })
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">thenFunc</span>.<span style="color:#a6e22e">Release</span>()
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">catch</span> <span style="color:#f92672">:=</span> make(<span style="color:#66d9ef">chan</span> []<span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>)
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">defer</span> close(<span style="color:#a6e22e">catch</span>)
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">catchFunc</span> <span style="color:#f92672">:=</span> <span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">FuncOf</span>(<span style="color:#66d9ef">func</span>(<span style="color:#a6e22e">this</span> <span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>, <span style="color:#a6e22e">args</span> []<span style="color:#a6e22e">js</span>.<span style="color:#a6e22e">Value</span>) <span style="color:#66d9ef">interface</span>{} {
-</span></span><span style="display:flex;"><span>        <span style="color:#a6e22e">catch</span> <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">args</span>
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>
-</span></span><span style="display:flex;"><span>    })
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">defer</span> <span style="color:#a6e22e">catchFunc</span>.<span style="color:#a6e22e">Release</span>()
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#a6e22e">awaitable</span>.<span style="color:#a6e22e">Call</span>(<span style="color:#e6db74">&#34;then&#34;</span>, <span style="color:#a6e22e">thenFunc</span>).<span style="color:#a6e22e">Call</span>(<span style="color:#e6db74">&#34;catch&#34;</span>, <span style="color:#a6e22e">catchFunc</span>)
-</span></span><span style="display:flex;"><span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">select</span> {
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">case</span> <span style="color:#a6e22e">result</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&lt;-</span><span style="color:#a6e22e">then</span>:
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#a6e22e">result</span>, <span style="color:#66d9ef">nil</span>
-</span></span><span style="display:flex;"><span>    <span style="color:#66d9ef">case</span> <span style="color:#a6e22e">err</span> <span style="color:#f92672">:=</span> <span style="color:#f92672">&lt;-</span><span style="color:#a6e22e">catch</span>:
-</span></span><span style="display:flex;"><span>        <span style="color:#66d9ef">return</span> <span style="color:#66d9ef">nil</span>, <span style="color:#a6e22e">err</span>
-</span></span><span style="display:flex;"><span>    }
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-go" data-lang="go"><span class="line"><span class="cl"><span class="kd">func</span> <span class="nf">await</span><span class="p">(</span><span class="nx">awaitable</span> <span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="p">([]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">then</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nb">close</span><span class="p">(</span><span class="nx">then</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">thenFunc</span> <span class="o">:=</span> <span class="nx">js</span><span class="p">.</span><span class="nf">FuncOf</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">this</span> <span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">then</span> <span class="o">&lt;-</span> <span class="nx">args</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nx">thenFunc</span><span class="p">.</span><span class="nf">Release</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">catch</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="kd">chan</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nb">close</span><span class="p">(</span><span class="nx">catch</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="nx">catchFunc</span> <span class="o">:=</span> <span class="nx">js</span><span class="p">.</span><span class="nf">FuncOf</span><span class="p">(</span><span class="kd">func</span><span class="p">(</span><span class="nx">this</span> <span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">,</span> <span class="nx">args</span> <span class="p">[]</span><span class="nx">js</span><span class="p">.</span><span class="nx">Value</span><span class="p">)</span> <span class="kd">interface</span><span class="p">{}</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">        <span class="nx">catch</span> <span class="o">&lt;-</span> <span class="nx">args</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="p">})</span>
+</span></span><span class="line"><span class="cl">    <span class="k">defer</span> <span class="nx">catchFunc</span><span class="p">.</span><span class="nf">Release</span><span class="p">()</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="nx">awaitable</span><span class="p">.</span><span class="nf">Call</span><span class="p">(</span><span class="s">&#34;then&#34;</span><span class="p">,</span> <span class="nx">thenFunc</span><span class="p">).</span><span class="nf">Call</span><span class="p">(</span><span class="s">&#34;catch&#34;</span><span class="p">,</span> <span class="nx">catchFunc</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">    <span class="k">select</span> <span class="p">{</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nx">result</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">then</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="nx">result</span><span class="p">,</span> <span class="kc">nil</span>
+</span></span><span class="line"><span class="cl">    <span class="k">case</span> <span class="nx">err</span> <span class="o">:=</span> <span class="o">&lt;-</span><span class="nx">catch</span><span class="p">:</span>
+</span></span><span class="line"><span class="cl">        <span class="k">return</span> <span class="kc">nil</span><span class="p">,</span> <span class="nx">err</span>
+</span></span><span class="line"><span class="cl">    <span class="p">}</span>
+</span></span><span class="line"><span class="cl"><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 この Promise 処理について、一点注意が必要です。</p>
@@ -426,11 +458,11 @@ JS や TypeScript でプログラムを組むよりも
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>

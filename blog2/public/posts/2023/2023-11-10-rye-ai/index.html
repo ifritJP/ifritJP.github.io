@@ -202,16 +202,32 @@ rye のインストール時に固定で決定されることが分かりまし�
 <p>
 その固定バージョンというのが、以下で定義されています。</p>
 <div class="src src-rs">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rs" data-lang="rs"><span style="display:flex;"><span><span style="color:#e6db74">/// this is the target version that we want to fetch
-</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">const</span> <span style="color:#66d9ef">SELF_PYTHON_TARGET_VERSION</span>: <span style="color:#a6e22e">PythonVersionRequest</span> <span style="color:#f92672">=</span> PythonVersionRequest {
-</span></span><span style="display:flex;"><span>    name: Some(Cow::Borrowed(<span style="color:#e6db74">&#34;cpython&#34;</span>)),
-</span></span><span style="display:flex;"><span>    arch: None,
-</span></span><span style="display:flex;"><span>    os: None,
-</span></span><span style="display:flex;"><span>    major: <span style="color:#ae81ff">3</span>,
-</span></span><span style="display:flex;"><span>    minor: Some(<span style="color:#ae81ff">11</span>),
-</span></span><span style="display:flex;"><span>    patch: None,
-</span></span><span style="display:flex;"><span>    suffix: None,
-</span></span><span style="display:flex;"><span>};</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="sd">/// this is the target version that we want to fetch
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="k">pub</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="no">SELF_PYTHON_TARGET_VERSION</span>: <span class="nc">PythonVersionRequest</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">PythonVersionRequest</span><span class="w"> </span><span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">name</span>: <span class="nb">Some</span><span class="p">(</span><span class="n">Cow</span>::<span class="n">Borrowed</span><span class="p">(</span><span class="s">&#34;cpython&#34;</span><span class="p">)),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">arch</span>: <span class="nb">None</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">os</span>: <span class="nb">None</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">major</span>: <span class="mi">3</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">minor</span>: <span class="nb">Some</span><span class="p">(</span><span class="mi">11</span><span class="p">),</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">patch</span>: <span class="nb">None</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">suffix</span>: <span class="nb">None</span><span class="p">,</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">};</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 上記の設定で注目するべきは、 <code class="verbatim">major: 3</code> と <code class="verbatim">minor: Some(11)</code> です。</p>
@@ -223,10 +239,20 @@ rye のインストール時に固定で決定されることが分かりまし�
 <p>
 というのも、 rye のコードには次のような処理も入っています。</p>
 <div class="src src-rs">
-<div class="highlight"><pre tabindex="0" style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4;"><code class="language-rs" data-lang="rs"><span style="display:flex;"><span><span style="color:#e6db74">/// we only support cpython 3.9 to 3.11
-</span></span></span><span style="display:flex;"><span><span style="color:#e6db74"></span><span style="color:#66d9ef">pub</span> <span style="color:#66d9ef">fn</span> <span style="color:#a6e22e">is_self_compatible_toolchain</span>(version: <span style="color:#66d9ef">&amp;</span><span style="color:#a6e22e">PythonVersion</span>) -&gt; <span style="color:#66d9ef">bool</span> {
-</span></span><span style="display:flex;"><span>    version.name <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;cpython&#34;</span> <span style="color:#f92672">&amp;&amp;</span> version.major <span style="color:#f92672">==</span> <span style="color:#ae81ff">3</span> <span style="color:#f92672">&amp;&amp;</span> version.minor <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">9</span> <span style="color:#f92672">&amp;&amp;</span> version.minor <span style="color:#f92672">&lt;</span> <span style="color:#ae81ff">12</span>
-</span></span><span style="display:flex;"><span>}</span></span></code></pre></div>
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-rs" data-lang="rs"><span class="line"><span class="cl"><span class="sd">/// we only support cpython 3.9 to 3.11
+</span></span></span><span class="line"><span class="cl"><span class="sd"></span><span class="k">pub</span><span class="w"> </span><span class="k">fn</span> <span class="nf">is_self_compatible_toolchain</span><span class="p">(</span><span class="n">version</span>: <span class="kp">&amp;</span><span class="nc">PythonVersion</span><span class="p">)</span><span class="w"> </span>-&gt; <span class="kt">bool</span> <span class="p">{</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="n">version</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">&#34;cpython&#34;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">version</span><span class="p">.</span><span class="n">major</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">version</span><span class="p">.</span><span class="n">minor</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">9</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">version</span><span class="p">.</span><span class="n">minor</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">12</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="p">}</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
 </div>
 <p>
 これが何の処理かと言えば、コメントに書いてあるように、
@@ -357,11 +383,11 @@ rye は、 python のバージョンを切り替えて使用できる仮想環�
 	<h4 class="widget__title">Recent Posts</h4>
 	<div class="widget__content">
 		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-22-huggingface-transformer/">huggingface transformers (ViT) の使い方(ファインチューニング、分類と回帰)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-15-hhkb/">HHKB Pro hybrid と HHKB Lite2</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-12-01-winrt-base-h/">VC&#43;&#43; で NuGet パッケージ更新ができない、winrt/base.h が見つからない場合の対処</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-11-04-road-law/">自転車か原付か？</a></li>
 			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-29-remote-desktop-keyboard/">Windows のリモートデスクトップ接続先の日本語入力で US 配列を使う</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-06-01-rye-setup-2/">rye のインストール その 2</a></li>
-			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2024/2024-05-12-reinforcement-learning/">gymnasium と Stable-Baselines3 を使って機械学習で自前の環境を作成する</a></li>
 		</ul>
 	</div>
 </div>
