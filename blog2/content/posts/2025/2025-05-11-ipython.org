@@ -1,0 +1,224 @@
+#+TITLE: ipython を使った python 開発
+#+DATE: 2025-05-11
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+python で AI モデルを検討する際は、 Jupyter Notebook を使用している。
+
+AI モデル検討では巨大なサイズのモデルロードが必須なので、
+素の python で実行するとスクリプトを実行する度にモデルロードが入ってしまい、
+無駄な時間を消費することになる。
+Jupyter Notebook ではセル単位で実行できるので、
+モデルロードのセルとモデルを動かすセルとを分けることで、
+モデルロードの実行に掛る時間を極力減らすことができる。
+
+
+そして、そのセル単位での部分実行などを制御しているのが ipython になる。
+
+また Jupyter Notebook は、 AI モデルの検討やデータ分析を行なう際に、
+グラフィカルなメモを作成しながら開発を行なえるのも特徴の一つだ。
+
+一方で、ある程度の規模のロジックを組む場合は
+使い慣れたエディタを使いたいと思うことがよくある。
+そもそも、そういう場合はグラフィカルなメモを作成することが殆どないので、
+Jupyter Notebook の長所の一つを活かせない。
+
+そこで今回は、Notebook を経由せずに直接 ipython を使うことで、
+使い慣れたエディタを利用しつつ import などに掛る時間を
+極力減らす方法について取り上げる。
+
+* ipython の起動
+
+ipython は次のコマンドで起動できる。
+
+: $ python -m ipython
+
+あるいは
+
+: $ ipython
+
+ただ、もろもろの ipython 用の設定をしたいので、
+今回は python スクリプトから ipython を起動する方法を採用する。
+
+** ipython 起動スクリプト
+
+以下のスクリプトを作成し実行する。
+
+#+BEGIN_SRC py
+# start_ipython.py
+from IPython import start_ipython
+from traitlets.config import Config
+
+def main():
+    # IPython設定の作成
+    c = Config()
+    c.InteractiveShellApp.extensions = ['autoreload']
+    c.InteractiveShellApp.exec_lines = ['%autoreload 2']
+    
+    # 追加の初期化コマンドを設定したい場合
+    c.InteractiveShellApp.exec_lines.extend([
+        'print("カスタム環境が読み込まれました")'
+    ])
+    
+    # IPythonシェルの起動
+    start_ipython(config=c)
+
+if __name__ == '__main__':
+    main()
+#+END_SRC
+
+上記スクリプトは、 
+ipython のオートリロードをモード 2 で有効化した状態で、
+ipython シェルを起動する。
+
+さらに追加のコマンドを実行したいのであれば、
+c.InteractiveShellApp.exec_lines.extend() に処理を追加すれば良い。
+
+後は、別途開発している python スクリプトを用意し、
+ipython シェル上で import すれば良い。
+
+* ipython シェル
+
+例えば次の main.py を作成する。
+
+#+BEGIN_SRC py
+def run():
+    print( "hoge" )
+#+END_SRC
+
+この状態で ipython シェルで以下を実行する
+
+: In []: import main 
+
+これで main がロードされるので、さらに次を ipython シェルで実行する。
+
+: In []: main.run()
+: hoge
+
+これによって main モジュールの run() が実行される.
+
+
+import main を毎回実行するのであれば、
+ipython 起動スクリプトの 
+=c.InteractiveShellApp.exec_lines.extend= に =import main= を追加しておくのも良い。
+
+* オートリロード
+
+上述している通り、オートリロードを有効にしている。
+この状態で main.py を次のように編集する。
+
+#+BEGIN_SRC py
+def run():
+    print( "hoge" )
+
+def run2():
+    print( "hogehoge" )
+#+END_SRC
+
+そして、次を実行すると、
+
+: In []: main.run2()
+: hogehoge
+
+main.py の変更がロードされて run2() が実行される。
+
+* import のキャッシュ
+
+ipython では import のモジュールをキャッシュし、
+モジュールが更新されていない場合は import を行なわない。
+
+例えば、次のような sub.py モジュールを作成する。
+
+#+BEGIN_SRC py
+import datetime
+
+now = datetime.datetime.now()
+#+END_SRC
+
+そして、 main.py を次のように編集する。
+
+#+BEGIN_SRC py
+import sub
+
+def run():
+    print( sub.now.strftime("%H:%M:%S.%f") )
+#+END_SRC
+
+この状態で次を実行する。
+
+: In []: main.run()
+: 13:14:33.192619
+
+この =main.run()= を何度実行しても出力は代わらない。
+
+次に、 main.py の print() に引数を加えてみる。
+
+#+BEGIN_SRC py
+import sub
+
+def run():
+    print( sub.now.strftime("%H:%M:%S.%f"), 1 )
+#+END_SRC
+
+: In []: main.run()
+: 13:14:33.192619 1
+
+ここでも時間出力は変っていない。
+つまり、 sub モジュールはリロードされずにキャッシュが利用されていることが分かる。
+
+** 強制リロード
+
+モジュールのキャッシュは便利だが、
+一方でリロードして欲しいのにリロードされずに困ることが少なくない。
+
+その場合、次のように =importlib.reload()= を利用すると、
+所定のモジュールのリロードを強制できる。
+
+
+#+BEGIN_SRC py
+import sub
+import importlib
+
+importlib.reload( sub )
+
+def run():
+    print( sub.now.strftime("%H:%M:%S.%f") )
+#+END_SRC
+
+これによって sub モジュールがリロードされ、sub.now が更新される。
+
+main モジュール自体をリロードする場合は、
+ipython シェルで以下の通り実行すれば良い。
+
+: In []: import importlib
+: In []: importlib.reload( main )
+
+
+なお、 =importlib.reload()= がリロード対象とするモジュールは、
+引数で直接指定したモジュールのみ。
+指定したモジュール内で import しているモジュールのリロードは行なわないので注意。
+
+* ipython の有無確認
+
+開発時は ipython シェルを使い、
+リリース時には ipython シェルを使わずに通常のシェルから起動することになる。
+
+このように ipython シェルの有無が切り替わるが、
+開発中のスクリプトの中で ipython シェル実行中かどうかを確認したくなるケースがある。
+
+この場合に利用するのが、 =get_ipython()= である。
+
+次のように get_ipython() を利用することで、
+ipython 実行中かどうかを判断できる。
+
+
+#+BEGIN_SRC py
+from IPython import get_ipython
+
+if not get_ipython() is None:
+   print( "it's on ipython now" )
+#+END_SRC
+
