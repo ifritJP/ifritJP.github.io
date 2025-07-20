@@ -1,0 +1,176 @@
+#+TITLE: Windows で RTX5070 TI を使った ComfyUI のパフォーマンス
+#+DATE: 2025-07-06
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+先日 AI モデル開発検討用に RTX5070 TI を購入した。
+せっかく、お高い GPU を買ったので色々とローカル AI ツールを試している。
+
+ローカル AI ツールは様々な用途の AI があるが、
+とりあえず一番面白そうな画像生成 AI ツールを試す。
+画像生成 AI ツールも色々あるが、自由度と分かり易さと更新頻度から ComfyUI を選択。
+
+
+なお、自分は開発系の作業は windows 専用のアプリ開発でない限りは、wsl を利用している。
+
+ComfyUI も wsl で作業したいところだが、気になるのはパフォーマンスだ。
+
+そこで、今回は ComfyUI をセットアップする場所によってパフォーマンスにどれほど影響するか調べてみた。
+
+* TL;DR 
+
+- wsl の /dev/sdb 上
+  - 50.55 sec
+- wsl の /mnt/e 上
+  - 239.70 sec
+- Windows の e:\ 上
+  - 12.94 sec
+
+上記から一つ言えるのは、 *wsl の =/mnt/?= 上に ComfyUI をセットアップするのは止めた方が良い。*
+
+なお、上記はモデルロードに時間がかかっているのであって、
+画像生成のステップに掛る時間は誤差程度にしか変わらない。
+
+もし、モデルを固定して画像を大量に生成するのが目的なのであれば、
+セットアップ場所はほとんど影響ない。
+
+* 環境とパフォーマンス計測方法
+
+今回は次の環境で計測する。
+
+- OS version
+  - win11 24H2
+- ComfyUI version
+  - 0.3.43
+- Python version
+  - 3.12
+- GPU Driver version
+  - 576.80
+- Pytorch version
+  - 2.7.1+cu128
+
+** 計測方法
+
+今回のパフォーマンス計測は、 次の手順を実行する。
+
+- ComfyUI を起動
+- 次のワークフローを開く
+  - https://github.com/comfyanonymous/ComfyUI_examples/commit/8b9466787cffd6b94ffea97487fef1619507209a
+- ワークフローを実行 (1枚)
+
+上記「ワークフローを実行」の時間を計測する。
+なお、時間は自分で計測するのではなく、 ComfyUI のプロンプトに出力される情報に
+ワークフローの実行時間が含まれるのでそれを利用する。
+
+このワークフローの実行時間には、画像生成の step だけでなくモデルのロード時間も含まれる。
+というか、今回の目的はモデルのロード時間が、
+セットアップ場所によってどれだけ変わるのかを確認するのが主な目的なので、
+この方法を選択している。
+
+** セットアップ場所
+
+
+次の3箇所に ComfyUI をセットアップし、
+それぞれの場所で上記の方法で時間を計測する。
+
+- wsl の /dev/sdb 上
+- wsl の /mnt/e 上
+- Windows の e:\ 上
+  
+なお、上記のパスの物理的なドライブは NVMe になる。
+
+上 2 つは wsl 上で実行し、最後の 1 つは Windows 上で実行している。
+
+
+* 計測結果
+
+** wsl の /dev/sdb 上
+
+#+BEGIN_SRC txt
+loaded completely 9.5367431640625e+25 1560.802734375 True
+CLIP/text encoder model load device: cuda:0, offload device: cpu, current: cuda:0, dtype: torch.float16
+Requested to load SDXL
+loaded completely 10492.872158813476 4897.0483474731445 True
+100%|███████████████████████████████████████████████████████████████████████████████████| 20/20 [00:04<00:00,  4.41it/s]
+Requested to load SDXLRefinerClipModel
+loaded completely 7173.775997924805 1324.95849609375 True
+Requested to load SDXLRefiner
+loaded completely 5848.817398834229 4309.7050857543945 True
+100%|█████████████████████████████████████████████████████████████████████████████████████| 5/5 [00:01<00:00,  4.51it/s]
+Requested to load AutoencoderKL
+loaded completely 2698.414421081543 159.55708122253418 True
+Prompt executed in 50.55 seconds
+#+END_SRC
+
+** wsl の /mnt/e 上
+
+#+BEGIN_SRC txt
+loaded completely 9.5367431640625e+25 1560.802734375 True
+CLIP/text encoder model load device: cuda:0, offload device: cpu, current: cuda:0, dtype: torch.float16
+Requested to load SDXL
+loaded completely 12072.872158813476 4897.0483474731445 True
+100%|███████████████████████████████████████████████████████████████████████████████████| 20/20 [00:05<00:00,  3.43it/s]
+Requested to load SDXLRefinerClipModel
+loaded completely 7173.775997924805 1324.95849609375 True
+Requested to load SDXLRefiner
+loaded completely 5848.817398834229 4309.7050857543945 True
+100%|█████████████████████████████████████████████████████████████████████████████████████| 5/5 [00:01<00:00,  4.05it/s]
+Requested to load AutoencoderKL
+loaded completely 2698.414421081543 159.55708122253418 True
+Prompt executed in 239.70 seconds
+#+END_SRC
+
+
+** Windows の e:\ 上
+
+#+BEGIN_SRC txt
+loaded completely 13503.8 1560.802734375 True
+Requested to load SDXL
+loaded completely 11872.872158813476 4897.0483474731445 True
+100%|██████████████████████████████████████████| 20/20 [00:04<00:00,  4.59it/s]
+Requested to load SDXLRefinerClipModel
+loaded completely 6973.775997924805 1324.95849609375 True
+Requested to load SDXLRefiner
+loaded completely 5648.817398834229 4309.7050857543945 True
+100%|████████████████████████████████████████████| 5/5 [00:00<00:00,  5.39it/s]
+Requested to load AutoencoderKL
+loaded completely 182.2815933227539 159.55708122253418 True
+Prompt executed in 12.94 seconds
+#+END_SRC
+
+* まとめ
+
+上記をもう一度まとめると以下の通り。
+
+- wsl の /dev/sdb 上
+  - 50.55 sec
+- wsl の /mnt/e 上
+  - 239.70 sec
+- Windows の e:\ 上
+  - 12.94 sec
+
+画像生成の step にかかる時間は誤差程度の違いしかないので、
+基本的にはモデルのロード時間に違いがある。
+
+wsl と windows のファイルシステム間のアクセスは遅いというのは良く知られていることだが、
+ここまでエグい違いが出ると流石に AI 用の
+デカいファイルにアクセスする系に wsl は使えない、と言わざるをえない。
+
+一度ロードしてしまえば、
+その後の画像生成パラメータを変更する分にはロードが入らないので問題ないが、
+モデルを変更することは良くある。
+
+そもそも、今回の画像生成 AI ツールを試しているのは、
+色々なモデルやワークフローを試して「何が出来て何が出来ないのか」
+を確認することが目的なので、変える度にバカ長い待ち時間が入るのは現実的ではない。
+
+という訳で、 wsl ではなく *Windows のネイティブ実行するのが基本* となる。
+
+なお、 Linux ネイティブで動かしている人は、
+普通に早いストレージに置いておけば良いだろう。
+
+
+以上。
