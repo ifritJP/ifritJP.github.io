@@ -1,0 +1,291 @@
+#+TITLE: ComfyUI node の開発方法
+#+DATE: 2025-07-20
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+今回は、ComfyUI node の開発方法についてのネタです。
+
+なお、以下のサイトに ComfyUI のオフィシャルな開発方法が載っているので
+そこを見るのが一番良いのですが。。。
+
+<https://docs.comfy.org/custom-nodes/overview>
+
+* node の動き
+
+node を作って初めて分ったことですが、
+ComfyUIでは、各ノードが個別のクラスとして定義されています。
+そして、プロンプトを実行するたびに、
+そのクラスの新しいインスタンスが生成されて処理が実行されます。
+
+重要なのは、
+*「プロンプトが実行される度にそのクラスのインスタンスが生成される」* ことです。
+
+つまり、 *インスタンスの生存期間はプロンプト実行 1 回限り* です。
+
+では、 「node の処理パラメータはどうするんだ？」というと、
+パラメータは次のような流れで処理されます。
+
+1. パラメータはブラウザ側で管理される
+2. プロンプト実行時にブラウザ側から ComfyUI にワークフローとパラメータが通知される
+3. ComfyUI が受信したワークフローに従って各 node のインスタンスを作成する
+4. node の各インスタンスを実行時に、パラメータが渡される
+
+
+* node の種類
+
+開発できる node の種類は以下の 2 つです。
+
+- backend のみ
+- frontend/backend 両方
+
+「backend のみ」は、Python側での処理のみを実装するタイプです。
+つまり、Webブラウザ上で表示されるノードのUI（見た目や操作）に、
+独自のカスタマイズを加えない場合に選択します。
+
+「frontend/backend 両方」は、
+Pythonの処理に加えて、JavaScriptなどを使ってUIを自由にカスタマイズするタイプです。
+
+ほとんどの場合は「backend のみ」で対応できますが、
+フロントエンド処理、つまりは UI をリッチにしたい場合に、
+「frontend/backend 両方」を選択します。
+
+なお、今回は「backend のみ」の node についての開発方法に絞って説明します。
+
+* node 開発環境設定
+
+カスタムノードのプロジェクト作成には、
+ComfyUIに同梱されているcomfyコマンドラインツールを使用します。
+
+comfy コマンドは pip からインストールできます。
+
+: $ pip install comfy
+
+次に本来の手順では comfyui 本体をインストールすることになっているのですが、
+node を開発するような人はインストール済みだと思うので、それは割愛します。
+
+* custom-node のプロジェクト作成
+
+次のコマンドで custom-node のプロジェクトを作成します。
+
+: $ uv run comfy node scaffold
+
+作成されたプロジェクトディレクトリの src 以下に nodes.py が作成されます。
+
+この nodes.py には、以下が定義されます。
+
+- node のサンプルクラス
+- そのサンプルクラスを ComfyUI に登録するメタデータ
+
+このクラスは、 static な情報として以下を持ちます。
+
+- INPUT_TYPES メソッド
+  - この node の入力の型に関する情報
+- IS_CHANGED メソッド
+  - この node の入力を処理した際の出力ID
+- RETURN_TYPES メンバ
+  - この node の出力の型に関する情報
+- CATEGORY メンバ
+  - この node を登録するカテゴリ
+- FUNCTION メンバ
+  - この node を実行する際のメソッド名
+
+
+** サンプル
+
+今回 custom-node のサンプルとして、次のプロジェクトの node を元に説明します。
+
+<https://github.com/ifritJP/ref_toml_comfy_node>
+
+この node は toml ファイルを読み込み、
+toml ファイルに定義してある文字列を、別の文字列と結合して返す。
+
+例えば、背景、時間、動物の種類を示す文字列リストを toml 内に定義しておき、
+それを読み込んで画像生成ごとに組み合わせを切り替えて
+プロンプトを作成できます。
+
+このカスタムノードは、新しいモデルを評価する際に、
+決ったパターンのプロンプトで画像を生成する場合などを想定しています。
+
+** サンプル toml 
+
+ここでは、 次の toml を読み込むとします。
+
+#+BEGIN_SRC toml
+time = [
+"morning",
+"noon",
+"evening",
+]
+background = [
+"ocean",
+"mountain",
+"city",
+]
+animal = [
+"dogs",
+"cats",
+]
+#+END_SRC
+
+** INPUT_TYPES
+
+この node の入力の型に関する情報を宣言します。
+
+#+BEGIN_SRC py
+    @classmethod
+    def INPUT_TYPES(s):
+        with open( os.path.join( this_node_root, "src.toml" ), "rb" ) as fileObj:
+            obj = tomllib.load( fileObj )
+            key_list = [ "<none>", *list( obj.keys() ) ]
+        
+        return {
+            "required":{
+                "string": ( "STRING", ),
+                "index": ( "INT", {"default":0, "min":0, "max": 1000 } ),
+                "random": ("BOOLEAN", {"default":False} ),
+                "scale": ( "FLOAT", {"default":1.0, "min":0.1, "max":2.0, "step":0.01 } ),
+                "name1": ( key_list, ),
+                "name2": ( key_list, ),
+                "name3": ( key_list, ),
+            },
+        }
+#+END_SRC
+
+- src.toml から定義されている key 名を読み込みます。
+- 結合するプロンプトの文字列を入力として持ちます。
+- プロンプトに結合する key に紐付くリストのインデックスを入力として持ちます。
+- リストから文字列を選択する際に、ランダムで選択するかどうかを入力として持ちます。
+- scale 文字列の強調度を指定します
+- どのリストをプロンプトに結合するかを指定する key 名を入力として持ちます。
+  - サンプル toml では、[ <none>, time, background, animal ] から
+    選択できるように登録しています。
+- このメソッドで返すデータフォーマットについては、
+  上記サンプルを見ると大体は分かると思います。
+
+** CATEGORY
+
+この node のカテゴリを指定します。
+
+ComfyUI の node リストのどこに、この nodeを 登録するかを指定します。
+
+#+BEGIN_SRC py
+    CATEGORY = "utils/string"
+#+END_SRC
+
+ここでは、ユティリティの下の string に登録します。
+
+** RETURN_NAMES, RETURN_TYPES
+
+この node の出力の名前と型を定義します。
+
+#+BEGIN_SRC py
+    RETURN_NAMES = ( "result", "only picked string" )
+    RETURN_TYPES = ("STRING","STRING")
+#+END_SRC
+
+RETURN_NAMES と RETURN_TYPES は、タプルで返します。
+RETURN_NAMES と RETURN_TYPES で定義している内容の順番は一致している必要があります。
+
+型には以下のものが利用できます。
+
+- INT
+- FLOAT
+- STRING
+- BOOLEAN
+- IMAGE
+- MASK
+- LATENT
+- CONDITIONING
+- etc... (comfy の nodes.py を参照)
+
+** FUNCTION
+
+この node のインスタンスにおいて、処理を実行するメソッド名を定義します。
+
+#+BEGIN_SRC py
+    FUNCTION = "execute"
+#+END_SRC
+
+
+** IS_CHANGED メソッド
+
+IS_CHANGED は、ComfyUI が node を実行する際に、
+所定の入力が与えられた場合の出力に変更があるかどうかを識別するために
+利用する情報を返すメソッドです。
+
+IS_CHANGED というメソッド名を見ると、
+BOOLEAN の値を返すのかと思いますが、実際にはそうではないです.
+
+例えば、 ある入力 I_1 を処理したときの出力が O_1 だった場合、
+次の入力 I_2 を処理した時の出力が O_2 だとします。
+このとき IS_CHANGED は、I_1 に対し H_1 を返し、
+I_2 に対し H_2 を返します。
+
+このメソッドの目的は、処理を効率化するためのキャッシュ制御です。
+ComfyUIは、ノードを実行する前にこのIS_CHANGEDを呼び出し、
+返された値が前回実行時の値と異なる場合のみ、ノード本体の処理を実行します。
+
+もし返された値が前回と同じであれば、
+処理をスキップしてキャッシュされた前回の結果を再利用します。
+
+*つまり、IS_CHANGEDが入力に応じて異なる値を返すように設計すれば、*
+*入力が変わったときだけ再計算させることができます。*
+
+#+BEGIN_SRC py
+    S_COUNT = 0
+    @classmethod
+    def IS_CHANGED(s, index, random, scale, string, name1, name2, name3 ):
+        global S_COUNT
+        S_COUNT += 1
+        return S_COUNT
+#+END_SRC
+
+今回のサンプルでは、上記の通り毎回異なる値を返しています。
+
+なお、キャッシュを使わずに毎回実行させたい場合、
+上記のようにインクリメントする方法もありますが、
+ComfyUI  のHP に次のように記載されている通り、
+  =float( "NAN" )= を返すのが本来の制御方法のようです。
+
+#+BEGIN_SRC txt
+To specify that your node should always be considered to have changed 
+(which you should avoid if possible, since it stops Comfy optimising what gets run), 
+return float("NaN"). This returns a NaN value, which is not equal to anything, even another NaN.
+#+END_SRC
+
+
+** 実行メソッド
+
+node に入力されたデータを処理するメソッドを定義します。
+
+このメソッドは、 FUNCTION メンバで指定した名前で定義する必要があります。
+
+今回のサンプルでは以下の通りです。
+
+#+BEGIN_SRC py
+    def execute(self, index, random, scale, string, name1, name2, name3 ):
+        with open( os.path.join( this_node_root, "src.toml" ), "rb" ) as fileObj:
+            obj = tomllib.load( fileObj )
+
+            picked = ""
+            for name in [ name1, name2, name3 ]:
+                if name != "<none>":
+                    val_list = obj[ name ]
+                    val_num = len( val_list )
+
+                    if random:
+                        index = rand.randrange( val_num )
+                    
+                    val = val_list[ index % val_num ]
+                    if int(scale * 100) != 100:
+                        val = f"({val}:{scale:.2f})"
+                        
+                    picked = f"{val}, {picked}"
+
+            string = f"{picked}, {string}"
+                    
+        return (string, picked)
+#+END_SRC

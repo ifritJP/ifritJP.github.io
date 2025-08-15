@@ -1,0 +1,237 @@
+#+TITLE: Windows で RTX5070Ti を使って gpt-oss を動かす
+#+DATE: 2025-08-07
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+windows で huggingface transformers を使って gpt-oss を動かすのにハマったのでメモ。
+
+* TL;DR 
+
+- RTX5070Ti の VRAM 16GB で gpt-oss を動かすには triton 3.4.0 と triton-kernel が必須
+- triton は linux のみの対応なので windows native は不可能。 wsl が必須
+- チャットするだけなら LM studio などのチャット専用ツールを利用するのが手間もなく簡単
+
+* gpt-oss 
+
+OpenAI GPT3 以降の初のオープン な LLM である gpt-oss がリリースされたとのこと。
+
+このネタは、
+以下の内容から transformers を使ってローカル実行する部分を実施した際のメモになっている。
+
+<https://huggingface.co/blog/welcome-openai-gpt-oss>
+
+上記には、 transformers 以外にも llama.cpp, vLLM transformers serve が
+紹介されているので、
+気になる方はそちらを参考に。
+
+なお、 gpt-oss は 117B 版(gpt-oss-120b) と 21B 版(gpt-oss-20b)が公開されているが、
+普通に考えてローカルで動かす場合 gpt-oss-20b になる。
+H100 GPU を使えば gpt-oss-120b が動かせるということだが、
+H100 GPU をローカルで動かせる人は圧倒的に少数だろう。
+
+なお、 gpt-oss-20b は 16GB の VRAM で動かせるが、
+これには幾つか条件があるので注意が必要。
+
+* 16GB VRAM で動かす条件
+
+16GB VRAM で動かすには次の条件をクリアする必要がある。
+
+- mxfp4 形式に対応した GPU
+- triton 3.4 と triton_kernels ライブラリ
+- pytorch 2.8
+
+まず 1 つめの mxfp4 形式に対応した GPU は、
+どうやらコンシューマ向けでは RTX5000 シリーズだけらしい。
+
+次の triton 3.4 と triton_kernels は、 linux のみのサポートらしい。
+(非公式の windows 版 triton もあるらしいが、未確認)
+
+つまり、 GPU が RTX5000 シリーズで、かつ linux に限定ということ。
+
+ただし linux の部分は、 linux ネイティブだけではなく wsl でも大丈夫。
+
+なお、何故 16GB VRAM を動かすのに上記条件が必要かというと、
+mxfp4 形式で重みが保持されていて、これを扱う為の条件が上記になる。ということ。
+
+上記をクリアできない場合は bf16 として展開されるので、
+mxfp4 に比べて少なくとも倍のサイズの VRAM が必要になる。
+
+なお、 mxfp4 でロードした時の VRAM の消費量が約 13.2GB なので、
+単純に 2 倍にすると 26.4GB になる。
+
+コンシューマで VRAM 26.4GB をクリアしている GPU ってなにかあったか？
+
+* uv 用の pyproject.toml
+
+そんな訳で、 
+gpt-oss-20b を動かす環境を構築する際の uv 用 pyproject.toml を張っておく。
+
+なお、この pyproject.toml は jupyter notebook も含んでいるので、
+不要なら削除してほしい。
+
+ただ、LLM のロードは時間がかかるので、 
+notebook あるいは ipython を使った方が良いだろう。
+
+
+#+BEGIN_SRC toml
+[project]
+name = "note-local"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+    "accelerate>=1.9.0",
+    "ipywidgets>=8.1.7",
+    "kernels>=0.9.0",
+    "matplotlib>=3.10.5",
+    "notebook>=7.4.5",
+    "torch>=2.8",
+    "transformers>=4.55.0",
+    "triton>=3.4.0",
+    "triton-kernels",
+]
+
+
+[[tool.uv.index]]
+name = "pytorch-gpu"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+{ index = "pytorch-gpu"  }
+]
+torchvision = [
+{ index = "pytorch-gpu"  }
+]
+torchaudio = [
+{ index = "pytorch-gpu"  }
+]
+triton = [
+{ index = "pytorch-gpu"  }
+]
+triton-kernels = { git = "https://github.com/triton-lang/triton.git", subdirectory = "python/triton_kernels", rev = "main" }
+#+END_SRC
+
+* 実行スクリプト
+
+上記の uv の環境で notebook を起動し、
+以下を実行すると "How many rs are in the word 'strawberry'?" に対する回答が得られる。
+
+
+#+BEGIN_SRC py
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+model_id = "openai/gpt-oss-20b"
+
+tokenizer = AutoTokenizer.from_pretrained(model_id)
+model = AutoModelForCausalLM.from_pretrained(
+    model_id,
+    device_map="auto",
+    torch_dtype="auto",
+)
+
+messages = [
+    {"role": "user", "content": "How many rs are in the word 'strawberry'?"},
+]
+
+inputs = tokenizer.apply_chat_template(
+    messages,
+    add_generation_prompt=True,
+    return_tensors="pt",
+    return_dict=True,
+).to(model.device)
+
+generated = model.generate(**inputs, max_new_tokens=100)
+print(tokenizer.decode(generated[0][inputs["input_ids"].shape[-1]:]))
+#+END_SRC
+
+*  Flash Attention 3 
+
+上記スクリプトは通常版のモデルを実行するケースで、
+それとは別に Flash Attention 3 という高速化版も使える。
+
+が、これは動かせなかった。
+
+サイトには以下の記述がある。
+
+#+BEGIN_SRC txt
+At the time of writing, 
+this super-fast kernel has been tested on Hopper cards with PyTorch 2.7 and 2.8.
+We expect increased coverage in the coming days. 
+----
+#+END_SRC
+
+これを翻訳すると以下。
+
+--------
+
+本稿執筆時点では、
+この超高速カーネルはPyTorch 2.7および2.8を搭載した Hopper カードでテスト済みです。
+今後数日中にカバレッジが拡大すると予想されます。
+
+--------
+
+
+つまり、 Flash Attention 3 は Hopper の対応のみで
+ RTX 5000 シリーズにはまだ対応していない、
+ということなんだろうか？
+
+Flash Attention 3 は通常版に比べて高速になるということなので、期待したい。
+
+
+* LM studio
+
+ついでに LM studio でも動かしてみた。
+
+transformers では実質的に RTX5000 が必須だったが、
+LM studio では RTX 5000 シリーズでなくても普通に動かせる。
+かつ、VRAM は 16GB も必要ない。
+というか、CPU だけでも十分実用に使える速度で動かせる。
+逆に、どうして GPU 使ってもこれだけしか速くならないんだと、残念に思う。
+
+実際に自分の環境で動かした結果は次の通り。
+
+- GPU (RTX5070Ti) 
+  - 42.62 tok/sec
+- CPU (Ryzen9 9900X / DDR5 5600)
+  - 16.76 tok/sec
+
+CPU だけでこれだけの速度で動き、
+かつ、ハルシネーションのことを考えなければ非常に優秀なモデルなので、
+とりあえず PC にインストールしておいて損は無い。
+
+特に英語学習(reading,writing)に関して言えば、もやはこれだけあれば十分な気がする。
+
+また、 OpenAI のモデルなのでトレーニングデータセット的にも安心できるため、
+モデルデータをダウンロードしたところで面倒なことは起らないだろう。
+
+なお、展開後の RAM 使用量は約 13GB なので、
+CPU を利用する場合のシステムメモリは最低でも 32GB。
+とはいえ 32GB だと本当にギリギリなラインなので、 64GB は欲しいところ。
+
+
+以上を踏まえると、次のように運用するのが良さそうだ。
+
+集中して LLM を動かす場合のみ GPU を割り当て、
+他に AI のトレーニングやゲームなどで GPU を使う場合は、
+LLM を CPU 単体で動かす。
+
+** proxy 環境下
+
+proxy 環境下だと LM studio からモデルのダウンロードが出来ないので、
+次の手順に従ってモデルのインポートを行なうことで使えるようになる。
+
+<https://lmstudio.ai/docs/app/basics/import-model>
+
+このときに利用する lms コマンドは以下にある。
+
+: "C:\Users\?????\.lmstudio\bin\lms.exe"
+
+また、 gpt-oss-20b モデルは以下の URL のものを事前にダウンロードしておく。
+
+<https://huggingface.co/lmstudio-community/gpt-oss-20b-GGUF>
