@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Vibe Coding をやってみた所感 (Go言語でのTCPフォワーダー開発事例) - hoge blog</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+		<meta property="og:title" content="Vibe Coding をやってみた所感 (Go言語でのTCPフォワーダー開発事例)" />
+<meta property="og:description" content="最近巷で話題の Vibe Coding を、周回遅れではあるが体験してみました。 その際に感じたこと、得られた知見をここに記しておきます。 TL;DR Vibe Coding は、プログラマにとって非常に有用な開発手法の一つ AI によってプログラマが職を失うのは、まだ当分先の話だと感じた（具体的な期間は不明） 特に非同期処理の設計や実装において、LLM はまだ課題を抱えているように見受けられる 開発環境 今回の Vibe Coding は、以下の環境で実施しました。 エディタ: VS Code LLM: Claude Sonnet" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2025/2025-09-21-vibe-codig/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-09-21T00:00:00+00:00" />
+<meta property="article:modified_time" content="2025-09-21T00:00:00+00:00" />
+
+		<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Vibe Coding をやってみた所感 (Go言語でのTCPフォワーダー開発事例)"/>
+<meta name="twitter:description" content="最近巷で話題の Vibe Coding を、周回遅れではあるが体験してみました。 その際に感じたこと、得られた知見をここに記しておきます。 TL;DR Vibe Coding は、プログラマにとって非常に有用な開発手法の一つ AI によってプログラマが職を失うのは、まだ当分先の話だと感じた（具体的な期間は不明） 特に非同期処理の設計や実装において、LLM はまだ課題を抱えているように見受けられる 開発環境 今回の Vibe Coding は、以下の環境で実施しました。 エディタ: VS Code LLM: Claude Sonnet"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700">
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+		
+    <link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+	<div class="container header__container">
+		
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+		
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+	</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+			
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header">
+			<h1 class="post__title">Vibe Coding をやってみた所感 (Go言語でのTCPフォワーダー開発事例)</h1>
+			<div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2025-09-21T00:00:00Z">2025-09-21</time></div></div>
+		</header>
+		
+<div class="post__toc toc">
+	<div class="toc__title">Page content</div>
+	<div class="toc__menu">
+		<nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">TL;DR</a>
+</li>
+<li><a href="#headline-2">開発環境</a>
+</li>
+<li><a href="#headline-3">お題: TCPフォワーダーの開発</a>
+</li>
+<li><a href="#headline-4">LLMとのやりとりと開発プロセス</a>
+</li>
+<li><a href="#headline-5">所感: Vibe Coding の可能性と限界</a>
+</li>
+<li><a href="#headline-6">結論</a>
+</li>
+</ul>
+</nav>
+	</div>
+</div><div class="content post__content clearfix">
+			
+<p>
+最近巷で話題の Vibe Coding を、周回遅れではあるが体験してみました。</p>
+<p>
+その際に感じたこと、得られた知見をここに記しておきます。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+TL;DR
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<ul>
+<li>Vibe Coding は、プログラマにとって非常に有用な開発手法の一つ</li>
+<li>AI によってプログラマが職を失うのは、まだ当分先の話だと感じた（具体的な期間は不明）</li>
+<li>特に非同期処理の設計や実装において、LLM はまだ課題を抱えているように見受けられる</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+開発環境
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+今回の Vibe Coding は、以下の環境で実施しました。</p>
+<ul>
+<li>エディタ: VS Code</li>
+<li>LLM: Claude Sonnet 4</li>
+</ul>
+<p>Claude Sonnet 4 は、現時点でのコーディング性能においてトップクラスのLLMとして
+評価されているため、Vibe Coding の可能性を試すには最適な選択だと考えました。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+お題: TCPフォワーダーの開発
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+今回は、以下の要件を満たすTCPフォワーダーを Vibe Coding で開発することに挑戦しました。</p>
+<ul>
+<li><strong>使用言語:</strong> Go言語</li>
+<li><strong>機能:</strong> TCPのフォワード接続（転送元と転送先のペア）の中継</li>
+<li><strong>セッション維持と再接続:</strong> 転送元または転送先のどちらかが切断された場合でも、
+セッションを維持し、自動的に再接続を試みる（データ再送機能は含まない）</li>
+<li><strong>多重接続管理:</strong> 複数のフォワード接続ペアを同時に管理できること</li>
+<li><strong>データ形式:</strong> 転送するデータはテキスト（ASCII）に限定</li>
+<li><strong>設定方法:</strong> コマンドラインオプションで接続ペア
+（例: `-f :8080=localhost:80` のような形式）を指定できるようにする</li>
+<li><strong>性能要件:</strong> Go言語のgoroutineを効果的に活用し、高効率なデータ転送を実現すること</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+LLMとのやりとりと開発プロセス
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+上記の大まかな指示を Claude Sonnet 4 に与え、開発を開始しました。</p>
+<p>
+<strong><strong>フェーズ1: 初期コード生成と課題</strong></strong></p>
+<p>
+最初に生成されたコードは、
+1組のフォワード接続を中継するだけのシンプルなものでした。
+具体的には、「複数同時管理」「セッション維持」「再接続」といった
+重要な要件が無視された状態でした。</p>
+<p>
+また、初期コードはかなりの処理が1つの関数に集約されており、
+可読性や保守性に問題がありました。
+そこで、ある程度の処理単位で具体的に指示を与え、関数の分割と整理を行わせました。</p>
+<p>
+<strong><strong>フェーズ2: 要件の追加とLLMの挙動</strong></strong></p>
+<p>
+次に、無視された要件（複数同時管理、セッション維持、再接続）を追加指示し、
+コードの再生成を依頼しました。</p>
+<p>
+この段階で「複数同時管理」には対応してくれましたが、
+「セッション維持」と「再接続」は依然として無視されていました。
+再度、これらの要件を追加するよう指示。</p>
+<p>
+しかし、どうも意図がうまく伝わらないようでした。
+「再接続」機能は実装されるものの、
+「セッション維持」（例えば、一方の接続が切れてももう一方の接続を維持し続ける状態）は
+実現できないコードが生成されました。</p>
+<p>
+<strong><strong>フェーズ3: 非同期処理の壁</strong></strong></p>
+<p>
+そこで、「セッション維持」の概念をより詳細に、
+ステップに分割して指示を出すことにしました。</p>
+<p>
+しかし、やはり状況は改善しませんでした。
+特に Go言語の <em>goroutine</em> を使った非同期処理の扱いがどうにも雑で、
+明らかにバグを含んでいるコードが頻繁に生成されました。</p>
+<p>
+非同期処理は一見しただけでは問題が分かりにくく、
+生成されたコードを丹念に追って論理的な矛盾がないかを確認するのは非常に困難です。</p>
+<p>
+これをAIがコードを生成するたびに検証するのは、
+精神的にも時間的にも大きな負担となりました。
+何度かやり取りを繰り返しましたが、なかなか意図した実装にはたどり着きませんでした。</p>
+<p>
+この経験から、非同期処理のような複雑なロジックを「ふんわりしたプロンプト」で
+AIに任せるのは非常に困難であると痛感しました。</p>
+<p>
+<strong><strong>フェーズ4: 方針転換と具体的指示</strong></strong></p>
+<p>
+この状況を打開するため、一度方針を転換しました。
+これまでのAI任せだったフォワード接続の確立処理について、
+こちらからドラスティックな変更を指示することにしました。</p>
+<p>
+具体的には、</p>
+<ul>
+<li>接続先、接続元それぞれをどのように接続するか</li>
+<li>処理をどのように <em>goroutine</em> に分割するか</li>
+<li>どの情報を <em>chan</em> (チャネル) を使って受け渡すか</li>
+<li>どのように処理の同期や待合せを行うか</li>
+</ul>
+<p>といった点を詳細かつ具体的に指示しました。</p>
+<p>
+この具体的な指示によって、大枠の変更は無事に完了しました。</p>
+<p>
+しかし、この変更で新しい処理が追加された際、
+これまで使用していた古い処理が削除されずにそのまま残ってしまうという現象が見られました。
+通常であれば、使わないコードは削除するか、
+既存のコードを改良する形で修正されるものですが、
+LLM はそのような配慮をしてくれないようです。</p>
+<p>
+このような試行錯誤を繰り返し、
+どうにか約1日がかりで目的の TCP フォワーダーツールを完成させることができました。
+個人的な感想としては、もし最初から自分で実装していれば、
+もう少し短い時間で開発できたのではないかと思います。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+所感: Vibe Coding の可能性と限界
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+今回の Vibe Coding を通して、いくつかの重要な知見を得ました。</p>
+<ul>
+<li><strong>大枠の設計には有用</strong>:
+Vibe Coding は、
+ツールの全体像やコードの大枠を生成させる際に非常に有用だと感じました。
+初期段階のプロトタイピングにおいては、大幅な時間短縮が期待できます。</li>
+<li><strong>詳細な実装は人間に軍配</strong>:
+しかし、コードの細部、特に複雑なロジックや特定の要件を満たす実装に関しては、
+AIに完全に任せるよりも、プログラマ自身が主導して進めた方が効率的であると感じました。</li>
+<li><strong>設計案の提示は必須:</strong> 
+ある程度、自分の中で設計案が固まっている場合は、
+それをAIに具体的に指示して進める方が、AI任せにするよりも遥かに良い結果が得られます。
+AIは必ずしもベストプラクティスを出力するわけではないため、
+自身の経験に基づいた最適なアプローチを積極的に伝えるべきです。</li>
+<li><strong>コードレビューの重要性:</strong> 
+AIが生成したコードを理解する際、
+自身の想定している設計のコードであればレビュー時の理解が早く、正確にできます。
+多少ベストプラクティスから外れていても、自分が理解しやすい、
+やりやすい形であることの重要性を再認識しました。</li>
+</ul>
+<p>なお、今回開発したコードの規模はコメント込みで約400行程度でした。
+この程度の規模であっても、AIがその都度生成するコードを確認し、
+的確な指示を出し続ける作業はかなりの集中力と疲労を伴います。</p>
+<p>
+特に非同期処理に関しては、コードの動きを正確に理解するのに苦労しましたし、
+潜在的な不具合がないかを判断するのも非常に骨が折れる作業でした。</p>
+<p>
+今回の経験から、
+特に Claude Sonnet 4 は Go言語の <em>goroutine</em> を使った非同期処理において、
+まだ得意とは言えない挙動を見せると感じました。
+そのため、非同期処理をAIに丸投げするのは避けるべきでしょう。</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
+<h2 id="headline-6">
+結論
+</h2>
+<div id="outline-text-headline-6" class="outline-text-2">
+<p>
+以上の経験から、今回の Vibe Coding の結論は以下の通りです。</p>
+<ul>
+<li>Vibe Coding は、プログラマにとって非常に役立つ強力な開発手法の一つ</li>
+<li>AI によってプログラマが職を失うのは、まだ当分先の話だと感じている（具体的な期間は不明）</li>
+<li>非同期処理の設計や実装は、LLMが最も苦手とする領域の一つであり、まだその課題は大きい</li>
+</ul>
+</div>
+</div>
+
+		</div>
+	</article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2025/2025-09-16-moneybw-sbi/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">マネーフォワードの SBI 証券連携の話</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-09-21-vibe-codig/">Vibe Coding をやってみた所感 (Go言語でのTCPフォワーダー開発事例)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-09-16-moneybw-sbi/">マネーフォワードの SBI 証券連携の話</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-08-30-tf-rtx5000/">TensorFlow を Geforce RTX5000 シリーズで動かす</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-08-07-gpt-oss-windows/">Windows で RTX5070Ti を使って gpt-oss を動かす</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-07-27-how-to-develop-comfyui-node/">ComfyUI node の開発方法</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2025 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+<script async defer src="/blog2/public/js/menu.js"></script>
+</body>
+</html>
