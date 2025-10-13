@@ -1,0 +1,313 @@
+#+TITLE: go の bubbletea で簡易ターミナルエミュレータを作る
+#+DATE: 2025-10-05
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+CUI で動くアプリを作ると、
+そのアプリ実行中に stdin からのキーボード入力を受け付けるケースが少なくない。
+
+そして、そのキーボード入力をしたときに 
+shell では標準的な C-a や C-f, C-b などキーが効かずにガッカリする。
+
+そうした時に利用するのが bubbletea になる。
+
+なお、bubbletea は go のライブラリなので、今回は go の CUI アプリを前提とする。
+
+また、go のターミナル制御系で利用できるライブラリは他にもあるが、
+今回は bubbletea を使う。
+
+理由としては、各ライブラリのサンプルを見る限り、
+自分のやりたかった事が一番簡単に出来そうだったから。
+
+* bubbletea の使い方
+
+bubbletea の使い方を簡単に説明する。
+
+bubbletea には、サンプルコードが複数あるが今回は次のサンプルを取り上げる。
+
+<https://github.com/charmbracelet/bubbletea/tree/main/examples/chat>
+
+このサンプルは上記のリンク先を見てもらうと分かるとが、
+Text を表示する領域(viewport)と、Text を入力する領域(textarea)がある。
+
+つまり、 キーボードからの入力は textarea で行ない、
+アプリからの出力は viewport に行なう形になる。
+
+** サンプルコード 
+
+サンプルコードの中身は以下の通り。
+
+#+BEGIN_SRC go
+package main
+
+// A simple program demonstrating the text area component from the Bubbles
+// component library.
+
+import (
+	"fmt"
+	"log"
+	"strings"
+
+	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/viewport"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+const gap = "\n\n"
+
+func main() {
+	p := tea.NewProgram(initialModel())
+
+	if _, err := p.Run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+type (
+	errMsg error
+)
+
+type model struct {
+	viewport    viewport.Model
+	messages    []string
+	textarea    textarea.Model
+	senderStyle lipgloss.Style
+	err         error
+}
+
+func initialModel() model {
+	ta := textarea.New()
+	ta.Placeholder = "Send a message..."
+	ta.Focus()
+
+	ta.Prompt = "┃ "
+	ta.CharLimit = 280
+
+	ta.SetWidth(30)
+	ta.SetHeight(3)
+
+	// Remove cursor line styling
+	ta.FocusedStyle.CursorLine = lipgloss.NewStyle()
+
+	ta.ShowLineNumbers = false
+
+	vp := viewport.New(30, 5)
+	vp.SetContent(`Welcome to the chat room!
+Type a message and press Enter to send.`)
+
+	ta.KeyMap.InsertNewline.SetEnabled(false)
+
+	return model{
+		textarea:    ta,
+		messages:    []string{},
+		viewport:    vp,
+		senderStyle: lipgloss.NewStyle().Foreground(lipgloss.Color("5")),
+		err:         nil,
+	}
+}
+
+func (m model) Init() tea.Cmd {
+	return textarea.Blink
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var (
+		tiCmd tea.Cmd
+		vpCmd tea.Cmd
+	)
+
+	m.textarea, tiCmd = m.textarea.Update(msg)
+	m.viewport, vpCmd = m.viewport.Update(msg)
+
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.viewport.Width = msg.Width
+		m.textarea.SetWidth(msg.Width)
+		m.viewport.Height = msg.Height - m.textarea.Height() - lipgloss.Height(gap)
+
+		if len(m.messages) > 0 {
+			// Wrap content before setting it.
+			m.viewport.SetContent(lipgloss.NewStyle().Width(m.viewport.Width).Render(strings.Join(m.messages, "\n")))
+		}
+		m.viewport.GotoBottom()
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc:
+			fmt.Println(m.textarea.Value())
+			return m, tea.Quit
+		case tea.KeyEnter:
+			m.messages = append(m.messages, m.senderStyle.Render("You: ")+m.textarea.Value())
+			m.viewport.SetContent(lipgloss.NewStyle().Width(m.viewport.Width).Render(strings.Join(m.messages, "\n")))
+			m.textarea.Reset()
+			m.viewport.GotoBottom()
+		}
+
+	// We handle errors just like any other message
+	case errMsg:
+		m.err = msg
+		return m, nil
+	}
+
+	return m, tea.Batch(tiCmd, vpCmd)
+}
+
+func (m model) View() string {
+	return fmt.Sprintf(
+		"%s%s%s",
+		m.viewport.View(),
+		gap,
+		m.textarea.View(),
+	)
+}
+#+END_SRC
+
+それぞれの関数を簡単に説明する。
+
+- main()
+  - bubbletea の初期化と実行
+- initialModel()
+  - 画面の要素 (viewport、 textarea) の構成
+- Init()
+  - bubbletea から呼ばれるコールバック
+- Update()
+  - 何らかの更新イベント(例えばキー入力)があった際に呼ばれるコールバック
+- View() 
+  - コンソール上への出力処理。 bubbletea から呼ばれるコールバック。
+
+
+ということで、
+基本的には bubbletea の初期化と bubbletea のコールバックで構成される。
+
+*特に重要なのは、 initialModel と Update の処理になる。* 
+
+なお、 C-a, C-b 等の shell で良くあるキー操作は
+bubbletea の textarea 内で処理してくれているので、特に追加で処理する必要はない。
+
+*また、 View の処理も十分に理解しておく必要がある。*
+View の処理でコンソールに出力する文字列を確定しているので、
+ここさえ変更すれば力技でどうにかなる。
+
+View の処理の 116 〜 121 行を見ると、
+viewport と gap と textarea の情報から 
+Sprintf をして文字列を作成していることが分かる。
+
+そして gap の宣言は 17 行目で、
+次の通り単なる 改行コードが 2 つだけの文字列である。
+
+: const gap = "\n\n"
+
+つまり、
+ *「View の処理は viewport の出力と textarea の出力に 改行 2 つを挟んだ結果が*
+*コンソールに出力される」* 
+ということになる。
+
+この view の処理は、単純ではあるが非常に重要な処理であることが分かるだろう。
+
+なお、 このサンプルの gap は結構重要な役割をしている。
+試しに View から gap を削除して実際に動かしてみると、
+意図しない動きになることが分かるだろう。
+
+*** initialModel()
+
+initialModel() は、画面の要素の構成を定義する。
+
+ここでは、viewport と textarea を定義している。
+なお、 bubbletea で利用できる CUI パーツはいくつかあるが、
+具体的には以下で確認できる。
+
+<https://github.com/charmbracelet/bubbles>
+
+この中から自分の用途にあったモノを選択する。
+
+なお、どれも用途に合わないのであれば、自分で定義することもできる。
+が、今回のサンプルでは扱わない。
+
+*** Update()
+
+Update() は、何らかの更新イベント(例えばキー入力)があった際に呼ばれる。
+そして、そのイベントを処理した結果を返す。
+
+なお、 initialModel() で定義した構成パーツのイベント処理は、
+ここで呼び出す必要がある。 (80,81行目)
+
+他にも、イベントに対して独自に処理を追加する場合もここで処理を行なう。
+
+このサンプルでは Enter キー入力をトリガに、
+textarea と viewport の制御として次を処理している。 (99行目)
+
+- textarea に入力されていた文字列を取得
+- 取得した文字列を viewport に追加
+- textarea の文字列をクリア
+- viewport を最終行にスクロール
+
+このように、 initialModel で定義した CUI パーツのイベント処理と、
+独自のイベント処理を行なうのが Update の責務となる。
+
+**** viewport のイベント処理について
+
+サンプルでは viewport のイベント処理をそのまま呼び出しているが、
+実は viewport は b, u, v キー入力で viewport のスクロール処理を
+行なうようになっている。
+つまり、 textarea で入力しているときに 
+b, u, v を入力すると viewport が勝手にスクロールされてしまう。
+
+これだと使い勝手が悪いので、
+キー入力のイベントは viewport の処理を外すなどした方が良い。
+
+
+** 独自イベントの定義
+
+イベントを処理するのが Update() の責務だが、
+独自にイベントを発生させたい時もある。
+例えば周期タイマーでイベントを発生させたいなど。
+
+そういった、独自イベントを発生させる仕組みが tea.Cmd である。
+
+=tea.Cmd= の型は以下である。
+
+: type Cmd func() Msg
+
+そして、 =tea.Msg= の型は以下である。
+
+: type Msg interface{}
+
+つまり、何かイベントが発生した時に何らかの型の値を返すのが =tea.Cmd= になる。
+
+もうすこし具体的に例を挙げると、
+次の関数は、ある chan からの入力を得たときに EventInfo を返す =tea.Cmd= を生成する。
+
+#+BEGIN_SRC go
+type EventInfo bool
+func detectChangeSession( event chan bool ) tea.Cmd {
+    return func() tea.Msg {
+        <-event
+        return EventInfo( true )
+    }
+}
+#+END_SRC
+
+そして、この生成した tea.Cmd を Update() の戻り値として返してやると、
+chan の入力を得た時に EventInfo を tea.Msg として引数に持つ Update() が呼ばれる。
+
+その tea.Msg を、次のように EventInfo の型で判定して処理を追加する。
+
+#+BEGIN_SRC go
+switch msg := msg.(type) {
+case EventInfo:
+   // なにかの処理
+}
+
+#+END_SRC
+
+なお tea.Cmd は、 
+tea.Batch() を使うと複数の tea.Cmd を繋げて 1 つの tea.Cmd とすることができる。
+
+
+* まとめ
+
+bubbletea を使うと、ちょっとリッチな CUI アプリを go で簡単に作れるので、
+機会があれば試してみてほしい。
