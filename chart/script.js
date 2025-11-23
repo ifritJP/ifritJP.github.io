@@ -102,7 +102,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     label += ': ';
                                 }
                                 if (context.parsed.y !== null) {
-                                    label += new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY' }).format(context.parsed.y);
+                                    // Divide by 1000 and add 'K'
+                                    const value = context.parsed.y / 1000;
+                                    label += new Intl.NumberFormat('ja-JP', { style: 'decimal', maximumFractionDigits: 1 }).format(value) + 'K';
                                 }
                                 return label;
                             }
@@ -114,7 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         beginAtZero: true,
                         ticks: {
                             callback: function (value) {
-                                return new Intl.NumberFormat('ja-JP', { style: 'currency', currency: 'JPY', maximumSignificantDigits: 3 }).format(value);
+                                // Divide by 1000 and add 'K'
+                                return (value / 1000).toLocaleString() + 'K';
                             }
                         }
                     },
@@ -221,8 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Calculate and Update Chart
     function calculate() {
-        const initialCapital = parseFloat(document.getElementById('initial-capital').value) || 0;
-        const initialCash = parseFloat(document.getElementById('initial-cash').value) || 0;
+        const initialCapital = (parseFloat(document.getElementById('initial-capital').value) || 0) * 10000;
+        const initialCash = (parseFloat(document.getElementById('initial-cash').value) || 0) * 10000;
         const yieldRate = (parseFloat(document.getElementById('global-yield').value) || 0) / 100;
 
         let currentCapital = initialCapital;
@@ -239,9 +242,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const periodBoundaries = [];
 
         periods.forEach((period, index) => {
-            const expenses = parseFloat(period.querySelector('.p-expenses').value) || 0;
-            const income = parseFloat(period.querySelector('.p-income').value) || 0;
-            const contribution = parseFloat(period.querySelector('.p-contribution').value) || 0;
+            const expenses = (parseFloat(period.querySelector('.p-expenses').value) || 0) * 10000;
+            const income = (parseFloat(period.querySelector('.p-income').value) || 0) * 10000;
+            const contribution = (parseFloat(period.querySelector('.p-contribution').value) || 0) * 10000;
             const duration = parseInt(period.querySelector('.p-duration').value) || 0;
 
             const startYear = currentYear; // Start of this period
@@ -297,6 +300,66 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners
     addPeriodBtn.addEventListener('click', () => addPeriod());
     calculateBtn.addEventListener('click', calculate);
+
+    // Resize Logic
+    const chartCard = document.getElementById('chart-card');
+    const resizeHandle = document.getElementById('resize-handle');
+    let isResizing = false;
+    let startY;
+    let startHeight;
+
+    resizeHandle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startY = e.clientY;
+        startHeight = parseInt(window.getComputedStyle(chartCard).height, 10);
+        document.body.style.cursor = 'ns-resize';
+        e.preventDefault(); // Prevent text selection
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const dy = e.clientY - startY;
+        const newHeight = startHeight + dy;
+        chartCard.style.height = `${newHeight}px`;
+        heightSlider.value = newHeight; // Sync slider
+        // Chart.js handles resize automatically due to responsive: true
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+        }
+    });
+
+    // Slider Logic
+    const heightSlider = document.getElementById('height-slider');
+
+    function updateSliderRange() {
+        const clientHeight = document.documentElement.clientHeight;
+        heightSlider.min = clientHeight / 3;
+        heightSlider.max = clientHeight;
+    }
+
+    function updateSliderValue() {
+        heightSlider.value = parseInt(window.getComputedStyle(chartCard).height, 10);
+    }
+
+    // Initial setup
+    updateSliderRange();
+
+    // Set initial height to 1/2 of client height
+    const initialHeight = document.documentElement.clientHeight / 2;
+    chartCard.style.height = `${initialHeight}px`;
+    heightSlider.value = initialHeight;
+
+    heightSlider.addEventListener('input', () => {
+        chartCard.style.height = `${heightSlider.value}px`;
+    });
+
+    window.addEventListener('resize', () => {
+        updateSliderRange();
+    });
 
     // Initialize
     initChart();
