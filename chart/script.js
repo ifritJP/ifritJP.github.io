@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const periodTemplate = document.getElementById('period-template');
     const ctx = document.getElementById('financialChart').getContext('2d');
 
+    // Pension Inputs
+    const currentAgeInput = document.getElementById('current-age');
+    const pensionStartAgeInput = document.getElementById('pension-start-age');
+    const pensionBaseInput = document.getElementById('pension-base');
+    const pensionAdjustedInput = document.getElementById('pension-adjusted');
+
     let chart;
     let periodCount = 0;
 
@@ -148,15 +154,19 @@ document.addEventListener('DOMContentLoaded', () => {
         params.set('cap', initialCapital);
         params.set('cash', initialCash);
         params.set('yield', yieldRate);
+        params.set('tax', document.getElementById('tax-rate').value);
+        params.set('age', currentAgeInput.value);
+        params.set('pstart', pensionStartAgeInput.value);
+        params.set('pbase', pensionBaseInput.value);
 
         const periods = periodsContainer.querySelectorAll('.period-item');
         periods.forEach(period => {
             const income = period.querySelector('.p-income').value;
             const expenses = period.querySelector('.p-expenses').value;
-            const contribution = period.querySelector('.p-contribution').value;
+            const investment = period.querySelector('.p-investment').value;
             const duration = period.querySelector('.p-duration').value;
-            // Format: income:expenses:contribution:duration
-            params.append('p', `${income}:${expenses}:${contribution}:${duration}`);
+            // Format: income:expenses:investment:duration
+            params.append('p', `${income}:${expenses}:${investment}:${duration}`);
         });
 
         const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -170,6 +180,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (params.has('cap')) document.getElementById('initial-capital').value = params.get('cap');
         if (params.has('cash')) document.getElementById('initial-cash').value = params.get('cash');
         if (params.has('yield')) document.getElementById('global-yield').value = params.get('yield');
+        if (params.has('tax')) document.getElementById('tax-rate').value = params.get('tax');
+        if (params.has('age')) currentAgeInput.value = params.get('age');
+        if (params.has('pstart')) pensionStartAgeInput.value = params.get('pstart');
+        if (params.has('pbase')) pensionBaseInput.value = params.get('pbase');
+
+        calculatePension(); // Update adjusted value
 
         const periodParams = params.getAll('p');
         if (periodParams.length > 0) {
@@ -178,8 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
             periodCount = 0;
 
             periodParams.forEach(p => {
-                const [income, expenses, contribution, duration] = p.split(':');
-                addPeriod(income, expenses, contribution, duration);
+                const [income, expenses, investment, duration] = p.split(':');
+                addPeriod(income, expenses, investment, duration);
             });
         } else {
             // Default if no params
@@ -190,7 +206,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add Period
-    function addPeriod(income = 0, expenses = 0, contribution = 0, duration = 5) {
+    function addPeriod(income = 0, expenses = 0, investment = 0, duration = 5) {
         periodCount++;
         const clone = periodTemplate.content.cloneNode(true);
         const periodItem = clone.querySelector('.period-item');
@@ -199,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         periodItem.querySelector('.p-income').value = income;
         periodItem.querySelector('.p-expenses').value = expenses;
-        periodItem.querySelector('.p-contribution').value = contribution;
+        periodItem.querySelector('.p-investment').value = investment;
         periodItem.querySelector('.p-duration').value = duration;
 
         // Remove button logic
@@ -222,8 +238,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Calculate Pension Adjusted Amount
+    function calculatePension() {
+        const startAge = parseInt(pensionStartAgeInput.value) || 65;
+        const baseAmount = parseFloat(pensionBaseInput.value) || 0;
+
+        const diff = startAge - 65;
+        let rate = 1.0;
+
+        if (diff < 0) {
+            // Early start: -4.8% per year
+            rate += diff * 0.048;
+        } else if (diff > 0) {
+            // Late start: +8.4% per year
+            rate += diff * 0.084;
+        }
+
+        // Ensure rate doesn't go below 0 (unlikely but safe)
+        rate = Math.max(0, rate);
+
+        const adjusted = baseAmount * rate;
+        pensionAdjustedInput.value = adjusted.toFixed(1);
+        return adjusted;
+    }
+
     // Calculate and Update Chart
     function calculate() {
+        calculatePension(); // Ensure up to date
         const initialCapital = (parseFloat(document.getElementById('initial-capital').value) || 0) * 10000;
         const initialCash = (parseFloat(document.getElementById('initial-cash').value) || 0) * 10000;
         const yieldRate = (parseFloat(document.getElementById('global-yield').value) || 0) / 100;
@@ -232,6 +273,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentCash = initialCash;
         // Use current calendar year as start
         let currentYear = new Date().getFullYear();
+        let currentAge = parseInt(currentAgeInput.value) || 30;
+        const pensionStartAge = parseInt(pensionStartAgeInput.value) || 65;
+        const pensionAmount = parseFloat(pensionAdjustedInput.value) || 0;
 
         const labels = [String(currentYear)];
         const dataTotal = [currentCapital + currentCash];
@@ -244,26 +288,50 @@ document.addEventListener('DOMContentLoaded', () => {
         periods.forEach((period, index) => {
             const expenses = (parseFloat(period.querySelector('.p-expenses').value) || 0) * 10000;
             const income = (parseFloat(period.querySelector('.p-income').value) || 0) * 10000;
-            const contribution = (parseFloat(period.querySelector('.p-contribution').value) || 0) * 10000;
+            const plannedInvestment = (parseFloat(period.querySelector('.p-investment').value) || 0) * 10000;
             const duration = parseInt(period.querySelector('.p-duration').value) || 0;
+            const taxRate = (parseFloat(document.getElementById('tax-rate').value) || 0) / 100;
 
             const startYear = currentYear; // Start of this period
 
             for (let i = 1; i <= duration; i++) {
                 currentYear++;
+                currentAge++;
 
                 // Capital growth (Investment grows by yield)
                 currentCapital = currentCapital * (1 + yieldRate);
 
-                // Cash flow (Income - Expenses - Contribution)
-                currentCash = currentCash + income - expenses - contribution;
+                // Cash flow before investment
+                // Income comes in, expenses go out
+                let annualIncome = income;
 
-                // Add Contribution to Capital
-                currentCapital += contribution;
+                // Add Pension if eligible
+                if (currentAge >= pensionStartAge) {
+                    annualIncome += pensionAmount * 10000; // Convert to yen units (assuming base is in Man-yen)
+                }
 
-                // Insufficient Cash Logic
+                let availableCash = currentCash + annualIncome - expenses;
+
+                // Investment Logic: Invest only if cash is available
+                // We can invest up to the available cash amount
+                let actualInvestment = 0;
+                if (plannedInvestment > 0) {
+                    actualInvestment = Math.max(0, Math.min(plannedInvestment, availableCash));
+                }
+
+                // Update Cash and Capital with Investment
+                currentCash = availableCash - actualInvestment;
+                currentCapital += actualInvestment;
+
+                // Insufficient Cash Logic (Withdrawal from Capital)
                 if (currentCash < 0) {
-                    currentCapital += currentCash;
+                    const deficit = -currentCash;
+                    // We need to sell assets to cover the deficit + tax
+                    // cash_needed = assets_sold * (1 - taxRate)
+                    // assets_sold = cash_needed / (1 - taxRate)
+                    const assetsToSell = deficit / (1 - taxRate);
+
+                    currentCapital -= assetsToSell;
                     currentCash = 0;
                 }
 
@@ -300,6 +368,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners
     addPeriodBtn.addEventListener('click', () => addPeriod());
     calculateBtn.addEventListener('click', calculate);
+
+    // Pension inputs listeners
+    [currentAgeInput, pensionStartAgeInput, pensionBaseInput].forEach(input => {
+        input.addEventListener('input', () => {
+            calculatePension();
+        });
+    });
 
     // Resize Logic
     const chartCard = document.getElementById('chart-card');
@@ -365,4 +440,15 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     loadInputsFromUrl();
     calculate();
+
+    // Collapsible Logic
+    document.querySelectorAll('.collapsible-card .card-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+
+            content.classList.toggle('collapsed');
+            icon.classList.toggle('collapsed');
+        });
+    });
 });
