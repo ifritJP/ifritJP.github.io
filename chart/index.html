@@ -1,5 +1,13 @@
 <!DOCTYPE html>
 <html lang="ja">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-4708B8S6ES');
+</script>
 
 <head>
     <meta charset="UTF-8">
@@ -10,6 +18,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 
 <body>
@@ -20,12 +29,21 @@
         </header>
 
         <div class="usage-instructions">
-            <h3>使い方</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>使い方</h3>
+                <button id="toggle-spec-btn" class="btn secondary"
+                    style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">仕様詳細を表示</button>
+            </div>
+            <div id="spec-container"
+                style="display: none; margin-top: 1rem; padding: 1rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 0.5rem;">
+            </div>
             <ol>
                 <li><strong>初期設定</strong>: 現在の運用資産、現金、売却税率、利回りを入力します。金額は<strong>万円単位</strong>です。</li>
                 <li><strong>年金設定</strong>: 現在の年齢、受給開始年齢、想定年金支給額（満額）を入力します。開始年齢により支給額が調整されます。</li>
                 <li><strong>期間の追加</strong>: 「期間を追加」ボタンを押し、期間ごとの収支や投資額を設定します。</li>
                 <li><strong>計算</strong>: 「計算 & チャート更新」ボタンを押すと、将来の資産推移がグラフに表示されます。</li>
+                <li><strong>利回り変動シミュレーション</strong>: チェックを入れると、設定した利回りを基準に年ごとの変動をシミュレーションします。変動幅はスライダーで調整可能です。</li>
+                <li><strong>チャート調整</strong>: チャートの高さや利回りの変動幅をスライダーで調整できます。</li>
             </ol>
             <p style="font-size: 0.85rem; color: #1e40af; margin-top: 0.5rem;">※ 設定セクションはタイトルをクリックして折りたたむことができます。</p>
         </div>
@@ -94,13 +112,25 @@
             </section>
 
             <section class="chart-section">
-                <div style="margin-bottom: 1rem;">
+                <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
                     <button id="calculate-btn" class="btn primary">計算 & チャート更新</button>
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="enable-yield-sim" style="margin-right: 0.5rem;">
+                        <label for="enable-yield-sim"
+                            style="font-size: 0.9rem; user-select: none;">利回り変動シミュレーションを行う</label>
+                    </div>
                 </div>
                 <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
                     <label for="height-slider"
                         style="font-size: 0.9rem; font-weight: 500; color: var(--text-muted);">チャートの高さ調整</label>
                     <input type="range" id="height-slider" style="flex-grow: 1; cursor: pointer;">
+                </div>
+                <div style="margin-bottom: 1rem; display: flex; align-items: center; gap: 1rem;">
+                    <label id="yield-range-label" for="yield-range-slider"
+                        style="font-size: 0.9rem; font-weight: 500; color: var(--text-muted); min-width: 140px;">利回り変動幅:
+                        ±20%</label>
+                    <input type="range" id="yield-range-slider" min="0" max="50" value="20"
+                        style="flex-grow: 1; cursor: pointer;">
                 </div>
                 <div class="card chart-card" id="chart-card">
                     <canvas id="financialChart"></canvas>
@@ -118,7 +148,7 @@
             </div>
             <div class="period-inputs">
                 <div class="input-group">
-                    <label>年間収入</label>
+                    <label>年間収入(手取り)</label>
                     <input type="number" class="p-income" value="0">
                 </div>
                 <div class="input-group">

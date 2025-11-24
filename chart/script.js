@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const periodsContainer = document.getElementById('periods-container');
     const addPeriodBtn = document.getElementById('add-period-btn');
     const calculateBtn = document.getElementById('calculate-btn');
+    const yieldButton = document.getElementById('enable-yield-sim');
     const periodTemplate = document.getElementById('period-template');
     const ctx = document.getElementById('financialChart').getContext('2d');
 
@@ -66,7 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         backgroundColor: 'rgba(37, 99, 235, 0.1)',
                         borderWidth: 3,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        yAxisID: 'y'
                     },
                     {
                         label: '運用資産',
@@ -75,7 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         borderWidth: 2,
                         borderDash: [5, 5],
                         tension: 0.4,
-                        fill: false
+                        fill: false,
+                        yAxisID: 'y'
                     },
                     {
                         label: '現金',
@@ -84,7 +87,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         borderWidth: 2,
                         borderDash: [5, 5],
                         tension: 0.4,
-                        fill: false
+                        fill: false,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: '年間利回り',
+                        data: [],
+                        type: 'bar',
+                        backgroundColor: 'rgba(156, 163, 175, 0.3)',
+                        borderColor: 'rgba(156, 163, 175, 1)',
+                        borderWidth: 1,
+                        yAxisID: 'y1',
+                        order: 2
+                    },
+                    {
+                        label: '平均利回り',
+                        data: [],
+                        type: 'line',
+                        borderColor: '#8b5cf6', // Purple
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: false,
+                        yAxisID: 'y1',
+                        order: 1
                     }
                 ]
             },
@@ -107,7 +133,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 if (label) {
                                     label += ': ';
                                 }
-                                if (context.parsed.y !== null) {
+                                if (context.dataset.yAxisID === 'y1') {
+                                    if (context.parsed.y !== null) {
+                                        label += context.parsed.y.toFixed(2) + '%';
+                                    }
+                                } else if (context.parsed.y !== null) {
                                     // Divide by 1000 and add 'K'
                                     const value = context.parsed.y / 1000;
                                     label += new Intl.NumberFormat('ja-JP', { style: 'decimal', maximumFractionDigits: 1 }).format(value) + 'K';
@@ -119,12 +149,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 },
                 scales: {
                     y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
                         beginAtZero: true,
                         ticks: {
                             callback: function (value) {
                                 // Divide by 1000 and add 'K'
                                 return (value / 1000).toLocaleString() + 'K';
                             }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: '利回り (%)'
+                        },
+                        grid: {
+                            drawOnChartArea: false
                         }
                     },
                     x: {
@@ -142,6 +187,29 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             plugins: [periodBoundaryPlugin]
         });
+    }
+
+    // Generate Random Annual Yields
+    function generateAnnualYields(targetYield, years, rangePercent) {
+        if (years <= 0) return [];
+
+        let yields = [];
+        let currentSum = 0;
+
+        for (let i = 0; i < years; i++) {
+            // Random between -range and +range offset (absolute %)
+            // rangePercent is e.g. 40 for ±40%
+            const offset = (Math.random() - 0.5) * (rangePercent * 2);
+            let val = targetYield + offset;
+            yields.push(val);
+            currentSum += val;
+        }
+
+        // Adjust to match average
+        const currentAvg = currentSum / years;
+        const diff = targetYield - currentAvg;
+
+        return yields.map(y => y + diff);
     }
 
     // Update URL from Inputs
@@ -267,7 +335,7 @@ document.addEventListener('DOMContentLoaded', () => {
         calculatePension(); // Ensure up to date
         const initialCapital = (parseFloat(document.getElementById('initial-capital').value) || 0) * 10000;
         const initialCash = (parseFloat(document.getElementById('initial-cash').value) || 0) * 10000;
-        const yieldRate = (parseFloat(document.getElementById('global-yield').value) || 0) / 100;
+        const targetYieldRate = (parseFloat(document.getElementById('global-yield').value) || 0);
 
         let currentCapital = initialCapital;
         let currentCash = initialCash;
@@ -281,9 +349,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataTotal = [currentCapital + currentCash];
         const dataCapital = [currentCapital];
         const dataCash = [currentCash];
+        const dataYields = [null]; // No yield for the start year
+        const dataAverageYields = [null]; // No average yield for the start year
 
         const periods = periodsContainer.querySelectorAll('.period-item');
         const periodBoundaries = [];
+
+        // Calculate total duration first
+        let totalDuration = 0;
+        periods.forEach(period => {
+            totalDuration += parseInt(period.querySelector('.p-duration').value) || 0;
+        });
+
+        // Generate annual yields
+        const enableYieldSim = yieldButton.checked;
+        const yieldRangeSlider = document.getElementById('yield-range-slider');
+        const rangePercent = parseInt(yieldRangeSlider.value, 10);
+        let annualYields = [];
+
+        if (enableYieldSim) {
+            annualYields = generateAnnualYields(targetYieldRate, totalDuration, rangePercent);
+        } else {
+            // Fill with constant target yield
+            annualYields = new Array(totalDuration).fill(targetYieldRate);
+        }
+
+        let yieldIndex = 0;
+        let cumulativeGrowth = 1.0;
+        let yearsPassed = 0;
 
         periods.forEach((period, index) => {
             const expenses = (parseFloat(period.querySelector('.p-expenses').value) || 0) * 10000;
@@ -297,9 +390,30 @@ document.addEventListener('DOMContentLoaded', () => {
             for (let i = 1; i <= duration; i++) {
                 currentYear++;
                 currentAge++;
+                yearsPassed++;
+
+                // Get yield for this year
+                const currentAnnualYield = annualYields[yieldIndex];
+                yieldIndex++;
+
+                // Calculate cumulative average yield (CAGR)
+                cumulativeGrowth *= (1 + currentAnnualYield / 100);
+                const currentAverageYield = (Math.pow(cumulativeGrowth, 1 / yearsPassed) - 1) * 100;
+
+                // Only push to dataYields if simulation is enabled, otherwise null or 0?
+                // If disabled, we might want to hide the bar chart.
+                // Let's just push the value, but we can control visibility in updateChart if needed.
+                // Or just show the constant yield.
+                if (enableYieldSim) {
+                    dataYields.push(currentAnnualYield);
+                    dataAverageYields.push(currentAverageYield);
+                } else {
+                    dataYields.push(null); // Hide bars if disabled
+                    dataAverageYields.push(currentAverageYield);
+                }
 
                 // Capital growth (Investment grows by yield)
-                currentCapital = currentCapital * (1 + yieldRate);
+                currentCapital = currentCapital * (1 + currentAnnualYield / 100);
 
                 // Cash flow before investment
                 // Income comes in, expenses go out
@@ -349,18 +463,23 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        updateChart(labels, dataTotal, dataCapital, dataCash, periodBoundaries);
+        updateChart(labels, dataTotal, dataCapital, dataCash, dataYields, dataAverageYields, periodBoundaries);
         updateUrlFromInputs();
     }
 
-    function updateChart(labels, total, capital, cash, boundaries) {
+    function updateChart(labels, total, capital, cash, yields, averageYields, boundaries) {
         chart.data.labels = labels;
         chart.data.datasets[0].data = total;
         chart.data.datasets[1].data = capital;
         chart.data.datasets[2].data = cash;
+        chart.data.datasets[3].data = yields;
+        chart.data.datasets[4].data = averageYields;
 
         // Update plugin options
         chart.options.plugins.periodBoundary.boundaries = boundaries;
+
+        // Toggle Yield Axis Visibility
+        chart.options.scales.y1.display = true;
 
         chart.update();
     }
@@ -368,6 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event Listeners
     addPeriodBtn.addEventListener('click', () => addPeriod());
     calculateBtn.addEventListener('click', calculate);
+    yieldButton.addEventListener('change', calculate);
 
     // Pension inputs listeners
     [currentAgeInput, pensionStartAgeInput, pensionBaseInput].forEach(input => {
@@ -436,6 +556,14 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSliderRange();
     });
 
+    // Yield Range Slider Logic
+    const yieldRangeSlider = document.getElementById('yield-range-slider');
+    const yieldRangeLabel = document.getElementById('yield-range-label');
+
+    yieldRangeSlider.addEventListener('input', () => {
+        yieldRangeLabel.textContent = `利回り変動幅: ±${yieldRangeSlider.value}%`;
+    });
+
     // Initialize
     initChart();
     loadInputsFromUrl();
@@ -450,5 +578,43 @@ document.addEventListener('DOMContentLoaded', () => {
             content.classList.toggle('collapsed');
             icon.classList.toggle('collapsed');
         });
+    });
+
+    // Spec Display Logic
+    const toggleSpecBtn = document.getElementById('toggle-spec-btn');
+    const specContainer = document.getElementById('spec-container');
+
+    toggleSpecBtn.addEventListener('click', () => {
+        if (typeof marked === 'undefined') {
+            alert('marked library is not loaded!');
+            return;
+        }
+        if (specContainer.style.display === 'none') {
+            // Show
+            if (!specContainer.innerHTML.trim()) {
+                // Fetch if empty
+                fetch('spec.md')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.text();
+                    })
+                    .then(text => {
+                        specContainer.innerHTML = marked.parse(text);
+                    })
+                    .catch(error => {
+                        specContainer.innerHTML = '<p style="color: red;">仕様書の読み込みに失敗しました。</p>';
+                        console.error('Error fetching spec:', error);
+                        alert('仕様書の読み込みに失敗しました。\n' + error);
+                    });
+            }
+            specContainer.style.display = 'block';
+            toggleSpecBtn.textContent = '仕様詳細を隠す';
+        } else {
+            // Hide
+            specContainer.style.display = 'none';
+            toggleSpecBtn.textContent = '仕様詳細を表示';
+        }
     });
 });
