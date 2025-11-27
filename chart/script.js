@@ -222,6 +222,8 @@ document.addEventListener('DOMContentLoaded', () => {
         params.set('cap', initialCapital);
         params.set('cash', initialCash);
         params.set('yield', yieldRate);
+        params.set('dividend', document.getElementById('dividend-rate').value);
+        params.set('inflation', document.getElementById('inflation-rate').value);
         params.set('tax', document.getElementById('tax-rate').value);
         params.set('age', currentAgeInput.value);
         params.set('pstart', pensionStartAgeInput.value);
@@ -233,8 +235,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const expenses = period.querySelector('.p-expenses').value;
             const investment = period.querySelector('.p-investment').value;
             const duration = period.querySelector('.p-duration').value;
-            // Format: income:expenses:investment:duration
-            params.append('p', `${income}:${expenses}:${investment}:${duration}`);
+            const linked = period.querySelector('.p-expenses-link').checked ? 1 : 0;
+            // Format: income:expenses:investment:duration:linked
+            params.append('p', `${income}:${expenses}:${investment}:${duration}:${linked}`);
         });
 
         const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -248,6 +251,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (params.has('cap')) document.getElementById('initial-capital').value = params.get('cap');
         if (params.has('cash')) document.getElementById('initial-cash').value = params.get('cash');
         if (params.has('yield')) document.getElementById('global-yield').value = params.get('yield');
+        if (params.has('dividend')) document.getElementById('dividend-rate').value = params.get('dividend');
+        if (params.has('inflation')) document.getElementById('inflation-rate').value = params.get('inflation');
         if (params.has('tax')) document.getElementById('tax-rate').value = params.get('tax');
         if (params.has('age')) currentAgeInput.value = params.get('age');
         if (params.has('pstart')) pensionStartAgeInput.value = params.get('pstart');
@@ -262,8 +267,13 @@ document.addEventListener('DOMContentLoaded', () => {
             periodCount = 0;
 
             periodParams.forEach(p => {
-                const [income, expenses, investment, duration] = p.split(':');
-                addPeriod(income, expenses, investment, duration);
+                const parts = p.split(':');
+                const income = parts[0];
+                const expenses = parts[1];
+                const investment = parts[2];
+                const duration = parts[3];
+                const linked = parts.length > 4 ? (parts[4] === '1') : false;
+                addPeriod(income, expenses, investment, duration, linked);
             });
         } else {
             // Default if no params
@@ -274,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add Period
-    function addPeriod(income = 0, expenses = 0, investment = 0, duration = 5) {
+    function addPeriod(income = 0, expenses = 0, investment = 0, duration = 5, linked = false) {
         periodCount++;
         const clone = periodTemplate.content.cloneNode(true);
         const periodItem = clone.querySelector('.period-item');
@@ -286,14 +296,50 @@ document.addEventListener('DOMContentLoaded', () => {
         periodItem.querySelector('.p-investment').value = investment;
         periodItem.querySelector('.p-duration').value = duration;
 
+        // Toggle Logic
+        const toggleIcon = periodItem.querySelector('.period-toggle-icon');
+        const periodInputs = periodItem.querySelector('.period-inputs');
+
+        const toggleAction = (e) => {
+            // Don't toggle if clicking the remove button or inputs inside header (if any)
+            if (e.target.closest('.remove-period-btn') || e.target.closest('input')) return;
+
+            toggleIcon.classList.toggle('collapsed');
+            periodInputs.classList.toggle('collapsed');
+        };
+
+        toggleIcon.addEventListener('click', toggleAction);
+        // Optional: Make the title clickable too
+        periodItem.querySelector('.period-title').addEventListener('click', toggleAction);
+
+        const linkCheckbox = periodItem.querySelector('.p-expenses-link');
+        if (linkCheckbox) {
+            linkCheckbox.checked = linked;
+            // Unique ID for label
+            const id = `link-expenses-${periodCount}`;
+            linkCheckbox.id = id;
+            periodItem.querySelector('label[for="link-expenses"]').setAttribute('for', id);
+
+            linkCheckbox.addEventListener('change', () => updatePeriodChain());
+        }
+
+        // Real-time update listeners
+        const expensesInput = periodItem.querySelector('.p-expenses');
+        const durationInput = periodItem.querySelector('.p-duration');
+
+        expensesInput.addEventListener('input', () => updatePeriodChain());
+        durationInput.addEventListener('input', () => updatePeriodChain());
+
         // Remove button logic
         const removeBtn = periodItem.querySelector('.remove-period-btn');
         removeBtn.addEventListener('click', () => {
             periodItem.remove();
             updatePeriodNumbers();
+            updatePeriodChain(); // Re-calculate chain after removal
         });
 
         periodsContainer.appendChild(periodItem);
+        updatePeriodChain(); // Update chain when added
     }
 
     // Update Period Numbers after removal
@@ -336,6 +382,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const initialCapital = (parseFloat(document.getElementById('initial-capital').value) || 0) * 10000;
         const initialCash = (parseFloat(document.getElementById('initial-cash').value) || 0) * 10000;
         const targetYieldRate = (parseFloat(document.getElementById('global-yield').value) || 0);
+        const dividendRate = (parseFloat(document.getElementById('dividend-rate').value) || 0);
+        const inflationRate = (parseFloat(document.getElementById('inflation-rate').value) || 0);
 
         let currentCapital = initialCapital;
         let currentCash = initialCash;
@@ -379,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let yearsPassed = 0;
 
         periods.forEach((period, index) => {
-            const expenses = (parseFloat(period.querySelector('.p-expenses').value) || 0) * 10000;
+            let expenses = (parseFloat(period.querySelector('.p-expenses').value) || 0) * 10000;
             const income = (parseFloat(period.querySelector('.p-income').value) || 0) * 10000;
             const plannedInvestment = (parseFloat(period.querySelector('.p-investment').value) || 0) * 10000;
             const duration = parseInt(period.querySelector('.p-duration').value) || 0;
@@ -392,6 +440,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentAge++;
                 yearsPassed++;
 
+                // Apply inflation to expenses (starting from 2nd year of the period)
+                if (i > 1) {
+                    expenses = expenses * (1 + inflationRate / 100);
+                }
+
                 // Get yield for this year
                 const currentAnnualYield = annualYields[yieldIndex];
                 yieldIndex++;
@@ -400,10 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 cumulativeGrowth *= (1 + currentAnnualYield / 100);
                 const currentAverageYield = (Math.pow(cumulativeGrowth, 1 / yearsPassed) - 1) * 100;
 
-                // Only push to dataYields if simulation is enabled, otherwise null or 0?
-                // If disabled, we might want to hide the bar chart.
-                // Let's just push the value, but we can control visibility in updateChart if needed.
-                // Or just show the constant yield.
                 if (enableYieldSim) {
                     dataYields.push(currentAnnualYield);
                     dataAverageYields.push(currentAverageYield);
@@ -423,6 +472,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (currentAge >= pensionStartAge) {
                     annualIncome += pensionAmount * 10000; // Convert to yen units (assuming base is in Man-yen)
                 }
+
+                // Add Dividend Income (after tax)
+                const grossDividend = currentCapital * (dividendRate / 100);
+                const netDividend = grossDividend * (1 - taxRate);
+                annualIncome += netDividend;
 
                 let availableCash = currentCash + annualIncome - expenses;
 
@@ -455,6 +509,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataCash.push(currentCash);
             }
 
+            // Update Final Year Expense in UI
+            const finalExpenseInput = period.querySelector('.p-expenses-final');
+            if (finalExpenseInput) {
+                finalExpenseInput.value = (expenses / 10000).toFixed(1);
+            }
+
             // Record boundary
             periodBoundaries.push({
                 startYear: startYear,
@@ -484,10 +544,96 @@ document.addEventListener('DOMContentLoaded', () => {
         chart.update();
     }
 
+    // Calculate Final Expense for a Period
+    function calculateFinalExpense(periodItem) {
+        const expensesInput = periodItem.querySelector('.p-expenses');
+        const durationInput = periodItem.querySelector('.p-duration');
+        const finalExpenseInput = periodItem.querySelector('.p-expenses-final');
+        const inflationRateInput = document.getElementById('inflation-rate');
+
+        const expenses = parseFloat(expensesInput.value) || 0;
+        const duration = parseInt(durationInput.value) || 0;
+        const inflationRate = parseFloat(inflationRateInput.value) || 0;
+
+        if (duration <= 1) {
+            finalExpenseInput.value = expenses;
+        } else {
+            // expenses * (1 + rate)^ (duration - 1)
+            const finalExpense = expenses * Math.pow(1 + inflationRate / 100, duration - 1);
+            finalExpenseInput.value = finalExpense.toFixed(1);
+        }
+    }
+
+    // Update Period Chain (Link Logic)
+    function updatePeriodChain() {
+        const periods = periodsContainer.querySelectorAll('.period-item');
+        let previousFinalExpense = null;
+
+        periods.forEach((period, index) => {
+            const linkCheckbox = period.querySelector('.p-expenses-link');
+            const expensesInput = period.querySelector('.p-expenses');
+            const finalExpenseInput = period.querySelector('.p-expenses-final'); // Read value from here for next
+
+            // First period cannot link
+            if (index === 0) {
+                if (linkCheckbox) {
+                    linkCheckbox.checked = false;
+                    linkCheckbox.disabled = true;
+                    linkCheckbox.parentElement.style.display = 'none'; // Hide for first period
+                }
+                expensesInput.disabled = false;
+            } else {
+                if (linkCheckbox) {
+                    linkCheckbox.disabled = false;
+                    linkCheckbox.parentElement.style.display = 'flex';
+                }
+
+                if (linkCheckbox && linkCheckbox.checked) {
+                    expensesInput.disabled = true;
+                    if (previousFinalExpense !== null) {
+                        // Apply inflation for the transition year?
+                        // Spec: "Link to previous period's final expense".
+                        // Usually, if Year N is final year of Period A, Year N+1 is start of Period B.
+                        // Period A Final Expense is for Year N.
+                        // Period B Start Expense should probably be Year N * (1 + inflation).
+                        // BUT, the user request says "Link to previous period's final expense".
+                        // And the "Annual Expenses" input is for the "First Year".
+                        // Let's assume strict continuity: Start Expense = Previous Final Expense * (1 + Inflation).
+                        // OR just Start Expense = Previous Final Expense (and inflation applies from 2nd year of new period).
+                        // Given "Inflation Rate" is a global setting, it makes sense to apply it continuously.
+                        // However, "Final Year Expense" display in Period A is the expense in that specific year.
+                        // If Period B starts the next year, it should logically be inflated.
+                        // Let's implement: Start Expense = Previous Final Expense * (1 + Inflation/100).
+
+                        const inflationRate = parseFloat(document.getElementById('inflation-rate').value) || 0;
+                        const nextYearExpense = previousFinalExpense * (1 + inflationRate / 100);
+                        expensesInput.value = nextYearExpense.toFixed(1);
+                    }
+                } else {
+                    expensesInput.disabled = false;
+                }
+            }
+
+            // Calculate final expense for this period (updates UI and used for next)
+            calculateFinalExpense(period);
+
+            // Store for next iteration
+            previousFinalExpense = parseFloat(period.querySelector('.p-expenses-final').value) || 0;
+        });
+    }
+
     // Event Listeners
     addPeriodBtn.addEventListener('click', () => addPeriod());
     calculateBtn.addEventListener('click', calculate);
     yieldButton.addEventListener('change', calculate);
+
+    // Inflation Rate Listener
+    const inflationRateInput = document.getElementById('inflation-rate');
+    if (inflationRateInput) {
+        inflationRateInput.addEventListener('input', () => {
+            updatePeriodChain();
+        });
+    }
 
     // Pension inputs listeners
     [currentAgeInput, pensionStartAgeInput, pensionBaseInput].forEach(input => {
@@ -568,6 +714,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initChart();
     loadInputsFromUrl();
     calculate();
+    // Trigger initial calculation of final expenses after loading inputs
+    updatePeriodChain();
 
     // Collapsible Logic
     document.querySelectorAll('.collapsible-card .card-header').forEach(header => {
