@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const pensionStartAgeInput = document.getElementById('pension-start-age');
     const pensionBaseInput = document.getElementById('pension-base');
     const pensionAdjustedInput = document.getElementById('pension-adjusted');
+    const macroSlideRateInput = document.getElementById('macro-slide-rate');
 
     let chart;
     let periodCount = 0;
@@ -111,6 +112,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         fill: false,
                         yAxisID: 'y1',
                         order: 1
+                    },
+                    {
+                        label: '年間収入',
+                        data: [],
+                        type: 'line',
+                        borderColor: '#ec4899', // Pink
+                        borderWidth: 2,
+                        borderDash: [2, 2],
+                        pointRadius: 0,
+                        tension: 0.4,
+                        fill: false,
+                        yAxisID: 'y',
+                        order: 0
                     }
                 ]
             },
@@ -228,6 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
         params.set('age', currentAgeInput.value);
         params.set('pstart', pensionStartAgeInput.value);
         params.set('pbase', pensionBaseInput.value);
+        params.set('macroSlide', macroSlideRateInput.value);
 
         const periods = periodsContainer.querySelectorAll('.period-item');
         periods.forEach(period => {
@@ -257,6 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (params.has('age')) currentAgeInput.value = params.get('age');
         if (params.has('pstart')) pensionStartAgeInput.value = params.get('pstart');
         if (params.has('pbase')) pensionBaseInput.value = params.get('pbase');
+        if (params.has('macroSlide')) macroSlideRateInput.value = params.get('macroSlide');
 
         calculatePension(); // Update adjusted value
 
@@ -284,7 +300,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add Period
-    function addPeriod(income = 0, expenses = 0, investment = 0, duration = 5, linked = false) {
+    function addPeriod(income = 0, expenses = 0, investment = 0, duration = 5, linked = true) {
         periodCount++;
         const clone = periodTemplate.content.cloneNode(true);
         const periodItem = clone.querySelector('.period-item');
@@ -391,12 +407,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let currentYear = new Date().getFullYear();
         let currentAge = parseInt(currentAgeInput.value) || 30;
         const pensionStartAge = parseInt(pensionStartAgeInput.value) || 65;
-        const pensionAmount = parseFloat(pensionAdjustedInput.value) || 0;
+        const basePensionAmount = parseFloat(pensionAdjustedInput.value) || 0;
+        const macroSlideRate = (parseFloat(macroSlideRateInput.value) || 0) / 100;
+        let currentPensionAmount = basePensionAmount;
 
         const labels = [String(currentYear)];
         const dataTotal = [currentCapital + currentCash];
         const dataCapital = [currentCapital];
         const dataCash = [currentCash];
+        const dataIncome = [null]; // No income for the start year
         const dataYields = [null]; // No yield for the start year
         const dataAverageYields = [null]; // No average yield for the start year
 
@@ -470,13 +489,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Add Pension if eligible
                 if (currentAge >= pensionStartAge) {
-                    annualIncome += pensionAmount * 10000; // Convert to yen units (assuming base is in Man-yen)
+                    annualIncome += currentPensionAmount * 10000; // Convert to yen units (assuming base is in Man-yen)
+                    // Apply macro-economic slide adjustment for next year
+                    // Increase pension by (inflation rate × adjustment rate)
+                    currentPensionAmount = currentPensionAmount * (1 + (inflationRate / 100) * macroSlideRate);
+                } else if (currentAge === pensionStartAge - 1) {
+                    // Reset pension amount to base when starting pension next year
+                    currentPensionAmount = basePensionAmount;
                 }
 
                 // Add Dividend Income (after tax)
                 const grossDividend = currentCapital * (dividendRate / 100);
                 const netDividend = grossDividend * (1 - taxRate);
                 annualIncome += netDividend;
+
+                dataIncome.push(annualIncome);
 
                 let availableCash = currentCash + annualIncome - expenses;
 
@@ -499,8 +526,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     // assets_sold = cash_needed / (1 - taxRate)
                     const assetsToSell = deficit / (1 - taxRate);
 
-                    currentCapital -= assetsToSell;
-                    currentCash = 0;
+                    if (currentCapital > 0 && assetsToSell > currentCapital) {
+                        // Sell all capital
+                        const cashGained = currentCapital * (1 - taxRate);
+                        currentCash = -(deficit - cashGained);
+                        currentCapital = 0;
+                    } else if (currentCapital > 0) {
+                        currentCapital -= assetsToSell;
+                        currentCash = 0;
+                    } else {
+                        // No capital to sell, deficit remains (plus we can't pay tax if we don't sell?)
+                        // Actually if capital is 0, we can't sell anything.
+                        // So currentCash stays negative (deficit).
+                        // But we need to be careful not to reset it to 0.
+                        // The original code set currentCash = 0.
+                        // If we don't sell, currentCash is ALREADY negative.
+                        // So we just leave it.
+                    }
                 }
 
                 labels.push(String(currentYear));
@@ -523,17 +565,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        updateChart(labels, dataTotal, dataCapital, dataCash, dataYields, dataAverageYields, periodBoundaries);
+        updateChart(labels, dataTotal, dataCapital, dataCash, dataYields, dataAverageYields, dataIncome, periodBoundaries);
         updateUrlFromInputs();
     }
 
-    function updateChart(labels, total, capital, cash, yields, averageYields, boundaries) {
+    function updateChart(labels, total, capital, cash, yields, averageYields, income, boundaries) {
         chart.data.labels = labels;
         chart.data.datasets[0].data = total;
         chart.data.datasets[1].data = capital;
         chart.data.datasets[2].data = cash;
         chart.data.datasets[3].data = yields;
         chart.data.datasets[4].data = averageYields;
+        chart.data.datasets[5].data = income;
 
         // Update plugin options
         chart.options.plugins.periodBoundary.boundaries = boundaries;
@@ -641,6 +684,11 @@ document.addEventListener('DOMContentLoaded', () => {
             calculatePension();
         });
     });
+
+    // Macro-economic slide rate listener
+    if (macroSlideRateInput) {
+        macroSlideRateInput.addEventListener('input', calculate);
+    }
 
     // Resize Logic
     const chartCard = document.getElementById('chart-card');
