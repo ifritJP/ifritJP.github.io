@@ -305,8 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const clone = periodTemplate.content.cloneNode(true);
         const periodItem = clone.querySelector('.period-item');
 
-        periodItem.querySelector('.period-title').textContent = `期間 #${periodCount}`;
-
         periodItem.querySelector('.p-income').value = income;
         periodItem.querySelector('.p-expenses').value = expenses;
         periodItem.querySelector('.p-investment').value = investment;
@@ -344,7 +342,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const durationInput = periodItem.querySelector('.p-duration');
 
         expensesInput.addEventListener('input', () => updatePeriodChain());
-        durationInput.addEventListener('input', () => updatePeriodChain());
+        durationInput.addEventListener('input', () => {
+            updatePeriodChain();
+            updatePeriodNumbers();
+        });
 
         // Remove button logic
         const removeBtn = periodItem.querySelector('.remove-period-btn');
@@ -354,17 +355,52 @@ document.addEventListener('DOMContentLoaded', () => {
             updatePeriodChain(); // Re-calculate chain after removal
         });
 
+        // Move buttons logic
+        const moveUpBtn = periodItem.querySelector('.move-up');
+        const moveDownBtn = periodItem.querySelector('.move-down');
+
+        moveUpBtn.addEventListener('click', () => movePeriodUp(periodItem));
+        moveDownBtn.addEventListener('click', () => movePeriodDown(periodItem));
+
         periodsContainer.appendChild(periodItem);
+        updatePeriodNumbers();
         updatePeriodChain(); // Update chain when added
     }
 
+    // Move Period Up
+    function movePeriodUp(periodItem) {
+        const previousSibling = periodItem.previousElementSibling;
+        if (previousSibling) {
+            periodsContainer.insertBefore(periodItem, previousSibling);
+            updatePeriodNumbers();
+            updatePeriodChain();
+        }
+    }
+
+    // Move Period Down
+    function movePeriodDown(periodItem) {
+        const nextSibling = periodItem.nextElementSibling;
+        if (nextSibling) {
+            periodsContainer.insertBefore(nextSibling, periodItem);
+            updatePeriodNumbers();
+            updatePeriodChain();
+        }
+    }
+
     // Update Period Numbers after removal
+    // Update Period Titles (Age Range)
     function updatePeriodNumbers() {
         const periods = periodsContainer.querySelectorAll('.period-item');
-        periodCount = 0;
+        let currentAge = parseInt(currentAgeInput.value) || 0;
+
         periods.forEach(period => {
-            periodCount++;
-            period.querySelector('.period-title').textContent = `期間 #${periodCount}`;
+            const duration = parseInt(period.querySelector('.p-duration').value) || 0;
+            const startAge = currentAge;
+            const endAge = currentAge + duration;
+
+            period.querySelector('.period-title').textContent = `期間 ${startAge} - ${endAge}歳`;
+
+            currentAge = endAge;
         });
     }
 
@@ -682,6 +718,9 @@ document.addEventListener('DOMContentLoaded', () => {
     [currentAgeInput, pensionStartAgeInput, pensionBaseInput].forEach(input => {
         input.addEventListener('input', () => {
             calculatePension();
+            if (input === currentAgeInput) {
+                updatePeriodNumbers();
+            }
         });
     });
 
