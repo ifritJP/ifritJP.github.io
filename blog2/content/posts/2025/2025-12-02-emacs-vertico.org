@@ -1,0 +1,263 @@
+#+TITLE: emacs の補完フレームワーク vertico に移行した
+#+DATE: 2025-12-02
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+ここ数年 emacs 環境を更新していなかったので化石状態だったが、
+少しだけパッケージの入れ替えをしてみた。
+
+それが vertico。
+
+vertico は 2021 年辺りに登場したらしいので、
+既に 4 年経過していてイマサラ感が半端ないが、
+一応説明しておくと vertico は補完フレームワークだ。
+
+emacs の補完フレームワークといえば anything, helm と使ってきたが、
+その次世代が vertico になるらしい。
+
+大きな特徴としては、補完候補表示にミニバッファを活用し、動作も軽快ということらしい。
+
+4 年も経過しているので、
+この辺りはネットを検索すればいろいろと出てくるので各自しらべてもらうとして、
+今回は設定とカスタマイズについて紹介する。
+
+なお、設定、カスタマイズ共に Gemini だけでほぼ解決した。
+
+
+* 設定
+
+vertico, orderless, marginalia, consult を設定。
+これでほぼ helm の基本は代替可能。
+
+#+BEGIN_SRC el
+;; --- 1. Vertico: 縦型補完UI ---
+(use-package vertico
+  :ensure t
+  :init
+  (vertico-mode)
+  )
+
+;; --- 2. Orderless: 強力な検索スタイル ---
+;; "foo bar" と打つと、順不同で "foo" と "bar" を含む候補を絞り込む
+(use-package orderless
+  :ensure t
+  :custom
+  (completion-styles '(orderless basic))
+  (completion-category-overrides '((file (styles basic partial-completion)))))
+
+;; --- 3. Marginalia: 候補の横にリッチな情報を表示 ---
+(use-package marginalia
+  :ensure t
+  :init
+  (marginalia-mode))
+
+;; --- 4. Consult: 便利なコマンド集 ---
+(use-package consult
+  :ensure t
+  :bind
+  ;; Helm のキーバインドに近い操作感にするための割り当て例
+  (("C-x b" . consult-buffer)       ; helm-mini の代わり
+   ("M-y"   . consult-yank-pop)     ; helm-show-kill-ring の代わり
+   ("M-s"   . consult-line)         ; helm-swoop の代わり (C-s から呼ぶ人も多い)
+   ("C-x r b" . consult-bookmark)   ; ブックマーク
+   ("M-g g" . consult-goto-line)    ; 指定行へジャンプ
+   ("M-g i" . consult-imenu))       ; helm-imenu の代わり
+
+  :init
+
+  :custom
+  ;; デフォルトでプレビュー有効はなんだかんだ重いので、
+  ;; プレビューはデフォルト無効化。
+  ;; (consult-preview-key 'any)
+  (consult-preview-key nil)
+  ;; プレビュー機能は M-. にバインド。
+  (consult-preview-key "M-.")
+  )
+
+
+(use-package recentf
+  :init
+  ;;(setq recentf-max-saved-items 200) ; 記録するファイルの数（お好みで）
+  (recentf-mode 1))
+
+;; --- おまけ: 履歴を保存する (Recentfなどのため必須) ---
+(use-package savehist
+  :init
+  (savehist-mode))
+  
+#+END_SRC
+
+
+* カスタマイズ
+
+** 折り返し表示
+  
+Vertico で困ったのは、 長い文字列を表示する時に折り返す方法がないこと。
+もしかしたらあるのかもしれないけど発見出来ず。
+
+なので、ここでは Vertico をカスタマイズして一番上の行に、
+カーソル位置の候補文字列を折り返して表示することにした。
+  
+#+BEGIN_SRC el
+;; --- Vertico プロンプト上部へのカーソル位置の候補の全文表示機能 ---
+
+(defvar-local my-vertico-top-overlay nil
+  "最上部に表示するためのオーバーレイ")
+
+(defun my-vertico-wrap-string (string width)
+  "文字列を指定された幅(width)で強制的に折り返す。"
+  (with-temp-buffer
+    (insert string)
+    (goto-char (point-min))
+    (let ((col 0))
+      (while (not (eobp))
+        (let ((char-w (char-width (char-after))))
+          ;; 次の文字を入れると幅を超える場合、先に改行を入れる
+          (if (> (+ col char-w) width)
+              (progn
+                (insert "\n")
+                (setq col char-w))
+            (setq col (+ col char-w)))
+          (forward-char 1))))
+    (buffer-string)))
+			
+
+(defun my-vertico-update-top-header ()
+  "現在の候補を取得して最上部ヘッダーを更新する"
+  (when (and my-vertico-top-overlay vertico--input)
+    (let* ((cand (vertico--candidate))
+	   (prefix "cur: ")
+           (win-width (window-width))
+	   (selected (my-vertico-wrap-string (concat prefix cand) win-width))
+           (display-string
+            (if cand
+                (concat
+                 (propertize prefix 'face 'default)
+		 
+                 ;; ★ここがポイント: 表示文字列の最後に改行(\n)を入れる
+                 (propertize (substring selected (length prefix))
+                             'face 'font-lock-doc-face) ;; 色はお好みで変更可
+                 "\n" 
+                 ;; 区切り線を入れたい場合は以下のように追加
+                 ;; (propertize (make-string win-width ?\-) 'face 'shadow) "\n"
+                 )
+              ""))) ; 候補がない場合は空にする
+      
+      ;; オーバーレイの before-string プロパティを使って「前」に挿入する
+      (overlay-put my-vertico-top-overlay 'before-string display-string))))
+
+(defun my-vertico-setup-top-header ()
+  "ミニバッファ起動時にオーバーレイをセットアップする"
+  ;; ★ポイント: バッファの先頭(point-min)にオーバーレイを作成
+  (setq my-vertico-top-overlay (make-overlay (point-min) (point-min)))
+  ;; カーソル移動のたびに更新
+  (add-hook 'post-command-hook #'my-vertico-update-top-header nil 'local))
+
+;; フックに登録
+(add-hook 'minibuffer-setup-hook #'my-vertico-setup-top-header)
+#+END_SRC
+
+** consult-recentf のカスタマイズ
+
+上述した通り、長いパスは使い勝手が悪い。
+上記のカスタマイズで、折り返し表示できるようにはしたが、一覧性は改善されない。
+
+そこで、ここでは次のように変更して一覧性を改善する。
+
+- 長いパスは、大抵は特定のパスで始まっている
+- そして、その特定のパス自体が長い
+- つまり、特定のパス自体を別の文字列に置き換えてやればかなり短縮できる
+- 理想はパスの共通性を自動で検出してそこを置き換えるようにできれば良いが、
+  それは結構面倒だし、期待した結果にならないとそれはそれでストレスになる
+- そこでここでは、長いパスの共通部と、それを置き換えて表示する文字列のペアを
+  事前に設定できるようにする
+- consult-recentf そのものをカスタマイズすのではなく、
+  新しく自分用の consult-recentf を作成する
+
+
+ということで、それが以下。
+
+#+BEGIN_SRC el
+;;; 自分用の consult-recentf
+;; 特定のディレクトリで始まるパスは、ディレクトリ部分を別文字列に置き換える
+
+;; 1. 置換ルールの定義
+(defvar my/consult-recentf-rewrite-rules
+  '(("/dir/path0000000000000000000000000/hogehoge/" . "[hogehoge]/")
+    ("/dir/path0000000000000000000000000/ageage/" . "[ageage]/")))
+
+;; 2. パスを (表示名 . 実パス) のペアに変換する関数
+(defun my/consult-recentf-transformer (path)
+  (let ((display-path path))
+    (dolist (rule my/consult-recentf-rewrite-rules)
+      (when (string-prefix-p (car rule) path)
+        (setq display-path 
+              (concat (cdr rule) 
+                      (substring path (length (car rule)))))))
+    ;; ここが変更点: 文字列ではなく (表示用 . 実パス) のペアを返す
+    (cons display-path path)))
+
+;; 3. カスタムソースの定義
+(defvar my/consult-source-recent-file
+  (list :name     "Recent Files (Custom)"
+        :narrow   ?f
+        :category 'file
+        :face     'consult-file
+        :history  'file-name-history
+        
+        ;; items でペアのリストを作成する
+        :items    (lambda ()
+                    (mapcar #'my/consult-recentf-transformer recentf-list))
+        
+        ;; ペアの cdr (実パス) が自動的に渡されるため、そのまま find-file でOK
+        :action   #'find-file
+        
+        ;; プレビューも実パスが渡されるため、標準関数がそのまま使える
+        :state    #'consult--file-state))
+
+;; 4. 設定の適用
+(with-eval-after-load 'consult
+  ;; デフォルトの recentf を削除して、カスタム版を追加
+  (setq consult-buffer-sources 
+        (remove 'consult-source-recent-file consult-buffer-sources))
+  (add-to-list 'consult-buffer-sources 'my/consult-source-recent-file 'append))
+#+END_SRC
+
+
+* まとめ
+
+今回は helm から vertico に移行してみたが、
+動作は確かに軽量になって満足。
+
+また、設定、カスタマイズも Gemini でほぼ解決し、導入に苦戦することはほとんどなかった。
+ただ、ローカルの機能で helm を使っているモノも一部あるので、
+それは今後随時置き換えていく予定だ。
+
+
+話は変わるが、今回移行作業していて思ったことがある。
+それは、「この AI 時代、 emacs は再評価されるのではないか？」ということ。
+
+AI 向けのエディタといえば Cursor とか、
+あるいは OSS のデファクトスタンダードを確立している vscode が良く使われているが、
+カスタマイズ性という意味では emacs が優れているだろう。
+
+ただ、カスタマイズ性が優れていても、
+emacs のカスタマイズ自体のハードルが高く、
+その魅力が上手く伝わっていなかったように感じる。
+
+しかし、今は AI を使うことで最低限の知識だけで、
+誰でも簡単にカスタマイズが可能になっている。
+
+これによって、emacs が再評価される可能性があるのではないか？
+
+とはいえ、 AI 時代に自分専用のエディタを作る必要がどこまであるのか？疑問もある。
+
+AI とチャットさえ出来れば良く、高度な編集機能は不要、という話しもあるだろう。
+
+また、emacs はカスタマイズ可能とはいえ、
+「CUI 主体から GUI を主体に変えたい」というような要望は流石に困難だ。
+
+emacs が今後シェアを延すのは難しいかもしれない。

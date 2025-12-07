@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>emacs の補完フレームワーク vertico に移行した - hoge blog</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+		<meta property="og:title" content="emacs の補完フレームワーク vertico に移行した" />
+<meta property="og:description" content="ここ数年 emacs 環境を更新していなかったので化石状態だったが、 少しだけパッケージの入れ替えをしてみた。 それが vertico。 vertico は 2021 年辺りに登場したらしいので、 既に 4 年経過していてイマサラ感が半端ないが、 一応説明しておくと vertico は補完フレームワークだ。 emacs の補完フレームワークといえば anything, helm と使ってきたが、 その次世代が vertico になるらしい。 大きな特徴としては、補完候補表示にミニバッファを活用し、動作も軽快ということらしい" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2025/2025-12-02-emacs-vertico/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-12-02T00:00:00+00:00" />
+<meta property="article:modified_time" content="2025-12-02T00:00:00+00:00" />
+
+		<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="emacs の補完フレームワーク vertico に移行した"/>
+<meta name="twitter:description" content="ここ数年 emacs 環境を更新していなかったので化石状態だったが、 少しだけパッケージの入れ替えをしてみた。 それが vertico。 vertico は 2021 年辺りに登場したらしいので、 既に 4 年経過していてイマサラ感が半端ないが、 一応説明しておくと vertico は補完フレームワークだ。 emacs の補完フレームワークといえば anything, helm と使ってきたが、 その次世代が vertico になるらしい。 大きな特徴としては、補完候補表示にミニバッファを活用し、動作も軽快ということらしい"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700">
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+		
+    <link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+	<div class="container header__container">
+		
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+		
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+	</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+			
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header">
+			<h1 class="post__title">emacs の補完フレームワーク vertico に移行した</h1>
+			<div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2025-12-02T00:00:00Z">2025-12-02</time></div></div>
+		</header>
+		
+<div class="post__toc toc">
+	<div class="toc__title">Page content</div>
+	<div class="toc__menu">
+		<nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">設定</a>
+</li>
+<li><a href="#headline-2">カスタマイズ</a>
+<ul>
+<li><a href="#headline-3">折り返し表示</a>
+</li>
+<li><a href="#headline-4">consult-recentf のカスタマイズ</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-5">まとめ</a>
+</li>
+</ul>
+</nav>
+	</div>
+</div><div class="content post__content clearfix">
+			
+<p>
+ここ数年 emacs 環境を更新していなかったので化石状態だったが、
+少しだけパッケージの入れ替えをしてみた。</p>
+<p>
+それが vertico。</p>
+<p>
+vertico は 2021 年辺りに登場したらしいので、
+既に 4 年経過していてイマサラ感が半端ないが、
+一応説明しておくと vertico は補完フレームワークだ。</p>
+<p>
+emacs の補完フレームワークといえば anything, helm と使ってきたが、
+その次世代が vertico になるらしい。</p>
+<p>
+大きな特徴としては、補完候補表示にミニバッファを活用し、動作も軽快ということらしい。</p>
+<p>
+4 年も経過しているので、
+この辺りはネットを検索すればいろいろと出てくるので各自しらべてもらうとして、
+今回は設定とカスタマイズについて紹介する。</p>
+<p>
+なお、設定、カスタマイズ共に Gemini だけでほぼ解決した。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+設定
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+vertico, orderless, marginalia, consult を設定。
+これでほぼ helm の基本は代替可能。</p>
+<div class="src src-el">
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-el" data-lang="el"><span class="line"><span class="cl"><span class="c1">;; --- 1. Vertico: 縦型補完UI ---</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">use-package</span> <span class="nv">vertico</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:ensure</span> <span class="no">t</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:init</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">vertico-mode</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; --- 2. Orderless: 強力な検索スタイル ---</span>
+</span></span><span class="line"><span class="cl"><span class="c1">;; &#34;foo bar&#34; と打つと、順不同で &#34;foo&#34; と &#34;bar&#34; を含む候補を絞り込む</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">use-package</span> <span class="nv">orderless</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:ensure</span> <span class="no">t</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:custom</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">completion-styles</span> <span class="o">&#39;</span><span class="p">(</span><span class="nv">orderless</span> <span class="nv">basic</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">completion-category-overrides</span> <span class="o">&#39;</span><span class="p">((</span><span class="nv">file</span> <span class="p">(</span><span class="nv">styles</span> <span class="nv">basic</span> <span class="nv">partial-completion</span><span class="p">)))))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; --- 3. Marginalia: 候補の横にリッチな情報を表示 ---</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">use-package</span> <span class="nv">marginalia</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:ensure</span> <span class="no">t</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:init</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">marginalia-mode</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; --- 4. Consult: 便利なコマンド集 ---</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">use-package</span> <span class="nv">consult</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:ensure</span> <span class="no">t</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:bind</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; Helm のキーバインドに近い操作感にするための割り当て例</span>
+</span></span><span class="line"><span class="cl">  <span class="p">((</span><span class="s">&#34;C-x b&#34;</span> <span class="o">.</span> <span class="nv">consult-buffer</span><span class="p">)</span>       <span class="c1">; helm-mini の代わり</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="s">&#34;M-y&#34;</span>   <span class="o">.</span> <span class="nv">consult-yank-pop</span><span class="p">)</span>     <span class="c1">; helm-show-kill-ring の代わり</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="s">&#34;M-s&#34;</span>   <span class="o">.</span> <span class="nv">consult-line</span><span class="p">)</span>         <span class="c1">; helm-swoop の代わり (C-s から呼ぶ人も多い)</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="s">&#34;C-x r b&#34;</span> <span class="o">.</span> <span class="nv">consult-bookmark</span><span class="p">)</span>   <span class="c1">; ブックマーク</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="s">&#34;M-g g&#34;</span> <span class="o">.</span> <span class="nv">consult-goto-line</span><span class="p">)</span>    <span class="c1">; 指定行へジャンプ</span>
+</span></span><span class="line"><span class="cl">   <span class="p">(</span><span class="s">&#34;M-g i&#34;</span> <span class="o">.</span> <span class="nv">consult-imenu</span><span class="p">))</span>       <span class="c1">; helm-imenu の代わり</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nb">:init</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">  <span class="nb">:custom</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; デフォルトでプレビュー有効はなんだかんだ重いので、</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; プレビューはデフォルト無効化。</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; (consult-preview-key &#39;any)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">consult-preview-key</span> <span class="no">nil</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; プレビュー機能は M-. にバインド。</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">consult-preview-key</span> <span class="s">&#34;M-.&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">use-package</span> <span class="nv">recentf</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:init</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;;(setq recentf-max-saved-items 200) ; 記録するファイルの数（お好みで）</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">recentf-mode</span> <span class="mi">1</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; --- おまけ: 履歴を保存する (Recentfなどのため必須) ---</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">use-package</span> <span class="nv">savehist</span>
+</span></span><span class="line"><span class="cl">  <span class="nb">:init</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">savehist-mode</span><span class="p">))</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+カスタマイズ
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+折り返し表示
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+Vertico で困ったのは、 長い文字列を表示する時に折り返す方法がないこと。
+もしかしたらあるのかもしれないけど発見出来ず。</p>
+<p>
+なので、ここでは Vertico をカスタマイズして一番上の行に、
+カーソル位置の候補文字列を折り返して表示することにした。</p>
+<div class="src src-el">
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span><span class="lnt">44
+</span><span class="lnt">45
+</span><span class="lnt">46
+</span><span class="lnt">47
+</span><span class="lnt">48
+</span><span class="lnt">49
+</span><span class="lnt">50
+</span><span class="lnt">51
+</span><span class="lnt">52
+</span><span class="lnt">53
+</span><span class="lnt">54
+</span><span class="lnt">55
+</span><span class="lnt">56
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-el" data-lang="el"><span class="line"><span class="cl"><span class="c1">;; --- Vertico プロンプト上部へのカーソル位置の候補の全文表示機能 ---</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">defvar-local</span> <span class="nv">my-vertico-top-overlay</span> <span class="no">nil</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;最上部に表示するためのオーバーレイ&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">defun</span> <span class="nv">my-vertico-wrap-string</span> <span class="p">(</span><span class="nv">string</span> <span class="nv">width</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;文字列を指定された幅(width)で強制的に折り返す。&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">with-temp-buffer</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="nv">insert</span> <span class="nv">string</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="nv">goto-char</span> <span class="p">(</span><span class="nv">point-min</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="nv">let</span> <span class="p">((</span><span class="nv">col</span> <span class="mi">0</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">      <span class="p">(</span><span class="nv">while</span> <span class="p">(</span><span class="nv">not</span> <span class="p">(</span><span class="nv">eobp</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        <span class="p">(</span><span class="nv">let</span> <span class="p">((</span><span class="nv">char-w</span> <span class="p">(</span><span class="nv">char-width</span> <span class="p">(</span><span class="nv">char-after</span><span class="p">))))</span>
+</span></span><span class="line"><span class="cl">          <span class="c1">;; 次の文字を入れると幅を超える場合、先に改行を入れる</span>
+</span></span><span class="line"><span class="cl">          <span class="p">(</span><span class="nv">if</span> <span class="p">(</span><span class="nv">&gt;</span> <span class="p">(</span><span class="nv">+</span> <span class="nv">col</span> <span class="nv">char-w</span><span class="p">)</span> <span class="nv">width</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">              <span class="p">(</span><span class="nv">progn</span>
+</span></span><span class="line"><span class="cl">                <span class="p">(</span><span class="nv">insert</span> <span class="s">&#34;\n&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">                <span class="p">(</span><span class="nv">setq</span> <span class="nv">col</span> <span class="nv">char-w</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">            <span class="p">(</span><span class="nv">setq</span> <span class="nv">col</span> <span class="p">(</span><span class="nv">+</span> <span class="nv">col</span> <span class="nv">char-w</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">          <span class="p">(</span><span class="nv">forward-char</span> <span class="mi">1</span><span class="p">))))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="nv">buffer-string</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">			
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">defun</span> <span class="nv">my-vertico-update-top-header</span> <span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;現在の候補を取得して最上部ヘッダーを更新する&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">when</span> <span class="p">(</span><span class="nv">and</span> <span class="nv">my-vertico-top-overlay</span> <span class="nv">vertico--input</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="nv">let*</span> <span class="p">((</span><span class="nv">cand</span> <span class="p">(</span><span class="nv">vertico--candidate</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	   <span class="p">(</span><span class="nv">prefix</span> <span class="s">&#34;cur: &#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">           <span class="p">(</span><span class="nv">win-width</span> <span class="p">(</span><span class="nv">window-width</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">	   <span class="p">(</span><span class="nv">selected</span> <span class="p">(</span><span class="nv">my-vertico-wrap-string</span> <span class="p">(</span><span class="nv">concat</span> <span class="nv">prefix</span> <span class="nv">cand</span><span class="p">)</span> <span class="nv">win-width</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">           <span class="p">(</span><span class="nv">display-string</span>
+</span></span><span class="line"><span class="cl">            <span class="p">(</span><span class="nv">if</span> <span class="nv">cand</span>
+</span></span><span class="line"><span class="cl">                <span class="p">(</span><span class="nv">concat</span>
+</span></span><span class="line"><span class="cl">                 <span class="p">(</span><span class="nv">propertize</span> <span class="nv">prefix</span> <span class="ss">&#39;face</span> <span class="ss">&#39;default</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">		 
+</span></span><span class="line"><span class="cl">                 <span class="c1">;; ★ここがポイント: 表示文字列の最後に改行(\n)を入れる</span>
+</span></span><span class="line"><span class="cl">                 <span class="p">(</span><span class="nv">propertize</span> <span class="p">(</span><span class="nv">substring</span> <span class="nv">selected</span> <span class="p">(</span><span class="nv">length</span> <span class="nv">prefix</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">                             <span class="ss">&#39;face</span> <span class="ss">&#39;font-lock-doc-face</span><span class="p">)</span> <span class="c1">;; 色はお好みで変更可</span>
+</span></span><span class="line"><span class="cl">                 <span class="s">&#34;\n&#34;</span> 
+</span></span><span class="line"><span class="cl">                 <span class="c1">;; 区切り線を入れたい場合は以下のように追加</span>
+</span></span><span class="line"><span class="cl">                 <span class="c1">;; (propertize (make-string win-width ?\-) &#39;face &#39;shadow) &#34;\n&#34;</span>
+</span></span><span class="line"><span class="cl">                 <span class="p">)</span>
+</span></span><span class="line"><span class="cl">              <span class="s">&#34;&#34;</span><span class="p">)))</span> <span class="c1">; 候補がない場合は空にする</span>
+</span></span><span class="line"><span class="cl">      
+</span></span><span class="line"><span class="cl">      <span class="c1">;; オーバーレイの before-string プロパティを使って「前」に挿入する</span>
+</span></span><span class="line"><span class="cl">      <span class="p">(</span><span class="nv">overlay-put</span> <span class="nv">my-vertico-top-overlay</span> <span class="ss">&#39;before-string</span> <span class="nv">display-string</span><span class="p">))))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">defun</span> <span class="nv">my-vertico-setup-top-header</span> <span class="p">()</span>
+</span></span><span class="line"><span class="cl">  <span class="s">&#34;ミニバッファ起動時にオーバーレイをセットアップする&#34;</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; ★ポイント: バッファの先頭(point-min)にオーバーレイを作成</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">setq</span> <span class="nv">my-vertico-top-overlay</span> <span class="p">(</span><span class="nv">make-overlay</span> <span class="p">(</span><span class="nv">point-min</span><span class="p">)</span> <span class="p">(</span><span class="nv">point-min</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; カーソル移動のたびに更新</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">add-hook</span> <span class="ss">&#39;post-command-hook</span> <span class="nf">#&#39;</span><span class="nv">my-vertico-update-top-header</span> <span class="no">nil</span> <span class="ss">&#39;local</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; フックに登録</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">add-hook</span> <span class="ss">&#39;minibuffer-setup-hook</span> <span class="nf">#&#39;</span><span class="nv">my-vertico-setup-top-header</span><span class="p">)</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+consult-recentf のカスタマイズ
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+上述した通り、長いパスは使い勝手が悪い。
+上記のカスタマイズで、折り返し表示できるようにはしたが、一覧性は改善されない。</p>
+<p>
+そこで、ここでは次のように変更して一覧性を改善する。</p>
+<ul>
+<li>長いパスは、大抵は特定のパスで始まっている</li>
+<li>そして、その特定のパス自体が長い</li>
+<li>つまり、特定のパス自体を別の文字列に置き換えてやればかなり短縮できる</li>
+<li>理想はパスの共通性を自動で検出してそこを置き換えるようにできれば良いが、
+それは結構面倒だし、期待した結果にならないとそれはそれでストレスになる</li>
+<li>そこでここでは、長いパスの共通部と、それを置き換えて表示する文字列のペアを
+事前に設定できるようにする</li>
+<li>consult-recentf そのものをカスタマイズすのではなく、
+新しく自分用の consult-recentf を作成する</li>
+</ul>
+<p>
+ということで、それが以下。</p>
+<div class="src src-el">
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span><span class="lnt">15
+</span><span class="lnt">16
+</span><span class="lnt">17
+</span><span class="lnt">18
+</span><span class="lnt">19
+</span><span class="lnt">20
+</span><span class="lnt">21
+</span><span class="lnt">22
+</span><span class="lnt">23
+</span><span class="lnt">24
+</span><span class="lnt">25
+</span><span class="lnt">26
+</span><span class="lnt">27
+</span><span class="lnt">28
+</span><span class="lnt">29
+</span><span class="lnt">30
+</span><span class="lnt">31
+</span><span class="lnt">32
+</span><span class="lnt">33
+</span><span class="lnt">34
+</span><span class="lnt">35
+</span><span class="lnt">36
+</span><span class="lnt">37
+</span><span class="lnt">38
+</span><span class="lnt">39
+</span><span class="lnt">40
+</span><span class="lnt">41
+</span><span class="lnt">42
+</span><span class="lnt">43
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-el" data-lang="el"><span class="line"><span class="cl"><span class="c1">;;; 自分用の consult-recentf</span>
+</span></span><span class="line"><span class="cl"><span class="c1">;; 特定のディレクトリで始まるパスは、ディレクトリ部分を別文字列に置き換える</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; 1. 置換ルールの定義</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">defvar</span> <span class="nv">my/consult-recentf-rewrite-rules</span>
+</span></span><span class="line"><span class="cl">  <span class="o">&#39;</span><span class="p">((</span><span class="s">&#34;/dir/path0000000000000000000000000/hogehoge/&#34;</span> <span class="o">.</span> <span class="s">&#34;[hogehoge]/&#34;</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="s">&#34;/dir/path0000000000000000000000000/ageage/&#34;</span> <span class="o">.</span> <span class="s">&#34;[ageage]/&#34;</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; 2. パスを (表示名 . 実パス) のペアに変換する関数</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">defun</span> <span class="nv">my/consult-recentf-transformer</span> <span class="p">(</span><span class="nv">path</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">let</span> <span class="p">((</span><span class="nv">display-path</span> <span class="nv">path</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="nv">dolist</span> <span class="p">(</span><span class="nv">rule</span> <span class="nv">my/consult-recentf-rewrite-rules</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">      <span class="p">(</span><span class="nv">when</span> <span class="p">(</span><span class="nv">string-prefix-p</span> <span class="p">(</span><span class="nv">car</span> <span class="nv">rule</span><span class="p">)</span> <span class="nv">path</span><span class="p">)</span>
+</span></span><span class="line"><span class="cl">        <span class="p">(</span><span class="nv">setq</span> <span class="nv">display-path</span> 
+</span></span><span class="line"><span class="cl">              <span class="p">(</span><span class="nv">concat</span> <span class="p">(</span><span class="nv">cdr</span> <span class="nv">rule</span><span class="p">)</span> 
+</span></span><span class="line"><span class="cl">                      <span class="p">(</span><span class="nv">substring</span> <span class="nv">path</span> <span class="p">(</span><span class="nv">length</span> <span class="p">(</span><span class="nv">car</span> <span class="nv">rule</span><span class="p">)))))))</span>
+</span></span><span class="line"><span class="cl">    <span class="c1">;; ここが変更点: 文字列ではなく (表示用 . 実パス) のペアを返す</span>
+</span></span><span class="line"><span class="cl">    <span class="p">(</span><span class="nv">cons</span> <span class="nv">display-path</span> <span class="nv">path</span><span class="p">)))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; 3. カスタムソースの定義</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">defvar</span> <span class="nv">my/consult-source-recent-file</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">list</span> <span class="nb">:name</span>     <span class="s">&#34;Recent Files (Custom)&#34;</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">:narrow</span>   <span class="sc">?f</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">:category</span> <span class="ss">&#39;file</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">:face</span>     <span class="ss">&#39;consult-file</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">:history</span>  <span class="ss">&#39;file-name-history</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="c1">;; items でペアのリストを作成する</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">:items</span>    <span class="p">(</span><span class="nv">lambda</span> <span class="p">()</span>
+</span></span><span class="line"><span class="cl">                    <span class="p">(</span><span class="nv">mapcar</span> <span class="nf">#&#39;</span><span class="nv">my/consult-recentf-transformer</span> <span class="nv">recentf-list</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="c1">;; ペアの cdr (実パス) が自動的に渡されるため、そのまま find-file でOK</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">:action</span>   <span class="nf">#&#39;</span><span class="nv">find-file</span>
+</span></span><span class="line"><span class="cl">        
+</span></span><span class="line"><span class="cl">        <span class="c1">;; プレビューも実パスが渡されるため、標準関数がそのまま使える</span>
+</span></span><span class="line"><span class="cl">        <span class="nb">:state</span>    <span class="nf">#&#39;</span><span class="nv">consult--file-state</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1">;; 4. 設定の適用</span>
+</span></span><span class="line"><span class="cl"><span class="p">(</span><span class="nv">with-eval-after-load</span> <span class="ss">&#39;consult</span>
+</span></span><span class="line"><span class="cl">  <span class="c1">;; デフォルトの recentf を削除して、カスタム版を追加</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">setq</span> <span class="nv">consult-buffer-sources</span> 
+</span></span><span class="line"><span class="cl">        <span class="p">(</span><span class="nv">remove</span> <span class="ss">&#39;consult-source-recent-file</span> <span class="nv">consult-buffer-sources</span><span class="p">))</span>
+</span></span><span class="line"><span class="cl">  <span class="p">(</span><span class="nv">add-to-list</span> <span class="ss">&#39;consult-buffer-sources</span> <span class="ss">&#39;my/consult-source-recent-file</span> <span class="ss">&#39;append</span><span class="p">))</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+まとめ
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+今回は helm から vertico に移行してみたが、
+動作は確かに軽量になって満足。</p>
+<p>
+また、設定、カスタマイズも Gemini でほぼ解決し、導入に苦戦することはほとんどなかった。
+ただ、ローカルの機能で helm を使っているモノも一部あるので、
+それは今後随時置き換えていく予定だ。</p>
+<p>
+話は変わるが、今回移行作業していて思ったことがある。
+それは、「この AI 時代、 emacs は再評価されるのではないか？」ということ。</p>
+<p>
+AI 向けのエディタといえば Cursor とか、
+あるいは OSS のデファクトスタンダードを確立している vscode が良く使われているが、
+カスタマイズ性という意味では emacs が優れているだろう。</p>
+<p>
+ただ、カスタマイズ性が優れていても、
+emacs のカスタマイズ自体のハードルが高く、
+その魅力が上手く伝わっていなかったように感じる。</p>
+<p>
+しかし、今は AI を使うことで最低限の知識だけで、
+誰でも簡単にカスタマイズが可能になっている。</p>
+<p>
+これによって、emacs が再評価される可能性があるのではないか？</p>
+<p>
+とはいえ、 AI 時代に自分専用のエディタを作る必要がどこまであるのか？疑問もある。</p>
+<p>
+AI とチャットさえ出来れば良く、高度な編集機能は不要、という話しもあるだろう。</p>
+<p>
+また、emacs はカスタマイズ可能とはいえ、
+「CUI 主体から GUI を主体に変えたい」というような要望は流石に困難だ。</p>
+<p>
+emacs が今後シェアを延すのは難しいかもしれない。</p>
+</div>
+</div>
+
+		</div>
+	</article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2025/2025-11-22-gemini3-videcoding/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">Antigravity を使って Gemini3 で Vibe Coding をやってみた所感 (簡易資産シミュレーター)</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-02-emacs-vertico/">emacs の補完フレームワーク vertico に移行した</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-11-22-gemini3-videcoding/">Antigravity を使って Gemini3 で Vibe Coding をやってみた所感 (簡易資産シミュレーター)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-10-05-bubbletea/">go の bubbletea で簡易ターミナルエミュレータを作る</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-10-05-rtx5000-rvc/">RTX5000 シリーズで RVC を動かす</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-09-21-vibe-codig/">Vibe Coding をやってみた所感 (Go言語でのTCPフォワーダー開発事例)</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2025 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+<script async defer src="/blog2/public/js/menu.js"></script>
+</body>
+</html>
