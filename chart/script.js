@@ -243,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         params.set('pstart', pensionStartAgeInput.value);
         params.set('pbase', pensionBaseInput.value);
         params.set('macroSlide', macroSlideRateInput.value);
+        params.set('baseup', document.getElementById('income-base-up-rate').value);
 
         const periods = periodsContainer.querySelectorAll('.period-item');
         periods.forEach(period => {
@@ -251,8 +252,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const investment = period.querySelector('.p-investment').value;
             const duration = period.querySelector('.p-duration').value;
             const linked = period.querySelector('.p-expenses-link').checked ? 1 : 0;
-            // Format: income:expenses:investment:duration:linked
-            params.append('p', `${income}:${expenses}:${investment}:${duration}:${linked}`);
+            const incomeLinked = period.querySelector('.p-income-link').checked ? 1 : 0;
+            // Format: income:expenses:investment:duration:linked:incomeLinked
+            params.append('p', `${income}:${expenses}:${investment}:${duration}:${linked}:${incomeLinked}`);
         });
 
         const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -273,6 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (params.has('pstart')) pensionStartAgeInput.value = params.get('pstart');
         if (params.has('pbase')) pensionBaseInput.value = params.get('pbase');
         if (params.has('macroSlide')) macroSlideRateInput.value = params.get('macroSlide');
+        if (params.has('baseup')) document.getElementById('income-base-up-rate').value = params.get('baseup');
 
         calculatePension(); // Update adjusted value
 
@@ -289,7 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const investment = parts[2];
                 const duration = parts[3];
                 const linked = parts.length > 4 ? (parts[4] === '1') : false;
-                addPeriod(income, expenses, investment, duration, linked);
+                const incomeLinked = parts.length > 5 ? (parts[5] === '1') : false;
+                addPeriod(income, expenses, investment, duration, linked, incomeLinked);
             });
         } else {
             // Default if no params
@@ -300,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add Period
-    function addPeriod(income = 0, expenses = 0, investment = 0, duration = 5, linked = true) {
+    function addPeriod(income = 0, expenses = 0, investment = 0, duration = 5, linked = true, incomeLinked = true) {
         periodCount++;
         const clone = periodTemplate.content.cloneNode(true);
         const periodItem = clone.querySelector('.period-item');
@@ -337,11 +341,23 @@ document.addEventListener('DOMContentLoaded', () => {
             linkCheckbox.addEventListener('change', () => updatePeriodChain());
         }
 
+        const incomeLinkCheckbox = periodItem.querySelector('.p-income-link');
+        if (incomeLinkCheckbox) {
+            incomeLinkCheckbox.checked = incomeLinked;
+            const id = `link-income-${periodCount}`;
+            incomeLinkCheckbox.id = id;
+            periodItem.querySelector('label[for="link-income"]').setAttribute('for', id);
+
+            incomeLinkCheckbox.addEventListener('change', () => updatePeriodChain());
+        }
+
         // Real-time update listeners
         const expensesInput = periodItem.querySelector('.p-expenses');
+        const incomeInput = periodItem.querySelector('.p-income');
         const durationInput = periodItem.querySelector('.p-duration');
 
         expensesInput.addEventListener('input', () => updatePeriodChain());
+        incomeInput.addEventListener('input', () => updatePeriodChain());
         durationInput.addEventListener('input', () => {
             updatePeriodChain();
             updatePeriodNumbers();
@@ -483,10 +499,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         periods.forEach((period, index) => {
             let expenses = (parseFloat(period.querySelector('.p-expenses').value) || 0) * 10000;
-            const income = (parseFloat(period.querySelector('.p-income').value) || 0) * 10000;
+            let income = (parseFloat(period.querySelector('.p-income').value) || 0) * 10000;
             const plannedInvestment = (parseFloat(period.querySelector('.p-investment').value) || 0) * 10000;
             const duration = parseInt(period.querySelector('.p-duration').value) || 0;
             const taxRate = (parseFloat(document.getElementById('tax-rate').value) || 0) / 100;
+            const baseUpRate = (parseFloat(document.getElementById('income-base-up-rate').value) || 0);
+
+            let incomeForFinal = income;
 
             const startYear = currentYear; // Start of this period
 
@@ -498,6 +517,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Apply inflation to expenses (starting from 2nd year of the period)
                 if (i > 1) {
                     expenses = expenses * (1 + inflationRate / 100);
+                    income = income * (1 + baseUpRate / 100);
+                    incomeForFinal = income;
                 }
 
                 // Get yield for this year
@@ -587,10 +608,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataCash.push(currentCash);
             }
 
-            // Update Final Year Expense in UI
+            // Update Final Year Amounts in UI
             const finalExpenseInput = period.querySelector('.p-expenses-final');
             if (finalExpenseInput) {
                 finalExpenseInput.value = (expenses / 10000).toFixed(1);
+            }
+            const finalIncomeInput = period.querySelector('.p-income-final');
+            if (finalIncomeInput) {
+                finalIncomeInput.value = (incomeForFinal / 10000).toFixed(1);
             }
 
             // Record boundary
@@ -623,23 +648,27 @@ document.addEventListener('DOMContentLoaded', () => {
         chart.update();
     }
 
-    // Calculate Final Expense for a Period
-    function calculateFinalExpense(periodItem) {
-        const expensesInput = periodItem.querySelector('.p-expenses');
-        const durationInput = periodItem.querySelector('.p-duration');
-        const finalExpenseInput = periodItem.querySelector('.p-expenses-final');
-        const inflationRateInput = document.getElementById('inflation-rate');
+    // Calculate Final Amount for a Period
+    function calculateFinalAmount(periodItem, type = 'expenses') {
+        const inputClass = type === 'expenses' ? '.p-expenses' : '.p-income';
+        const finalClass = type === 'expenses' ? '.p-expenses-final' : '.p-income-final';
+        const rateId = type === 'expenses' ? 'inflation-rate' : 'income-base-up-rate';
 
-        const expenses = parseFloat(expensesInput.value) || 0;
+        const amountInput = periodItem.querySelector(inputClass);
+        const durationInput = periodItem.querySelector('.p-duration');
+        const finalAmountInput = periodItem.querySelector(finalClass);
+        const rateInput = document.getElementById(rateId);
+
+        const amount = parseFloat(amountInput.value) || 0;
         const duration = parseInt(durationInput.value) || 0;
-        const inflationRate = parseFloat(inflationRateInput.value) || 0;
+        const rate = parseFloat(rateInput.value) || 0;
 
         if (duration <= 1) {
-            finalExpenseInput.value = expenses;
+            finalAmountInput.value = amount.toFixed(1);
         } else {
-            // expenses * (1 + rate)^ (duration - 1)
-            const finalExpense = expenses * Math.pow(1 + inflationRate / 100, duration - 1);
-            finalExpenseInput.value = finalExpense.toFixed(1);
+            // amount * (1 + rate)^ (duration - 1)
+            const finalAmount = amount * Math.pow(1 + rate / 100, duration - 1);
+            finalAmountInput.value = finalAmount.toFixed(1);
         }
     }
 
@@ -647,57 +676,63 @@ document.addEventListener('DOMContentLoaded', () => {
     function updatePeriodChain() {
         const periods = periodsContainer.querySelectorAll('.period-item');
         let previousFinalExpense = null;
+        let previousFinalIncome = null;
 
         periods.forEach((period, index) => {
-            const linkCheckbox = period.querySelector('.p-expenses-link');
-            const expensesInput = period.querySelector('.p-expenses');
-            const finalExpenseInput = period.querySelector('.p-expenses-final'); // Read value from here for next
+            const expLinkCheckbox = period.querySelector('.p-expenses-link');
+            const expInput = period.querySelector('.p-expenses');
+            const incLinkCheckbox = period.querySelector('.p-income-link');
+            const incInput = period.querySelector('.p-income');
+
+            const inflationRate = parseFloat(document.getElementById('inflation-rate').value) || 0;
+            const baseUpRate = parseFloat(document.getElementById('income-base-up-rate').value) || 0;
 
             // First period cannot link
             if (index === 0) {
-                if (linkCheckbox) {
-                    linkCheckbox.checked = false;
-                    linkCheckbox.disabled = true;
-                    linkCheckbox.parentElement.style.display = 'none'; // Hide for first period
-                }
-                expensesInput.disabled = false;
-            } else {
-                if (linkCheckbox) {
-                    linkCheckbox.disabled = false;
-                    linkCheckbox.parentElement.style.display = 'flex';
-                }
-
-                if (linkCheckbox && linkCheckbox.checked) {
-                    expensesInput.disabled = true;
-                    if (previousFinalExpense !== null) {
-                        // Apply inflation for the transition year?
-                        // Spec: "Link to previous period's final expense".
-                        // Usually, if Year N is final year of Period A, Year N+1 is start of Period B.
-                        // Period A Final Expense is for Year N.
-                        // Period B Start Expense should probably be Year N * (1 + inflation).
-                        // BUT, the user request says "Link to previous period's final expense".
-                        // And the "Annual Expenses" input is for the "First Year".
-                        // Let's assume strict continuity: Start Expense = Previous Final Expense * (1 + Inflation).
-                        // OR just Start Expense = Previous Final Expense (and inflation applies from 2nd year of new period).
-                        // Given "Inflation Rate" is a global setting, it makes sense to apply it continuously.
-                        // However, "Final Year Expense" display in Period A is the expense in that specific year.
-                        // If Period B starts the next year, it should logically be inflated.
-                        // Let's implement: Start Expense = Previous Final Expense * (1 + Inflation/100).
-
-                        const inflationRate = parseFloat(document.getElementById('inflation-rate').value) || 0;
-                        const nextYearExpense = previousFinalExpense * (1 + inflationRate / 100);
-                        expensesInput.value = nextYearExpense.toFixed(1);
+                [expLinkCheckbox, incLinkCheckbox].forEach(cb => {
+                    if (cb) {
+                        cb.checked = false;
+                        cb.disabled = true;
+                        cb.parentElement.style.display = 'none';
                     }
-                } else {
-                    expensesInput.disabled = false;
+                });
+                expInput.disabled = false;
+                incInput.disabled = false;
+            } else {
+                // Expense Linking
+                if (expLinkCheckbox) {
+                    expLinkCheckbox.disabled = false;
+                    expLinkCheckbox.parentElement.style.display = 'flex';
+                    if (expLinkCheckbox.checked && previousFinalExpense !== null) {
+                        expInput.disabled = true;
+                        const nextYearExpense = previousFinalExpense * (1 + inflationRate / 100);
+                        expInput.value = nextYearExpense.toFixed(1);
+                    } else {
+                        expInput.disabled = false;
+                    }
+                }
+
+                // Income Linking
+                if (incLinkCheckbox) {
+                    incLinkCheckbox.disabled = false;
+                    incLinkCheckbox.parentElement.style.display = 'flex';
+                    if (incLinkCheckbox.checked && previousFinalIncome !== null) {
+                        incInput.disabled = true;
+                        const nextYearIncome = previousFinalIncome * (1 + baseUpRate / 100);
+                        incInput.value = nextYearIncome.toFixed(1);
+                    } else {
+                        incInput.disabled = false;
+                    }
                 }
             }
 
-            // Calculate final expense for this period (updates UI and used for next)
-            calculateFinalExpense(period);
+            // Calculate final amounts for this period
+            calculateFinalAmount(period, 'expenses');
+            calculateFinalAmount(period, 'income');
 
             // Store for next iteration
             previousFinalExpense = parseFloat(period.querySelector('.p-expenses-final').value) || 0;
+            previousFinalIncome = parseFloat(period.querySelector('.p-income-final').value) || 0;
         });
     }
 
@@ -706,10 +741,16 @@ document.addEventListener('DOMContentLoaded', () => {
     calculateBtn.addEventListener('click', calculate);
     yieldButton.addEventListener('change', calculate);
 
-    // Inflation Rate Listener
+    // Inflation & Baseup Rate Listener
     const inflationRateInput = document.getElementById('inflation-rate');
     if (inflationRateInput) {
         inflationRateInput.addEventListener('input', () => {
+            updatePeriodChain();
+        });
+    }
+    const baseUpRateInput = document.getElementById('income-base-up-rate');
+    if (baseUpRateInput) {
+        baseUpRateInput.addEventListener('input', () => {
             updatePeriodChain();
         });
     }
