@@ -29,3 +29,18 @@ $ ./lnsc sample.lns exe
 
 - ここで sample.lns は、サンプルコードを保存したファイルです
 - サンプルが正常な場合、エラーなく実行できます。
+
+# HTML ヘッダー
+
+作成した HTML には、ヘッダに以下を追加する
+
+```html
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() { dataLayer.push(arguments); }
+    gtag('js', new Date());
+
+    gtag('config', 'G-4708B8S6ES');
+</script>
+```
