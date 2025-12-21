@@ -13,6 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const pensionAdjustedInput = document.getElementById('pension-adjusted');
     const macroSlideRateInput = document.getElementById('macro-slide-rate');
 
+    // Extra Income Inputs
+    const extraIncomeContainer = document.getElementById('extra-income-container');
+    const addExtraIncomeBtn = document.getElementById('add-extra-income-btn');
+    const extraIncomeTemplate = document.getElementById('extra-income-template');
+
     let chart;
     let periodCount = 0;
 
@@ -257,6 +262,13 @@ document.addEventListener('DOMContentLoaded', () => {
             params.append('p', `${income}:${expenses}:${investment}:${duration}:${linked}:${incomeLinked}`);
         });
 
+        const extras = extraIncomeContainer.querySelectorAll('.extra-income-item');
+        extras.forEach(extra => {
+            const age = extra.querySelector('.ex-age').value;
+            const amount = extra.querySelector('.ex-amount').value;
+            params.append('ex', `${age}:${amount}`);
+        });
+
         const newUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.replaceState({}, '', newUrl);
     }
@@ -296,11 +308,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 addPeriod(income, expenses, investment, duration, linked, incomeLinked);
             });
         } else {
-            // Default if no params
             if (periodsContainer.children.length === 0) {
                 addPeriod();
             }
         }
+
+        const extraParams = params.getAll('ex');
+        if (extraParams.length > 0) {
+            extraIncomeContainer.innerHTML = '';
+            extraParams.forEach(ex => {
+                const parts = ex.split(':');
+                if (parts.length === 2) {
+                    addExtraIncome(parts[0], parts[1]);
+                }
+            });
+        }
+    }
+
+    // Add Extra Income Item
+    function addExtraIncome(age = 40, amount = 100) {
+        const clone = extraIncomeTemplate.content.cloneNode(true);
+        const item = clone.querySelector('.extra-income-item');
+
+        item.querySelector('.ex-age').value = age;
+        item.querySelector('.ex-amount').value = amount;
+
+        item.querySelector('.remove-extra-income-btn').addEventListener('click', () => {
+            item.remove();
+            updateUrlFromInputs();
+        });
+
+        // Add change listeners
+        item.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => {
+                updateUrlFromInputs();
+            });
+        });
+
+        extraIncomeContainer.appendChild(item);
     }
 
     // Add Period
@@ -480,6 +525,12 @@ document.addEventListener('DOMContentLoaded', () => {
             totalDuration += parseInt(period.querySelector('.p-duration').value) || 0;
         });
 
+        // Extra Income Items
+        const extraIncomeItems = Array.from(extraIncomeContainer.querySelectorAll('.extra-income-item')).map(item => ({
+            age: parseInt(item.querySelector('.ex-age').value) || 0,
+            amount: (parseFloat(item.querySelector('.ex-amount').value) || 0) * 10000
+        }));
+
         // Generate annual yields
         const enableYieldSim = yieldButton.checked;
         const yieldRangeSlider = document.getElementById('yield-range-slider');
@@ -559,6 +610,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const grossDividend = currentCapital * (dividendRate / 100);
                 const netDividend = grossDividend * (1 - taxRate);
                 annualIncome += netDividend;
+
+                // Add Extra Income/Expenses for this age
+                extraIncomeItems.forEach(item => {
+                    if (item.age === currentAge) {
+                        annualIncome += item.amount;
+                    }
+                });
 
                 dataIncome.push(annualIncome);
 
@@ -738,6 +796,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Event Listeners
     addPeriodBtn.addEventListener('click', () => addPeriod());
+    addExtraIncomeBtn.addEventListener('click', () => addExtraIncome());
     calculateBtn.addEventListener('click', calculate);
     yieldButton.addEventListener('change', calculate);
 
