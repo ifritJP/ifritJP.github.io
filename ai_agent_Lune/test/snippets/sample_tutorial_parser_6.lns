@@ -1,0 +1,159 @@
+// From tutorial_parser.html Snippet 6
+alge Token {
+    Num( val: int ),
+    Op( val: str ),
+    Eof,
+}
+
+class Lexer {
+    let text: str;
+    let len: int;
+    let mut pos: int;
+
+    pub fn __init( text:str ) {
+        self.text = text;
+        self.len = #text;
+        self.pos = 1;
+    }
+
+    fn getChar(): int {
+        if self.pos > self.len { return 0; }
+        return unwrap self.text.byte( self.pos ) default 0;
+    }
+
+    pub fn next() mut: Token {
+        while self.getChar() == ?  {
+            self.pos = self.pos + 1;
+        }
+        
+        let ch = self.getChar();
+        if ch == 0 { return .Eof; }
+
+        if ch >= ?0 and ch <= ?9 {
+            let mut numVal = 0;
+            while true {
+                let cur = self.getChar();
+                if cur < ?0 or cur > ?9 { break; }
+                numVal = numVal * 10 + ( cur - ?0 );
+                self.pos = self.pos + 1;
+            }
+            return Token.Num( numVal );
+        }
+
+        self.pos = self.pos + 1;
+        return Token.Op( "%c" ( ch ) );
+    }
+}
+
+alge Ast {
+    Val( val: int ),
+    Bin( op: str, left: Ast, right: Ast ),
+}
+
+class Parser {
+    let mut lexer: Lexer;
+    let mut cur: Token;
+
+    pub fn __init( text: str ) {
+        self.lexer = new Lexer( text );
+        self.cur = self.lexer.next();
+    }
+
+    fn next() mut {
+        self.cur = self.lexer.next();
+    }
+
+    fn parseFactor() mut: Ast {
+        match self.cur {
+            case .Num( val ) {
+                self.next();
+                return .Val( val );
+            }
+            case .Op( op ) {
+                if op == "(" {
+                    self.next();
+                    let node = self.parseExpr();
+                    match self.cur {
+                       case .Op( nextOp ) {
+                           if nextOp == ")" {
+                               self.next();
+                               return node;
+                           }
+                       }
+                       default {}
+                    }
+                    print( "Error: missing )" );
+                    return node;
+                }
+            }
+            default {
+                print( "Error: unexpected token" );
+            }
+        }
+        return .Val( 0 );
+    }
+
+    fn parseTerm() mut: Ast {
+        let mut left = self.parseFactor();
+        while true {
+            match self.cur {
+                case .Op( op ) {
+                    if op == "*" or op == "/" {
+                        self.next();
+                        let right = self.parseFactor();
+                        left = .Bin( op, left, right );
+                    } else {
+                        break;
+                    }
+                }
+                default { break; }
+            }
+        }
+        return left;
+    }
+
+    pub fn parseExpr() mut: Ast {
+        let mut left = self.parseTerm();
+        while true {
+            match self.cur {
+                case .Op( op ) {
+                    if op == "+" or op == "-" {
+                        self.next();
+                        let right = self.parseTerm();
+                        left = .Bin( op, left, right );
+                    } else {
+                        break;
+                    }
+                }
+                default { break; }
+            }
+        }
+        return left;
+    }
+}
+
+fn eval( node: Ast ): int {
+    match node {
+        case .Val( val ) {
+            return val;
+        }
+        case .Bin( op, left, right ) {
+            let l = eval( left );
+            let r = eval( right );
+            switch op {
+                case "+" { return l + r; }
+                case "-" { return l - r; }
+                case "*" { return l * r; }
+                case "/" { return l / r; }
+            }
+        }
+    }
+    return 0;
+}
+
+// メイン処理
+let input = "1 + 2 * (3 + 4)";
+let mut parser = new Parser( input );
+let ast = parser.parseExpr();
+print( "%s = %d" ( input, eval( ast ) ) );
+
