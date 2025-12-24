@@ -1,0 +1,143 @@
+#+TITLE: macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons)
+#+DATE: 2025-12-21
+# -*- coding:utf-8 -*-
+#+LAYOUT: post
+#+AUTHOR: ifritJP
+#+OPTIONS: ^:{}
+#+STARTUP: nofold
+
+macOS でログインを伴わない起動直後に処理（バックグラウンドサービス）を走らせるには、 =LaunchDaemons= を使用する。ここでは最低限の =plist= と登録手順、ハマりやすい点をまとめる。
+
+こういう設定は一度すると暫く変更しないので、改めて設定しようとするとすっかり忘れてしまう。そんな場合の備忘録。
+
+
+* TL;DR
+
+- MacOS 起動時に自動実行したいなら =LaunchDaemons= に =plist= を配置し、 =launchctl= で登録
+- 必須キーは =UserName=, =Label=, =Program=, =RunAtLoad=
+- =Program= はメインボリュームの絶対パスを指定（外部ボリュームは起動時に未マウントのことがある）
+- =plist= の権限は =644= 、文法は =plutil -lint= で検証
+- 実行確認は =launchctl kickstart -k system/<Label>=
+
+* 手順
+
+おおまかな手順は次の通り  
+  
+- =plist= を作成
+- 配置と権限
+- 登録と有効化
+
+** 1. =plist= を作成
+
+次の内容で =my.startup.plist= を作成する。
+
+#+BEGIN_SRC xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>UserName</key>
+    <string>hoge</string>
+    <key>Label</key>
+    <string>my.startup</string>
+    <key>Program</key>
+    <string>/hoge/foo/bar/filepath</string>
+    <key>RunAtLoad</key>
+    <true/>
+  </dict>
+</plist>
+#+END_SRC
+
+- =UserName=: 実行ユーザ（ =hoge= の部分をアカウント名に置き換える）
+- =Label=: 任意のユニーク名
+- =Program=: 実行するプログラムの絶対パス。起動時は外部ボリュームが未マウントのことがあるため、 *メインボリューム上のパスを指定する*
+- =RunAtLoad=: ロード時（起動時）に自動実行
+
+** 2. 配置と権限
+
+- ファイル配置先: =/Library/LaunchDaemons/my.startup.plist=
+- パーミッション: =644=
+
+ログイン後に実行する LaunchAgents と、ログイン前に実行する LaunchDaemons がある。
+今回は ログイン前に実行するので、 LaunchDaemons に配置する。
+
+** 3. 登録と有効化
+
+以下の順に登録・有効化・確認を行う。
+
+#+BEGIN_SRC txt
+# 除外
+$ sudo launchctl bootout system /Library/LaunchDaemons/my.startup.plist
+# 登録
+$ sudo launchctl enable system/Library/LaunchDaemons/my.startup.plist
+$ sudo launchctl bootstrap system /Library/LaunchDaemons/my.startup.plist
+# 確認
+$ sudo launchctl list | grep my.startup && echo ok || echo ng
+#+END_SRC
+
+** 4. 再起動して確認
+
+MacOS を再起動し、意図通りに動作していることを確認する。
+
+
+* トラブルシュート
+
+** 文法エラーの確認
+
+: $ plutil -lint /Library/LaunchDaemons/my.startup.plist
+
+** 起動直後に動かない／手動で起動して確認
+
+: $ sudo launchctl kickstart -k system/my.startup
+
+** よくあるハマり
+
+- =Program= に外部ボリュームを指定している → 起動直後は未マウントの場合がある。メインボリューム上へ配置する
+- 権限が不適切 → =644= に設定する
+- =Label= が重複 → 別名に変更して再登録
+
+* まとめ
+
+=LaunchDaemons= に =plist= を配置し、 =launchctl= で登録・有効化すれば、ログインなしでサービスを起動できる。最初は =Program= のパスと権限、文法のチェックから。必要に応じて =kickstart= で動作確認するとスムーズ。
+
+* LaunchAgents と LaunchDaemons の違い
+
+- =LaunchAgents=: ユーザログイン後に動く。ユーザ環境変数やUIへのアクセスが必要な常駐に向く
+- =LaunchDaemons=: ブート時に動く。root権限でのバックグラウンド処理、ネットワーク監視、定期実行などに向く
+
+「ログイン無しで起動」は =LaunchDaemons= が前提。逆に、ユーザごとの設定に依存するタスクは =LaunchAgents= へ。
+
+
+* ログとデバッグの基本
+
+** 状態の確認
+
+: $ sudo launchctl print system/my.startup
+
+** 直近ログを確認（Unified Log）
+
+: $ log show --style syslog --last 1h | grep my.startup
+
+** 再読み込み（差し替え）
+
+: $ sudo launchctl bootout system /Library/LaunchDaemons/my.startup.plist
+: $ sudo launchctl bootstrap system /Library/LaunchDaemons/my.startup.plist
+: $ sudo launchctl kickstart -k system/my.startup
+
+** 一時停止・無効化
+
+: sudo launchctl bootout system /Library/LaunchDaemons/my.startup.plist
+: sudo launchctl disable system/Library/LaunchDaemons/my.startup.plist
+
+* セキュリティと権限の注意点
+
+- =plist= の所有者は =root:wheel= 、権限は =644= （グループ/その他に書き込み不可）
+- 実行スクリプトはフルパス指定。 =PATH= には依存しない
+- シェルスクリプト先頭に shebang（例: =#!/bin/bash= ）を入れる
+
+
+* よくある落とし穴
+
+- =Program= を相対パスや外部ボリュームにしている → 絶対パス＋メインボリューム上へ
+- =Label= の重複 → ユニークに。入れ替え時は =bootout→bootstrap=
+- 実行権限不足 → スクリプトに  =chmod 755= 、依存ファイル/フォルダの権限も確認

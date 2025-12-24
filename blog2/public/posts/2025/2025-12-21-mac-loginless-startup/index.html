@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons) - hoge blog</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+		<meta property="og:title" content="macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons)" />
+<meta property="og:description" content="macOS でログインを伴わない起動直後に処理（バックグラウンドサービス）を走らせるには、 LaunchDaemons を使用する。ここでは最低限の plist と登録手順、ハマりやすい点をまとめる。 こういう設定は一度すると暫く変更しないので、改めて設定しようとするとすっかり忘れてしまう。そんな場合の備忘録。 TL;DR MacOS 起動時に自動実行したいなら LaunchDaemons に plist を配置し、 launchctl で登録 必須キーは UserName, Label, Program, RunAtLoad Program はメインボリュームの絶対パスを指定（外部ボリュームは起動時に未マウ" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2025/2025-12-21-mac-loginless-startup/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-12-21T00:00:00+00:00" />
+<meta property="article:modified_time" content="2025-12-21T00:00:00+00:00" />
+
+		<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons)"/>
+<meta name="twitter:description" content="macOS でログインを伴わない起動直後に処理（バックグラウンドサービス）を走らせるには、 LaunchDaemons を使用する。ここでは最低限の plist と登録手順、ハマりやすい点をまとめる。 こういう設定は一度すると暫く変更しないので、改めて設定しようとするとすっかり忘れてしまう。そんな場合の備忘録。 TL;DR MacOS 起動時に自動実行したいなら LaunchDaemons に plist を配置し、 launchctl で登録 必須キーは UserName, Label, Program, RunAtLoad Program はメインボリュームの絶対パスを指定（外部ボリュームは起動時に未マウ"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700">
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+		
+    <link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+	<div class="container header__container">
+		
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+		
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+	</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+			
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header">
+			<h1 class="post__title">macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons)</h1>
+			<div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2025-12-21T00:00:00Z">2025-12-21</time></div></div>
+		</header>
+		
+<div class="post__toc toc">
+	<div class="toc__title">Page content</div>
+	<div class="toc__menu">
+		<nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">TL;DR</a>
+</li>
+<li><a href="#headline-2">手順</a>
+<ul>
+<li><a href="#headline-3">1. <code class="verbatim">plist</code> を作成</a>
+</li>
+<li><a href="#headline-4">2. 配置と権限</a>
+</li>
+<li><a href="#headline-5">3. 登録と有効化</a>
+</li>
+<li><a href="#headline-6">4. 再起動して確認</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-7">トラブルシュート</a>
+<ul>
+<li><a href="#headline-8">文法エラーの確認</a>
+</li>
+<li><a href="#headline-9">起動直後に動かない／手動で起動して確認</a>
+</li>
+<li><a href="#headline-10">よくあるハマり</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-11">まとめ</a>
+</li>
+<li><a href="#headline-12">LaunchAgents と LaunchDaemons の違い</a>
+</li>
+<li><a href="#headline-13">ログとデバッグの基本</a>
+<ul>
+<li><a href="#headline-14">状態の確認</a>
+</li>
+<li><a href="#headline-15">直近ログを確認（Unified Log）</a>
+</li>
+<li><a href="#headline-16">再読み込み（差し替え）</a>
+</li>
+<li><a href="#headline-17">一時停止・無効化</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-18">セキュリティと権限の注意点</a>
+</li>
+<li><a href="#headline-19">よくある落とし穴</a>
+</li>
+</ul>
+</nav>
+	</div>
+</div><div class="content post__content clearfix">
+			
+<p>
+macOS でログインを伴わない起動直後に処理（バックグラウンドサービス）を走らせるには、 <code class="verbatim">LaunchDaemons</code> を使用する。ここでは最低限の <code class="verbatim">plist</code> と登録手順、ハマりやすい点をまとめる。</p>
+<p>
+こういう設定は一度すると暫く変更しないので、改めて設定しようとするとすっかり忘れてしまう。そんな場合の備忘録。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+TL;DR
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<ul>
+<li>MacOS 起動時に自動実行したいなら <code class="verbatim">LaunchDaemons</code> に <code class="verbatim">plist</code> を配置し、 <code class="verbatim">launchctl</code> で登録</li>
+<li>必須キーは <code class="verbatim">UserName</code>, <code class="verbatim">Label</code>, <code class="verbatim">Program</code>, <code class="verbatim">RunAtLoad</code></li>
+<li><code class="verbatim">Program</code> はメインボリュームの絶対パスを指定（外部ボリュームは起動時に未マウントのことがある）</li>
+<li><code class="verbatim">plist</code> の権限は <code class="verbatim">644</code> 、文法は <code class="verbatim">plutil -lint</code> で検証</li>
+<li>実行確認は <code class="verbatim">launchctl kickstart -k system/&lt;Label&gt;</code></li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+手順
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+おおまかな手順は次の通り  </p>
+<ul>
+<li><code class="verbatim">plist</code> を作成</li>
+<li>配置と権限</li>
+<li>登録と有効化</li>
+</ul>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+1. <code class="verbatim">plist</code> を作成
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+次の内容で <code class="verbatim">my.startup.plist</code> を作成する。</p>
+<div class="src src-xml">
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt"> 1
+</span><span class="lnt"> 2
+</span><span class="lnt"> 3
+</span><span class="lnt"> 4
+</span><span class="lnt"> 5
+</span><span class="lnt"> 6
+</span><span class="lnt"> 7
+</span><span class="lnt"> 8
+</span><span class="lnt"> 9
+</span><span class="lnt">10
+</span><span class="lnt">11
+</span><span class="lnt">12
+</span><span class="lnt">13
+</span><span class="lnt">14
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-xml" data-lang="xml"><span class="line"><span class="cl"><span class="cp">&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="cp">&lt;!DOCTYPE plist PUBLIC &#34;-//Apple//DTD PLIST 1.0//EN&#34; &#34;http://www.apple.com/DTDs/PropertyList-1.0.dtd&#34;&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;plist</span> <span class="na">version=</span><span class="s">&#34;1.0&#34;</span><span class="nt">&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&lt;dict&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;key&gt;</span>UserName<span class="nt">&lt;/key&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;string&gt;</span>hoge<span class="nt">&lt;/string&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;key&gt;</span>Label<span class="nt">&lt;/key&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;string&gt;</span>my.startup<span class="nt">&lt;/string&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;key&gt;</span>Program<span class="nt">&lt;/key&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;string&gt;</span>/hoge/foo/bar/filepath<span class="nt">&lt;/string&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;key&gt;</span>RunAtLoad<span class="nt">&lt;/key&gt;</span>
+</span></span><span class="line"><span class="cl">    <span class="nt">&lt;true/&gt;</span>
+</span></span><span class="line"><span class="cl">  <span class="nt">&lt;/dict&gt;</span>
+</span></span><span class="line"><span class="cl"><span class="nt">&lt;/plist&gt;</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+<ul>
+<li><code class="verbatim">UserName</code>: 実行ユーザ（ <code class="verbatim">hoge</code> の部分をアカウント名に置き換える）</li>
+<li><code class="verbatim">Label</code>: 任意のユニーク名</li>
+<li><code class="verbatim">Program</code>: 実行するプログラムの絶対パス。起動時は外部ボリュームが未マウントのことがあるため、 <strong>メインボリューム上のパスを指定する</strong></li>
+<li><code class="verbatim">RunAtLoad</code>: ロード時（起動時）に自動実行</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+2. 配置と権限
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<ul>
+<li>ファイル配置先: <code class="verbatim">/Library/LaunchDaemons/my.startup.plist</code></li>
+<li>パーミッション: <code class="verbatim">644</code></li>
+</ul>
+<p>ログイン後に実行する LaunchAgents と、ログイン前に実行する LaunchDaemons がある。
+今回は ログイン前に実行するので、 LaunchDaemons に配置する。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+3. 登録と有効化
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+以下の順に登録・有効化・確認を行う。</p>
+<div class="src src-txt">
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span><span class="lnt">5
+</span><span class="lnt">6
+</span><span class="lnt">7
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-txt" data-lang="txt"><span class="line"><span class="cl"># 除外
+</span></span><span class="line"><span class="cl">$ sudo launchctl bootout system /Library/LaunchDaemons/my.startup.plist
+</span></span><span class="line"><span class="cl"># 登録
+</span></span><span class="line"><span class="cl">$ sudo launchctl enable system/Library/LaunchDaemons/my.startup.plist
+</span></span><span class="line"><span class="cl">$ sudo launchctl bootstrap system /Library/LaunchDaemons/my.startup.plist
+</span></span><span class="line"><span class="cl"># 確認
+</span></span><span class="line"><span class="cl">$ sudo launchctl list | grep my.startup &amp;&amp; echo ok || echo ng</span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+4. 再起動して確認
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+MacOS を再起動し、意図通りに動作していることを確認する。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
+<h2 id="headline-7">
+トラブルシュート
+</h2>
+<div id="outline-text-headline-7" class="outline-text-2">
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+文法エラーの確認
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<pre class="example">
+$ plutil -lint /Library/LaunchDaemons/my.startup.plist
+</pre>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
+<h3 id="headline-9">
+起動直後に動かない／手動で起動して確認
+</h3>
+<div id="outline-text-headline-9" class="outline-text-3">
+<pre class="example">
+$ sudo launchctl kickstart -k system/my.startup
+</pre>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-3">
+<h3 id="headline-10">
+よくあるハマり
+</h3>
+<div id="outline-text-headline-10" class="outline-text-3">
+<ul>
+<li><code class="verbatim">Program</code> に外部ボリュームを指定している → 起動直後は未マウントの場合がある。メインボリューム上へ配置する</li>
+<li>権限が不適切 → <code class="verbatim">644</code> に設定する</li>
+<li><code class="verbatim">Label</code> が重複 → 別名に変更して再登録</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-2">
+<h2 id="headline-11">
+まとめ
+</h2>
+<div id="outline-text-headline-11" class="outline-text-2">
+<p>
+<code class="verbatim">LaunchDaemons</code> に <code class="verbatim">plist</code> を配置し、 <code class="verbatim">launchctl</code> で登録・有効化すれば、ログインなしでサービスを起動できる。最初は <code class="verbatim">Program</code> のパスと権限、文法のチェックから。必要に応じて <code class="verbatim">kickstart</code> で動作確認するとスムーズ。</p>
+</div>
+</div>
+<div id="outline-container-headline-12" class="outline-2">
+<h2 id="headline-12">
+LaunchAgents と LaunchDaemons の違い
+</h2>
+<div id="outline-text-headline-12" class="outline-text-2">
+<ul>
+<li><code class="verbatim">LaunchAgents</code>: ユーザログイン後に動く。ユーザ環境変数やUIへのアクセスが必要な常駐に向く</li>
+<li><code class="verbatim">LaunchDaemons</code>: ブート時に動く。root権限でのバックグラウンド処理、ネットワーク監視、定期実行などに向く</li>
+</ul>
+<p>「ログイン無しで起動」は <code class="verbatim">LaunchDaemons</code> が前提。逆に、ユーザごとの設定に依存するタスクは <code class="verbatim">LaunchAgents</code> へ。</p>
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-2">
+<h2 id="headline-13">
+ログとデバッグの基本
+</h2>
+<div id="outline-text-headline-13" class="outline-text-2">
+<div id="outline-container-headline-14" class="outline-3">
+<h3 id="headline-14">
+状態の確認
+</h3>
+<div id="outline-text-headline-14" class="outline-text-3">
+<pre class="example">
+$ sudo launchctl print system/my.startup
+</pre>
+</div>
+</div>
+<div id="outline-container-headline-15" class="outline-3">
+<h3 id="headline-15">
+直近ログを確認（Unified Log）
+</h3>
+<div id="outline-text-headline-15" class="outline-text-3">
+<pre class="example">
+$ log show --style syslog --last 1h | grep my.startup
+</pre>
+</div>
+</div>
+<div id="outline-container-headline-16" class="outline-3">
+<h3 id="headline-16">
+再読み込み（差し替え）
+</h3>
+<div id="outline-text-headline-16" class="outline-text-3">
+<pre class="example">
+$ sudo launchctl bootout system /Library/LaunchDaemons/my.startup.plist
+$ sudo launchctl bootstrap system /Library/LaunchDaemons/my.startup.plist
+$ sudo launchctl kickstart -k system/my.startup
+</pre>
+</div>
+</div>
+<div id="outline-container-headline-17" class="outline-3">
+<h3 id="headline-17">
+一時停止・無効化
+</h3>
+<div id="outline-text-headline-17" class="outline-text-3">
+<pre class="example">
+sudo launchctl bootout system /Library/LaunchDaemons/my.startup.plist
+sudo launchctl disable system/Library/LaunchDaemons/my.startup.plist
+</pre>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-18" class="outline-2">
+<h2 id="headline-18">
+セキュリティと権限の注意点
+</h2>
+<div id="outline-text-headline-18" class="outline-text-2">
+<ul>
+<li><code class="verbatim">plist</code> の所有者は <code class="verbatim">root:wheel</code> 、権限は <code class="verbatim">644</code> （グループ/その他に書き込み不可）</li>
+<li>実行スクリプトはフルパス指定。 <code class="verbatim">PATH</code> には依存しない</li>
+<li>シェルスクリプト先頭に shebang（例: <code class="verbatim">#!/bin/bash</code> ）を入れる</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-19" class="outline-2">
+<h2 id="headline-19">
+よくある落とし穴
+</h2>
+<div id="outline-text-headline-19" class="outline-text-2">
+<ul>
+<li><code class="verbatim">Program</code> を相対パスや外部ボリュームにしている → 絶対パス＋メインボリューム上へ</li>
+<li><code class="verbatim">Label</code> の重複 → ユニークに。入れ替え時は <code class="verbatim">bootout→bootstrap</code></li>
+<li>実行権限不足 → スクリプトに  <code class="verbatim">chmod 755</code> 、依存ファイル/フォルダの権限も確認</li>
+</ul>
+</div>
+</div>
+
+		</div>
+	</article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2025/2025-12-07-xiaomi-watch-review/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">Redmi Watch 5 Lite: コスパ最強スマートウォッチとの上手な付き合い方</p>
+		</a>
+	</div>
+	<div class="pager__item pager__item--next">
+		<a class="pager__link" href="/blog2/public/posts/2025/2025-12-21-ai-refecence-by-llm/" rel="next">
+			<span class="pager__subtitle">Next&thinsp;»</span>
+			<p class="pager__title">AI を使った自作言語リファレンス生成の実験記録</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-24-misskey-bot/">Misskey.io で bot を作る ―― MiAuth からストリーミング API、そしてレートリミットとの戦い</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-21-ai-refecence-by-llm/">AI を使った自作言語リファレンス生成の実験記録</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-21-mac-loginless-startup/">macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-07-xiaomi-watch-review/">Redmi Watch 5 Lite: コスパ最強スマートウォッチとの上手な付き合い方</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-02-emacs-vertico/">emacs の補完フレームワーク vertico に移行した</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2025 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+<script async defer src="/blog2/public/js/menu.js"></script>
+</body>
+</html>

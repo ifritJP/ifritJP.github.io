@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Misskey.io で bot を作る ―― MiAuth からストリーミング API、そしてレートリミットとの戦い - hoge blog</title>
+	<script>(function(d,e){d[e]=d[e].replace("no-js","js");})(document.documentElement,"className");</script>
+	<meta name="description" content="">
+		<meta property="og:title" content="Misskey.io で bot を作る ―― MiAuth からストリーミング API、そしてレートリミットとの戦い" />
+<meta property="og:description" content="今回は Misskey.io で bot を作成するにあたって調べたことや、実際に手を動かしてハマったポイントなどをまとめておきます。 これから Misskey で bot 開発を始めようと思っている方の参考になれば幸いです。 bot アカウントの作成と心得 まず最初に、bot 用のアカウントを作成する必要があります。 ここで重要なのは、アカウントを作成したら設定画面から必ず「bot フラグ」を有効にしておくことです。 これは単なる自己申告ではなく、システム側や他のユー" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2025/2025-12-24-misskey-bot/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2025-12-24T00:00:00+00:00" />
+<meta property="article:modified_time" content="2025-12-24T00:00:00+00:00" />
+
+		<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Misskey.io で bot を作る ―― MiAuth からストリーミング API、そしてレートリミットとの戦い"/>
+<meta name="twitter:description" content="今回は Misskey.io で bot を作成するにあたって調べたことや、実際に手を動かしてハマったポイントなどをまとめておきます。 これから Misskey で bot 開発を始めようと思っている方の参考になれば幸いです。 bot アカウントの作成と心得 まず最初に、bot 用のアカウントを作成する必要があります。 ここで重要なのは、アカウントを作成したら設定画面から必ず「bot フラグ」を有効にしておくことです。 これは単なる自己申告ではなく、システム側や他のユー"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700">
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+		
+    <link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+</head>
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+	<div class="container header__container">
+		
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+		
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+	</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+			
+<main class="main" role="main">
+	<article class="post">
+		<header class="post__header">
+			<h1 class="post__title">Misskey.io で bot を作る ―― MiAuth からストリーミング API、そしてレートリミットとの戦い</h1>
+			<div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2025-12-24T00:00:00Z">2025-12-24</time></div></div>
+		</header>
+		
+<div class="post__toc toc">
+	<div class="toc__title">Page content</div>
+	<div class="toc__menu">
+		<nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">bot アカウントの作成と心得</a>
+</li>
+<li><a href="#headline-2">MiAuth によるトークンの取得</a>
+<ul>
+<li><a href="#headline-3">パーミッションの設計</a>
+</li>
+<li><a href="#headline-4">取得フロー</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-5">ストリーミング API によるリアルタイム処理</a>
+<ul>
+<li><a href="#headline-6">チャンネルの選択</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-7">投稿とファイルのアップロード</a>
+<ul>
+<li><a href="#headline-8">ファイルのアップロード仕様</a>
+</li>
+<li><a href="#headline-9">フォルダによる管理</a>
+</li>
+<li><a href="#headline-10">添付ファイル付き投稿</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-11">レートリミットとの戦い</a>
+<ul>
+<li><a href="#headline-12">リミットの詳細は不明</a>
+</li>
+<li><a href="#headline-13">40 分間の沈黙</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-14">さいごに</a>
+</li>
+</ul>
+</nav>
+	</div>
+</div><div class="content post__content clearfix">
+			
+<p>
+今回は Misskey.io で bot を作成するにあたって調べたことや、実際に手を動かしてハマったポイントなどをまとめておきます。
+これから Misskey で bot 開発を始めようと思っている方の参考になれば幸いです。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+bot アカウントの作成と心得
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+まず最初に、bot 用のアカウントを作成する必要があります。</p>
+<p>
+ここで重要なのは、アカウントを作成したら設定画面から必ず「bot フラグ」を有効にしておくことです。
+これは単なる自己申告ではなく、システム側や他のユーザーに対して「これは自動実行プログラムですよ」ということを明示するための重要な設定です。</p>
+<p>
+公式ドキュメント（ <a href="https://misskey-hub.net/ja/docs/for-developers/bot/">https://misskey-hub.net/ja/docs/for-developers/bot/</a> ）にも記載がありますが、bot アカウントを運用する上では、サーバーに過度な負荷をかけない、周囲のユーザーに迷惑をかけないといったマナーが求められます。
+特に Misskey.io のような大規模サーバーでは、一つの bot の暴走がサーバー全体のパフォーマンスに影響を与える可能性もあります。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+MiAuth によるトークンの取得
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+bot を動かすには API を叩くためのトークンが必要になります。</p>
+<p>
+トークンを取得するには MiAuth という認証方式を利用します。
+MiAuth は、ざっくり言うと OAuth をシンプルにしたような仕組みです。
+セキュリティの観点から見ても、不必要に強い権限を持ったトークンを永続的に保持するのは避けるべきです。</p>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+パーミッションの設計
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+MiAuth でトークンを取得する際、どのような権限（PERMISSION）を要求するかを指定します。
+詳細は公式（ <a href="https://misskey-hub.net/ja/docs/for-developers/api/permission/">https://misskey-hub.net/ja/docs/for-developers/api/permission/</a> ）を参照して欲しいのですが、ここで一つ悩みどころがあります。</p>
+<p>
+ドキュメントの記載だけだと、どの機能にどの権限が必要なのかがイマイチ分かりにくいのです。
+例えば「投稿を取得したいだけ」なのに、どの read 権限を付ければいいのか、あるいは「ファイルをアップロードしたい」時にどの write 権限が必要なのか。</p>
+<p>
+私の経験上、=write:notes=（投稿作成）や <code class="verbatim">read:account=（アカウント情報取得）あたりは必須になることが多いでしょう。
+=write:*</code> 系や、 <code class="verbatim">admin:*</code> 系の権限は、万が一トークンが流出した際のリスクが極めて高いため、必須でない場合は避けましょう。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+取得フロー
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+実際の取得手順は以下の通りです。</p>
+<ol>
+<li>
+<p>bot アカウントでログイン済みのブラウザで、次の URL にアクセスします。</p>
+<ul>
+<li><code class="verbatim">https://misskey.io/miauth/$(UUID)?permission=$(PERMISSION)</code></li>
+<li>ここで <code class="verbatim">$(UUID)</code> は適当な ID（UUID 形式）を自分で生成します。</li>
+<li><code class="verbatim">$(PERMISSION)</code> はカンマ区切りの権限リストです。</li>
+</ul>
+</li>
+<li>画面に「連携を承認しますか？」といった内容が表示されるので、承認します。</li>
+<li>承認後、次の curl コマンドを実行してトークンを回収します。</li>
+</ol>
+<div class="src src-bash">
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">  curl -v -X POST https://misskey.io/api/miauth/<span class="k">$(</span>UUID<span class="k">)</span>/check</span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+<p>
+ここで指定する UUID は、手順 1 で使用したものと同じでなければなりません。
+成功すると、レスポンスの JSON 内に待望の <code class="verbatim">token</code> が含まれています。
+これを大事に保管して bot のコードに組み込みます。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+ストリーミング API によるリアルタイム処理
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+Misskey の醍醐味といえば、リアルタイムに流れてくるタイムライン（TL）です。
+これを bot で扱うには、HTTP によるポーリングではなく、WebSocket を使った「ストリーミング API」を利用するのが一般的です（ <a href="https://misskey-hub.net/ja/docs/for-developers/api/streaming/">https://misskey-hub.net/ja/docs/for-developers/api/streaming/</a> ）。</p>
+<p>
+ポーリングは実装が簡単ですが、サーバーへの無駄なリクエストが発生しやすく、またリアルタイム性も落ちます。</p>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+チャンネルの選択
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+WebSocket でサーバと接続した後、どの「チャンネル」を購読（connect）するかを決定します。</p>
+<ul>
+<li><strong>homeTimeline</strong>: 自分のフォローしているユーザーの投稿が流れます。bot の自分宛てのメンションに反応する場合などはここを使います。</li>
+<li><strong>localTimeline</strong>: インスタンス全体の投稿が流れます。いわゆる「LTL」です。</li>
+</ul>
+<p>開発初期の動作確認であれば、投稿頻度の高い <code class="verbatim">localTimeline</code> に接続して、次々と流れてくる JSON を眺めるのが手っ取り早いです。
+ただし、Misskey.io の LTL は濁流のような勢いで流れてくるため、不用意に全てのログを出力するとコンソールが浦島太郎状態になるので注意が必要です。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
+<h2 id="headline-7">
+投稿とファイルのアップロード
+</h2>
+<div id="outline-text-headline-7" class="outline-text-2">
+<p>
+メッセージを投稿するだけであれば <code class="verbatim">notes/create</code> API を叩くだけですが、ファイルを添付しようとすると少し手順が複雑になります。</p>
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+ファイルのアップロード仕様
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<p>
+ファイルのアップロードについては、こちらの API ドキュメント（ <a href="https://api-doc.misskey.io/api-7254083">https://api-doc.misskey.io/api-7254083</a> ）が参考になりますが、ここで大きなハマりポイントがあります。</p>
+<p>
+<strong>Misskey では、同じ内容のファイルは基本的に 1 つしか存在できないようです。</strong></p>
+<p>
+つまり、異なるファイル名であってもハッシュ値（バイナリの内容）が同じファイルを再度アップロードしようとすると、既存のファイル ID が返ってくる挙動になります。
+「bot が定期的に同じ画像を投稿する」ような実装をする場合、毎回アップロードを試みるのではなく、一度アップロードした際の <code class="verbatim">fileId</code> を再利用する設計にする必要があります。
+これを無視して毎回アップロードしようとすると、無駄な API コールが増えるだけでなく、後述するレートリミットにも引っかかりやすくなります。</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
+<h3 id="headline-9">
+フォルダによる管理
+</h3>
+<div id="outline-text-headline-9" class="outline-text-3">
+<p>
+ファイルを整理するために、ドライブ内にフォルダを作成することも可能です（ <a href="https://api-doc.misskey.io/api-7254091">https://api-doc.misskey.io/api-7254091</a> ）。
+事前にフォルダを作成、あるいは参照して <code class="verbatim">folderId</code> を取得しておき、アップロード時にそれを指定します。
+bot 用の画像がドライブのルートに散らばっているのは精神衛生上よろしくないので、ディレクトリ構造を整えるのは基本ですね。</p>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-3">
+<h3 id="headline-10">
+添付ファイル付き投稿
+</h3>
+<div id="outline-text-headline-10" class="outline-text-3">
+<p>
+ファイルの準備ができたら、=notes/create=（ <a href="https://api-doc.misskey.io/api-7254018">https://api-doc.misskey.io/api-7254018</a> ）の引数 <code class="verbatim">fileIds</code> に、取得した ID の配列を指定して投稿します。
+これで、画像付きの投稿が完了します。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-2">
+<h2 id="headline-11">
+レートリミットとの戦い
+</h2>
+<div id="outline-text-headline-11" class="outline-text-2">
+<p>
+今回、私が最も苦労したのがこれです。「API request rate リミット」。</p>
+<p>
+bot のテストを繰り返していると、突然 API がエラーを返すようになります。
+「ちょっと数回叩いただけなのに……」と思うのですが、Misskey.io の制限はそこそこ厳しめに設定されているようです。</p>
+<div id="outline-container-headline-12" class="outline-3">
+<h3 id="headline-12">
+リミットの詳細は不明
+</h3>
+<div id="outline-text-headline-12" class="outline-text-3">
+<p>
+ネットを検索しても、具体的な「1 分間に何回まで」という数値は見当たりませんでした。
+インスタンスの設定（config）に依存するため、管理者以外には分からないブラックボックスです。
+ただ、感覚としては数分間に数十回程度リクエストを送るとロックがかかるような印象です。</p>
+</div>
+</div>
+<div id="outline-container-headline-13" class="outline-3">
+<h3 id="headline-13">
+40 分間の沈黙
+</h3>
+<div id="outline-text-headline-13" class="outline-text-3">
+<p>
+一度レートリミットに引っかかると、しばらくロックがかかります。
+私の環境で実測した限りでは、*約 40 分程度* 経過すると自動的に解除されるようです。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-14" class="outline-2">
+<h2 id="headline-14">
+さいごに
+</h2>
+<div id="outline-text-headline-14" class="outline-text-2">
+<p>
+Misskey.io での bot 開発は、一見簡単そうに見えて、実は分散型 SNS 特有の設計思想や運用ルールへの理解が求められる奥の深い作業です。
+単に API を叩くだけではなく、レートリミットやファイル重複といった制約をどう乗り越えるか。
+そこには、アルゴリズムの工夫やアーキテクチャの選定といった、プログラミングの根源的な楽しさが詰まっています。</p>
+<p>
+英語のドキュメントを読み解き、プロトコル（WebSocket/JSON）と格闘する時間は、エンジニアとしての基礎体力を鍛えてくれます。</p>
+<p>
+皆さんも、自分だけのスマートな bot を作って、Misskey の世界を彩ってみてはいかがでしょうか。
+ただし、くれぐれもサーバーへの負荷には気をつけて。</p>
+<p>
+以上</p>
+</div>
+</div>
+
+		</div>
+	</article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2025/2025-12-21-ai-refecence-by-llm/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">AI を使った自作言語リファレンス生成の実験記録</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-24-misskey-bot/">Misskey.io で bot を作る ―― MiAuth からストリーミング API、そしてレートリミットとの戦い</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-21-ai-refecence-by-llm/">AI を使った自作言語リファレンス生成の実験記録</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-21-mac-loginless-startup/">macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons)</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-07-xiaomi-watch-review/">Redmi Watch 5 Lite: コスパ最強スマートウォッチとの上手な付き合い方</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-02-emacs-vertico/">emacs の補完フレームワーク vertico に移行した</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2025 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+<script async defer src="/blog2/public/js/menu.js"></script>
+</body>
+</html>
