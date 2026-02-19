@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>2026 年のローカルで使える OSS 音声クローン AI の音質について - hoge blog</title>
+	<script>(function (d, e) { d[e] = d[e].replace("no-js", "js"); })(document.documentElement, "className");</script>
+	<meta name="description"
+		content="">
+	<meta property="og:title" content="2026 年のローカルで使える OSS 音声クローン AI の音質について" />
+<meta property="og:description" content="Qwen3-TTS を ComfyUI で使えるカスタムノードが一部で話題になっていたので、 現在ローカルで動かせる OSS の音声クローン系 AI を一通り調べてみた。 「音声クローン生成 AI」とは何か 今回調べたのはいわゆる「音声クローン生成 AI」で、 音声データをリファレンスとして与えることで、 その声色で任意の発話を生成できる AI のことを指している。 なお、一口に「音声クローン生成 AI」と言っても、 内部的な仕組みによって大きく 2 種類に分類できる。 TTS (Text-To-Speech)" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2026/2026-02-19-oss-voice-clone/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2026-02-19T00:00:00+00:00" />
+<meta property="article:modified_time" content="2026-02-19T00:00:00+00:00" />
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="2026 年のローカルで使える OSS 音声クローン AI の音質について"/>
+<meta name="twitter:description" content="Qwen3-TTS を ComfyUI で使えるカスタムノードが一部で話題になっていたので、 現在ローカルで動かせる OSS の音声クローン系 AI を一通り調べてみた。 「音声クローン生成 AI」とは何か 今回調べたのはいわゆる「音声クローン生成 AI」で、 音声データをリファレンスとして与えることで、 その声色で任意の発話を生成できる AI のことを指している。 なお、一口に「音声クローン生成 AI」と言っても、 内部的な仕組みによって大きく 2 種類に分類できる。 TTS (Text-To-Speech)"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700" >
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+	
+	<link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog2/public/css/modern.css">
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+
+</head>
+
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+    <div class="container">
+        
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+    </div>
+    <nav class="header__nav">
+        <div class="container">
+            
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+        </div>
+    </nav>
+    <div class="mobile-menu">
+    <ul class="mobile-menu__list">
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/" class="mobile-menu__link">Home</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/list.html" class="mobile-menu__link">Articles</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="https://ifritjp.github.io/documents/" class="mobile-menu__link">公開技術情報</a>
+        </li>
+    </ul>
+</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+				
+<main class="main" role="main">
+    <article class="post">
+        <header class="post__header">
+            <h1 class="post__title">2026 年のローカルで使える OSS 音声クローン AI の音質について</h1>
+            <div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2026-02-19T00:00:00Z">2026-02-19</time></div></div>
+        </header>
+        <div class="post__toc-container post__toc-container--mobile">
+            
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">「音声クローン生成 AI」とは何か</a>
+</li>
+<li><a href="#headline-2">調査方法と表の見方</a>
+</li>
+<li><a href="#headline-3">結果の考察</a>
+<ul>
+<li><a href="#headline-4">総合 1位: Qwen3-TTS</a>
+</li>
+<li><a href="#headline-5">VC 用途であれば CosyVoice3 が実質 1位</a>
+</li>
+<li><a href="#headline-6">CosyVoice3（8）と Applio（7）の差について</a>
+</li>
+<li><a href="#headline-7">学習時間の差は極めて大きい</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-8">テスト対象外の OSS について</a>
+</li>
+<li><a href="#headline-9">気になった未公開モデル: Seed-TTS</a>
+</li>
+<li><a href="#headline-10">まとめ</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+        </div>
+        
+        <div class="content post__content clearfix">
+            
+<p>
+Qwen3-TTS を ComfyUI で使えるカスタムノードが一部で話題になっていたので、
+現在ローカルで動かせる OSS の音声クローン系 AI を一通り調べてみた。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+「音声クローン生成 AI」とは何か
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+今回調べたのはいわゆる「音声クローン生成 AI」で、
+音声データをリファレンスとして与えることで、
+その声色で任意の発話を生成できる AI のことを指している。</p>
+<p>
+なお、一口に「音声クローン生成 AI」と言っても、
+内部的な仕組みによって大きく 2 種類に分類できる。</p>
+<ul>
+<li><strong>TTS (Text-To-Speech)</strong> : テキストを音声に変換する方式。
+リファレンス音声の特徴を参照し、そのキャラクターで発話する音声を生成する。
+テキストから直接音声を生成するため、細かいニュアンスやアクセントが
+意図せずズレてしまうことがある。</li>
+<li><strong>VC (Voice Conversion)</strong> : 既存の音声を別の声色に変換する方式。
+元の音声の抑揚や間（ま）を保ったまま声色だけを変換するため、
+TTS と比べると自然な発話になりやすい。</li>
+</ul>
+<p>今回はどちらの方式も調査対象とし、実際に各 OSS をローカルで動かして
+生成した音声を自分の耳で聞き、リファレンスとの類似度を確認した。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+調査方法と表の見方
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+以下の表は、各 OSS を実際にローカルで実行してみた結果をまとめたものだ。</p>
+<ul>
+<li><strong>類似度</strong>: リファレンス音声との声の類似具合を 1〜10 の主観評価で表わしている。
+あくまで個人的な感覚による評価なので、絶対的な指標ではない。</li>
+<li><strong>学習時間</strong>: 音声クローンを作成するための学習（トレーニング）にかかる時間の目安。
+数値は相対的な指標であり、値が大きいほど学習に時間がかかることを示している。</li>
+</ul>
+<table>
+<tbody>
+<tr>
+<td>OSS</td>
+<td>分類</td>
+<td class="align-right">類似度</td>
+<td class="align-right">学習時間</td>
+<td>所感</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td>so-vits-svc-fork</td>
+<td>VC</td>
+<td class="align-right">2</td>
+<td class="align-right">–</td>
+<td>歌声変換用のモデルだからか、話し声のクローンには向いていない</td>
+</tr>
+<tr>
+<td>OpenVoice v2</td>
+<td>TTS</td>
+<td class="align-right">3</td>
+<td class="align-right">2</td>
+<td>なんとなく似ているかな、という程度</td>
+</tr>
+<tr>
+<td>GPT-SoVITS</td>
+<td>TTS</td>
+<td class="align-right">3</td>
+<td class="align-right">2</td>
+<td>1C 推論のみ確認。類似度は OpenVoice v2 と同程度</td>
+</tr>
+<tr>
+<td>F5-TTS</td>
+<td>TTS</td>
+<td class="align-right">4</td>
+<td class="align-right">1</td>
+<td>公式モデルは日本語未対応。有志の日本語対応モデルで確認したが…</td>
+</tr>
+<tr>
+<td>Fish Speech</td>
+<td>TTS</td>
+<td class="align-right">5</td>
+<td class="align-right">3</td>
+<td>OSS の S-1 モデルのみ確認。雰囲気は似ている</td>
+</tr>
+<tr>
+<td>RVC</td>
+<td>VC</td>
+<td class="align-right">6</td>
+<td class="align-right">400</td>
+<td>明瞭な音声はかなり類似度が高いが、子音が多めな音声は苦手</td>
+</tr>
+<tr>
+<td>Applio</td>
+<td>VC</td>
+<td class="align-right">7</td>
+<td class="align-right">400</td>
+<td>RVC の fork 版。RVC の弱点を多少改善している</td>
+</tr>
+<tr>
+<td>CosyVoice3</td>
+<td>VC/TTS</td>
+<td class="align-right">8</td>
+<td class="align-right">1</td>
+<td>VC で確認。子音多めな音声の類似度が改善されており全般的に安定</td>
+</tr>
+<tr>
+<td>Qwen3-TTS</td>
+<td>TTS</td>
+<td class="align-right">9</td>
+<td class="align-right">1</td>
+<td>音質は最高クラス。TTS ゆえに間やアクセントが不自然になるケースも</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+結果の考察
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+総合 1位: Qwen3-TTS
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+類似度だけを見ると Qwen3-TTS（9）がトップだった。
+ただし、TTS なので「声色の再現度」は高い一方、
+発話の間やアクセントが必ずしも自然になるとは限らない点には注意が必要だ。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+VC 用途であれば CosyVoice3 が実質 1位
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+Qwen3-TTS は TTS のみに対応しているが、CosyVoice3 は VC と TTS の両方に対応している。
+既存の音声の間やテンポを活かしたまま声色だけ変えたい、という VC 用途では
+<strong>CosyVoice3 が実質的な 1位</strong> となる。</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+CosyVoice3（8）と Applio（7）の差について
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+この 2 つの差は少し補足が必要だ。
+Applio は、ナレーションのような <strong>明瞭ではっきりした音声</strong> の場合には非常に高い類似度を出す。
+CosyVoice3 が Applio を上回っているのは、
+Applio が苦手とする <strong>子音が多めな音声</strong> を CosyVoice3 がより自然に再現できているためで、
+音声全般の平均を取ると CosyVoice3 の方が類似度が高い、という意味だ。</p>
+<p>
+つまり、ナレーションのような明瞭音声だけを対象にするなら、
+Applio の方が良い結果になるケースも十分にある。</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+学習時間の差は極めて大きい
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+もう一点、重要な違いがある。学習（トレーニング）にかかる時間の差だ。</p>
+<p>
+Qwen3-TTS や CosyVoice3 は学習コストの指標が <strong>1 〜 3</strong> 程度と極めて低いのに対し、
+RVC や Applio は <strong>400</strong> と、文字通り桁が 2 つ違う。</p>
+<p>
+思い立った時にすぐクローンを作成して試行錯誤したい場合、
+この学習コストの差は実運用において決定的な違いとなる。
+手軽さを重視するなら、CosyVoice3 などの高速なモデルを選ぶ方が圧倒的に効率が良いだろう。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-2">
+<h2 id="headline-8">
+テスト対象外の OSS について
+</h2>
+<div id="outline-text-headline-8" class="outline-text-2">
+<p>
+今回テストした以外にも複数の音声クローン系 OSS が公開されている。
+それらの公式ベンチマークやサンプルを一通り確認した限りでは、
+上記の上位の順位が覆りそうなものは見当たらなかったため、今回は対象外とした。</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-2">
+<h2 id="headline-9">
+気になった未公開モデル: Seed-TTS
+</h2>
+<div id="outline-text-headline-9" class="outline-text-2">
+<p>
+調べている途中で、 <strong>Seed-TTS</strong> というモデルが 2024 年に発表されていることを知った。</p>
+<ul>
+<li><a href="https://bytedancespeech.github.io/seedtts_tech_report/">Seed-TTS 技術レポート</a></li>
+</ul>
+<p>公開されているデモ音声を聴く限り、声の再現度は現時点で最も高そうな印象を受けた。
+ただしモデル自体は非公開で、手元で試すことができないのが残念なところだ。</p>
+<p>
+AI の世界では「最初は非公開、後日 OSS として公開」というパターンも珍しくないので、
+今後のリリースに期待したい。</p>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
+<h2 id="headline-10">
+まとめ
+</h2>
+<div id="outline-text-headline-10" class="outline-text-2">
+<p>
+2026 年時点でローカルで動かしてみた総括として、</p>
+<ul>
+<li><strong>音質・類似度重視なら</strong>: Qwen3-TTS</li>
+<li><strong>VC も必要で、かつ処理速度も重視するなら</strong>: CosyVoice3</li>
+<li><strong>ナレーションのような明瞭音声に特化するなら</strong>: Applio</li>
+</ul>
+<p>という使い分けが現実的な選択肢になりそうだ。</p>
+<p>
+数年前と比べてローカルで動く音声クローン AI の品質は大幅に向上していた。
+まだ全ての用途で完璧とは言えないが、
+目的を絞れば十分に実用的な品質が出るレベルには来ていると感じている。</p>
+<p>
+以上。</p>
+</div>
+</div>
+
+        </div>
+    </article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2026/2026-01-01-privacy-defense/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">個人的なインターネットのプライバシー防衛策</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">「音声クローン生成 AI」とは何か</a>
+</li>
+<li><a href="#headline-2">調査方法と表の見方</a>
+</li>
+<li><a href="#headline-3">結果の考察</a>
+<ul>
+<li><a href="#headline-4">総合 1位: Qwen3-TTS</a>
+</li>
+<li><a href="#headline-5">VC 用途であれば CosyVoice3 が実質 1位</a>
+</li>
+<li><a href="#headline-6">CosyVoice3（8）と Applio（7）の差について</a>
+</li>
+<li><a href="#headline-7">学習時間の差は極めて大きい</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-8">テスト対象外の OSS について</a>
+</li>
+<li><a href="#headline-9">気になった未公開モデル: Seed-TTS</a>
+</li>
+<li><a href="#headline-10">まとめ</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-02-19-oss-voice-clone/">2026 年のローカルで使える OSS 音声クローン AI の音質について</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-01-01-privacy-defense/">個人的なインターネットのプライバシー防衛策</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-24-misskey-bot/">Misskey.io で bot を作る ―― MiAuth からストリーミング API、そしてレートリミットとの戦い</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-21-ai-refecence-by-llm/">AI を使った自作言語リファレンス生成の実験記録</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2025/2025-12-21-mac-loginless-startup/">macOS 起動時にログインなしでスクリプトを実行する (LaunchDaemons)</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2026 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+	<script async defer src="/blog2/public/js/menu.js"></script>
+	</body>
+
+</html>
