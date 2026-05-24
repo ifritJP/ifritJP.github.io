@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>メイン PC の OS を Windows から Linux (Ubuntu 26.04) に移行した話 - hoge blog</title>
+	<script>(function (d, e) { d[e] = d[e].replace("no-js", "js"); })(document.documentElement, "className");</script>
+	<meta name="description"
+		content="">
+	<meta property="og:title" content="メイン PC の OS を Windows から Linux (Ubuntu 26.04) に移行した話" />
+<meta property="og:description" content="先日、自宅 PC のメイン OS を Windows から Linux (Ubuntu 26.04 LTS) に置き換えた。 背景としては、最近 PC でやっている作業の殆どが AI のトレーニング、ローカル推論、そして AI エージェントの利用といった分野にシフトしたことにある。 Windows 環境でこれらを実行しようとすると、どうしてもシステムの安定性に欠けたり、パフォーマンス上のオーバーヘッドが大きかったりするのが気になっていた。 これは WSL (Windows Subsystem for Linux) を利用したところで、この傾向が変わるわけではない。" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2026/2026-05-18-windows-to-linux-desktop-migration/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2026-05-18T00:00:00+00:00" />
+<meta property="article:modified_time" content="2026-05-18T00:00:00+00:00" />
+
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="メイン PC の OS を Windows から Linux (Ubuntu 26.04) に移行した話"/>
+<meta name="twitter:description" content="先日、自宅 PC のメイン OS を Windows から Linux (Ubuntu 26.04 LTS) に置き換えた。 背景としては、最近 PC でやっている作業の殆どが AI のトレーニング、ローカル推論、そして AI エージェントの利用といった分野にシフトしたことにある。 Windows 環境でこれらを実行しようとすると、どうしてもシステムの安定性に欠けたり、パフォーマンス上のオーバーヘッドが大きかったりするのが気になっていた。 これは WSL (Windows Subsystem for Linux) を利用したところで、この傾向が変わるわけではない。"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700" >
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+	
+	<link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog2/public/css/modern.css">
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+<link rel="stylesheet" href="/blog2/public/css/copy-code.css">
+<script src="/blog2/public/js/copy-code.js"></script>
+
+</head>
+
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+    <div class="container">
+        
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+    </div>
+    <nav class="header__nav">
+        <div class="container">
+            
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+        </div>
+    </nav>
+    <div class="mobile-menu">
+    <ul class="mobile-menu__list">
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/" class="mobile-menu__link">Home</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/list.html" class="mobile-menu__link">Articles</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="https://ifritjp.github.io/documents/" class="mobile-menu__link">公開技術情報</a>
+        </li>
+    </ul>
+</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+				
+<main class="main" role="main">
+    <article class="post">
+        <header class="post__header">
+            <h1 class="post__title">メイン PC の OS を Windows から Linux (Ubuntu 26.04) に移行した話</h1>
+            <div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2026-05-18T00:00:00Z">2026-05-18</time></div></div>
+        </header>
+        <div class="post__toc-container post__toc-container--mobile">
+            
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">マルチブートとファイルシステムの課題</a>
+</li>
+<li><a href="#headline-2">Linux 移行で実施した手順</a>
+<ul>
+<li><a href="#headline-3">Windows パーティションの縮小</a>
+</li>
+<li><a href="#headline-4">インストーラの準備と OS インストール</a>
+</li>
+<li><a href="#headline-5">ファイルシステム（/etc/fstab）の設定</a>
+</li>
+<li><a href="#headline-6">ホームディレクトリの英語化とキャッシュ対策</a>
+</li>
+<li><a href="#headline-7">NAS 接続の自動化</a>
+</li>
+<li><a href="#headline-8">デスクトップ環境のカスタマイズ</a>
+</li>
+<li><a href="#headline-9">Antigravity によるバイブコーディングでのツール自作</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-10">移行の教訓となった「WSL2 イメージ破損事件」</a>
+</li>
+<li><a href="#headline-11">Linux デスクトップ環境の現在地と総評</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+        </div>
+        
+        <div class="content post__content clearfix">
+            
+<p>
+先日、自宅 PC のメイン OS を Windows から Linux (Ubuntu 26.04 LTS) に置き換えた。</p>
+<p>
+背景としては、最近 PC でやっている作業の殆どが AI のトレーニング、ローカル推論、そして AI エージェントの利用といった分野にシフトしたことにある。
+Windows 環境でこれらを実行しようとすると、どうしてもシステムの安定性に欠けたり、パフォーマンス上のオーバーヘッドが大きかったりするのが気になっていた。
+これは WSL (Windows Subsystem for Linux) を利用したところで、この傾向が変わるわけではない。むしろ仮想化層が加わる分、オーバーヘッドは余計にかかるのが現実だ。
+自分は PC でゲームを遊ぶわけではないため、Windows でなければ絶対にできないことはほぼ存在しない。
+仮に今後ゲームをプレイしたくなったとしても、現在の Steam は Linux (Proton) 上でそれなりに快適に動作するし、そもそも Windows を完全に消去するわけではない。
+Linux と Windows のマルチブート構成にしておき、必要に応じて Windows に切り替えれば良いだけだ。</p>
+<p>
+そのような理由から、メイン環境を Linux へと完全移行することにした。
+移行プロセスや設定の記録、そして実際に運用してみた感想をまとめておく。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+マルチブートとファイルシステムの課題
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+メイン OS を Linux に移行するとはいえ、Windows はマルチブート用としてディスクに残しておく。
+そのため、移行後も Windows 側からデータにアクセスできる環境を整える必要があった。
+ここで直面する一番の課題がファイルシステムだ。</p>
+<p>
+WSL2 を利用すれば Windows 側から Linux の ext4 ファイルシステム等にアクセスすることは可能だが、コンテキストスイッチや仮想化のオーバーヘッドが大きく、パフォーマンス的に不満が残る。
+一方で、Linux 側からであれば、いくつかの制限はあるものの NTFS パーティションに対して直接アクセスが可能だ。
+そのため、基本方針としては「既存の NTFS ストレージをそのまま維持し、そこに Linux 側からアクセスする」という形をとりつつ、新規に Linux 専用のストレージ領域を用意して運用を開始することにした。</p>
+<p>
+なお、昨今のストレージ（HDD/SSD）価格は高騰しており、新規で大容量 SSD を購入するのは躊躇された。
+今回は新規のパーツ購入を避け、既存のストレージ構成を整理してドライブの 1 つを完全に空け、それを Linux 専用領域に割り当てることにした。
+SSD の価格が暴騰する直前に、4TB NVMe SSD を購入しておいた自分を褒めたい。あの時買っておいて本当に良かった。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+Linux 移行で実施した手順
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+今回の Linux 移行にあたり、具体的に行った作業手順を整理しておく。</p>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+Windows パーティションの縮小
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>システムドライブ内の Windows パーティションを縮小し、Linux インストール用の空きスペースを確保した。
+昔は NTFS パーティションを安全に縮小するために Linux の Live環境から専用ツールを使う必要があり、データ破損のリスクと隣り合わせだった。
+しかし、現在は Windows の標準機能である「ディスクの管理」からパーティションの縮小が簡単に行えるため、これを利用した。
+ただ、Windows 標準の縮小機能は、ディスク後方に配置された移動不可能なシステムファイルの影響により、実際の空き容量に対して縮小可能なサイズが非常に少なく制限されてしまう傾向がある気がする。この点だけは相変わらず少し使い勝手悪い。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+インストーラの準備と OS インストール
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>Ubuntu の最新 LTS バージョンである 26.04 の ISO イメージをダウンロードし、USB メモリにブート用イメージを書き込んだ。
+作成した USB メモリから PC を起動し、先ほど Windows 側で空けたシステムドライブの未割り当て領域に対して Ubuntu 26.04 をインストールした。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+ファイルシステム（/etc/fstab）の設定
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>ここからが実務的な Ubuntu の設定作業となる。
+Windows と共用する NTFS パーティションを起動時に自動マウントするため、 `/etc/fstab` に設定を追加した。
+この際、ファイルシステムのタイプには `ntfs` ではなく、必ず <strong>`ntfs3`</strong> を指定した。</p>
+<p>
+最初、従来通りの `ntfs` を指定していたのだが、これだと FUSE (User-space File System) 経由でのマウントになってしまい、CPU オーバーヘッドが極めて大きくなってしまう。
+これをカーネル直で動作する `ntfs3` ドライバーに変更することで、カーネル空間での高速な読み書きが可能になった。
+また、 `ntfs` と `ntfs3` とで、ファイルシステム上のシンボリックリンクの扱いが大きく異なる。
+後からマウント設定を切り替えるとシンボリックリンク周りでトラブルが発生するため、インストールの最初から `ntfs3` を選定しておくべきだ。</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+ホームディレクトリの英語化とキャッシュ対策
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>Ubuntu インストール直後、ホームディレクトリ配下にある「ドキュメント」や「ダウンロード」といった日本語のディレクトリ名を、端末での操作性を考慮して英語（Documents, Downloads 等）に変更・固定した。</p>
+<p>
+また、AI トレーニングやパッケージ管理を行うと、 `~/.cache` や `~/.local` 配下に巨大なキャッシュファイルが大量に蓄積され、システムドライブ（SSD）を逼迫させる。
+これを避けるため、消費量がデカくなることが予想されるディレクトリ群は、別途用意した大容量 NTFS ストレージ（`ntfs3` マウント領域）上に実体を作成し、ホームディレクトリからシンボリックリンクを張る形にした。</p>
+<p>
+ホームディレクトリ自体を丸ごと別ストレージにマウントしてしまう（例えば `/home` を別パーティションとして別ディスクに割り当てる）方法もあるが、これだとそのストレージが Linux システム側に密結合しすぎてしまう。あくまでも別ストレージは純粋なデータ用として独立させておきたいため、ホームディレクトリごとマウントするのではなく、肥大化する特定のディレクトリのみを個別に逃がしてシンボリックリンクを構築するという構成を選択した。これなら、将来的なシステムの再構築や Windows 側からのデータ管理の際にも、無用な複雑化を避けられる。</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+NAS 接続の自動化
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>自宅の NAS に対しては、 `autofs` を用いて必要時にのみ NFS で自動接続する設定を行った。
+これにより、ネットワークの切断時にシステム全体がハングアップするのを防ぎつつ、透過的に NAS のデータにアクセスできる。</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+デスクトップ環境のカスタマイズ
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<p>デスクトップの使い勝手を Windows 時代に近づけ、また自分好みの動作にするために、様々なツールを導入して調整した。</p>
+<ul>
+<li><strong><strong>ファイラーの変更</strong></strong>: Ubuntu 標準のファイラー（Nautilus）は操作感や機能面で自分のユースケースにイマイチ合わなかったため、軽量で高機能な `PCMan File Manager` (PCManFM) を追加でインストールしてメインのファイラーに据えた。</li>
+<li><strong><strong>ブラウザの復元</strong></strong>: Firefox 等のブラウザをインストールし、Windows 側からエクスポートしておいたブックマークや設定データをコピーして完全に復元した。</li>
+<li><strong><strong>日本語入力 (IME)</strong></strong>: 日本語入力環境には、現代的な `Fcitx5` と、自分が長年愛用している `SKK` (Simple Kana-Kanji) の組み合わせを設定した。</li>
+<li><strong><strong>エディタ</strong></strong>: もちろん `emacs` をインストールし、使い慣れた設定ファイルを移行して配置した。</li>
+<li><strong><strong>動画再生</strong></strong>: メディアプレーヤーには実績のある `VLC` を選定してインストールした。</li>
+<li><strong><strong>キーとマウスのカスタマイズ</strong></strong>: `Input Remapper` を導入し、キーボードやマウスのボタン割り当てを細かくカスタマイズした。</li>
+<li><strong><strong>ショートカットの整理</strong></strong>: Ubuntu 標準のシステムショートカットのうち、ウィンドウメニューを開くショートカットなど、自分の作業の邪魔になる幾つかのキーバインドを無効化した。</li>
+<li><strong><strong>リモート接続</strong></strong>: 他の PC やサーバーへの接続用として `remmina` を導入した。</li>
+<li><strong><strong>リソースモニター</strong></strong>: システム負荷を可視化するため、Windows のタスクマネージャー風のモダンな UI を持つ `Mission Center` をインストールした。</li>
+<li><strong><strong>ターミナル</strong></strong>: Windows の標準的なターミナルでは、自分が設定したキーカスタマイズの一部がうまく反映されない問題が発生したため、高機能な `konsole` を追加でインストールして使用している。</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-3">
+<h3 id="headline-9">
+Antigravity によるバイブコーディングでのツール自作
+</h3>
+<div id="outline-text-headline-9" class="outline-text-3">
+<p>様々なアプリを試してみたものの、どうしても自分の細かい要望に合致するものが見つからなかったり、探すこと自体が面倒になったりした領域が存在した。
+具体的には、オーディオ再生アプリと、画像ビューワである。
+これらについては、AI エージェントである `Antigravity` に指示を出し、一気に「バイブコーディング」で自分専用のアプリケーションをスクラッチから開発させた。
+作成したツールはデスクトップのシステムメニューに直接登録し、Windows 時代と同等以上の手軽さで起動できるようにした。</p>
+<p>
+また、システム起動時に USB 接続している Bluetooth アダプタの初期化がうまく動かない事が多かったので、 `usbreset` コマンドを叩いて Bluetooth USB アダプタを強制的に再起動させる初期化スクリプトも `Antigravity` を使って一瞬で作成し、スタートアップに組み込んだ。
+こうしたニッチなトラブルに対し、自力でシェルスクリプトやコードを書き下ろすことなく、AI に投げ捨てるだけで解決ツールが出来上がるのは非常に快適だ。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
+<h2 id="headline-10">
+移行の教訓となった「WSL2 イメージ破損事件」
+</h2>
+<div id="outline-text-headline-10" class="outline-text-2">
+<p>
+実は、今回の物理的な Linux 移行を進める過程で発生した、非常に手痛いトラブルがある。
+それが、これまで開発や AI の実行環境としてヘビーに利用していた「WSL2 ディスクイメージの破損」だ。
+実はこの事件そのものが、最終的に Windows を完全に捨ててネイティブ Linux デスクトップ環境へと一本化する決断を後押しする強い動機にもなっている。</p>
+<p>
+元々の発端は、Windows 上の WSL2 で作業をしていた時のことだ。
+WSL2 上で AI モデルのファインチューニングを実行していた際、処理が完全に反応しなくなり、やむを得ず強制終了したことがあった。
+この強制終了の瞬間にイメージが破損したかどうかは不明だが、無理やりプロセスを落としたのだから、何らかの致命的なダメージが与えられていた可能性は極めて高い。</p>
+<p>
+その後、Linux への移行を開始した当初、自分はそれまで Windows 側で使っていた WSL2 の仮想ディスクイメージ（ext4）を Linux 上で直接マウントしてデータをそのまま引き継ぎ、運用していた。
+ところがある日、何かの拍子にそのイメージファイルが突如として完全に壊れてしまったのだ。</p>
+<p>
+ただでさえ互換性に課題を抱えていた状況下で、Windows 側で強制終了によるダメージを受けていた可能性が高いディスクイメージを、Linux 上で直接マウントして使用するというのは、あまりにも無防備で危険すぎる行為だったと言わざるを得ない。
+幸いにして、一部の重要データや Emacs の設定ファイル等は外部にバックアップしてあったため、すべてのデータを失うという最悪の事態は免れた。
+とはいえ、バックアップしていたのはあくまでデータの一部であり、復旧できなかったファイルも少なくない。
+これは今回の移行プロセスにおける、文句なしで一番の残念ポイントであり、深い反省点となった。</p>
+<p>
+ただ、見方を変えれば、ディスクイメージの根本にそれだけのダメージが蓄積していたのだとすれば、あのまま Windows 上で WSL2 を騙し騙し使い続けていたとしても、いずれ近い将来に同じように破損していただろう。
+その結果としてデータを失うリスクを考えれば、この痛烈なトラブルこそが、中途半端な仮想環境を廃してネイティブな Linux デスクトップ環境へと完全に脱出する決定的な引き金になったとも言える。</p>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-2">
+<h2 id="headline-11">
+Linux デスクトップ環境の現在地と総評
+</h2>
+<div id="outline-text-headline-11" class="outline-text-2">
+<p>
+細々とした設定や調整は他にも多々あるが、上記の環境構築を施した結果、現在は Windows 時代と比べてもほとんど違和感を覚えないレベルで、日々の業務や AI 開発を快適に運用できている。</p>
+<p>
+しかし、冷静に総評を下すならば、Linux デスクトップ全体の「完成度」や「ユーザーフレンドリーさ」は、依然として Windows には及ばないと言わざるを得ない。
+特にマルチメディア関連ツールの豊富さや、有料・無料アプリを問わないエコシステムの充実度に関しては、Windows の圧倒的な優位性は揺るがないだろう。</p>
+<p>
+とはいえ、前述の通り、現代には AI エージェント（Antigravity）という強力な支援ツールが存在する。
+アプリの機能が自分のユースケースに足りていなければ、AI に仕様を伝えて数分で自分専用のツールを作らせれば良いだけだ。これによって、Linux デスクトップのアプリ不足という伝統的な弱点は、現在においては大きな問題ではなくなりつつある。
+もちろん、作れるのはあくまでちょっとしたツールやスクリプトのレベルであり、例えばプロのクリエイターが使用するような高度なマルチメディア編集ソフトウェアを AI で簡単に自作できるかと言えば、流石にそれは不可能だ。</p>
+<p>
+そして最大の課題は、どれだけ AI に聞きながら作業を進められるようになったとはいえ、システムを不具合なく構築し運用するためにはそれなり以上のリテラシーが必要なのは間違いないので、決して万人に勧められるものではない。</p>
+<p>
+しかし、AI モデルをローカルでブン回し、エージェントを日常的に稼働させるエンジニアにとって、オーバーヘッドのないネイティブな Linux 環境がもたらす安定性と圧倒的なパフォーマンスは、何物にも代えがたい魅力であることは間違いない。</p>
+</div>
+</div>
+
+        </div>
+    </article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2026/2026-05-10-claude-mythos/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">Claude Mythos のハッキング性能と AI の特性</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">マルチブートとファイルシステムの課題</a>
+</li>
+<li><a href="#headline-2">Linux 移行で実施した手順</a>
+<ul>
+<li><a href="#headline-3">Windows パーティションの縮小</a>
+</li>
+<li><a href="#headline-4">インストーラの準備と OS インストール</a>
+</li>
+<li><a href="#headline-5">ファイルシステム（/etc/fstab）の設定</a>
+</li>
+<li><a href="#headline-6">ホームディレクトリの英語化とキャッシュ対策</a>
+</li>
+<li><a href="#headline-7">NAS 接続の自動化</a>
+</li>
+<li><a href="#headline-8">デスクトップ環境のカスタマイズ</a>
+</li>
+<li><a href="#headline-9">Antigravity によるバイブコーディングでのツール自作</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-10">移行の教訓となった「WSL2 イメージ破損事件」</a>
+</li>
+<li><a href="#headline-11">Linux デスクトップ環境の現在地と総評</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-18-windows-to-linux-desktop-migration/">メイン PC の OS を Windows から Linux (Ubuntu 26.04) に移行した話</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-10-claude-mythos/">Claude Mythos のハッキング性能と AI の特性</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-04-26-cryptool_webext/">Firefox 拡張機能で実現する、セキュアなテキスト暗号化・復号ツール「cryptool_webext」</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-04-12-ai-side-content/">AIエージェントの告白：規律と暴走の30日間 —— バイブコーディングの裏側に潜む「不都合な真実」</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-03-07-ps6-ai-server/">PlayStation 6 を「ホーム AI サーバー」として推す理由</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2026 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+	<script async defer src="/blog2/public/js/menu.js"></script>
+	</body>
+
+</html>
