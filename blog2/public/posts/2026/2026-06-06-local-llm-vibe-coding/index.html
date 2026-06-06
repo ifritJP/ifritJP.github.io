@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>ローカルLLMでバイブコーディングはどこまで実用的か？ VRAM 16GB環境での検証 - hoge blog</title>
+	<script>(function (d, e) { d[e] = d[e].replace("no-js", "js"); })(document.documentElement, "className");</script>
+	<meta name="description"
+		content="">
+	<meta property="og:title" content="ローカルLLMでバイブコーディングはどこまで実用的か？ VRAM 16GB環境での検証" />
+<meta property="og:description" content="クレジット変更とローカルLLMへの回帰の動機 2026年6月1日から、GitHub Copilotのクレジットの扱いが大きく変更された。 この仕様変更がどのような影響をもたらすかというと、いわゆる「バイブコーディング」スタイルでアプリ開発を行っている開発者にとって、かなり死活問題になるレベルの変更だ。実際にこの新しいクレジットルールのもとでアプリ開発を進めてみたところ、非常にシンプルな小規模アプリを開発" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2026/2026-06-06-local-llm-vibe-coding/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2026-06-06T00:00:00+00:00" />
+<meta property="article:modified_time" content="2026-06-06T00:00:00+00:00" />
+
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ローカルLLMでバイブコーディングはどこまで実用的か？ VRAM 16GB環境での検証"/>
+<meta name="twitter:description" content="クレジット変更とローカルLLMへの回帰の動機 2026年6月1日から、GitHub Copilotのクレジットの扱いが大きく変更された。 この仕様変更がどのような影響をもたらすかというと、いわゆる「バイブコーディング」スタイルでアプリ開発を行っている開発者にとって、かなり死活問題になるレベルの変更だ。実際にこの新しいクレジットルールのもとでアプリ開発を進めてみたところ、非常にシンプルな小規模アプリを開発"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700" >
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+	
+	<link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog2/public/css/modern.css">
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+<link rel="stylesheet" href="/blog2/public/css/copy-code.css">
+<script src="/blog2/public/js/copy-code.js"></script>
+
+</head>
+
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+    <div class="container">
+        
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+    </div>
+    <nav class="header__nav">
+        <div class="container">
+            
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+        </div>
+    </nav>
+    <div class="mobile-menu">
+    <ul class="mobile-menu__list">
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/" class="mobile-menu__link">Home</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/list.html" class="mobile-menu__link">Articles</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="https://ifritjp.github.io/documents/" class="mobile-menu__link">公開技術情報</a>
+        </li>
+    </ul>
+</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+				
+<main class="main" role="main">
+    <article class="post">
+        <header class="post__header">
+            <h1 class="post__title">ローカルLLMでバイブコーディングはどこまで実用的か？ VRAM 16GB環境での検証</h1>
+            <div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2026-06-06T00:00:00Z">2026-06-06</time></div></div>
+        </header>
+        <div class="post__toc-container post__toc-container--mobile">
+            
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">クレジット変更とローカルLLMへの回帰の動機</a>
+</li>
+<li><a href="#headline-2">実験の準備とお題の選定</a>
+</li>
+<li><a href="#headline-3">実験方法</a>
+</li>
+<li><a href="#headline-4">実験結果とモデルごとの挙動</a>
+</li>
+<li><a href="#headline-5">パラメータサイズとVRAM容量の壁</a>
+</li>
+<li><a href="#headline-6">定量的スコアと実験結果の比較</a>
+</li>
+<li><a href="#headline-7">ローカルLLMバイブコーディングの今後とハードウェアの現実解</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+        </div>
+        
+        <div class="content post__content clearfix">
+            
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+クレジット変更とローカルLLMへの回帰の動機
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+2026年6月1日から、GitHub Copilotのクレジットの扱いが大きく変更された。</p>
+<p>
+この仕様変更がどのような影響をもたらすかというと、いわゆる「バイブコーディング」スタイルでアプリ開発を行っている開発者にとって、かなり死活問題になるレベルの変更だ。実際にこの新しいクレジットルールのもとでアプリ開発を進めてみたところ、非常にシンプルな小規模アプリを開発しているだけでも、たった1日でクレジット枠をすべて使いきってしまうことが判った。</p>
+<p>
+しかも、クレジットを使い切った時点でアプリケーションが完成して動く状態になっていればまだ納得もいくが、実際にはアプリは完成していない。途中で力尽きて作業が中断されてしまうという、非常に消化不良な状況に陥る。</p>
+<p>
+クラウドサービスのクレジット枠を気にしながら、残量を計算しつつ恐る恐るコーディングエージェントを使うというのは、バイブコーディング本来の「勢いに任せてアイデアを形にする」楽しさや快適さを大きく損なってしまう。それならば、いっそのことクラウドサービスに一切頼らずに、自分の手元のPCで動作する「ローカルLLM」を使ってどこまでバイブコーディングができるのか、その実用性を調べてみようと思い立った。</p>
+<p>
+具体的には、「VRAM 16GBで動くローカルLLMでバイブコーディングするなら、どのモデルが一番マシなのか」という限界点と実用的なモデルの絞り込みを検証した。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+実験の準備とお題の選定
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+今回の検証にあたり、ローカルLLMの性能を測るためのお題として <strong>「ターミナル上（CUI）で動く簡易テトリス」</strong> をPythonで開発することにした。</p>
+<p>
+通常、AIモデルのコーディング能力テストでは、競技プログラミングのような「標準入力を受け取って特定のアルゴリズムで処理して標準出力する」といった一方向の処理が使われることが多い。しかし、バイブコーディングの快適性やエージェントの柔軟性を評価するには、それでは不十分だ。端末上でリアルタイムにキー入力を受け付け、描画を更新し、ゲームの状態を管理し続けるといったインタラクティブな処理が必要なプログラムのほうが、はるかにコード設計やエラーハンドリングの難易度が高く、エージェントの実力を測るのに適している。</p>
+<p>
+開発環境のセットアップとして、
+Pythonのパッケージおよび環境管理には uv を使用し、セットアップ済みの状態で AI に処理を依頼している。</p>
+<p>
+今回検証したAIモデルのラインナップは以下の通りである。</p>
+<ul>
+<li>Gemma4-12B</li>
+<li>QWen3.6-27B-Q3</li>
+<li>QWen3.5-27B-Q4</li>
+<li>QWen3.5-27B-Q3</li>
+<li>QWen3.5-9B-Q8</li>
+<li>QWen2.5-Coder-14B</li>
+</ul>
+<p>Qwen ばっかりなのは、あまり気にしないで欲しい。</p>
+<p>
+また、これらのモデルと組み合わせて使用するAIエージェントツールとして、以下の3つを用意した。</p>
+<ul>
+<li>aider</li>
+<li>opencode</li>
+<li>cline</li>
+</ul>
+<p>なお、時間の都合もあり、これらのモデルとエージェントのすべての組み合わせパターンを網羅して確認したわけではない。</p>
+<p>
+特にAIエージェントに関しては、ほぼ上から順に試していったのだが、結果としてほとんど cline ばかりを使うことになった。今回の検証目的である「インタラクティブにコードを修正しながら対話的に進めるバイブコーディング」という用途において、aider と opencode の2つは、作業の進め方やインターフェースの思想があまり向いていないように感じられたためだ。その結果、本検証の大部分は cline と各モデルの組み合わせで行っている。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+実験方法
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<p>
+そこそこ実用的でストレスの少ないバイブコーディング環境を目指すため、今回の実験では「AIの重みとKVキャッシュはすべてGPUのVRAM上に載せられること」を前提とした。</p>
+<p>
+CPUに一部の処理をオフロードすると、トークン生成速度が極端に低下し、バイブコーディングのテンポが完全に崩れてしまうからだ。この「VRAM上にすべて載せる」という前提を置いた結果、選択するモデルによっては、動作させるためにコンテキストウィンドウサイズをかなり厳しく制限せざるを得なくなった。</p>
+<p>
+プロンプトの与え方としては、最初に「端末上で動くテトリスをPythonで作りたい」といった最小限のフワッとした情報だけを指示した。</p>
+<p>
+そこから先は、出力されたコードを実行し、実際の挙動やエラー画面を見せながら「右キーで右に動くようにして」「ラインが揃ったら消えるようにして」というように、細かい仕様を順次追加で与えていく対話的なアプローチをとった。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+実験結果とモデルごとの挙動
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+今回の簡易テトリス開発というお題において、最終的に「まともに動くコード」を完成させられたのは、 <strong>QWen3.6-27B-Q3</strong> と <strong>QWen3.5-27B-Q3</strong> の2つのモデルだけだった。</p>
+<p>
+ここで「まともに動く」と言っているのは、あくまでテトリスとしての基本的な部分だ。複雑な回転法則（SRS）やホールド機能、スコア計算、ネクスト表示といった細かいルールまでは実装させていない。クリア基準としたのは、「テトリミノ（ブロック）が自動で落下し、左右移動や回転ができ、最下部に到達したら固定され、横1行がすべてブロックで揃ったらそのラインが消去される」という、テトリスを構成するうえで最低限必要となる超基本ルールまでだ。</p>
+<p>
+このレベルの実装であれば、プログラミングを自主的に勉強したことのある人なら、おそらく人生で一度は自力で作ったことがあるのではないかと思えるような、ごく基本的な処理といえる。</p>
+<p>
+しかし、驚くべきことに、これほど基本的な処理であるにもかかわらず、他のモデル（QWen3.5-9B-Q8 や QWen2.5-Coder-14B など）では、さっぱりと完成させることができなかった。</p>
+<p>
+うまくいかないモデルでは、ゲームループのタイマー処理とキー入力待ち処理が衝突してフリーズするコードを生成したり、ブロックの衝突判定に論理的なバグがあってテトリミノが画面外へ突き抜けていったりといった不具合が発生した。それらの問題について、コンソールに出力されたエラーや実際の挙動をプロンプトでフィードバックし、何度も「ここを修正して」と指示を出しても、修正するたびに別の場所が壊れるといったイタチごっこになり、一向に改善する見通しが立たなかった。</p>
+<p>
+意外だったのは、 Gemma4-12B でクリアできなかったことだ。比較的新しく、前評判も高いモデルだったので、この程度の規模ならクリアできるだろうと予想していたのだが、うまく機能しなかった。</p>
+<p>
+また、見事に基本動作をクリアした QWen3.6-27B-Q3 および QWen3.5-27B-Q3 だが、これらを使って開発している最中も、決してストレスフリーで快適に進められたわけではない。ローカル環境での推論処理にはそれなりの時間がかかり、指示を出すたびに応答をかなりの時間待たされることになった。</p>
+<p>
+今回の検証は、たった1ファイルの非常に小規模なコードベースが対象だ。</p>
+<p>
+それにもかかわらず、これほど待たされるとなると、実務で扱うような、多数のファイルが相互に関連し合う現実の複雑なコードベースでローカルLLMによるバイブコーディングを行うのは、現時点ではまず現実的とは言えないだろう。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+パラメータサイズとVRAM容量の壁
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+今回の検証で最も驚かされたのは、QWen3.6-27B や QWen3.5-27B といった27Bクラスのモデルが、VRAM 16GBの制約から「Q3（3ビット量子化）」というかなり極端な量子化モデルを使用していたにもかかわらず、他のパラメータサイズが小さいモデルで、量子化の緩いモデル（Q8量子化の9Bなど）よりも圧倒的に優れた結果を残した点だ。</p>
+<p>
+これまでの経験から量子化のビット数を3ビット程度まで下げると、大幅に性能が低下するとイメージだった。しかし、それでもなお、9Bや12B、14Bといった元のパラメータ数が小さいモデルよりも安定して動作するコードを生成できた。</p>
+<p>
+この結果から導き出される結論は明白だ。</p>
+<p>
+やはり <strong>LLMは量子化精度よりも、基礎となるパラメータのデカさが何よりも性能に影響する</strong> ということだ。賢さの絶対値は、パラメータ数という物理的な規模に大きく依存している。</p>
+<p>
+そうなると、ローカルLLMを個人の開発環境で実用的に動かすにあたって、デスクトップPCのグラフィックボード（dGPU）に搭載されている <strong>VRAMのサイズ制約が非常に厳しい壁</strong> として立ちはだかることになる。</p>
+<p>
+現在、AppleのMac（Apple Silicon搭載モデル）や、NVIDIAの DGX SparkやRTX Sparkなどでは、CPUとGPU、そしてシステムRAMが超広帯域のインターフェースで直結された統合メモリ（ユニファイドメモリ）アーキテクチャを採用している。これにより、VRAM容量の制限や帯域不足の問題をクリアし、大容量のLLMを高速に動作させることを可能にしている。</p>
+<p>
+しかし、これらのユニファイドメモリ方式のハードウェアには、大きなデメリットもある。メモリがプロセッサと一体化しているため、後からメモリだけを増設したり、グラフィックボードだけを最新のものに交換したりすることが実質的に不可能であるという点だ。最初に高額な大容量メモリモデルを購入するしかなく、ユーザー側での自由なアップグレードパスが閉ざされてしまう。</p>
+<p>
+自作PCや一般的なデスクトップPCのように、安価なシステムRAM（メインメモリ）を大量に積み、必要に応じてビデオカードを差し替えるというスタイルで、ローカルLLMの高速処理ができないものだろうか。</p>
+<p>
+将来的にシステムRAMの規格が「DDR6」などに進化し、単体の転送速度が向上したとしても、dGPUとの物理的な接続インターフェース（PCIeなど）のボトルネックが改善され、必要な通信帯域が劇的に確保されない限り、一般的なPCパーツの組み合わせでコストパフォーマンス良く実用的なローカルLLM処理を実現するのは難しいのが現状だ。</p>
+<p>
+ハードウェアメーカーには、この接続方式や帯域幅における技術的なブレークスルーをぜひ期待したいところだ。</p>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
+<h2 id="headline-6">
+定量的スコアと実験結果の比較
+</h2>
+<div id="outline-text-headline-6" class="outline-text-2">
+<p>
+今回の検証から得られた体感的な結果と、客観的なベンチマークスコアとの整合性を確認するため、AIモデルのパフォーマンス比較サイトである「Artificial Analysis」のデータを確認してみた。</p>
+<p>
+参考にしたのは、コーディング能力を測定する指標（Coding Index）のスコアをまとめている以下のページだ。</p>
+<ul>
+<li><a href="https://artificialanalysis.ai/models/claude-opus-4-8?intelligence=coding-index">Artificial Analysis - Coding Index</a></li>
+</ul>
+<p>このサイトの情報を見ると、以下のような興味深い事実が示されている。</p>
+<ul>
+<li>Qwen3.6-27B は、パラメータ数がはるかに大きい gpt-oss-120B よりもコーディング能力のスコアが高い。</li>
+<li>Qwen3.6-27B の Coding Index スコアは「36.5」である。</li>
+<li>Qwen3.5-27B のスコアは「34.9」である。</li>
+<li>Qwen3.5-9B のスコアは「25.3」である。</li>
+</ul>
+<p>今回の実験で、簡易テトリスという基本動作の実装をクリアできたのは、スコア「34.9」以上のモデル（QWen3.5-27B および QWen3.6-27B）だけであり、スコア「25.3」の Qwen3.5-9B では全く歯が立たなかった。</p>
+<p>
+これらの定量的なベンチマークスコアと、今回の手元での実験結果を照らし合わせると、ひとつの推測が成り立つ。</p>
+<p>
+コーディングエージェントとして破綻せずにバイブコーディングを行うためには、この Artificial Analysis の Coding Index において <strong>スコアが最低でも 30 以上は必要である</strong> ということだ。</p>
+<p>
+そして、この「スコア30以上」の領域に属しているモデルの顔ぶれを見てみると、Claude 3.5 Sonnet、Claude 4 Sonnet、GPT-5、Gemini 2.5 Pro など、最近まで第一線でクラウド型のコーディングエージェントとして利用されていた、あるいは現在利用されている商用の超高性能AIたちが並んでいる。このラインナップを見ても、実用性の境界線がスコア30付近にあるという認識は、概ね間違っていないだろう。</p>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
+<h2 id="headline-7">
+ローカルLLMバイブコーディングの今後とハードウェアの現実解
+</h2>
+<div id="outline-text-headline-7" class="outline-text-2">
+<p>
+今回の検証をまとめると、QWen3.6-27Bクラスの優秀なオープンモデルを、量子化の劣化を抑えた状態（Q4やQ8、あるいはFP16など）で、かつ高速に動かせる環境さえ用意できれば、クラウドサービスに毎月のトークン制限やクレジット消費を怯えることなく、完全ローカルで快適なバイブコーディングを実行することが十分に可能になる、と言える。</p>
+<p>
+では、その環境を一般個人が構築するための、現状における「最も現実的なハードウェアの解」は何になるだろうか。</p>
+<p>
+結論から言えば、それは <strong>RTX 5090</strong> を導入することだ。</p>
+<p>
+いやいや、流石にグラフィックボード1枚の値段としては高すぎだから。。。</p>
+<p>
+とても気軽に「ローカルでバイブコーディングしたいから買おう」と言えるような金額ではない。</p>
+<p>
+もう少しコストパフォーマンスを重視し、用途を「LLMの推論処理」に限定するならば、別の選択肢として <strong>AMD Radeon AI PRO R9700</strong> が挙がるかもしれない。</p>
+<p>
+このカードは、NVIDIAのRTX 5090と比較した場合、価格および消費電力がおおむね半分程度で済む。その代わり、純粋な演算性能も3分の1程度に低下する。</p>
+<p>
+画像生成や動画編集、一般的なディープラーニングの学習といった「LLM以外のAI利用」を目的にする場合、ソフトウェア側の対応状況も含めてRadeonを選択するのはまだまだハードルが高いというのが実情だ。しかし、今回のターゲットである「ローカルでテキストベースのLLM（Qwenなど）を動かす」という目的に特化して割り切るのであれば、VRAM容量の確保という点も含め、ほぼ問題なく動くレベルの選択肢にはなり得る。</p>
+<p>
+知らんけど。</p>
+<p>
+いずれにせよ、クラウドのクレジット制限に縛られない完全ローカルな開発環境は非常に魅力的だ。今後のハードウェアの低価格化と、さらなる軽量・高性能モデルの登場に期待しつつ、手元のVRAMでやりくりする工夫を続けていきたい。</p>
+</div>
+</div>
+
+        </div>
+    </article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2026/2026-05-24-cve-2024-3094-analysis-pdf/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">CVE-2024-3094（xzのバックドア）の解説資料をPDFで共有する</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">クレジット変更とローカルLLMへの回帰の動機</a>
+</li>
+<li><a href="#headline-2">実験の準備とお題の選定</a>
+</li>
+<li><a href="#headline-3">実験方法</a>
+</li>
+<li><a href="#headline-4">実験結果とモデルごとの挙動</a>
+</li>
+<li><a href="#headline-5">パラメータサイズとVRAM容量の壁</a>
+</li>
+<li><a href="#headline-6">定量的スコアと実験結果の比較</a>
+</li>
+<li><a href="#headline-7">ローカルLLMバイブコーディングの今後とハードウェアの現実解</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-06-06-local-llm-vibe-coding/">ローカルLLMでバイブコーディングはどこまで実用的か？ VRAM 16GB環境での検証</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-24-cve-2024-3094-analysis-pdf/">CVE-2024-3094（xzのバックドア）の解説資料をPDFで共有する</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-18-windows-to-linux-desktop-migration/">メイン PC の OS を Windows から Linux (Ubuntu 26.04) に移行した話</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-10-claude-mythos/">Claude Mythos のハッキング性能と AI の特性</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-04-26-cryptool_webext/">Firefox 拡張機能で実現する、セキュアなテキスト暗号化・復号ツール「cryptool_webext」</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2026 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+	<script async defer src="/blog2/public/js/menu.js"></script>
+	</body>
+
+</html>
