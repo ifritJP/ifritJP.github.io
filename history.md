@@ -16,3 +16,12 @@
 - 期待する結果: OS やブラウザのテーマ設定に関わらず、常にライトモードで表示されるようになること。
 - 作業の結果: `blog2/static/css/modern.css` および生成済みの `blog2/public/css/modern.css` から `@media (prefers-color-scheme: dark)` ブロックを削除し、常にライトモードのスタイルが適用されるように修正しました。
 
+## 2026-06-06
+
+- 日時(ローカル): 2026-06-06 18:38:00+09:00
+- 種別: 機能追加
+- 目的: `shadowing_webui` プロジェクトを GitHub Pages の `study_lang/shadowing_webui` パスで公開するため
+- 作業内容: `git submodule add` で `https://github.com/ifritJP/shadowing_webui.git` を `study_lang/shadowing_webui` として追加する
+- 期待する結果: `.gitmodules` に submodule 設定が追記され、`study_lang/shadowing_webui/` にリポジトリがクローンされること。push 後に `https://ifritjp.github.io/study_lang/shadowing_webui/` でアクセス可能になること。
+- 作業の結果: (作業中)
+
