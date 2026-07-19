@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>unsloth で Gemma-4 を LoRA チューニングした話 - hoge blog</title>
+	<script>(function (d, e) { d[e] = d[e].replace("no-js", "js"); })(document.documentElement, "className");</script>
+	<meta name="description"
+		content="">
+	<meta property="og:title" content="unsloth で Gemma-4 を LoRA チューニングした話" />
+<meta property="og:description" content="LLM (大規模言語モデル) ファインチューニングはかつて敷居が高いものでした。 しかし最近は、効率的なライブラリの登場によって、 個人の PC 環境でも十分に現実的な時間でチューニングが行えるようになってきています。 今回は、高速なファインチューニングフレームワークである unsloth を使い、 Google が公開した比較的新しいモデルである Gemma-4 (具体的には gemma-4-12B-it-qat-q4_0-unquantized) を LoRA でファインチューニングしてみたので、 その作業内容やハマりどころについてまとめます" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2026/2026-07-19-unsloth-gemma-4-lora/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2026-07-19T00:00:00+00:00" />
+<meta property="article:modified_time" content="2026-07-19T00:00:00+00:00" />
+
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="unsloth で Gemma-4 を LoRA チューニングした話"/>
+<meta name="twitter:description" content="LLM (大規模言語モデル) ファインチューニングはかつて敷居が高いものでした。 しかし最近は、効率的なライブラリの登場によって、 個人の PC 環境でも十分に現実的な時間でチューニングが行えるようになってきています。 今回は、高速なファインチューニングフレームワークである unsloth を使い、 Google が公開した比較的新しいモデルである Gemma-4 (具体的には gemma-4-12B-it-qat-q4_0-unquantized) を LoRA でファインチューニングしてみたので、 その作業内容やハマりどころについてまとめます"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700" >
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+	
+	<link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog2/public/css/modern.css">
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+<link rel="stylesheet" href="/blog2/public/css/copy-code.css">
+<script src="/blog2/public/js/copy-code.js"></script>
+
+</head>
+
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+    <div class="container">
+        
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+    </div>
+    <nav class="header__nav">
+        <div class="container">
+            
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+        </div>
+    </nav>
+    <div class="mobile-menu">
+    <ul class="mobile-menu__list">
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/" class="mobile-menu__link">Home</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/list.html" class="mobile-menu__link">Articles</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="https://ifritjp.github.io/documents/" class="mobile-menu__link">公開技術情報</a>
+        </li>
+    </ul>
+</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+				
+<main class="main" role="main">
+    <article class="post">
+        <header class="post__header">
+            <h1 class="post__title">unsloth で Gemma-4 を LoRA チューニングした話</h1>
+            <div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2026-07-19T00:00:00Z">2026-07-19</time></div></div>
+        </header>
+        <div class="post__toc-container post__toc-container--mobile">
+            
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">開発環境の構築と依存関係の罠</a>
+</li>
+<li><a href="#headline-2">データセット設計の試行錯誤</a>
+<ul>
+<li><a href="#headline-3">交互ターンの制約と本質</a>
+</li>
+<li><a href="#headline-4">複数キャラクターの演じ分け</a>
+</li>
+<li><a href="#headline-5">会話履歴の持たせ方とトレードオフ</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-6">実用性を考慮したスクリプトの作り込み</a>
+<ul>
+<li><a href="#headline-7">データセットの GPG 自動暗号化・復号</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-8">トレーニング時間と VRAM の挙動</a>
+</li>
+<li><a href="#headline-9">まとめと今後の検証</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+        </div>
+        
+        <div class="content post__content clearfix">
+            
+<p>
+LLM (大規模言語モデル) ファインチューニングはかつて敷居が高いものでした。
+しかし最近は、効率的なライブラリの登場によって、
+個人の PC 環境でも十分に現実的な時間でチューニングが行えるようになってきています。</p>
+<p>
+今回は、高速なファインチューニングフレームワークである <strong>unsloth</strong> を使い、
+Google が公開した比較的新しいモデルである <strong>Gemma-4</strong>
+(具体的には <code class="verbatim">gemma-4-12B-it-qat-q4_0-unquantized</code>) を LoRA でファインチューニングしてみたので、
+その作業内容やハマりどころについてまとめます。</p>
+<p>
+今回のチューニングの目的は、「LLM に事前設定したキャラクターのロールプレイをさせること」です。
+構築手順や工夫した点について触れていきます。</p>
+<p>
+なお、LLM によるロールプレイをテーマにした背景は、
+現在とあるツールでその LLM を利用しているからです。
+ただ、現状はまだ公開できるレベルにないので、その話は割愛します。
+公開できるレベルになれば別途紹介することもあるでしょう。</p>
+<p>
+また、検証用の PC 環境には、 VRAM が 16GB 搭載された <strong>RTX 5070 Ti</strong> を使用しました。
+近年の GPU でデフォルトと言われる容量 16GB の VRAM の中で
+12B モデルをどう動作させたかも含めて、参考になれば幸いです。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+開発環境の構築と依存関係の罠
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+Python のパッケージ管理ツールとして <strong>uv</strong> を使っています。
+Python ではもうデファクトでしょうか。</p>
+<p>
+しかし、今回の構成 (Gemma-4-12B + unsloth) を構築するにあたっては、 現時点は unsloth と transformers の依存関係の競合という大きな罠にハマりました。</p>
+<p>
+具体的には、 GitHub の issue にも上がっていますが、以下の問題が発生します。</p>
+<ul>
+<li><a href="https://github.com/unslothai/unsloth/issues/6028">https://github.com/unslothai/unsloth/issues/6028</a></li>
+</ul>
+<p>簡単に状況を説明すると、 Gemma-4-12B を正しくファインチューニングするためには、 <code class="verbatim">gemma4_unified</code> 形式に対応した transformers ライブラリが必要です。
+この対応は、 transformers のバージョン 5.10.1 以降でサポートされています。</p>
+<p>
+一方で、現在の unsloth は依存関係として <code class="verbatim">transformers&lt;=5.5.0</code> を要求しています。
+このため、普通にインストールしようとすると競合が発生してしまい、環境構築がストップしてしまいます。</p>
+<p>
+これを回避するために、今回は <code class="verbatim">pyproject.toml</code> の <code class="verbatim">override-dependencies</code> 機能を利用して、強制的に依存関係を上書きしました。</p>
+<div class="src src-toml">
+<div class="highlight"><div class="chroma">
+<table class="lntable"><tr><td class="lntd">
+<pre tabindex="0" class="chroma"><code><span class="lnt">1
+</span><span class="lnt">2
+</span><span class="lnt">3
+</span><span class="lnt">4
+</span></code></pre></td>
+<td class="lntd">
+<pre tabindex="0" class="chroma"><code class="language-toml" data-lang="toml"><span class="line"><span class="cl"><span class="p">[</span><span class="nx">tool</span><span class="p">.</span><span class="nx">uv</span><span class="p">]</span>
+</span></span><span class="line"><span class="cl"><span class="nx">override-dependencies</span> <span class="p">=</span> <span class="p">[</span>
+</span></span><span class="line"><span class="cl">    <span class="s2">&#34;transformers&gt;=5.14.1&#34;</span><span class="p">,</span>
+</span></span><span class="line"><span class="cl"><span class="p">]</span></span></span></code></pre></td></tr></table>
+</div>
+</div>
+</div>
+<p>
+このように transformers のバージョンを強制的に引き上げることで、
+Gemma-4-12B 用の unified 形式に対応させつつ、 unsloth を動作させることが可能になりました。
+ここをクリアするまでに、ドキュメントや issue をあちこち探す羽目になり、かなりの時間を取られました。</p>
+<p>
+なお、この問題は Google antigravity, Claude code 共に
+エージェントに任せただけでは解決できませんでした。
+ただ、Claude code に関しては Fable 5 を使っていないので、もしかしたら Fable 5 では解決できたかも。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+データセット設計の試行錯誤
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+次に苦労したのが、ロールプレイ用のデータセット設計です。
+今回は、一般的に広く使われている <strong>ShareGPT 形式</strong> (system プロンプト + conversations の human/gpt ペア) を採用しました。</p>
+<p>
+データセットの設計において、いくつかの気づきとトレードオフがあったので共有します。</p>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+交互ターンの制約と本質
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+最初は、ロールプレイをさせるのだから「登場するキャラクターごとに from の名前を分けてデータを作ればいいのではないか」と考えていました。
+しかし、実際にやってみるとそれではうまくいきません。</p>
+<p>
+学習時のテンプレートは、基本的に <code class="verbatim">human → gpt</code> という厳密な交互のターンを前提として構築されています。
+そのため、勝手に from の名前を増やしてしまうと、テンプレート処理の部分でエラーになるか、最悪の場合モデルが正しく学習できません。
+「human と gpt のペアであること」が学習上、本質的なルールであるということに気づかされました。</p>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+複数キャラクターの演じ分け
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+1つのモデルに複数のキャラクターを状況に応じて演じ分けさせたい場合、どうすればよいでしょうか。
+ここでは2つの方法を考えました。</p>
+<p>
+一つ目は、 human 側を「ユーザーの発言」として扱うのではなく、「場面やキャラクターの配置を指示するディレクター役」として扱う方法です。
+そして gpt 側の1ターンの中に、それぞれのキャラクターの発言を改行区切りでまとめて書いてしまいます。</p>
+<ul>
+<li>human: 「AとBが部屋で会話をしている。Aが挨拶をして、Bがそれに答える流れで書いて」</li>
+<li>
+<p>gpt:</p>
+<ul>
+<li>A:「こんにちは、良い天気だね」</li>
+<li>B:「そうだね、絶好のお出かけ日和だよ」</li>
+</ul>
+</li>
+</ul>
+<p>このやり方であれば、交互ターンの制約を守りつつ、複数のキャラクター同士の掛け合いを1ターンで表現させることができます。</p>
+<p>
+二つ目は、1ターンに1キャラだけ喋らせるスタイルです。
+human 側で「次はAとして発言して」「次はBとして答えて」という具体的なディレクションを行い、 gpt 側はそれに応じた1キャラ分の発言のみを返すという流れを繰り返します。</p>
+<p>
+推論時にもこのディレクション形式をそっくりそのまま踏襲すれば、一貫した出力を得やすくなります。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+会話履歴の持たせ方とトレードオフ
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+データセットを作る上で、会話の全履歴を <code class="verbatim">conversations</code> にそのまま積み重ねるか、あるいは過去の文脈を要約して <code class="verbatim">system</code> プロンプトに埋め込み、 <code class="verbatim">conversations</code> には直近の1往復だけを残すか、というトレードオフがあります。</p>
+<p>
+会話履歴をすべて積むと、長文のコンテキストを考慮した自然な流れを学習できますが、1サンプルあたりのトークン数が肥大化し、 VRAM を圧迫します。また、長すぎる履歴は学習の非効率化を招くこともあります。
+一方、要約して system プロンプトに入れる方法は、 VRAM には優しいものの、会話の細かいニュアンスやテンポ感が失われがちになります。
+このあたりは、演じさせたい内容の複雑さに応じて調整が必要になるでしょう。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
+<h2 id="headline-6">
+実用性を考慮したスクリプトの作り込み
+</h2>
+<div id="outline-text-headline-6" class="outline-text-2">
+<p>
+実際にファインチューニングを繰り返し行うにあたり、使い勝手を向上させるためにスクリプト ( <code class="verbatim">train.py</code> ) をいくつか改善しました。</p>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+データセットの GPG 自動暗号化・復号
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+ロールプレイ用のデータセットには、プライベートな会話データや、公開を控えたいキャラクター設定などが含まれることがあります。
+このようなデータを使って GPU サーバでトレーニングするため、 GPG を用いた暗号化ファイルの復号処理を組み込みました。</p>
+<p>
+gpg 暗号済みのファイルと、指定された暗号のパスフレーズファイルを使用して decrypt します。
+オプションでパスフレーズファイルの削除も行ないます。</p>
+<p>
+これにより、重要なデータを暗号化したまま安全に保持しつつ、
+学習実行時にシームレスに読み込める環境を構築しました。
+セキュアな開発運用には非常に有効な仕組みだと思います。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-2">
+<h2 id="headline-8">
+トレーニング時間と VRAM の挙動
+</h2>
+<div id="outline-text-headline-8" class="outline-text-2">
+<p>
+私はこれまで、 画像認識モデルのチューニングをそれなりにやってきました。
+画像系モデルのチューニングは、データセットの規模に対して意外と時間がかかる上に、
+ロス (Loss) がなかなか下がらずに苦労することが多々あります。
+また、画像生成系の LoRA もかなり重いという話を耳にしていたので、
+今回の Gemma-4-12B も相当な時間がかかることを覚悟していました。</p>
+<p>
+しかし、実際にやってみると驚くほどあっさりと終わりました。
+個人が普通に準備できる程度のデータセット規模であれば、
+1 時間もかからずに LoRA のチューニングが完了します。</p>
+<p>
+心配していた VRAM についても、 RTX 5070 Ti の 16GB で十分に余裕がありました。
+8bit や 4bit 量子化を活用することで、 12B モデルを VRAM 16GB 環境で十分対応可能です。
+(流石に VRAM 8GB のグラフィックボードでは厳しいと思いますが。)</p>
+<p>
+これは、 unsloth によるメモリ効率化と高速化の恩恵が非常に大きいと感じます。</p>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-2">
+<h2 id="headline-9">
+まとめと今後の検証
+</h2>
+<div id="outline-text-headline-9" class="outline-text-2">
+<p>
+今回初めて LLM の LoRA チューニングに挑戦してみましたが、データセットの準備さえクリアできれば、トレーニング自体は非常に手軽に行えることが分かりました。
+かかった手間の比率で言うと、環境構築とデータ準備が 9 割、トレーニング自体は 1 割といったところです。</p>
+<p>
+この手軽さを応用すれば、「自分専用 of LLM」を数時間の作業で作ることも十分に可能だし、
+その時間をかけるだけの効果もあるでしょう。</p>
+<p>
+今回の LoRA チューニングしたモデルを試すと、
+チューニング前の base モデルに対してシステムプロンプトだけで指示したときと比べて、
+明らかに精度が上ったと感じています。</p>
+<p>
+これまで Gemma シリーズには、単なる Gemini の劣化版という印象しかなかったですが、
+現時点で Gemma-4-12B はローカルで LoRA をかけて扱うには
+非常に良いモデルだという印象に変わりました。</p>
+<p>
+なお、チューニングしたモデルを外部に公開する場合は、
+トレーニングデータの著作権やライセンスなどの権利面に注意を払う必要があります。
+この点だけは、十分に気をつけたいところです。</p>
+<p>
+今後は、今回の LoRA がどれくらい柔軟に指示に従ってくれるのか、
+汎化性能についてさらに具体的な検証を重ねていきたいと思います。
+今回はとりあえずここまで。</p>
+</div>
+</div>
+
+        </div>
+    </article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2026/2026-07-04-gemma-4-derived-models/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">Hugging Face に登録されている Gemma-4 派生モデルの調査と、そこから見えたもの</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">開発環境の構築と依存関係の罠</a>
+</li>
+<li><a href="#headline-2">データセット設計の試行錯誤</a>
+<ul>
+<li><a href="#headline-3">交互ターンの制約と本質</a>
+</li>
+<li><a href="#headline-4">複数キャラクターの演じ分け</a>
+</li>
+<li><a href="#headline-5">会話履歴の持たせ方とトレードオフ</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-6">実用性を考慮したスクリプトの作り込み</a>
+<ul>
+<li><a href="#headline-7">データセットの GPG 自動暗号化・復号</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-8">トレーニング時間と VRAM の挙動</a>
+</li>
+<li><a href="#headline-9">まとめと今後の検証</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-07-19-unsloth-gemma-4-lora/">unsloth で Gemma-4 を LoRA チューニングした話</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-07-04-gemma-4-derived-models/">Hugging Face に登録されている Gemma-4 派生モデルの調査と、そこから見えたもの</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-06-06-local-llm-vibe-coding/">ローカルLLMでバイブコーディングはどこまで実用的か？ VRAM 16GB環境での検証</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-24-cve-2024-3094-analysis-pdf/">CVE-2024-3094（xzのバックドア）の解説資料をPDFで共有する</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-18-windows-to-linux-desktop-migration/">メイン PC の OS を Windows から Linux (Ubuntu 26.04) に移行した話</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2026 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+	<script async defer src="/blog2/public/js/menu.js"></script>
+	</body>
+
+</html>
