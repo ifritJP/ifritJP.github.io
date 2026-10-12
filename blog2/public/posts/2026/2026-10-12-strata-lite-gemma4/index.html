@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Strata と Strata-Lite で Qwen3.8 Flash Next と Gemma4 を動かしてみた - hoge blog</title>
+	<script>(function (d, e) { d[e] = d[e].replace("no-js", "js"); })(document.documentElement, "className");</script>
+	<meta name="description"
+		content="">
+	<meta property="og:title" content="Strata と Strata-Lite で Qwen3.8 Flash Next と Gemma4 を動かしてみた" />
+<meta property="og:description" content="ローカルで LLM を動かしていると、常に付きまとうのが VRAM 容量の壁と推論速度（トークン生成速度: tps）の兼ね合いです。 特に最近のモデルは賢くなっている反面、パラメータ数が大きくなるとコンシューマ向け GPU の VRAM に載せるだけでも一苦労ですし、載ったとしても推論速度が遅くて実用に耐えない、ということがよくあります。 そんな中、比較的限られた VRAM 容量でも大型モデルを高速に動かせるエンジンとして登場したのが Strata です。 今回は" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2026/2026-10-12-strata-lite-gemma4/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2026-10-12T00:00:00+00:00" />
+<meta property="article:modified_time" content="2026-10-12T00:00:00+00:00" />
+
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="Strata と Strata-Lite で Qwen3.8 Flash Next と Gemma4 を動かしてみた"/>
+<meta name="twitter:description" content="ローカルで LLM を動かしていると、常に付きまとうのが VRAM 容量の壁と推論速度（トークン生成速度: tps）の兼ね合いです。 特に最近のモデルは賢くなっている反面、パラメータ数が大きくなるとコンシューマ向け GPU の VRAM に載せるだけでも一苦労ですし、載ったとしても推論速度が遅くて実用に耐えない、ということがよくあります。 そんな中、比較的限られた VRAM 容量でも大型モデルを高速に動かせるエンジンとして登場したのが Strata です。 今回は"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700" >
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+	
+	<link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog2/public/css/modern.css">
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+<link rel="stylesheet" href="/blog2/public/css/copy-code.css">
+<script src="/blog2/public/js/copy-code.js"></script>
+
+</head>
+
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+    <div class="container">
+        
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+    </div>
+    <nav class="header__nav">
+        <div class="container">
+            
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+        </div>
+    </nav>
+    <div class="mobile-menu">
+    <ul class="mobile-menu__list">
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/" class="mobile-menu__link">Home</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/list.html" class="mobile-menu__link">Articles</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="https://ifritjp.github.io/documents/" class="mobile-menu__link">公開技術情報</a>
+        </li>
+    </ul>
+</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+				
+<main class="main" role="main">
+    <article class="post">
+        <header class="post__header">
+            <h1 class="post__title">Strata と Strata-Lite で Qwen3.8 Flash Next と Gemma4 を動かしてみた</h1>
+            <div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2026-10-12T00:00:00Z">2026-10-12</time></div></div>
+        </header>
+        <div class="post__toc-container post__toc-container--mobile">
+            
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">Strata と Qwen3.8 Flash Next (125B)</a>
+<ul>
+<li><a href="#headline-2">手元の RTX 5070Ti での実測</a>
+</li>
+<li><a href="#headline-3">Qwen 系の日本語の癖</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-4">日本語を重視したい: Gemma4 への期待</a>
+</li>
+<li><a href="#headline-5">Strata-Lite の発見</a>
+<ul>
+<li><a href="#headline-6">リポジトリの状況と安全性チェック</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-7">Gemma4 26B A4B を Strata-Lite で動かしてみた結果</a>
+<ul>
+<li><a href="#headline-8">llama.cpp との性能比較</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-9">今後の展望: llama.cpp への取り込み</a>
+</li>
+<li><a href="#headline-10">まとめ</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+        </div>
+        
+        <div class="content post__content clearfix">
+            
+<p>
+ローカルで LLM を動かしていると、常に付きまとうのが VRAM 容量の壁と推論速度（トークン生成速度: tps）の兼ね合いです。</p>
+<p>
+特に最近のモデルは賢くなっている反面、パラメータ数が大きくなるとコンシューマ向け GPU の VRAM に載せるだけでも一苦労ですし、載ったとしても推論速度が遅くて実用に耐えない、ということがよくあります。</p>
+<p>
+そんな中、比較的限られた VRAM 容量でも大型モデルを高速に動かせるエンジンとして登場したのが <strong>Strata</strong> です。</p>
+<p>
+今回は、手元の RTX 5070Ti 環境で Strata、そしてその fork である Strata-Lite を使い、Qwen3.8 Flash Next や Gemma4 26B A4B を実際に動かして検証してみた話です。</p>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+Strata と Qwen3.8 Flash Next (125B)
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+まずは本家である Strata から試してみました。</p>
+<ul>
+<li>リポジトリ: &lt;<a href="https://github.com/Niko1221/Strata">https://github.com/Niko1221/Strata</a>&gt;</li>
+</ul>
+<p>Strata は、Qwen3.8 Flash Next (125B) という巨大なモデルを、わずか 12GB の VRAM で動かすことができるという、ローカル LLM ユーザーにとっては非常にありがたい LLM エンジンです。</p>
+<p>
+125B クラスのモデルといえば、通常であれば量子化を施したとしても、まともに動かすには数十 GB 以上の VRAM や複数枚の GPU が必要になるのがこれまでの常識でした。それが 12GB という、一般的なミドルハイクラスの GPU に収まるだけでも驚きです。</p>
+<div id="outline-container-headline-2" class="outline-3">
+<h3 id="headline-2">
+手元の RTX 5070Ti での実測
+</h3>
+<div id="outline-text-headline-2" class="outline-text-3">
+<p>
+実際に手元の RTX 5070Ti（16GB VRAM 搭載）で Qwen3.8 Flash Next を動かしてみたところ、驚くべきことに <strong>100 tps 前後</strong> の性能が出ました。</p>
+<p>
+16GB 程度の VRAM 消費に抑えつつ 100 tps というのは、ローカルで動かしているとは思えないほどの凄まじい実効性能です。
+プロンプトを投げた瞬間にスラスラとテキストが流れてくる感覚は、
+高価なクラウドよりもローカルの方が高速に動作しているようで感動すら覚えます。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-3">
+<h3 id="headline-3">
+Qwen 系の日本語の癖
+</h3>
+<div id="outline-text-headline-3" class="outline-text-3">
+<p>
+この実行速度自体には大満足だったのですが、実際に使ってみると別の問題が気になりました。</p>
+<p>
+悲しいかな、Qwen 系はパラメータ数がこれだけ大きくても、日本語がやや不自由という欠点があります。</p>
+<p>
+もちろん、技術的な解説文や論文の要約のような「お堅い文章」であれば、問題なくこなしてくれるのかもしれません。
+しかし、ちょっとした日常会話や口語表現、ニュアンスを含んだ自然なやり取りをさせようとすると、
+どうしても不自然さが目立ち、個人的にはともかく苦手に感じてしまいます。</p>
+<p>
+実際、Qwen3.8 Flash Next については「一般的なチャットボット用途というよりは、コーディングエージェント向きのモデルだ」という話も耳にします。</p>
+<p>
+プログラミングのコード生成やリファクタリング、構文解析やツールの呼び出しといった用途であれば、自然言語の口語表現の巧拙はそこまで大きな問題にはなりません。
+そうしたコーディング用途に絞って使うのであれば、この 100 tps という生成速度は強い見方になってくれるはずです。</p>
+<p>
+ただし、コーディングエージェントは 100 tps でも力不足に感じてしまうでしょう。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-4" class="outline-2">
+<h2 id="headline-4">
+日本語を重視したい: Gemma4 への期待
+</h2>
+<div id="outline-text-headline-4" class="outline-text-2">
+<p>
+やはり普段使いのローカルモデルとしては、日本語が流暢に通じるモデルを手元で快適に動かしたいところです。</p>
+<p>
+個人的に、現在のオープンソース（OSS）モデルの中で日本語の表現力に最も強みを感じているのが <strong>Gemma4</strong> です。
+文脈の理解力も高く、日本語特有の言い回しや口語表現も自然に返してくれます。</p>
+<p>
+そこで、「Strata のような少ない VRAM で高速に動かすアイデアを、Gemma4 にも適用した LLM エンジンはないだろうか？」と考えて調べてみることにしました。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-2">
+<h2 id="headline-5">
+Strata-Lite の発見
+</h2>
+<div id="outline-text-headline-5" class="outline-text-2">
+<p>
+調べてみた結果、見つけたのが <strong>Strata-Lite</strong> というプロジェクトでした。</p>
+<ul>
+<li>リポジトリ: &lt;<a href="https://github.com/thed1c/Strata-Lite">https://github.com/thed1c/Strata-Lite</a>&gt;</li>
+</ul>
+<p>Strata-Lite はその名前が示す通り、Strata の fork（派生）プロジェクトです。</p>
+<p>
+興味深いことに、このプロジェクトは「ほぼ Claude Code によって開発された OSS」とのことでした。
+最近は AI コーディングアシスタントを活用して OSS を高速に開発・フォークする動きが活発ですが、
+まさにその典型例と言えます。</p>
+<div id="outline-container-headline-6" class="outline-3">
+<h3 id="headline-6">
+リポジトリの状況と安全性チェック
+</h3>
+<div id="outline-text-headline-6" class="outline-text-3">
+<p>
+リポジトリを確認した時点でのスター数は、わずか「2」でした。</p>
+<p>
+これだけ見ると「大丈夫か？」と思ってしまうかもしれませんが、
+そもそもリリースされてから 2 日しか経っていないプロジェクトなので、
+スター数が少ないのもある意味仕方がないと言えるでしょう。出来立てホヤホヤのプロジェクトです。</p>
+<p>
+とはいえ、リリースされたばかりで実績の少ないリポジトリのコードをそのままローカル環境で動かすのは、
+セキュリティ的にも少々不安があります。</p>
+<p>
+そこで、コードの中身を Claude Code に読み込ませて解析・レビューを行なわせました。
+怪しいネットワーク通信や不審な処理が含まれていないかを確認したところ、
+「特に問題となるような不審な処理は見当たらない」という結果だったので、
+実際に手元で動かしてみることにしました。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-7" class="outline-2">
+<h2 id="headline-7">
+Gemma4 26B A4B を Strata-Lite で動かしてみた結果
+</h2>
+<div id="outline-text-headline-7" class="outline-text-2">
+<p>
+実際に手元の RTX 5070Ti 環境で、Strata-Lite を使って <strong>Gemma4 26B A4B</strong> を動かしてみました。</p>
+<p>
+その結果ですが、こちらも <strong>100 tps 越え</strong> という素晴らしい実行性能を叩き出してくれました。</p>
+<p>
+Qwen3.8 Flash Next の時と同様、手元の環境で 100 tps を超える速度で
+日本語がサクサク生成されていくのは非常に爽快です。
+Gemma4 の自然な日本語力と、この圧倒的な生成速度が合わさることで、
+ローカル LLM の実用性が一気に引き上がった印象を受けます。</p>
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+llama.cpp との性能比較
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<p>
+この 100 tps 超えという数値がどれほど凄いのかを確認するために、
+オリジナルの <strong>llama.cpp</strong> と比較してみました。</p>
+<p>
+執筆時点での llama.cpp のバージョン <code class="verbatim">v0.6.0</code> を使い、
+同じ Gemma4 26B A4B を手元の環境で動かしてみたところ、推論速度は <strong>50 tps 前後</strong> でした。</p>
+<p>
+つまり、Strata-Lite は llama.cpp v0.6.0 と比較して <strong>約 2 倍</strong> の推論速度を達成していることになります。</p>
+<p>
+50 tps でも十分に実用的ですが、
+それが一気に倍の 100 tps 超えになるというのは、体感としても明らかにレスポンスのキレが違います。</p>
+<p>
+なお、 lm studio の最新版 0.4.26 では、 30 tps 強です。
+これは、 lm studio が使用している llama.cpp のバージョンが少し古くなるためです。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-2">
+<h2 id="headline-9">
+今後の展望: llama.cpp への取り込み
+</h2>
+<div id="outline-text-headline-9" class="outline-text-2">
+<p>
+これだけ高速化されるのであれば、いずれ llama.cpp 本家にも同様の最適化手法が取り込まれるのではないか、と気になるところです。</p>
+<p>
+そこで Claude に「今後 llama.cpp に Strata-Lite のような高速化対応が入る予定はあるのか？」と尋ねてみました。</p>
+<p>
+すると、どうやら「すでにその一部のアイデアや最適化処理は llama.cpp 側にも取り込まれ始めている」とのことでした。</p>
+<p>
+ただし、現在リリースされているバージョン v0.6.0 ではまだ有効になっておらず、使うことはできません。</p>
+<p>
+もちろん、プレリリース版の最新バージョンを利用すれば、最新の機能を利用できます。</p>
+<p>
+とはいえ、おそらく数週間もすれば正式なリリース版に取り込まれて使えるようになっているだろうと思われます。</p>
+</div>
+</div>
+<div id="outline-container-headline-10" class="outline-2">
+<h2 id="headline-10">
+まとめ
+</h2>
+<div id="outline-text-headline-10" class="outline-text-2">
+<p>
+手元で検証してみた結果をまとめると、以下のようになります。</p>
+<ul>
+<li>Strata は 125B クラスの Qwen3.8 Flash Next を 16GB VRAM で動かし、
+RTX 5070Ti で約 100 tps という驚異的な速度を出す。</li>
+<li>ただし Qwen は日本語の口語表現が苦手な印象があるため、
+文章生成よりもコーディングエージェント等の用途に向いている。</li>
+<li>日本語に強い Gemma4 26B A4B を動かすために Strata-Lite を試したところ、こちらも 100 tps 超えを達成。</li>
+<li>llama.cpp v0.6.0（約 50 tps）と比較して約 2 倍の実行性能が出ている。</li>
+<li>将来的には llama.cpp にも同様の仕組みが取り込まれる見込みだが、
+それまでの「繋ぎ」として使うには、Strata-Lite は十分に価値のあるツールと言える。</li>
+</ul>
+<p>手元の限られた VRAM 環境でも、
+工夫次第で 100 tps を超える速度で実用的なモデルが動かせるようになってきているのは、
+ローカル LLM ユーザーとして非常に嬉しい進化です。</p>
+<p>
+本家 llama.cpp への完全な統合を待ちつつ、
+それまでは Strata-Lite を活用して快適なローカル LLM 環境を楽しんでみようと思います。</p>
+</div>
+</div>
+
+        </div>
+    </article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2026/2026-07-19-unsloth-gemma-4-lora/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">unsloth で Gemma-4 を LoRA チューニングした話</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">Strata と Qwen3.8 Flash Next (125B)</a>
+<ul>
+<li><a href="#headline-2">手元の RTX 5070Ti での実測</a>
+</li>
+<li><a href="#headline-3">Qwen 系の日本語の癖</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-4">日本語を重視したい: Gemma4 への期待</a>
+</li>
+<li><a href="#headline-5">Strata-Lite の発見</a>
+<ul>
+<li><a href="#headline-6">リポジトリの状況と安全性チェック</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-7">Gemma4 26B A4B を Strata-Lite で動かしてみた結果</a>
+<ul>
+<li><a href="#headline-8">llama.cpp との性能比較</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-9">今後の展望: llama.cpp への取り込み</a>
+</li>
+<li><a href="#headline-10">まとめ</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-10-12-strata-lite-gemma4/">Strata と Strata-Lite で Qwen3.8 Flash Next と Gemma4 を動かしてみた</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-07-19-unsloth-gemma-4-lora/">unsloth で Gemma-4 を LoRA チューニングした話</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-07-04-gemma-4-derived-models/">Hugging Face に登録されている Gemma-4 派生モデルの調査と、そこから見えたもの</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-06-06-local-llm-vibe-coding/">ローカルLLMでバイブコーディングはどこまで実用的か？ VRAM 16GB環境での検証</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-05-24-cve-2024-3094-analysis-pdf/">CVE-2024-3094（xzのバックドア）の解説資料をPDFで共有する</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2026 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+	<script async defer src="/blog2/public/js/menu.js"></script>
+	</body>
+
+</html>
