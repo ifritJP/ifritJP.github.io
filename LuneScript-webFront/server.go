@@ -33,6 +33,6 @@ func main() {
         content_path + "/",
         http.StripPrefix(
             content_path + "/",
-            http.FileServer(http.Dir( "." + content_path ))))
+            http.FileServer(http.Dir( "." + "/lnsc_web_frontend" ))))
     log.Fatal(http.ListenAndServe( fmt.Sprintf( ":%d", port ), nil))
 }
