@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>事前学習済み TTS を流用して、笑い声や息づかいも通るボイスチェンジャーを作ってみた話 - hoge blog</title>
+	<script>(function (d, e) { d[e] = d[e].replace("no-js", "js"); })(document.documentElement, "className");</script>
+	<meta name="description"
+		content="">
+	<meta property="og:title" content="事前学習済み TTS を流用して、笑い声や息づかいも通るボイスチェンジャーを作ってみた話" />
+<meta property="og:description" content="半年ほど前、既存の TTS (Text-to-Speech) を流用してボイスチェンジャー (VC) のようなものが作れないかと試したことがあるのだが、その時は見事に玉砕した。 しかし最近になって、別の日本語の事前学習済み TTS をベースに再挑戦してみたところ、驚くほどスムーズに実用レベルの VC を作ることができた。 初めに結論と前提をいくつか書いておくと、 本記事は手法・実験・評価の知見の共有のみを目的としている。 なりすまし等の悪用リスクを考慮し、作成した VC ツ" />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://ifritjp.github.io/blog2/public/posts/2026/2026-11-17-tts-to-vc-research/" /><meta property="article:section" content="posts" />
+<meta property="article:published_time" content="2026-11-17T00:00:00+00:00" />
+<meta property="article:modified_time" content="2026-11-17T00:00:00+00:00" />
+
+
+	<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="事前学習済み TTS を流用して、笑い声や息づかいも通るボイスチェンジャーを作ってみた話"/>
+<meta name="twitter:description" content="半年ほど前、既存の TTS (Text-to-Speech) を流用してボイスチェンジャー (VC) のようなものが作れないかと試したことがあるのだが、その時は見事に玉砕した。 しかし最近になって、別の日本語の事前学習済み TTS をベースに再挑戦してみたところ、驚くほどスムーズに実用レベルの VC を作ることができた。 初めに結論と前提をいくつか書いておくと、 本記事は手法・実験・評価の知見の共有のみを目的としている。 なりすまし等の悪用リスクを考慮し、作成した VC ツ"/>
+
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link rel="dns-prefetch" href="//fonts.googleapis.com">
+	<link rel="dns-prefetch" href="//fonts.gstatic.com">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,400i,700" >
+
+	<link rel="stylesheet" href="/blog2/public/css/style.css">
+	
+
+	<link rel="shortcut icon" href="/blog2/public/favicon.ico">
+	
+	<link rel="stylesheet" href="/blog2/public/css/highlight_lns.css">
+<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/10.5.0/highlight.min.js"></script>
+<script src="/blog2/public/js/highlight_lns.js"></script>
+<script src="/blog2/public/js/hook.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/blog2/public/css/modern.css">
+<link rel="stylesheet" href="/blog2/public/css/custom.css">
+
+
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4708B8S6ES"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() { dataLayer.push(arguments); }
+  gtag('js', new Date());
+
+  gtag('config', 'G-4708B8S6ES');
+</script>
+<link rel="stylesheet" href="/blog2/public/css/copy-code.css">
+<script src="/blog2/public/js/copy-code.js"></script>
+
+</head>
+
+<body class="body">
+	<div class="container container--outer">
+		<header class="header">
+    <div class="container">
+        
+	<div class="logo logo--mixed">
+		<a class="logo__link" href="/blog2/public/" title="hoge blog" rel="home">
+			<div class="logo__item logo__imagebox">
+					<img class="logo__img" src="/blog2/public/avatar.png">
+				</div><div class="logo__item logo__text">
+					<div class="logo__title">hoge blog</div>
+					<div class="logo__tagline">生涯現役エンジニア</div>
+				</div>
+		</a>
+	</div>
+    </div>
+    <nav class="header__nav">
+        <div class="container">
+            
+<nav class="menu">
+	<button class="menu__btn" aria-haspopup="true" aria-expanded="false" tabindex="0">
+		<span class="menu__btn-title" tabindex="-1">Menu</span>
+	</button>
+	<ul class="menu__list">
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/">
+				
+				<span class="menu__text">Home</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="/blog2/public/list.html">
+				
+				<span class="menu__text">Articles</span>
+				
+			</a>
+		</li>
+		<li class="menu__item">
+			<a class="menu__link" href="https://ifritjp.github.io/documents/">
+				
+				<span class="menu__text">公開技術情報</span>
+				
+			</a>
+		</li>
+	</ul>
+</nav>
+
+        </div>
+    </nav>
+    <div class="mobile-menu">
+    <ul class="mobile-menu__list">
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/" class="mobile-menu__link">Home</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="/blog2/public/list.html" class="mobile-menu__link">Articles</a>
+        </li>
+        <li class="mobile-menu__item">
+            <a href="https://ifritjp.github.io/documents/" class="mobile-menu__link">公開技術情報</a>
+        </li>
+    </ul>
+</div>
+</header>
+		<div class="wrapper flex">
+			<div class="primary">
+				
+<main class="main" role="main">
+    <article class="post">
+        <header class="post__header">
+            <h1 class="post__title">事前学習済み TTS を流用して、笑い声や息づかいも通るボイスチェンジャーを作ってみた話</h1>
+            <div class="post__meta meta">
+<div class="meta__item-datetime meta__item">
+	<svg class="meta__icon icon icon-time" width="16" height="14" viewBox="0 0 30 28"><path d="M15 0C7 0 1 6 1 14s6 14 14 14 14-6 14-14S23 0 15 0zm0 25C9 25 4 20 4 14S9 3 15 3s11 5 11 11-5 11-11 11zm1-18h-2v8.4l6.8 4.4L22 18l-6-3.8V7z"/></svg><time class="meta__text" datetime="2026-11-17T00:00:00Z">2026-11-17</time></div></div>
+        </header>
+        <div class="post__toc-container post__toc-container--mobile">
+            
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">コンセプトと全体像: なぜ「TTS の流用」なのか</a>
+</li>
+<li><a href="#headline-2">学習不要のベースラインで分かった限界</a>
+</li>
+<li><a href="#headline-3">本命: ContentAdapter による VC 化と「声色の漏れ」との戦い</a>
+<ul>
+<li><a href="#headline-4">ContentAdapter の仕組み</a>
+</li>
+<li><a href="#headline-5">最初の結果と「声色の漏れ」</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-6">テキスト・内容・スタイルの統合で CER 0.48 → 0.04 へ</a>
+<ul>
+<li><a href="#headline-7">textauto と意外な罠</a>
+</li>
+<li><a href="#headline-8">データ配合とモデル規模の見送り判断</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-9">地味だが重要な「評価設計」と、指標の落とし穴</a>
+<ul>
+<li><a href="#headline-10">5 つの評価軸と指標の自作</a>
+</li>
+<li><a href="#headline-11">指標をそのまま信じてはいけない理由</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-12">実測比較: ワンショット VC の結果と「話者 LoRA」の効果</a>
+<ul>
+<li><a href="#headline-13">結果 1: ワンショット VC での方式比較</a>
+</li>
+<li><a href="#headline-14">声色の再現度を上げる 6 つの手法の比較</a>
+</li>
+<li><a href="#headline-15">結果 2: 話者 LoRA による改善</a>
+</li>
+<li><a href="#headline-16">測定していない項目と数値の注意点</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-17">実験の回し方と比較動画の舞台裏</a>
+</li>
+<li><a href="#headline-18">まとめ</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+        </div>
+        
+        <div class="content post__content clearfix">
+            
+<p>
+半年ほど前、既存の TTS (Text-to-Speech) を流用してボイスチェンジャー (VC) のようなものが作れないかと試したことがあるのだが、その時は見事に玉砕した。
+しかし最近になって、別の日本語の事前学習済み TTS をベースに再挑戦してみたところ、驚くほどスムーズに実用レベルの VC を作ることができた。</p>
+<p>
+初めに結論と前提をいくつか書いておくと、 <strong>本記事は手法・実験・評価の知見の共有のみを目的としている。</strong>
+なりすまし等の悪用リスクを考慮し、作成した VC ツール自体 (コード、学習済み重み、Web UI、変換音声のダウンロード等) は公開しない。
+また、特定につながる情報を避けるため、ベースにした TTS やコーデックの名称、バージョン、パラメータ数、さらに半年前に玉砕した別の TTS の名称についても伏せて、一般化した表現で記載する。登場する話者についても「男性 A」「高い声の女性 B」のように匿名化して扱う。</p>
+<p>
+それでも、 <strong>「テキストから音声を作るモデルを、どうやって音声から音声を作るモデルに作り変えたか」「どこでハマり、どの手法が効いて、どの手法が全く効かなかったか」</strong> という試行錯誤と実測データの記録は、同じ領域を調べる人にとって参考になる部分があるはずだ。</p>
+<p>
+たぶん、ある程度の知識がある人が読めばすぐに再現できると思うので、
+そう遠くない日に似たような VC が公開されると思う。</p>
+<p>
+なお、実際の変換結果については、以下の技術デモ動画にまとめている。</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=Eq9_9CRA5zI">技術デモ動画 (YouTube)</a></li>
+</ul>
+<div id="outline-container-headline-1" class="outline-2">
+<h2 id="headline-1">
+コンセプトと全体像: なぜ「TTS の流用」なのか
+</h2>
+<div id="outline-text-headline-1" class="outline-text-2">
+<p>
+今回ベースにしたのは、日本語の事前学習済み TTS である。アーキテクチャとしては、テキストを条件に <strong>DiT (Diffusion Transformer) + Rectified Flow</strong> で VAE 系音声コーデックの latent を生成する、ワンショット音声クローン対応のモデルだ。</p>
+<p>
+これを VC に作り変えるための基本的な発想はシンプルで、 <strong>「テキストの代わりに入力音声から内容と話し方を取る」</strong> だけである。
+具体的には、元の TTS の DiT に対して「入力音声のフレーム単位の内容条件」を足し込む構造を追加する。これだけで、既存の学習ループや部品の大半をそのまま流用できた。</p>
+<p>
+このアプローチには、実用上かなり大きなメリットが 3 つある。</p>
+<ol>
+<li><strong>書き起こし不要の自己教師学習ができる</strong>
+学習時にやることは、「自分の発話の声色を意図的に撹乱 (かくらん) した音声を入力し、元の自分の発話を復元する」だけである。
+TTS の学習で一番重くて面倒なのは音声データの書き起こし点検だが、この方式ならそれが要らない。長い録音データも自動で切り出して、集めた音声をそのまま学習データとして投入できる。</li>
+<li><strong>言葉にならない音 (非言語音) が時間軸のまま通る</strong>
+笑い声、息づかい、泣き声といった非言語音は、テキストベースの TTS だと特殊トークン等で位置を指定する必要があり、タイミングやニュアンスを合わせるのが難しい。フレーム単位で内容条件を渡す VC なら、時間軸を保ったままそうした音が自然に通る。</li>
+<li><strong>ワンショット再現と「話者 LoRA」の二段構え</strong>
+ベースがワンショット音声クローン TTS なので、VC でも変換先の参照音声を 1 本渡すだけで声色を再現できる。RVC のように話者ごとにモデルを一から作る方式とはここが大きく違う。
+その上で、ワンショットだけでは声色の再現度が足りないケースに対しては、推論時に変換先の声で <strong>10 秒程度だけ追加学習する「話者 LoRA」</strong> を用意した。「まずワンショットで試し、足りなければ 10 秒の追加学習で追い込む」という二段構えである。</li>
+</ol>
+<p>
+重要なのは、 <strong>DiT 本体・話者エンコーダ・音声コーデックといった重い部品はすべて凍結し、TTS 本体のコードにも手を入れていない</strong> という点である。追加で学習するのは ContentAdapter と DiT の LoRA 部分だけだ。</p>
+</div>
+</div>
+<div id="outline-container-headline-2" class="outline-2">
+<h2 id="headline-2">
+学習不要のベースラインで分かった限界
+</h2>
+<div id="outline-text-headline-2" class="outline-text-2">
+<p>
+本命の学習に入る前に、「そもそも学習なしで、元の TTS の仕組みをそのまま使って VC はできないのか？」という基準 (ベースライン) を確認しておいた。</p>
+<p>
+試したのは、以下の 3 つのアプローチである。</p>
+<ul>
+<li><strong>カスケード VC (ASR → TTS)</strong>
+入力音声を ASR (音声認識) でテキストに起こし、そのテキストと変換先の参照音声を元の TTS に渡す方法だ。「テキストを経由すると何が失われるか」を測る物差しになる。
+結果は分かりやすく、声色はしっかり変わるものの、 <strong>元の発話の抑揚 (F0 相関 0.19〜0.36 程度) と非言語音 (相関 -0.03 付近) がほぼ消えてしまう。</strong> 発話の長さも変わってしまうため、元の演技や間合いを残したい用途には向かない。</li>
+<li><strong>SDEdit 方式 (audio2audio)</strong>
+変換元の音声をコーデックで latent に変換し、途中までノイズを混ぜてから DiT で再生成する方法だ。
+しかし、これには <strong>「ちょうど良いノイズ量 (t0)」が存在しなかった。</strong>
+<code class="verbatim">t0 &lt;</code> 0.75= 程度では元の声色がほとんど変わらず (<code class="verbatim">t0 = 0.6</code> で変換元との類似度が 0.921)、=t0 = 0.9= までノイズを増やすと急に声色は変わるが、今度は抑揚が消えてしまう。おそらくこのモデルでは、声色が生成の初期 (ノイズが多い段階) で決まってしまっているのだろう。
+また、テキスト条件で学習された TTS は、テキストなしでは言葉を保てないことも分かった (テキストなしの <code class="verbatim">t0 = 0.6</code> では文字誤り率 CER が 0.59 まで悪化)。</li>
+<li><strong>ODE inversion</strong>
+変換元の latent からノイズを逆算 (逆積分) し、変換先の声色条件で生成し直す手法も検証した。
+これも結果は芳しくなく、最後まで全部 inversion すると実質ただのテキスト読み上げになってしまい (抑揚の相関が 0.49 → 0.16 に低下)、途中までの inversion では SDEdit と同様に声色と抑揚のどちらか一方しか取れない。
+なお、CFG (Classifier-Free Guidance) ありで逆積分すると、ランダムノイズから生成したのと同じくらい元の音声から離れてしまう (画像の拡散モデルで null-text inversion が必要になるのと同じ問題である)。さらに VC 学習後のモデルで inversion を試しても通常の VC とほぼ同じ結果になった。内容条件によって変換元の構造をすでに受け取っているため、出発点のノイズに構造を持たせても上乗せがないのだ。</li>
+</ul>
+<p>つまり、 <strong>「声色を変える」ことと「抑揚・タイミング・非言語音を残す」ことは、学習なしの手法では両立しない</strong> という結論になった。これで迷いなく「内容条件を追加学習する」方向へ舵を切ることができた。</p>
+</div>
+</div>
+<div id="outline-container-headline-3" class="outline-2">
+<h2 id="headline-3">
+本命: ContentAdapter による VC 化と「声色の漏れ」との戦い
+</h2>
+<div id="outline-text-headline-3" class="outline-text-2">
+<div id="outline-container-headline-4" class="outline-3">
+<h3 id="headline-4">
+ContentAdapter の仕組み
+</h3>
+<div id="outline-text-headline-4" class="outline-text-3">
+<p>
+学習の核となるのが、入力音声から内容を取り出して DiT に渡す <strong>ContentAdapter</strong> だ。</p>
+<ol>
+<li>入力音声に対し、 <strong>ピッチ・フォルマント・EQ の 3 種類で声質を撹乱</strong> する。</li>
+<li>撹乱した音声を WavLM に通し、 <strong>層 6 / 9 / 12 の特徴量を重み付きで足し合わせる</strong> 。</li>
+<li>ContentAdapter 内で幅 256 に次元を絞ってから DiT の幅に戻し、DiT の入力射影の出力にフレームごとに加算する。</li>
+</ol>
+<p>ここで効いている工夫がいくつかある。
+まず、ContentAdapter の <strong>最後の線形層をゼロ初期化</strong> している (ControlNet と同じ発想)。これにより、学習開始直後は加算値がゼロになるため、元の TTS と全く同じ動作から安全に学習を始められる。
+次に時間軸の整合性だが、幸いなことに WavLM の特徴と音声コーデックの latent は <strong>フレームレートが近い</strong> ため、長さ合わせは線形補間でわずかな端数を調整するだけで済んだ。</p>
+<p>
+学習対象は ContentAdapter と DiT の LoRA (ランク <code class="verbatim">r = 16</code>) のみなので非常に軽く、 <strong>VRAM 8 GB の環境でも 1 回の学習が 7 分ほどで完了する。</strong>
+なお、学習時に変換先の声色として渡す参照音声には「同じ話者の別の発話」を使うようにした。同じ発話を渡すと、入力の声色をそのまま丸写しする近道をモデルが覚えてしまうからだ。</p>
+</div>
+</div>
+<div id="outline-container-headline-5" class="outline-3">
+<h3 id="headline-5">
+最初の結果と「声色の漏れ」
+</h3>
+<div id="outline-text-headline-5" class="outline-text-3">
+<p>
+こうして学習した最初のモデルを試してみると、声色・抑揚・非言語音の乗り方はかなり良かった。
+しかし、肝心の <strong>音韻 (言葉) が崩れてしまった。</strong> 文字誤り率 (CER) は <strong>0.67</strong> 。リズムやイントネーションは合っているのに、何を言っているのか聞き取れないという、ある意味で面白い現象が起きた。</p>
+<p>
+さらに厄介だったのが、入力音声の「声色の漏れ」である。
+ピッチ・フォルマント・EQ でかなり強めに声質を撹乱したつもりだったのだが、調べてみると <strong>撹乱後の WavLM 特徴からでも話者を 93% 当てられてしまう</strong> ことが分かった (撹乱なしでは 94%)。WavLM 特徴に話者情報がしぶとく残っているのだ。</p>
+<p>
+この漏れを抑えるために、別人の声に変えた入力で学習する方法、k-means による離散化、ASR エンコーダ特徴の利用、話者敵対学習 (GRL) などを比較検討した。
+ちなみに失敗談として、スタイル学習の経路で GRL を使ったところ、特徴ベクトル <code class="verbatim">z</code> が一定値に潰れてしまって使い物にならなくなる事象も経験した。</p>
+<p>
+特に顕著だったのが <strong>「女性から男性 (低い声) への変換」</strong> で、元の高い声色のニュアンスが残ってしまい、ワンショットでの目標話者類似度 (<code class="verbatim">sim_tgt</code>) は 0.731 に留まった (カスケード方式は 0.829)。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-6" class="outline-2">
+<h2 id="headline-6">
+テキスト・内容・スタイルの統合で CER 0.48 → 0.04 へ
+</h2>
+<div id="outline-text-headline-6" class="outline-text-2">
+<p>
+言葉が崩れる問題に対して、まず学習データの話者数を大きく増やしてみたところ、内容条件のみの VC でも CER は 0.67 → 0.48 まで改善した。
+ただし、0.48 ではまだ実用には遠い。</p>
+<p>
+そこで導入したのが、 <strong>テキストとスタイル情報のハイブリッド統合</strong> である。</p>
+<ul>
+<li><strong>内容条件</strong> : 常に与える (タイミング・抑揚・非言語音を担当)</li>
+<li><strong>テキスト条件</strong> : ASR で書き起こしたテキストを与え、 <strong>学習時は 50% の確率でドロップ</strong> する (音韻を担当)</li>
+<li><strong>スタイル条件</strong> : 自作の StyleEncoder を元の TTS のスタイル条件の経路に入れ、 <strong>学習時は 30% の確率でドロップ</strong> する (内容条件とは別の乱数で撹乱した音声を使い、丸写しを防ぐ)</li>
+</ul>
+<p>要するに、 <strong>「言葉 (音韻) は元の TTS が得意なテキスト経路に任せ、タイミング・抑揚・非言語音は内容条件に任せる」</strong> という明確な役割分担である。
+この構成にしたことで、CER は 0.48 から <strong>0.04</strong> まで劇的に改善した。数字の上では、これが一番大きく効いた改善ポイントだ。</p>
+<div id="outline-container-headline-7" class="outline-3">
+<h3 id="headline-7">
+textauto と意外な罠
+</h3>
+<div id="outline-text-headline-7" class="outline-text-3">
+<p>
+推論時には <strong>textauto</strong> という小さな工夫を入れている。
+言葉を含む書き起こしがある区間ではテキスト条件を使い、笑い声や息づかいなど「言葉を含まない非言語音のみの区間」ではテキストを使わずに内容条件だけに任せる仕組みだ。こうしないと、非言語音がテキスト側の解釈に引っ張られて消えやすくなる。</p>
+<p>
+なお、学習時の挙動で一つ意外な発見があった。
+「テキストを 50% の確率で落として学習したモデル」を、推論時にテキストなしで使ってみると、 <strong>最初から内容条件のみで学習したモデルよりも精度が悪化する</strong> のである。学習中にテキストという分かりやすいヒントがあると、内容条件側から音韻を読み取る学習が進みにくくなるためだと考えられる。</p>
+</div>
+</div>
+<div id="outline-container-headline-8" class="outline-3">
+<h3 id="headline-8">
+データ配合とモデル規模の見送り判断
+</h3>
+<div id="outline-text-headline-8" class="outline-text-3">
+<p>
+学習データの構成については、感情や非言語音が豊富な「表現用」と、声質のバリエーションを増やす「多様性用」の 2 グループに分け、混ぜる割合を制御している。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-9" class="outline-2">
+<h2 id="headline-9">
+地味だが重要な「評価設計」と、指標の落とし穴
+</h2>
+<div id="outline-text-headline-9" class="outline-text-2">
+<p>
+実験を正しく前に進めるには、感覚だけでなく定量的な評価の仕組みが欠かせない。ここでは、今回組んだ評価設計と、実際にハマった指標の罠について整理しておく。</p>
+<div id="outline-container-headline-10" class="outline-3">
+<h3 id="headline-10">
+5 つの評価軸と指標の自作
+</h3>
+<div id="outline-text-headline-10" class="outline-text-3">
+<p>
+評価は以下の 5 つの軸で行い、一般的な VC の評価項目と対応づけた。</p>
+<table>
+<thead>
+<tr>
+<th>一般的な評価項目</th>
+<th>本研究での指標</th>
+<th>測り方</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>話者類似度 (SECS)</td>
+<td><code class="verbatim">sim_tgt</code> ↑ / <code class="verbatim">sim_src</code> ↓</td>
+<td>WavLM-SV の話者埋め込みのコサイン類似度 (変換先の発話最大 8 本、および変換元と比較)</td>
+</tr>
+<tr>
+<td>明瞭性 (CER / WER)</td>
+<td><code class="verbatim">cer</code> ↓</td>
+<td>Whisper large-v3-turbo の書き起こしと変換元の書き起こしの文字誤り率</td>
+</tr>
+<tr>
+<td>韻律の保持 (F0 相関)</td>
+<td><code class="verbatim">f0_corr</code> ↑</td>
+<td>話者ごとに正規化した対数 F0 の相関 (長さが違えば DTW で対応づけ)</td>
+</tr>
+<tr>
+<td>(独自) 非言語音の保持</td>
+<td><code class="verbatim">nv_corr</code> ↑ / <code class="verbatim">nv_recall</code> ↑</td>
+<td>AST の非言語音クラス確率を 1 秒窓で比較</td>
+</tr>
+<tr>
+<td>長さ・タイミング</td>
+<td><code class="verbatim">dur_ratio</code></td>
+<td>変換後 / 変換元の長さの比</td>
+</tr>
+</tbody>
+</table>
+<p>
+これに加えて、最終的な判断には必ず <strong>試聴</strong> を入れている。</p>
+<p>
+注目してほしいのは、非言語音の保持を直接測る <strong><code class="verbatim">nv_corr</code> / <code class="verbatim">nv_recall</code></strong> を自作した点だ。Audio Spectrogram Transformer (AST) が出力する非言語音クラスの確率を 1 秒窓で比較するもので、少数のサンプルであってもカスケード方式とフレーム単位 VC の差がくっきりと数値に表れた。</p>
+<p>
+評価セット (v2) は、変換元 3 区分 (くだけた普通のセリフ / 非言語音中心 / 感情コーパス) × 変換先 3 区分 (学習済み / 未学習・低い声 / 未学習・高い声) の組み合わせで、 <strong>120 組 (変換元 30 本 × 変換先 4 人) × 2 シード = 240 件</strong> を用意し、95% 信頼区間の目安も算出するようにした。
+なお、本当に「見たことのない声 (未学習)」として評価するには、発話単位ではなく <strong>話者単位でのデータ分割</strong> が必須である。発話単位で分割すると、同じ話者の別の発話が学習に混ざってしまい、未学習の精度が過大評価されてしまう。</p>
+</div>
+</div>
+<div id="outline-container-headline-11" class="outline-3">
+<h3 id="headline-11">
+指標をそのまま信じてはいけない理由
+</h3>
+<div id="outline-text-headline-11" class="outline-text-3">
+<p>
+評価を回していく中で、数値の扱いに関する重要な落とし穴が 3 つ見つかった。</p>
+<ol>
+<li><strong>GPU の揺らぎで <code class="verbatim">f0_corr</code> が ±0.11 動く</strong>
+全く同じ条件・入力で 2 回変換しただけでも、GPU 演算の微妙な揺らぎによって <code class="verbatim">f0_corr</code> が ±0.11 ほど変動する。つまり、±0.1 程度の差を見て「良くなった・悪くなった」と判断するのは危険だ。</li>
+<li><strong>話者類似度は「言葉が崩れた出力」ほど高く出る</strong>
+これが一番厄介な罠である。何を言っているか分からない意味のない発声になったときほど、WavLM-SV の話者類似度が <strong>0.89</strong> のように異常に高く出ることがある。したがって、話者類似度だけを単独で比較してはいけない。必ず CER を横に並べ、 <strong>「CER が同程度の方式どうし」で比較する</strong> ルールを徹底した。</li>
+<li><strong>ASR の「でっち上げ」による CER 外れ値</strong>
+変換に失敗した音声や無音に近い区間を Whisper に通すと、ありもしない長文をでっち上げてしまい、CER が 6 を超えるような外れ値が出ることがある。平均値がこれに引きずられるのを防ぐため、CER は 1 件ごとに <strong>1.0 で切り詰める</strong> 処理を入れた。</li>
+</ol>
+<p>なお、WavLM-SV や ASR のモデルが異なれば、他の研究論文の数値とは直接比べられない点も注意が必要だ。</p>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-12" class="outline-2">
+<h2 id="headline-12">
+実測比較: ワンショット VC の結果と「話者 LoRA」の効果
+</h2>
+<div id="outline-text-headline-12" class="outline-text-2">
+<div id="outline-container-headline-13" class="outline-3">
+<h3 id="headline-13">
+結果 1: ワンショット VC での方式比較
+</h3>
+<div id="outline-text-headline-13" class="outline-text-3">
+<p>
+話者 LoRA を使わず、参照音声 1 本 (ワンショット) で変換した 240 件の平均結果は次の通りである。</p>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th class="align-right">話者類似度 ↑</th>
+<th class="align-right">変換元との類似度 ↓</th>
+<th class="align-right">CER ↓</th>
+<th class="align-right">F0 相関 ↑</th>
+<th>非言語音 相関 / 再現率 ↑</th>
+<th class="align-right">長さの比</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(参考) 変換元そのまま</td>
+<td class="align-right">0.688</td>
+<td class="align-right">1.000</td>
+<td class="align-right">0.000</td>
+<td class="align-right">1.000</td>
+<td>1.000 / 1.000</td>
+<td class="align-right">1.00</td>
+</tr>
+<tr>
+<td>カスケード (ASR → TTS)</td>
+<td class="align-right">0.804</td>
+<td class="align-right"><strong>0.642</strong></td>
+<td class="align-right"><strong>0.070</strong></td>
+<td class="align-right">0.188</td>
+<td>0.112 / 0.319</td>
+<td class="align-right">0.78</td>
+</tr>
+<tr>
+<td>SDEdit (t0 = 0.6)</td>
+<td class="align-right">0.705</td>
+<td class="align-right">0.921</td>
+<td class="align-right">0.091</td>
+<td class="align-right"><strong>0.874</strong></td>
+<td><strong>0.651</strong> / 0.631</td>
+<td class="align-right">1.00</td>
+</tr>
+<tr>
+<td>内容条件のみ</td>
+<td class="align-right"><strong>0.852</strong></td>
+<td class="align-right">0.726</td>
+<td class="align-right">0.534</td>
+<td class="align-right">0.551</td>
+<td>0.586 / 0.637</td>
+<td class="align-right">1.00</td>
+</tr>
+<tr>
+<td><strong>本研究の VC (内容 + テキスト + スタイル, textauto)</strong></td>
+<td class="align-right">0.823</td>
+<td class="align-right">0.743</td>
+<td class="align-right">0.159</td>
+<td class="align-right">0.636</td>
+<td>0.616 / <strong>0.671</strong></td>
+<td class="align-right">1.00</td>
+</tr>
+</tbody>
+</table>
+<p>
+(95% 区間の目安: 話者類似度 ±0.009 / CER ±0.015 / F0 相関 ±0.024 / 非言語音相関 ±0.017)</p>
+<p>
+すべての項目で 1 位になる方式はないものの、本研究の VC は <strong>「声色を変えつつ、抑揚・非言語音・タイミングを残す」バランスが最も良い</strong> ことが分かる。
+ちなみに、本研究の VC の CER を変換元の種類別に見ると、感情コーパス (読み上げ調に近い) が <strong>0.041</strong> 、くだけた普通のセリフが <strong>0.285</strong> 、非言語音中心が <strong>0.364</strong> となっており、くだけた話し方や囁き気味の発話はやや崩れやすい傾向にある。</p>
+<p>
+一方で、変換先の種類別に見ると弱点もはっきりする。</p>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th class="align-right">学習済みの声</th>
+<th class="align-right">未学習・低い声</th>
+<th class="align-right">未学習・高い声</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(参考) 変換元そのまま</td>
+<td class="align-right">0.748</td>
+<td class="align-right">0.547</td>
+<td class="align-right">0.729</td>
+</tr>
+<tr>
+<td>カスケード</td>
+<td class="align-right">0.796</td>
+<td class="align-right"><strong>0.829</strong></td>
+<td class="align-right">0.796</td>
+</tr>
+<tr>
+<td>本研究の VC</td>
+<td class="align-right"><strong>0.869</strong></td>
+<td class="align-right">0.731</td>
+<td class="align-right"><strong>0.847</strong></td>
+</tr>
+</tbody>
+</table>
+<p>
+学習済みの声や高い声ではカスケードを上回るが、 <strong>未学習の低い声 (女性 → 男性) では 0.731 とカスケードに負けている。</strong></p>
+</div>
+</div>
+<div id="outline-container-headline-14" class="outline-3">
+<h3 id="headline-14">
+声色の再現度を上げる 6 つの手法の比較
+</h3>
+<div id="outline-text-headline-14" class="outline-text-3">
+<p>
+この「低い声への弱さ」を克服するため、声色の再現度を上げる 6 つの手法を試した。先に結果を書くと、 <strong>はっきり効いたのは「話者 LoRA」だけ</strong> だった。</p>
+<ul>
+<li><strong>効いた: 話者 LoRA</strong>
+推論時に、変換先の参照音声を使って VC モデルの LoRA だけを 100 ステップ (約 10 秒) 追加学習する手法だ。後述の通り、低い声への類似度が劇的に改善した。</li>
+<li><strong>少し効いた: 参照音声を増やす</strong>
+複数の参照音声の latent をつないで話者エンコーダへ渡す方法 (最大 120 秒)。声色は少し良くなるが、参照を長くすると言葉が崩れやすくなる疑いがある。</li>
+<li>
+<p><strong>効かなかった 4 つの手法</strong></p>
+<ol>
+<li><strong>話者条件の K/V 倍率を上げる</strong> : 条件を強めようと倍率を 1.5 にすると、ノイズが出て音声が崩れる。</li>
+<li><strong>Speaker Inversion (話者トークンの最適化)</strong> : 最適化で損失自体は下がるのに、声色の類似度は変わらない。</li>
+<li><strong>latent の統計合わせ (AdaIN 方式)</strong> : 出力が元の声色のまま変化しない。</li>
+<li><strong>近傍フレームの入れ替え (kNN-VC / RVC の検索に相当)</strong> : 一部の声では改善するが、全体としてはノイズで崩れてしまう。</li>
+</ol>
+</li>
+</ul>
+<p>なぜフレーム単位の操作 (AdaIN や近傍入れ替え) が効かず、話者 LoRA が効いたのか。
+考察としては、 <strong>「声色は latent の時間変化に表れる」</strong> からだと考えられる。1 フレームごとの静的な特徴を置き換えるだけでは声色になりきらず、時間方向の文脈を扱える自己注意 (Self-Attention) の層を学習する話者 LoRA だからこそ、自然な声色の変化を捉えられたのだろう。</p>
+<p>
+なお、定番の VC 手法である RVC と対応づけると、「RVC の検索 ≒ kNN」「RVC の話者ごとのデコーダ ≒ 話者 LoRA」という位置づけになる。逆に、RVC にあって本研究に無いのは明示的な F0 条件である。</p>
+</div>
+</div>
+<div id="outline-container-headline-15" class="outline-3">
+<h3 id="headline-15">
+結果 2: 話者 LoRA による改善
+</h3>
+<div id="outline-text-headline-15" class="outline-text-3">
+<p>
+話者 LoRA の評価では、変換先の全発話を参照に使い、話者類似度は <strong>学習に使っていない発話</strong> で測定した。</p>
+<table>
+<thead>
+<tr>
+<th>条件</th>
+<th class="align-right">話者類似度 ↑</th>
+<th>学習済み / 低い声 / 高い声</th>
+<th class="align-right">変換元との類似度 ↓</th>
+<th class="align-right">CER ↓</th>
+<th class="align-right">F0 相関 ↑</th>
+<th>非言語音 相関 / 再現率 ↑</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>(参考) 変換元そのまま</td>
+<td class="align-right">0.684</td>
+<td>0.741 / 0.555 / 0.720</td>
+<td class="align-right">1.000</td>
+<td class="align-right">0.000</td>
+<td class="align-right">1.000</td>
+<td>1.000 / 1.000</td>
+</tr>
+<tr>
+<td>LoRA なし</td>
+<td class="align-right">0.789</td>
+<td>0.849 / 0.715 / 0.796</td>
+<td class="align-right">0.730</td>
+<td class="align-right"><strong>0.245</strong></td>
+<td class="align-right">0.488</td>
+<td>0.565 / <strong>0.601</strong></td>
+</tr>
+<tr>
+<td><strong>話者 LoRA 100 ステップ (既定, 約 10 秒)</strong></td>
+<td class="align-right">0.873</td>
+<td>0.874 / <strong>0.888</strong> / 0.865</td>
+<td class="align-right">0.705</td>
+<td class="align-right">0.263</td>
+<td class="align-right"><strong>0.513</strong></td>
+<td><strong>0.609</strong> / 0.586</td>
+</tr>
+<tr>
+<td>話者 LoRA 200 ステップ</td>
+<td class="align-right">0.883</td>
+<td>0.878 / 0.891 / 0.881</td>
+<td class="align-right">0.700</td>
+<td class="align-right">0.301</td>
+<td class="align-right">0.507</td>
+<td>0.574 / 0.533</td>
+</tr>
+<tr>
+<td>話者 LoRA 500 ステップ</td>
+<td class="align-right"><strong>0.902</strong></td>
+<td>0.895 / 0.915 / 0.898</td>
+<td class="align-right"><strong>0.697</strong></td>
+<td class="align-right">0.357</td>
+<td class="align-right">0.467</td>
+<td>0.587 / 0.566</td>
+</tr>
+</tbody>
+</table>
+<p>
+100 ステップ (約 10 秒) の追加学習を入れるだけで、全体の話者類似度は 0.789 → 0.873 に向上し、課題だった <strong>低い声も 0.715 → 0.888</strong> まで跳ね上がった。この時の CER の悪化は +0.018 と誤差範囲と同程度に収まっている。
+一方で、200、500 とステップを増やすと声色はさらに近づくものの、CER が 0.357 まで悪化し、非言語音も 100 ステップが最良だった。声色と明瞭性には明確なトレードオフがあるため、既定値は 100 ステップにしている。</p>
+</div>
+</div>
+<div id="outline-container-headline-16" class="outline-3">
+<h3 id="headline-16">
+測定していない項目と数値の注意点
+</h3>
+<div id="outline-text-headline-16" class="outline-text-3">
+<p>
+ここで、測定できていない項目やデータの前提についても正直に書いておく。</p>
+<ul>
+<li><strong>未測定の項目</strong> : MOS や UTMOS などの自然性指標、MCD (同じ文を変換先が話したパラレルデータがないため計測不可)、および ABX 等の正式な主観評価 (聴取試験) は実施していない。音質は開発中の試聴での判断のみである。</li>
+<li><strong>処理速度 (RTF)</strong> : 体系的な計測はしていないが、参考値として 6.7 秒の入力を 2.4 秒で変換できた (RTF 約 0.36、40 ステップ、話者 LoRA なし)。</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div id="outline-container-headline-17" class="outline-2">
+<h2 id="headline-17">
+実験の回し方と比較動画の舞台裏
+</h2>
+<div id="outline-text-headline-17" class="outline-text-2">
+<p>
+冒頭に載せた <a href="https://www.youtube.com/watch?v=Eq9_9CRA5zI">技術デモ動画</a> を作成するにあたっての裏話も、あえて正直に「手作業の部分」を含めて書いておきたい。</p>
+<p>
+動画全体の構成や編集の指示出しは自分で行い、組み立て自体は AI に任せた。また、簡易的な音声編集ツールも AI を使って作成した。
+しかし、 <strong>実際の音声の入れ替え作業は、自分が地味に手動で実施している。</strong></p>
+<p>
+つまり、「動画ファイルをポンと入れたら、自動で VC 済みの動画が出てくる」ような魔法のツールではない。特に <strong>複数の話者が入れ替わる場面では、話者ごとに音声を切り分けてから VC 変換をかける必要がある</strong> (話者分離や自動振り分けは実装していない)。また、変換する音声の性質によっては、テキストの使い方や話者 LoRA のステップ数、シード値といったパラメータを微調整する必要もある。</p>
+<p>
+デモ動画の裏側にはこうした人手の調整がある。話者分離 (ダイアライゼーション) との連結や、パラメータの自動選択は、今後の明確な課題として残っている部分である。</p>
+</div>
+</div>
+<div id="outline-container-headline-18" class="outline-2">
+<h2 id="headline-18">
+まとめ
+</h2>
+<div id="outline-text-headline-18" class="outline-text-2">
+<p>
+言葉の崩れやすさ (特にくだけた会話や囁き)、女性から男性のような低い声への変換の難しさ、
+実際に音声を変換する際の手作業の残りなど、まだまだ課題はある。
+それでも、 <strong>音質や表現の保持という点ではかなり使えるレベルに到達できた</strong> ので、今回の結果には十分満足している。</p>
+<p>
+振り返ってみると、半年ほど前に別の TTS で同じようなことに挑戦して玉砕した頃と比べて、今回は驚くほどスムーズに研究が進んだ。
+もちろんベースの TTS 自体の性能が進化しているのも大きいが、それ以上に <strong>「AI コーディングエージェントと一緒に『計画 → 実装 → 評価 → 次の手』の実験ループを高速に回せたこと」</strong> が効いていると感じる。
+AI を使いこなせるかどうかで、個人で到達できる範囲や開発スピードにものすごい差が広がっていくのを、今回の実験を通じて改めて実感した。</p>
+<p>
+以上。</p>
+</div>
+</div>
+
+        </div>
+    </article>
+</main>
+
+<div class="authorbox clearfix">
+	<figure class="authorbox__avatar">
+		<img alt="ifritJP avatar" src="/blog2/public/avatar.png" class="avatar" height="90" width="90">
+	</figure>
+	<div class="authorbox__header">
+		<span class="authorbox__name">About ifritJP</span>
+	</div>
+	<div class="authorbox__description">
+		生涯現役エンジニア
+	</div>
+</div>
+
+<nav class="pager flex">
+	<div class="pager__item pager__item--prev">
+		<a class="pager__link" href="/blog2/public/posts/2026/2026-10-21-direct_awsm_by_ai_agent/" rel="prev">
+			<span class="pager__subtitle">«&thinsp;Previous</span>
+			<p class="pager__title">AI が自作言語 LuneScript を WebAssembly に対応させてみた ── 74,000 行のコンパイラと過ごした 4 日間</p>
+		</a>
+	</div>
+</nav>
+
+
+			</div>
+			<aside class="sidebar">
+<div class="post__toc toc">
+    <details open>
+        <summary class="toc__title">
+            Page content
+            <span class="toc__toggle-icon"></span>
+        </summary>
+        <div class="toc__menu">
+            <nav id="TableOfContents">
+<ul>
+<li><a href="#headline-1">コンセプトと全体像: なぜ「TTS の流用」なのか</a>
+</li>
+<li><a href="#headline-2">学習不要のベースラインで分かった限界</a>
+</li>
+<li><a href="#headline-3">本命: ContentAdapter による VC 化と「声色の漏れ」との戦い</a>
+<ul>
+<li><a href="#headline-4">ContentAdapter の仕組み</a>
+</li>
+<li><a href="#headline-5">最初の結果と「声色の漏れ」</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-6">テキスト・内容・スタイルの統合で CER 0.48 → 0.04 へ</a>
+<ul>
+<li><a href="#headline-7">textauto と意外な罠</a>
+</li>
+<li><a href="#headline-8">データ配合とモデル規模の見送り判断</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-9">地味だが重要な「評価設計」と、指標の落とし穴</a>
+<ul>
+<li><a href="#headline-10">5 つの評価軸と指標の自作</a>
+</li>
+<li><a href="#headline-11">指標をそのまま信じてはいけない理由</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-12">実測比較: ワンショット VC の結果と「話者 LoRA」の効果</a>
+<ul>
+<li><a href="#headline-13">結果 1: ワンショット VC での方式比較</a>
+</li>
+<li><a href="#headline-14">声色の再現度を上げる 6 つの手法の比較</a>
+</li>
+<li><a href="#headline-15">結果 2: 話者 LoRA による改善</a>
+</li>
+<li><a href="#headline-16">測定していない項目と数値の注意点</a>
+</li>
+</ul>
+</li>
+<li><a href="#headline-17">実験の回し方と比較動画の舞台裏</a>
+</li>
+<li><a href="#headline-18">まとめ</a>
+</li>
+</ul>
+</nav>
+        </div>
+    </details>
+</div>
+<div class="widget-social widget">
+	<h4 class="widget-social__title widget__title">Social</h4>
+	<div class="widget-social__content widget__content">
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="Twitter" rel="noopener noreferrer" href="https://twitter.com/dwarfjp" target="_blank">
+				<svg class="widget-social__link-icon icon icon-twitter" width="24" height="24" viewBox="0 0 384 312"><path d="m384 36.9c-14.1 6.3-29.3 10.5-45.2 12.4 16.3-9.7 28.8-25.2 34.6-43.6-15.2 9-32.1 15.6-50 19.1-14.4-15.2-34.9-24.8-57.5-24.8-43.5 0-78.8 35.3-78.8 78.8 0 6.2.7 12.2 2 17.9-65.5-3.3-123.5-34.6-162.4-82.3-6.7 11.6-10.6 25.2-10.6 39.6 0 27.3 13.9 51.4 35 65.6-12.9-.4-25.1-4-35.7-9.9v1c0 38.2 27.2 70 63.2 77.2-6.6 1.8-13.6 2.8-20.8 2.8-5.1 0-10-.5-14.8-1.4 10 31.3 39.1 54.1 73.6 54.7-27 21.1-60.9 33.7-97.8 33.7-6.4 0-12.6-.4-18.8-1.1 34.9 22.4 76.3 35.4 120.8 35.4 144.9 0 224.1-120 224.1-224.1 0-3.4-.1-6.8-.2-10.2 15.4-11.1 28.7-25 39.3-40.8z"/></svg>
+				<span>Twitter</span>
+			</a>
+		</div>
+		<div class="widget-social__item widget__item">
+			<a class="widget-social__link widget__link btn" title="GitHub" rel="noopener noreferrer" href="https://github.com/ifritJP" target="_blank">
+				<svg class="widget-social__link-icon icon icon-github" width="24" height="24" viewBox="0 0 384 374"><path d="m192 0c-106.1 0-192 85.8-192 191.7 0 84.7 55 156.6 131.3 181.9 9.6 1.8 13.1-4.2 13.1-9.2 0-4.6-.2-16.6-.3-32.6-53.4 11.6-64.7-25.7-64.7-25.7-8.7-22.1-21.3-28-21.3-28-17.4-11.9 1.3-11.6 1.3-11.6 19.3 1.4 29.4 19.8 29.4 19.8 17.1 29.3 44.9 20.8 55.9 15.9 1.7-12.4 6.7-20.8 12.2-25.6-42.6-4.8-87.5-21.3-87.5-94.8 0-20.9 7.5-38 19.8-51.4-2-4.9-8.6-24.3 1.9-50.7 0 0 16.1-5.2 52.8 19.7 15.3-4.2 31.7-6.4 48.1-6.5 16.3.1 32.7 2.2 48.1 6.5 36.7-24.8 52.8-19.7 52.8-19.7 10.5 26.4 3.9 45.9 1.9 50.7 12.3 13.4 19.7 30.5 19.7 51.4 0 73.7-44.9 89.9-87.7 94.6 6.9 5.9 13 17.6 13 35.5 0 25.6-.2 46.3-.2 52.6 0 5.1 3.5 11.1 13.2 9.2 76.2-25.5 131.2-97.3 131.2-182 0-105.9-86-191.7-192-191.7z"/></svg>
+				<span>GitHub</span>
+			</a>
+		</div>
+
+		
+	</div>
+</div>
+<div class="widget-recent widget">
+	<h4 class="widget__title">Recent Posts</h4>
+	<div class="widget__content">
+		<ul class="widget__list">
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-11-17-tts-to-vc-research/">事前学習済み TTS を流用して、笑い声や息づかいも通るボイスチェンジャーを作ってみた話</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-10-21-direct_awsm_by_ai_agent/">AI が自作言語 LuneScript を WebAssembly に対応させてみた ── 74,000 行のコンパイラと過ごした 4 日間</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-10-12-strata-lite-gemma4/">Strata と Strata-Lite で Qwen3.8 Flash Next と Gemma4 を動かしてみた</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-07-19-unsloth-gemma-4-lora/">unsloth で Gemma-4 を LoRA チューニングした話</a></li>
+			<li class="widget__item"><a class="widget__link" href="/blog2/public/posts/2026/2026-07-04-gemma-4-derived-models/">Hugging Face に登録されている Gemma-4 派生モデルの調査と、そこから見えたもの</a></li>
+		</ul>
+	</div>
+</div>
+</aside>
+		</div>
+		<footer class="footer">
+	<div class="container footer__container flex">
+		
+		<div class="footer__copyright">
+			&copy; 2026 hoge blog.
+			<span class="footer__copyright-credits">Generated with <a href="https://gohugo.io/" rel="nofollow noopener" target="_blank">Hugo</a> and <a href="https://github.com/Vimux/Mainroad/" rel="nofollow noopener" target="_blank">Mainroad</a> theme.</span>
+		</div>
+	</div>
+</footer>
+	</div>
+	<script async defer src="/blog2/public/js/menu.js"></script>
+	</body>
+
+</html>
